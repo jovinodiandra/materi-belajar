@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HikariCP — Connection Pool Tercepat di Java</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #f5b14c;   /* HikariCP amber accent — "hikari" = cahaya */
+    --cyan-dim:   #9c712a;
+    --amber:      #45d4de;   /* secondary -> cyan */
+    --amber-dim:  #2b8a90;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #f5b14c;
+    --t-str:      #8fd2b0;
+    --t-num:      #45d4de;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .topbar__home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; transition: color .18s, border-color .18s; }
+  .topbar__home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(245,177,76,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(245,177,76,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(69,212,222,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 96px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 13px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(245,177,76,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(245,177,76,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(69,212,222,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(69,212,222,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 720px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 132px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(69,212,222,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(245,177,76,.08);
+  }
+  .lang.props { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.cyan { color: var(--amber); border-color: var(--amber-dim); background: rgba(69,212,222,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- step list ---------- */
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 9px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700;
+    background: var(--cyan); border-radius: 50%;
+  }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 80px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/connection-pooling/<b>hikaricp.md</b></div>
+  <a class="topbar__home" href="index.html">← Connection Pooling</a>
+  <div class="topbar__counter" id="counter">00 / 11</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// HikariCP</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenalan</div>
+    <a href="#c01"><span class="yr">01</span> Apa itu HikariCP</a>
+    <a href="#c02"><span class="yr">02</span> Kenapa cepat</a>
+
+    <div class="rail__part">II · Pakai</div>
+    <a href="#c03"><span class="yr">03</span> Setup dasar</a>
+    <a href="#c04"><span class="yr">04</span> Spring Boot</a>
+
+    <div class="rail__part">III · Tuning</div>
+    <a href="#c05"><span class="yr">05</span> Parameter kunci</a>
+    <a href="#c06"><span class="yr">06</span> Pool sizing</a>
+    <a href="#c07"><span class="yr">⚙</span> Leak &amp; timeout</a>
+
+    <div class="rail__part">IV · Praktik</div>
+    <a href="#c08"><span class="yr">!</span> Jebakan production</a>
+    <a href="#c09"><span class="yr">◆</span> HikariCP + PgBouncer</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Pendalaman dari deck Connection Pooling — pool in-app #1 untuk Java/JVM</div>
+      <h1 class="reveal d1">HikariCP — pool koneksi <span class="accent">tercepat &amp; teringan</span> di dunia JVM.</h1>
+      <p class="sub reveal d2">
+        Kalau PgBouncer adalah pooler <b>eksternal</b> di depan Postgres, <b>HikariCP</b> adalah pool <b>di dalam
+        aplikasi</b> — pustaka Java/JDBC yang dipakai tiap proses untuk menyimpan koneksi siap pakai. Ia terkenal
+        karena <b>kecil, cepat, &amp; andal</b>, dan jadi <b>default di Spring Boot</b>. Deck ini membahas lengkap:
+        kenapa ia cepat, cara setup, parameter penting, rumus sizing legendarisnya, sampai jebakan production.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Identitas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Pool JDBC di dalam app</b> <span>— "hikari" = cahaya (Jepang)</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Sifat</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Zero-overhead</b> <span>— ~130 KB, lock-free, sangat cepat</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Status</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Default Spring Boot</b> <span>— standar de-facto JVM</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Kunci</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Sizing kecil-tapi-pas</b> <span>— sumber rumus pool terkenal</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 APA ITU ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kenalan</span> · Apa itu HikariCP</div>
+        <h2>Connection pool JDBC di dalam aplikasi</h2>
+      </div>
+      <p class="lead reveal"><strong>HikariCP</strong> adalah pustaka <em>connection pool</em> untuk JDBC (Java Database Connectivity). Ia hidup <strong>di dalam proses aplikasimu</strong>, menyediakan objek <code>DataSource</code> yang memberi koneksi siap pakai saat kode memanggil <code>getConnection()</code> — lalu menerima kembali koneksi itu saat di-<code>close()</code>.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// tiny</div><h4>Sangat kecil</h4><p>JAR hanya sekitar <b>130 KB</b> tanpa dependensi berat. Filosofinya: lakukan satu hal — mengelola pool — secepat &amp; seringan mungkin.</p></div>
+        <div class="card up"><div class="ic">// default</div><h4>Default Spring Boot</h4><p>Sejak Spring Boot 2.0, HikariCP adalah <code>DataSource</code> bawaan. Kalau kamu pakai Spring Boot, kemungkinan besar sudah memakainya.</p></div>
+        <div class="card up"><div class="ic">// reliable</div><h4>Andal &amp; benar</h4><p>Bukan cuma cepat — perilakunya saat error, timeout, &amp; koneksi mati dirancang ketat. "Fast + correct".</p></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ JDBC standard interface</div>
+        <p>HikariCP mengimplementasikan <code>javax.sql.DataSource</code> standar. Artinya kode aplikasimu (atau JPA/Hibernate, jOOQ, MyBatis) tidak perlu tahu soal HikariCP — mereka cuma minta <code>Connection</code> dari <code>DataSource</code>. HikariCP-lah yang diam-diam mengelola kolamnya di belakang.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 KENAPA CEPAT ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti</span> · Rekayasa performa</div>
+        <h2>Kenapa HikariCP begitu cepat</h2>
+      </div>
+      <p class="lead reveal">Nama "Hikari" (cahaya) bukan sekadar gaya — kecepatan adalah tujuan desainnya. Kecepatannya datang dari beberapa keputusan rekayasa yang menghilangkan overhead di jalur panas (hot path).</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// ConcurrentBag</div><h4>ConcurrentBag custom</h4><p>Struktur penyimpan koneksi <em>lock-free</em> buatan sendiri, dioptimalkan agar thread sering mendapat kembali koneksi yang baru saja ia pakai (thread-local) — minim kontensi antar-thread.</p></div>
+        <div class="card up"><div class="ic">// FastList</div><h4>FastList</h4><p>Pengganti <code>ArrayList</code> yang membuang pengecekan <em>range</em> &amp; mempercepat operasi remove dari belakang — list yang dipakai melacak statement/koneksi.</p></div>
+        <div class="card up"><div class="ic">// bytecode</div><h4>Bytecode ramping</h4><p>Kode inti dijaga kecil agar muat di cache instruksi CPU &amp; ramah JIT inlining. Lebih sedikit instruksi = lebih cepat.</p></div>
+        <div class="card up"><div class="ic">// no overhead</div><h4>Zero-overhead proxy</h4><p>Proxy koneksi/statement dibuat efisien (codegen via Javassist) sehingga membungkus JDBC nyaris tanpa biaya tambahan.</p></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Yang sebenarnya bikin cepat: koneksi sudah siap</div>
+        <p>Semua optimasi mikro di atas penting, tapi keuntungan terbesar tetap sama dengan prinsip pooling di deck induk: <strong>handshake mahal (TCP+TLS+auth) sudah dibayar sekali di awal</strong>. HikariCP "cuma" menyerahkan koneksi yang sudah nyala secepat mungkin — dan ia melakukannya lebih cepat dari pool lain.</p>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Jangan terjebak mengejar angka benchmark. Untuk hampir semua aplikasi, perbedaan microsecond antar pool <b>tak terasa</b> dibanding latensi query &amp; jaringan. Alasan nyata memilih HikariCP: <b>default yang waras, perilaku error yang benar, &amp; dokumentasi sizing yang bagus</b> — bukan sekadar "tercepat".
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 SETUP DASAR ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Pakai</span> · Setup dasar</div>
+        <h2>Memakai HikariCP langsung (tanpa framework)</h2>
+      </div>
+      <p class="lead reveal">Inti penggunaannya: buat <code>HikariConfig</code>, bungkus jadi <code>HikariDataSource</code> <strong>sekali saat aplikasi start</strong>, lalu pinjam koneksi dengan <code>try-with-resources</code> agar otomatis dikembalikan.</p>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">App.java — buat DataSource sekali, pinjam aman</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">import</span> com.zaxxer.hikari.*;
+
+<span class="c">// 1) KONFIG — dibuat SEKALI saat startup</span>
+<span class="t">HikariConfig</span> cfg = <span class="k">new</span> <span class="t">HikariConfig</span>();
+cfg.<span class="f">setJdbcUrl</span>(<span class="s">"jdbc:postgresql://localhost:5432/app"</span>);
+cfg.<span class="f">setUsername</span>(<span class="s">"app_user"</span>);
+cfg.<span class="f">setPassword</span>(<span class="s">"secret"</span>);
+cfg.<span class="f">setMaximumPoolSize</span>(<span class="n">10</span>);
+
+<span class="c">// 2) DATASOURCE — objek bersama, jangan dibuat per request!</span>
+<span class="t">HikariDataSource</span> ds = <span class="k">new</span> <span class="t">HikariDataSource</span>(cfg);
+
+<span class="c">// 3) PINJAM — try-with-resources → conn.close() otomatis = RELEASE ke pool</span>
+<span class="k">try</span> (<span class="t">Connection</span> conn = ds.<span class="f">getConnection</span>();
+     <span class="t">PreparedStatement</span> ps = conn.<span class="f">prepareStatement</span>(<span class="s">"SELECT * FROM users WHERE id=?"</span>)) {
+  ps.<span class="f">setLong</span>(<span class="n">1</span>, id);
+  <span class="t">ResultSet</span> rs = ps.<span class="f">executeQuery</span>();
+  <span class="c">// ... pakai hasil ...</span>
+} <span class="c">// ← conn.close() di sini TIDAK menutup koneksi, tapi MENGEMBALIKANNYA ke pool</span></pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Kunci: close() = release, bukan tutup</div>
+          <p>Di dunia pool, <code>connection.close()</code> <strong>tidak benar-benar menutup</strong> koneksi TCP — ia mengembalikannya ke kolam. <code>try-with-resources</code> menjamin ini terjadi bahkan saat exception, jadi ia adalah versi Java dari <code>finally { release() }</code> di deck induk. Lupa <code>close()</code> = <strong>connection leak</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 SPRING BOOT ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Pakai</span> · Spring Boot</div>
+        <h2>Di Spring Boot: cukup konfigurasi properties</h2>
+      </div>
+      <p class="lead reveal">Karena HikariCP adalah default Spring Boot, kamu jarang menyentuh kode. Cukup atur lewat <code>application.properties</code>/<code>yml</code> dengan prefix <code>spring.datasource.hikari.*</code>.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">application.properties — konfigurasi HikariCP</span><span class="lang props">properties</span></div>
+<pre class="code"><span class="c"># koneksi dasar</span>
+spring.datasource.url=jdbc:postgresql://localhost:<span class="n">5432</span>/app
+spring.datasource.username=app_user
+spring.datasource.password=secret
+
+<span class="c"># tuning pool HikariCP</span>
+spring.datasource.hikari.maximum-pool-size=<span class="n">10</span>
+spring.datasource.hikari.minimum-idle=<span class="n">10</span>
+spring.datasource.hikari.connection-timeout=<span class="n">30000</span>    <span class="c"># 30s tunggu pinjam</span>
+spring.datasource.hikari.idle-timeout=<span class="n">600000</span>        <span class="c"># 10m</span>
+spring.datasource.hikari.max-lifetime=<span class="n">1800000</span>       <span class="c"># 30m</span>
+spring.datasource.hikari.pool-name=AppHikariPool</pre>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Rekomendasi resmi: minimumIdle = maximumPoolSize</div>
+        <p>Tim HikariCP menyarankan <strong>tidak</strong> memakai pool yang menyusut-membesar untuk beban produksi. Set <code>minimum-idle</code> = <code>maximum-pool-size</code> agar pool berukuran <em>tetap</em> — menghindari spike latensi saat pool harus membuka koneksi baru mendadak di tengah lonjakan.</p>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Spring Boot membuat <b>satu</b> <code>DataSource</code> bersama untuk seluruh aplikasi — itu benar. Jangan tergoda membuat <code>HikariDataSource</code> manual per modul/request; itu mengulang anti-pola "pool per request" dari deck induk.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 PARAMETER ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Tuning · Parameter</div>
+        <h2>Parameter kunci yang wajib dimengerti</h2>
+      </div>
+      <p class="lead reveal">HikariCP sengaja punya <strong>sedikit</strong> knob — itu fitur, bukan kekurangan. Ini yang paling penting; pahami artinya, bukan cuma namanya.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Tujuh parameter inti</div>
+        <div class="erabox__row"><span class="erabox__lang">maximumPoolSize</span><code>jumlah koneksi maksimum (paling penting)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">minimumIdle</span><code>koneksi idle minimum (saran: = max)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">connectionTimeout</span><code>maks tunggu pinjam koneksi (default 30s)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">idleTimeout</span><code>koneksi idle ditutup setelah ini (default 10m)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">maxLifetime</span><code>umur maks koneksi, lalu diremajakan (default 30m)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">keepaliveTime</span><code>ping berkala agar koneksi tak mati diam-diam</code></div>
+        <div class="erabox__row"><span class="erabox__lang">leakDetection...</span><code>peringatkan koneksi dipinjam kelamaan</code></div>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// maximumPoolSize</div><h4>Batas atas koneksi</h4><p>Paling krusial. Inilah yang melindungi DB dari kebanjiran. Bab berikut khusus soal angka ini.</p></div>
+        <div class="card up"><div class="ic">// connectionTimeout</div><h4>Sabar menunggu giliran</h4><p>Semua koneksi dipakai → kode <em>menunggu</em>. Lewat batas → lempar <code>SQLException</code>, daripada hang selamanya. Ini <b>bukan</b> query timeout.</p></div>
+        <div class="card up"><div class="ic">// maxLifetime</div><h4>Peremajaan berkala</h4><p>Koneksi tua ditutup &amp; diganti. Mencegah koneksi basi &amp; masalah saat DB failover. Harus <b>lebih pendek</b> dari timeout DB/firewall.</p></div>
+        <div class="card up"><div class="ic">// keepaliveTime</div><h4>Jaga tetap hidup</h4><p>Ping koneksi idle berkala supaya firewall/DB tak diam-diam memutusnya. Tambahan modern untuk koneksi yang sangat lama idle.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 SIZING ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Tuning · Sizing</div>
+        <h2>Pool sizing: kecil-tapi-pas (sumber rumusnya)</h2>
+      </div>
+      <p class="lead reveal">Dokumen <em>"About Pool Sizing"</em> dari HikariCP adalah rujukan yang dikutip deck induk. Temuannya kontra-intuitif: <strong>pool kecil sering memberi throughput lebih tinggi</strong> daripada pool besar.</p>
+
+      <div class="quote reveal d1">
+        <p>“Pool koneksi yang lebih kecil, secara mengejutkan, sering memberi throughput yang lebih tinggi.”</p>
+        <cite>— HikariCP wiki, <i>About Pool Sizing</i></cite>
+      </div>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">rumus titik-awal (PostgreSQL)</span><span class="lang cyan">rule of thumb</span></div>
+<pre class="code"><span class="c"># formula klasik untuk beban berat CPU/disk:</span>
+koneksi = (jumlah_core_CPU_db × <span class="n">2</span>) + jumlah_disk_efektif
+
+<span class="c"># contoh: DB 4 core, 1 SSD</span>
+koneksi = (<span class="n">4</span> × <span class="n">2</span>) + <span class="n">1</span> = <span class="n">9</span>     <span class="c"># ya, ~10 — bukan 100!</span>
+
+<span class="c"># INGAT: ini per-aplikasi. Kalau app jalan di 10 instance,</span>
+<span class="c"># maximumPoolSize=10 → 100 koneksi ke DB. Hitung totalnya.</span></pre>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kenapa kecil menang — analogi jalan tol</div>
+        <p>Core CPU itu seperti lajur tol. Punya 4 lajur (core) tapi memaksa 100 mobil (koneksi) jalan bareng tidak bikin lebih cepat — malah macet karena terus ganti-ganti lajur (<em>context switch</em>). Dengan ~8-10 mobil di 4 lajur, semua mengalir lancar. Lebih sedikit koneksi yang sibuk &gt; banyak koneksi yang rebutan.</p>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Rumus cuma titik awal — ukur!</div>
+          <p>Angka ini permulaan, bukan harga mati. Pantau metrik HikariCP (lewat JMX/Micrometer): <code>hikaricp.connections.active</code>, <code>hikaricp.connections.pending</code> (antrian!), &amp; <code>hikaricp.connections.usage</code>. Kalau <em>pending</em> sering &gt; 0 dan DB belum jenuh, naikkan sedikit. Selalu jaga: (pool × jumlah instance) ≤ <code>max_connections</code> DB.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 LEAK & TIMEOUT ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Tuning · Keandalan</div>
+        <h2>Deteksi leak &amp; validasi koneksi</h2>
+      </div>
+      <p class="lead reveal">Deck induk menyebut <em>connection leak</em> sebagai bug paling sering. HikariCP punya alat bawaan untuk memburunya — plus mekanisme memastikan koneksi yang dipinjam benar-benar hidup.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">leakDetectionThreshold — log koneksi yang dipinjam kelamaan</span><span class="lang props">properties</span></div>
+<pre class="code"><span class="c"># jika sebuah koneksi dipinjam lebih lama dari ini (ms),</span>
+<span class="c"># HikariCP menulis stack trace si peminjam ke log → ketahuan siapa yang bocor</span>
+spring.datasource.hikari.leak-detection-threshold=<span class="n">20000</span>   <span class="c"># 20 detik</span>
+
+<span class="c"># gejala leak (dari deck induk): app melambat perlahan lalu hang,</span>
+<span class="c"># tanpa lonjakan trafik. Aktifkan ini di staging untuk berburu.</span></pre>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// leak detection</div><h4>leakDetectionThreshold</h4><p>Bukan memperbaiki leak, tapi <b>menunjukkan</b> kode mana yang menahan koneksi terlalu lama — lewat stack trace di log. Pasang saat investigasi.</p></div>
+        <div class="card up"><div class="ic">// validation</div><h4>Validasi otomatis</h4><p>Sebelum diserahkan, HikariCP memvalidasi koneksi via <code>Connection.isValid()</code> (JDBC4). Tak perlu <code>connectionTestQuery</code> untuk driver modern.</p></div>
+        <div class="card up"><div class="ic">// validationTimeout</div><h4>validationTimeout</h4><p>Batas waktu validasi tersebut. Koneksi yang gagal dicek dibuang &amp; diganti — kamu tak pernah dapat koneksi yang diam-diam mati.</p></div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Solusi <b>nyata</b> untuk leak tetap sama seperti di deck induk: selalu pinjam koneksi dengan <code>try-with-resources</code> (atau biarkan Spring/JPA mengelola transaksi). <code>leakDetectionThreshold</code> hanya alat diagnosis — pencegahan ada di disiplin kode.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 JEBAKAN ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Praktik</span> · Production</div>
+        <h2>Jebakan production yang sering bikin pusing</h2>
+      </div>
+      <p class="lead reveal">HikariCP punya default yang waras, tapi beberapa interaksi dengan DB/jaringan tetap perlu kamu sadari di produksi.</p>
+
+      <div class="grid reveal d1">
+        <div class="card down"><div class="ic">// maxLifetime</div><h4>maxLifetime ≥ timeout DB</h4><p>Kalau DB/firewall memutus koneksi idle pada 5 menit tapi <code>maxLifetime</code> 30 menit, kamu dapat error "connection closed". Aturan: <b>maxLifetime beberapa detik LEBIH PENDEK</b> dari timeout terpendek di jalur (DB, firewall, load balancer).</p></div>
+        <div class="card down"><div class="ic">// connTimeout</div><h4>connectionTimeout ≠ query timeout</h4><p>Sering ketukar. Yang ini "berapa lama nunggu dapat koneksi dari pool", bukan "berapa lama query boleh jalan". Set query timeout terpisah (JDBC/JPA).</p></div>
+        <div class="card down"><div class="ic">// instance count</div><h4>Lupa kalikan instance</h4><p><code>maximumPoolSize</code> × jumlah pod = total ke DB. Auto-scaling ke 50 pod dengan pool 20 = 1.000 koneksi. Inilah pemicu butuh PgBouncer.</p></div>
+        <div class="card down"><div class="ic">// long tx</div><h4>Transaksi/query lambat menahan</h4><p>Satu transaksi panjang menahan koneksi dari pool. Beberapa saja sudah bisa mengosongkan pool kecil walau ukurannya "cukup". Jaga transaksi pendek.</p></div>
+        <div class="card down"><div class="ic">// pending</div><h4>Abai metrik pending</h4><p><code>hikaricp.connections.pending</code> &gt; 0 terus = ada yang antri. Sinyal pool kekecilan ATAU query lambat. Pantau, jangan menebak.</p></div>
+        <div class="card down"><div class="ic">// autoCommit</div><h4>autoCommit &amp; reset state</h4><p>HikariCP mereset state koneksi saat dikembalikan (autoCommit, isolation). Andalkan ini, jangan biarkan state "bocor" antar peminjaman.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 HIKARI + PGBOUNCER ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Arsitektur · Dua lapis</div>
+        <h2>HikariCP + PgBouncer: bukan saling menggantikan</h2>
+      </div>
+      <p class="lead reveal">Pertanyaan umum: "kalau sudah pakai PgBouncer, masih perlu HikariCP?" Jawabannya <strong>ya</strong> — keduanya bekerja di lapisan berbeda dan saling melengkapi.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// HikariCP (in-app)</h4>
+          <ul class="good-l">
+            <li>Menghemat handshake untuk <em>satu</em> proses JVM.</li>
+            <li>Memberi koneksi ke kode/JPA secepat mungkin.</li>
+            <li>Mengelola lifecycle, validasi, leak detection.</li>
+            <li>Tahu konteks aplikasi (thread, transaksi).</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">// PgBouncer (eksternal)</h4>
+          <ul class="good-l">
+            <li>Meredam <em>total</em> koneksi dari SEMUA proses.</li>
+            <li>Wajib untuk auto-scaling &amp; serverless.</li>
+            <li>Maintenance Postgres tanpa memutus app.</li>
+            <li>Tahu konteks armada (banyak instance, satu DB).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Saat HikariCP berada <b>di depan PgBouncer</b> dengan <code>pool_mode = transaction</code>: matikan fitur yang mengasumsikan koneksi lengket. Khususnya, untuk PgBouncer lama, atur driver/Hibernate agar tidak bergantung pada server-side prepared statement (atau pakai PgBouncer ≥ 1.21). Set <code>maxLifetime</code> HikariCP lebih pendek dari <code>server_idle_timeout</code> PgBouncer.
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Aturan praktis dua lapis</div>
+          <p>HikariCP <code>maximumPoolSize</code> per instance dijaga kecil (mis. 5–10). PgBouncer <code>default_pool_size</code> menjaga total koneksi nyata ke Postgres tetap kecil &amp; pasti, berapa pun jumlah instance app. Hasilnya: cepat di tiap proses (HikariCP) <em>dan</em> aman di tingkat armada (PgBouncer). Lihat deck <a href="pgbouncer.html" style="color:var(--cyan)">PgBouncer →</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>HikariCP dalam satu tarikan napas</h2>
+      </div>
+      <p class="lead reveal">Pool JDBC kecil, cepat, &amp; benar yang jadi default JVM. Buat DataSource sekali, pinjam dengan try-with-resources, ukur poolnya kecil-tapi-pas, dan jaga maxLifetime lebih pendek dari timeout di jalur.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Pool JDBC in-app</b> — ~130 KB, default Spring Boot.</li>
+          <li><b>Cepat karena hot path ramping</b> — ConcurrentBag, FastList, proxy ringan.</li>
+          <li><b>close() = release</b> — pakai try-with-resources, cegah leak.</li>
+          <li><b>Sedikit knob</b> — maximumPoolSize paling penting.</li>
+          <li><b>Kecil-tapi-pas</b> — (core × 2) + disk; ukur lewat metrik pending.</li>
+          <li><b>maxLifetime &lt; timeout jalur</b> — hindari koneksi basi.</li>
+          <li><b>Pelengkap PgBouncer</b> — in-app + eksternal, dua lapis.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah belajar berikutnya</h3>
+        <p>Di proyek Spring Boot, set <code>spring.datasource.hikari.maximum-pool-size=10</code> &amp; <code>minimum-idle=10</code>, aktifkan metrik via Micrometer/Actuator, lalu beri beban (mis. dengan <code>k6</code>/<code>JMeter</code>). Amati <code>hikaricp.connections.active</code> &amp; <code>.pending</code> di Grafana — turunkan/naikkan pool size &amp; lihat efeknya pada throughput &amp; latensi. Itu membuktikan sendiri "kecil-tapi-pas".</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Sedikit koneksi yang sibuk &gt; banyak koneksi yang rebutan." — juga inti HikariCP.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>HikariCP</b> · Kenapa cepat, setup, Spring Boot, parameter, sizing, leak · pendalaman dari deck Connection Pooling · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

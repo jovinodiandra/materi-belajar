@@ -1,0 +1,1309 @@
+
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean Code — The Refactor Manual</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --ink:        #0d1117;
+    --ink-2:      #0f141b;
+    --panel:      #161b22;
+    --panel-2:    #1b212b;
+    --line:       #232b36;
+    --line-soft:  #1c232d;
+    --fg:         #c4cdda;
+    --fg-strong:  #f0f4f9;
+    --muted:      #76828f;
+    --muted-2:    #5a6675;
+    --brass:      #d9a441;
+    --brass-dim:  #8a6d2f;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.32);
+    --good:       #4ec9b0;
+    --good-bg:    rgba(78,201,176,.07);
+    --good-line:  rgba(78,201,176,.32);
+
+    /* syntax */
+    --t-comment:  #5f6b78;
+    --t-key:      #c99bf0;
+    --t-type:     #4ec9b0;
+    --t-str:      #9fc7f0;
+    --t-num:      #e0a96b;
+    --t-fn:       #d9a441;
+    --t-anno:     #7fa6c4;
+
+    --mono: "Cascadia Code","Cascadia Mono","JetBrains Mono",Consolas,"SF Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+
+    --rail-w: 232px;
+    --maxw: 1180px;
+  }
+
+  body {
+    background: var(--ink);
+    color: var(--fg);
+    font-family: var(--sans);
+    line-height: 1.65;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(13,17,23,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#d9a441; }
+  .topbar__dots i:nth-child(3){ background:#4ec9b0; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--fg-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--brass); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--brass-dim), var(--brass));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- chapter rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--ink-2);
+    padding: 26px 0 40px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__title {
+    font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 16px;
+  }
+  .rail a {
+    display: flex; align-items: baseline; gap: 11px;
+    padding: 7px 22px; color: var(--muted);
+    text-decoration: none; font-size: 13px;
+    border-left: 2px solid transparent;
+    transition: color .18s, border-color .18s, background .18s;
+  }
+  .rail a .num { color: var(--brass-dim); font-size: 11.5px; min-width: 20px; transition: color .18s; }
+  .rail a:hover { color: var(--fg-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--fg-strong); border-left-color: var(--brass); background: rgba(217,164,65,.05); }
+  .rail a.active .num { color: var(--brass); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 96px clamp(22px, 5vw, 80px) 90px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+
+  /* ---------- hero ---------- */
+  .hero { text-align: left; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--brass);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 26px;
+  }
+  .hero h1 {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: clamp(30px, 6.2vw, 76px);
+    line-height: 1.04; letter-spacing: -.02em;
+    color: var(--fg-strong);
+    max-width: 16ch;
+  }
+  .hero h1 .accent { color: var(--brass); }
+  .cursor {
+    display: inline-block; width: .58ch; height: 1.02em;
+    background: var(--brass); margin-left: .08em;
+    transform: translateY(.12em);
+    animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .hero .sub {
+    margin-top: 30px; max-width: 60ch; font-size: 19px; color: var(--fg);
+  }
+  .hero .byline {
+    margin-top: 22px; font-family: var(--mono); font-size: 13px; color: var(--muted);
+  }
+  .hero .byline b { color: var(--fg-strong); font-weight: 600; }
+  .scrollcue {
+    margin-top: 56px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--brass); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  .herostats {
+    display: flex; flex-wrap: wrap; gap: 14px; margin-top: 52px;
+    font-family: var(--mono);
+  }
+  .herostats .chip {
+    border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px;
+    background: var(--panel); font-size: 12.5px; color: var(--muted);
+  }
+  .herostats .chip b { color: var(--fg-strong); }
+
+  /* ---------- chapter heading ---------- */
+  .chead { display: flex; align-items: flex-start; gap: 22px; margin-bottom: 14px; }
+  .chead .cnum {
+    font-family: var(--mono); font-weight: 700; font-size: clamp(34px, 5vw, 58px);
+    color: transparent; -webkit-text-stroke: 1.4px var(--brass-dim);
+    line-height: .9; letter-spacing: -.02em; flex: none;
+  }
+  .chead .ctitle { padding-top: 4px; }
+  .chead .ctitle .kicker {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--brass); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .chead .ctitle .kicker::before {
+    content: ""; flex: none; width: 3px; height: 13px;
+    background: var(--brass); border-radius: 1px;
+  }
+  .chead h2 {
+    font-family: var(--mono); font-weight: 700;
+    font-size: clamp(24px, 3.6vw, 40px); line-height: 1.08; letter-spacing: -.015em;
+    color: var(--fg-strong);
+  }
+
+  .lead { font-size: 19px; color: var(--fg); max-width: 70ch; margin: 6px 0 8px; }
+  .lead strong { color: var(--fg-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--fg); }
+  p.body code, li code, .lead code { font-family: var(--mono); font-size: .88em; color: var(--brass); background: rgba(217,164,65,.08); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- analogy ---------- */
+  .analogy {
+    border-left: 3px solid var(--brass);
+    background: linear-gradient(90deg, rgba(217,164,65,.06), transparent 80%);
+    padding: 18px 24px; margin: 26px 0; border-radius: 0 8px 8px 0;
+    max-width: 730px;
+    display: grid; grid-template-columns: 1fr 150px; gap: 26px; align-items: center;
+  }
+  .analogy__body { min-width: 0; }
+  .analogy .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--brass); display: block; margin-bottom: 6px;
+  }
+  .analogy p { color: var(--fg); font-size: 16.5px; }
+  .analogy em { color: var(--fg-strong); font-style: italic; }
+  .analogy__icon {
+    width: 150px; height: 140px; color: var(--brass); opacity: .9;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(closest-side, rgba(217,164,65,.08), transparent);
+    border-radius: 14px;
+  }
+  .analogy__icon svg { width: 110px; height: 110px; display: block; }
+
+  /* ---------- diptych ---------- */
+  .diptych {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: stretch;
+    margin: 30px 0 8px;
+  }
+  .xform {
+    align-self: center; font-family: var(--mono); font-size: 26px; color: var(--brass);
+    text-align: center; padding: 0 2px; user-select: none;
+  }
+  .xform span { display: block; font-size: 10px; letter-spacing: .18em; color: var(--brass-dim); margin-top: 4px; }
+
+  /* ---------- editor card ---------- */
+  .editor {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); display: flex; flex-direction: column;
+    box-shadow: 0 14px 40px -28px rgba(0,0,0,.9);
+  }
+  .editor.bad  { border-color: var(--bad-line); }
+  .editor.good { border-color: var(--good-line); }
+  .editor__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .editor__bar .dots { display: flex; gap: 6px; }
+  .editor__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .editor__name { color: var(--muted); }
+  .editor__verdict { margin-left: auto; font-weight: 600; letter-spacing: .04em; font-size: 11.5px; }
+  .editor.bad  .editor__verdict { color: var(--bad); }
+  .editor.good .editor__verdict { color: var(--good); }
+  .editor.bad  .editor__bar { background: var(--bad-bg); }
+  .editor.good .editor__bar { background: var(--good-bg); }
+
+  pre.code {
+    font-family: var(--mono);
+    font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto;
+    color: var(--fg); tab-size: 2; flex: 1;
+    white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+
+  /* syntax tokens */
+  .c   { color: var(--t-comment); font-style: italic; }
+  .k   { color: var(--t-key); }
+  .t   { color: var(--t-type); }
+  .s   { color: var(--t-str); }
+  .n   { color: var(--t-num); }
+  .f   { color: var(--t-fn); }
+  .a   { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* single full-width editor (not a diptych) */
+  .editor.solo { margin: 28px 0 8px; max-width: 920px; }
+
+  /* ---------- repo note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 30px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel);
+  }
+  .note__spine {
+    flex: none; width: 8px; background: linear-gradient(var(--brass), var(--brass-dim));
+  }
+  .note__body { padding: 16px 20px 18px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--brass); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .note__tag .ico { font-size: 13px; }
+  .note p { color: var(--fg); font-size: 15.5px; max-width: none; }
+  .note code { font-family: var(--mono); font-size: .86em; color: var(--good); background: rgba(78,201,176,.08); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- principle pills ---------- */
+  .pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0; }
+  .pill-wrap { position: relative; display: inline-block; }
+  .pill {
+    font-family: var(--mono); font-size: 12.5px; color: var(--fg);
+    border: 1px solid var(--line); border-radius: 999px; padding: 7px 15px;
+    background: var(--panel);
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; text-align: left; line-height: 1.2;
+    transition: border-color .18s, color .18s, background .18s;
+  }
+  .pill:hover { border-color: var(--brass-dim); color: var(--fg-strong); }
+  .pill[aria-expanded="true"] { border-color: var(--brass); color: var(--fg-strong); background: rgba(217,164,65,.06); }
+  .pill b { color: var(--brass); }
+  .pill .caret { color: var(--brass); font-size: 9px; transition: transform .18s; flex: none; }
+  .pill[aria-expanded="true"] .caret { transform: rotate(90deg); }
+
+  .pop {
+    display: none; position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
+    width: max-content; max-width: min(360px, 84vw);
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px;
+    box-shadow: 0 18px 46px -24px rgba(0,0,0,.92);
+    text-align: left; white-space: normal;
+  }
+  .pop.open { display: block; animation: popin .16s ease; }
+  .pop.pop--right { left: auto; right: 0; }
+  @keyframes popin { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .pop__def { display: block; font-family: var(--sans); font-size: 13.5px; color: var(--fg); line-height: 1.55; }
+  .pop__def b { color: var(--fg-strong); font-weight: 600; }
+  .pop__ex { display: block; margin-top: 11px; font-family: var(--mono); font-size: 12px; line-height: 1.75; }
+  .pop__bad, .pop__good { display: block; white-space: pre-wrap; }
+  .pop__bad  { color: var(--bad); }
+  .pop__good { color: var(--good); }
+  .pop__bad::before  { content: "\2715  "; }
+  .pop__good::before { content: "\2713  "; }
+
+  /* ---------- two-col explainer ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--fg); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "✕"; color: var(--bad); }
+  .cols .good-l li::before { content: "✓"; color: var(--good); }
+
+  /* ---------- smell grid ---------- */
+  .smells { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 16px; margin-top: 28px; }
+  .smell {
+    border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .smell:hover { border-color: var(--brass-dim); transform: translateY(-3px); }
+  .smell .code-id { font-family: var(--mono); font-size: 11.5px; color: var(--brass); letter-spacing: .08em; }
+  .smell h4 { font-size: 16px; color: var(--fg-strong); margin: 6px 0 7px; font-weight: 600; }
+  .smell p { font-size: 14.5px; color: var(--muted); }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 60ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(15px,2vw,18px);
+    color: var(--fg); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "→"; position: absolute; left: 0; color: var(--brass); }
+  .creed li b { color: var(--fg-strong); }
+
+  .endcard {
+    margin-top: 40px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--ink-2));
+    padding: 30px clamp(20px,4vw,40px);
+  }
+  .endcard h3 { font-family: var(--mono); color: var(--fg-strong); font-size: 22px; margin-bottom: 10px; }
+  .endcard p { color: var(--fg); max-width: 66ch; }
+  .endcard .map { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 12px; margin-top: 22px; font-family: var(--mono); font-size: 12.5px; }
+  .endcard .map div { border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; background: rgba(0,0,0,.2); }
+  .endcard .map b { color: var(--brass); display: block; margin-bottom: 3px; }
+  .endcard .map span { color: var(--muted); }
+
+  footer {
+    margin-left: var(--rail-w); padding: 34px clamp(22px,5vw,80px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 920px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .diptych { grid-template-columns: 1fr; }
+    .xform { transform: rotate(90deg); padding: 6px 0; }
+    .xform span { transform: rotate(-90deg); white-space: nowrap; }
+    .cols { grid-template-columns: 1fr; }
+    .analogy { grid-template-columns: 1fr; gap: 0; }
+    .analogy__icon { display: none; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    .chead { gap: 14px; }
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .herostats .chip { font-size: 11.5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* keyboard focus */
+  a:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<a id="__exitbtn" href="../../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/clean-code/<b>the-refactor-manual.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 12</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__title">// Bab</div>
+  <a href="#c00"><span class="num">00</span> Pembuka</a>
+  <a href="#c01"><span class="num">01</span> Penamaan</a>
+  <a href="#c02"><span class="num">02</span> Function</a>
+  <a href="#c03"><span class="num">03</span> Komentar</a>
+  <a href="#c04"><span class="num">04</span> Formatting</a>
+  <a href="#c05"><span class="num">05</span> Object &amp; Data</a>
+  <a href="#c06"><span class="num">06</span> Error Handling</a>
+  <a href="#c07"><span class="num">07</span> Boundaries</a>
+  <a href="#c08"><span class="num">08</span> Unit Test</a>
+  <a href="#c09"><span class="num">09</span> Class</a>
+  <a href="#c10"><span class="num">10</span> Simple Design</a>
+  <a href="#c11"><span class="num">11</span> Code Smells</a>
+  <a href="#c12"><span class="num">12</span> Penutup</a>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// The Boy Scout Rule — Robert C. Martin</div>
+      <h1 class="reveal d1">Tinggalin kode lebih <span class="accent">bersih</span> daripada pas kamu nemu<span class="cursor" aria-hidden="true"></span></h1>
+      <p class="sub reveal d2">
+        Clean Code itu bukan soal cakep-cakepan. Ini soal <strong>biaya</strong>. Kode dibaca 10× lebih sering daripada ditulis.
+        Tiap kali kamu bikin orang berikutnya mikir lama, kamu lagi bayar bunga atas utang yang nggak pernah kamu pinjam.
+        Deck ini pakai contoh nyata dari codebase <b>wallet-infrastructure</b> — dari yang <span style="color:var(--bad)">salah</span>
+        sampai yang <span style="color:var(--good)">benar</span>.
+      </p>
+      <div class="byline reveal d2">Dibikin buat tim · contoh diambil dari modul <b>core</b> (hexagonal, zero-framework)</div>
+
+      <div class="herostats reveal d3">
+        <div class="chip"><b>12</b> bab</div>
+        <div class="chip">contoh <b>before → after</b></div>
+        <div class="chip">dipetakan ke <b>ADR &amp; rules</b> proyek kita</div>
+        <div class="chip">analogi · kode · penjelasan</div>
+      </div>
+
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--brass)">→</b> BUAT MULAI</div>
+    </div>
+  </section>
+
+  <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px clamp(22px, 5vw, 80px);border-radius:0 10px 10px 0;max-width:70ch">
+    <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+    <p style="margin:5px 0"><b>Given</b> — kode berantakan: nama variabel <code>x</code>, <code>tmp</code>, fungsi 200 baris ngerjain lima hal sekaligus, nggak ada niat yang kebaca dari kodenya sendiri.</p>
+    <p style="margin:5px 0"><b>When</b> — developer baru (atau kamu sendiri 6 bulan lagi) harus baca kode itu buat nambah fitur atau nge-fix bug.</p>
+    <p style="margin:5px 0"><b>Then</b> — dia salah paham maksud kode, nebak-nebak, takut ubah karena efek sampingnya nggak jelas — hasilnya bug baru dan waktu debug yang harusnya 10 menit jadi berjam-jam.</p>
+    <p style="margin:8px 0 0">→ makanya kita pakai <b>Clean Code</b>.</p>
+  </div>
+
+  <!-- ============ 01 NAMES ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">01</div>
+        <div class="ctitle">
+          <div class="kicker">Meaningful Names</div>
+          <h2>Nama harus mengungkap niat</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Nama yang bagus langsung jawab tiga hal: <strong>kenapa dia ada, dia ngapain, dan cara pakainya gimana.</strong> Kalau sebuah nama masih butuh komentar biar kebaca, berarti namanya belum bener.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Bayangin rak rempah di dapur tanpa label. Cuma toples bening isi bubuk cokelat. <em>Lada? Kayu manis? Kopi?</em> Kamu mesti buka dan cicipi satu-satu. Variabel bernama <code>d</code>, <code>tmp</code>, <code>data</code> ya kayak toples tanpa label gitu. Kode yang bagus itu dapur yang labelnya rapi.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="15" y="17" width="18" height="23" rx="3"/><path d="M17.5 17v-3.5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2V17"/><rect x="18.5" y="25" width="11" height="9" rx="1.5"/><path d="M21 29.5h6"/></svg></div>
+      </div>
+
+      <div class="diptych reveal d1">
+        <div class="editor bad">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">BankService.java</span><span class="editor__verdict">SMELL</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// berapa? milik siapa? satuan apa?</span></span>
+<span class="k">long</span> d = acc.getD();
+<span class="k">long</span> m = acc.getM();
+<span class="k">if</span> (d &gt;= m1 &amp;&amp; d &lt;= m2) {
+    process(acc, d);   <span class="c">// "process" — proses apa?</span>
+}
+<span class="c">// m1/m2 = magic, d = disinformasi (deposit? debt?)</span></pre>
+        </div>
+        <div class="xform">⟶<span>REFACTOR</span></div>
+        <div class="editor good">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">MasterBank.java</span><span class="editor__verdict">CLEAN</span></div>
+<pre class="code"><span class="hl-good"><span class="t">TransactionAmountRange</span> depositRange = bank.depositRange();</span>
+<span class="k">long</span> requestedAmount = command.amount();
+
+<span class="k">if</span> (depositRange.<span class="f">contains</span>(requestedAmount)) {
+    acceptDeposit(bank, requestedAmount);
+}
+<span class="c">// niat terbaca tanpa komentar:</span>
+<span class="c">// "terima deposit jika dalam rentang yang diizinkan"</span></pre>
+        </div>
+      </div>
+
+      <div class="pills reveal d2">
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-01-1"><b>intention-revealing</b> · ungkap niat <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-01-1" role="region" aria-label="intention-revealing">
+            <span class="pop__def">Nama menjawab <b>kenapa ada, apa fungsinya, bagaimana dipakai</b> — tanpa perlu komentar.</span>
+            <span class="pop__ex"><span class="pop__bad">int d;</span><span class="pop__good">int elapsedDays;</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-01-2"><b>no disinformation</b> · jangan menyesatkan <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-01-2" role="region" aria-label="no disinformation">
+            <span class="pop__def">Jangan pakai nama yang menyiratkan hal yang <b>keliru</b> atau beda dari kenyataannya.</span>
+            <span class="pop__ex"><span class="pop__bad">List&lt;Account&gt; accountGroup;</span><span class="pop__good">Set&lt;Account&gt; accounts;</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-01-3"><b>searchable</b> · bisa di-grep <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-01-3" role="region" aria-label="searchable">
+            <span class="pop__def">Nama yang gampang di-<b>grep</b>; hindari satu huruf dan angka ajaib.</span>
+            <span class="pop__ex"><span class="pop__bad">if (s == 7)</span><span class="pop__good">if (status == ACTIVE)</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-01-4"><b>pronounceable</b> · bisa diucapkan <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-01-4" role="region" aria-label="pronounceable">
+            <span class="pop__def">Bisa <b>diucapkan</b> saat diskusi — kalau tak bisa dieja, tak bisa didiskusikan.</span>
+            <span class="pop__ex"><span class="pop__bad">Date genymdhms;</span><span class="pop__good">Date generationTimestamp;</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-01-5">no <b>type encoding</b> (Hungarian) <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-01-5" role="region" aria-label="no type encoding">
+            <span class="pop__def">Jangan kodekan <b>tipe/scope</b> ke dalam nama. Compiler sudah tahu tipenya; saat tipe berubah, prefiks itu jadi basi dan berbohong.</span>
+            <span class="pop__ex"><span class="pop__bad">String strName; int m_count;</span><span class="pop__good">String name; int count;</span></span>
+          </span>
+        </span>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Di sini kita nggak pakai <code>UUID</code> mentah atau <code>String</code> buat ID. <code>MasterBankId</code> itu value object. Namanya sendiri udah jelasin apa yang dia pegang, dan compiler bakal nolak kalau kamu ketuker pakai <code>MasterBankId</code> di tempat <code>BankGroupId</code>. Ini <b>ADR-001</b> (Aggregate ID = value object). Nama yang udah bertipe itu nama yang nggak bisa bohong.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 FUNCTIONS ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">02</div>
+        <div class="ctitle">
+          <div class="kicker">Functions</div>
+          <h2>Kecil. Melakukan satu hal. Satu level abstraksi.</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Aturan pertama function: <strong>harus kecil</strong>. Aturan kedua: <strong>harus lebih kecil dari itu.</strong> Satu function ngerjain SATU hal, ngerjainnya dengan benar, dan cuma itu.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Resep yang bagus nggak nulis “buat kue” dalam satu paragraf raksasa. Resepnya dipecah jadi langkah selevel: <em>siapkan adonan → panggang → hias.</em> Tiap langkah punya resep sendiri di level bawahnya. Function itu kayak paragraf — harus kebaca dari atas ke bawah kayak prosa, satu tingkat abstraksi per paragraf.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="16" r="1.6"/><path d="M16 16h21"/><circle cx="11" cy="24" r="1.6"/><path d="M16 24h21"/><circle cx="11" cy="32" r="1.6"/><path d="M16 32h21"/></svg></div>
+      </div>
+
+      <div class="diptych reveal d1">
+        <div class="editor bad">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">handler.java</span><span class="editor__verdict">SMELL</span></div>
+<pre class="code"><span class="k">void</span> <span class="f">handle</span>(<span class="t">Req</span> r, <span class="k">boolean</span> notify, <span class="k">boolean</span> dryRun) {
+  <span class="c">// validasi + bikin id + simpan + kirim email</span>
+  <span class="k">if</span> (r.name == <span class="k">null</span>) <span class="k">throw</span> ...;     <span class="c">// level: validasi</span>
+  <span class="k">var</span> id = <span class="t">UUID</span>.<span class="f">randomUUID</span>();         <span class="c">// level: infra</span>
+  db.<span class="f">exec</span>(<span class="s">"INSERT ..."</span>);              <span class="c">// level: SQL</span>
+  <span class="k">if</span> (notify &amp;&amp; !dryRun) smtp.<span class="f">send</span>(...); <span class="c">// flag args!</span>
+}
+<span class="c">// 4 hal, 3 level abstraksi, 2 boolean flag</span></pre>
+        </div>
+        <div class="xform">⟶<span>REFACTOR</span></div>
+        <div class="editor good">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">CreateBankGroupUseCase.java</span><span class="editor__verdict">CLEAN</span></div>
+<pre class="code"><span class="a">@Override</span>
+<span class="k">protected</span> <span class="t">CreateBankGroupResult</span> <span class="f">doExecute</span>(<span class="t">CreateBankGroupCommand</span> command) {
+  <span class="k">return</span> txRunner.<span class="f">inTransaction</span>(() -&gt; {
+    <span class="t">BankGroup</span> group = <span class="t">BankGroup</span>.<span class="f">create</span>(
+        <span class="k">new</span> <span class="t">BankGroupId</span>(idGenerator.<span class="f">generate</span>()),
+        command.<span class="f">actor</span>().<span class="f">organizationId</span>(),
+        <span class="k">new</span> <span class="t">BankName</span>(command.<span class="f">name</span>()),
+        clock.<span class="f">now</span>());
+    bankGroups.<span class="f">save</span>(group);
+    <span class="k">return</span> <span class="k">new</span> <span class="t">CreateBankGroupResult</span>(group.<span class="f">id</span>(), group.<span class="f">name</span>().<span class="f">value</span>());
+  });
+}
+<span class="c">// satu hal: "buat bank group". satu level abstraksi.</span></pre>
+        </div>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">Tanda bahaya</h4>
+          <ul class="bad-l">
+            <li>Lebih dari ~20 baris, atau kamu sampai perlu scroll</li>
+            <li>Argument ke-4 dan seterusnya (idealnya cukup ≤ 2–3)</li>
+            <li><b>Flag argument</b> (<code>boolean</code>) — tandanya function ngerjain dua hal sekaligus</li>
+            <li>Indentasi bersarang lebih dari 2 level</li>
+            <li>Diam-diam nyimpen side effect di balik nama yang kayak query (cuma nanya)</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Yang kita kejar</h4>
+          <ul class="good-l">
+            <li>Kebaca top-to-bottom kayak prosa</li>
+            <li>Namanya kata kerja yang jujur (<code>doExecute</code>, <code>save</code>)</li>
+            <li><b>Command–Query Separation</b>: ubah ATAU jawab, jangan dua-duanya</li>
+            <li>Argument kebanyakan? Bungkus jadi <code>Command</code> object</li>
+            <li>Nggak ada output argument</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Lihat, argument-nya nggak dilempar satu-satu — semua dibungkus dalam satu <code>CreateBankGroupCommand</code>. Itu jawaban Clean Code buat “argument-nya kebanyakan”: <b>argument object</b>. Terus <code>doExecute</code> dipanggil dari base <code>AuthenticatedUseCase</code> setelah permission dicek — satu function, satu tanggung jawab.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 COMMENTS ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">03</div>
+        <div class="ctitle">
+          <div class="kicker">Comments</div>
+          <h2>Komentar adalah kegagalan untuk berekspresi dalam kode</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Komentar yang bagus itu jarang. Kebanyakan komentar cuma <strong>permintaan maaf</strong> karena kodenya kurang jelas. Aturannya gampang: jangan komentari kode jelek — <strong>tulis ulang aja.</strong></p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Komentar itu kayak deodoran di atas keringat. Kadang perlu. Tapi kalau kamu butuh banyak-banyak, masalahnya bukan kurang deodoran — kamu perlu <em>mandi</em>. Komentar lama-lama basi dan berbohong. Kode selalu jujur karena itu yang beneran dijalanin.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 14.5h26a2.5 2.5 0 0 1 2.5 2.5v13a2.5 2.5 0 0 1-2.5 2.5H23l-7 6v-6h-5a2.5 2.5 0 0 1-2.5-2.5V17A2.5 2.5 0 0 1 11 14.5Z"/><path d="M21 20.5l-2.5 7M28 20.5l-2.5 7"/></svg></div>
+      </div>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="bad-h">Komentar jelek</h4>
+          <ul class="bad-l">
+            <li>Cuma ngulang kode: <code>i++; // tambah i</code></li>
+            <li>Commented-out code (hapus aja! git inget semuanya)</li>
+            <li>Misleading / udah basi</li>
+            <li>Jurnal perubahan di file (itu kerjaan git)</li>
+            <li>Noise: <code>// constructor</code></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Komentar bagus</h4>
+          <ul class="good-l">
+            <li>Jelasin <b>kenapa</b>, bukan apa</li>
+            <li>Aturan bisnis yang nggak kelihatan di kode</li>
+            <li>Peringatan konsekuensi</li>
+            <li>Referensi sumber kebenaran (Confluence/ADR)</li>
+            <li>Javadoc pada API publik</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="editor good solo reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">TransactionAmountRange.java — komentar yang BENAR</span><span class="editor__verdict">CLEAN</span></div>
+<pre class="code"><span class="c">/**
+ * Min/max amount bounds untuk sebuah tipe transaksi pada bank.
+ *
+ * &lt;p&gt;{@code min == 0 &amp;&amp; max == 0} berarti tipe transaksi ini
+ * &lt;b&gt;disabled&lt;/b&gt; untuk bank tersebut (Confluence 122716163).
+ */</span>
+<span class="k">public record</span> <span class="t">TransactionAmountRange</span>(<span class="k">long</span> min, <span class="k">long</span> max) {
+
+  <span class="c">// Override AGENT tak boleh lebih longgar dari default COMPANY (ISP-209)</span>
+  <span class="k">public boolean</span> <span class="f">withinBounds</span>(<span class="t">TransactionAmountRange</span> company) {
+    <span class="k">return</span> <span class="k">this</span>.min &gt;= company.min &amp;&amp; <span class="k">this</span>.max &lt;= company.max;
+  }
+}</pre>
+      </div>
+      <p class="body reveal d2">Komentar di atas <strong>bagus</strong> karena nggak ngulang kode. Dia nyambungin ke aturan bisnis (Confluence, tiket ISP-209) yang <em>mustahil</em> kamu tebak cuma dari baca <code>min</code> sama <code>max</code>. Itu pengetahuan yang bakal hilang kalau nggak ditulis. Sisanya, biarin kodenya yang ngomong.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 FORMATTING ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">04</div>
+        <div class="ctitle">
+          <div class="kicker">Formatting</div>
+          <h2>Format adalah komunikasi, dan komunikasi adalah prioritas</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Tim sepakat satu aturan format, lalu semua ikut tooling—bukan selera masing-masing. Yang penting konsisten, bukan rapi versi kamu sendiri.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi · Koran</span>
+          <p>Artikel koran yang bagus: judul ngasih tahu topiknya, paragraf atas ngasih ringkasan, makin ke bawah makin teknis. File kode juga gitu—<em>konsep penting di atas, detail di bawah</em>. Hal yang nyambung ditaruh berdekatan: baris kosong (vertical openness) misahin antar-konsep, rapat-rapat di dalam satu konsep.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="11" width="26" height="26" rx="2"/><path d="M15 16h18"/><path d="M15 22h7M15 26h7M15 30h7"/><path d="M26 22h7M26 26h7M26 30h7"/></svg></div>
+      </div>
+
+      <div class="pills reveal d1">
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-04-1"><b>Vertical density</b> · baris terkait berdekatan <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-04-1" role="region" aria-label="Vertical density">
+            <span class="pop__def">Baris yang <b>berhubungan erat</b> dirapatkan — tanpa komentar atau baris kosong yang menyela.</span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-04-2"><b>Vertical openness</b> · baris kosong memisah konsep <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-04-2" role="region" aria-label="Vertical openness">
+            <span class="pop__def">Baris kosong <b>memisahkan</b> konsep yang berbeda, persis seperti jeda antar paragraf dalam tulisan.</span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-04-3"><b>Vertical ordering</b> · pemanggil di atas yang dipanggil <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-04-3" role="region" aria-label="Vertical ordering">
+            <span class="pop__def">Fungsi <b>pemanggil diletakkan di atas</b> fungsi yang dipanggilnya — file terbaca mengalir dari atas ke bawah.</span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-04-4"><b>Variabel dideklarasi dekat pemakaian</b> <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-04-4" role="region" aria-label="Variabel dekat pemakaian">
+            <span class="pop__def">Deklarasikan variabel <b>sedekat mungkin</b> dengan tempat ia dipakai — bukan menumpuk semuanya di puncak method.</span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-04-5"><b>Garis batas pendek</b> (~100–120 kolom) <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-04-5" role="region" aria-label="Garis batas pendek">
+            <span class="pop__def">Batasi lebar baris (~100–120 kolom) agar tak perlu <b>scroll horizontal</b>; tim menyepakati satu angka dan tooling yang menjaganya.</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Format itu bukan bahan debat di PR. Kita serahin ke <b>gate otomatis</b>: <code>mvn verify</code>, aturan SonarQube, sama ArchUnit. Manusia ngecek <em>logika</em>, mesin yang jaga <em>format</em>. Gitu caranya Clean Code tetap kepakai di tim 10+ developer tanpa ribut soal gaya kurung kurawal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 OBJECTS vs DATA ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">05</div>
+        <div class="ctitle">
+          <div class="kicker">Objects &amp; Data Structures</div>
+          <h2>Beri tahu, jangan bertanya</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Object itu nyembunyiin data dan ngasih <strong>perilaku</strong>. Data structure kebalikannya: data-nya kebuka, perilakunya nggak ada. Masalahnya muncul kalau kamu campur keduanya. Kamu bikin object anemik yang isinya cuma getter/setter, terus logikanya bocor ke mana-mana.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi · Hukum Demeter</span>
+          <p>Pas bayar ke kasir, kamu nggak ngerogoh dompet dia, narik laci, terus ngitung kembalian sendiri. Kamu cukup bilang “ini uangnya”, sisanya kasir yang urus. <em>Jangan bicara pada orang asing</em> — <code>a.b().c().d()</code> itu sama aja kayak ngerogoh dompet orang lain.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="24" r="3.2"/><circle cx="24" cy="24" r="3.2"/><circle cx="36" cy="24" r="3.2"/><path d="M15.5 24h5"/><path d="M27.5 24h5"/><path d="M28.5 22l3 4M31.5 22l-3 4"/></svg></div>
+      </div>
+
+      <div class="diptych reveal d1">
+        <div class="editor bad">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">caller.java</span><span class="editor__verdict">SMELL</span></div>
+<pre class="code"><span class="c">// "ask": rogoh isi object, putuskan di luar</span>
+<span class="k">long</span> min = bank.<span class="f">getRange</span>().<span class="f">getMin</span>();
+<span class="k">long</span> max = bank.<span class="f">getRange</span>().<span class="f">getMax</span>();
+<span class="k">if</span> (amount &gt;= min &amp;&amp; amount &lt;= max
+    &amp;&amp; !(min == <span class="n">0</span> &amp;&amp; max == <span class="n">0</span>)) {
+  ...
+}
+<span class="c">// aturan "disabled" tersebar di setiap pemanggil</span></pre>
+        </div>
+        <div class="xform">⟶<span>REFACTOR</span></div>
+        <div class="editor good">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">TransactionAmountRange.java</span><span class="editor__verdict">CLEAN</span></div>
+<pre class="code"><span class="c">// "tell": perilaku tinggal di pemilik data</span>
+<span class="k">public boolean</span> <span class="f">isDisabled</span>() {
+  <span class="k">return</span> min == <span class="n">0</span> &amp;&amp; max == <span class="n">0</span>;
+}
+<span class="k">public boolean</span> <span class="f">contains</span>(<span class="k">long</span> amount) {
+  <span class="k">return</span> !<span class="f">isDisabled</span>() &amp;&amp; amount &gt;= min &amp;&amp; amount &lt;= max;
+}
+<span class="c">// pemanggil cukup: range.contains(amount)</span></pre>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Aturan bisnis “range 0/0 = disabled” cuma hidup di <em>satu</em> tempat: di dalam <code>TransactionAmountRange</code>. Nggak ada pemanggil yang perlu tahu isinya kayak apa di dalam. Itu yang namanya enkapsulasi. Dan itu juga alasan kenapa value object lebih bagus daripada primitive telanjang (<b>primitive obsession</b> itu code smell).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 ERROR HANDLING ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">06</div>
+        <div class="ctitle">
+          <div class="kicker">Error Handling</div>
+          <h2>Pakai exception, bukan kode-balikan. Jangan pernah return null.</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Error handling itu penting, tapi <strong>jangan sampai bikin logika utamanya kabur</strong>. Begitu kamu return <code>null</code>, kamu lagi nanam ranjau <code>NullPointerException</code> buat orang yang manggil. Begitu kamu nerima <code>null</code> sebagai argumen, kamu lagi ngundang bug.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Return code itu kayak pelayan yang naruh nota “pesananmu gagal” diam-diam di tumpukan piring, berharap kamu ngecek. Exception itu pelayan yang dateng dan <em>ngomong langsung ke kamu</em>. Kamu nggak bakal lupa nanganinya tanpa sadar.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 12.5 36.5 35a1.5 1.5 0 0 1-1.3 2.2H12.8A1.5 1.5 0 0 1 11.5 35Z"/><path d="M24 21v6.5"/><circle cx="24" cy="31.8" r="1.1"/></svg></div>
+      </div>
+
+      <div class="diptych reveal d1">
+        <div class="editor bad">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">legacy.java</span><span class="editor__verdict">SMELL</span></div>
+<pre class="code"><span class="t">Bank</span> <span class="f">find</span>(<span class="t">String</span> id) {
+  <span class="k">if</span> (id == <span class="k">null</span>) <span class="k">return</span> <span class="k">null</span>;   <span class="c">// null masuk</span>
+  <span class="t">Bank</span> b = repo.<span class="f">get</span>(id);
+  <span class="k">return</span> b;                       <span class="c">// null keluar</span>
+}
+<span class="c">// pemanggil:</span>
+<span class="k">if</span> (find(x) != <span class="k">null</span> &amp;&amp; find(x).<span class="f">isActive</span>()) ... <span class="c">// 💥</span>
+<span class="c">// -1 / "ERROR" / null tersebar sebagai sinyal</span></pre>
+        </div>
+        <div class="xform">⟶<span>REFACTOR</span></div>
+        <div class="editor good">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">MasterBankId.java + repository</span><span class="editor__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public</span> <span class="t">MasterBankId</span>(<span class="t">UUID</span> value) {
+  <span class="t">Objects</span>.<span class="f">requireNonNull</span>(value, <span class="s">"value must not be null"</span>);
+}
+<span class="c">// fail-fast di tepi: null ditolak SEKARANG</span>
+
+<span class="t">Optional</span>&lt;<span class="t">MasterBank</span>&gt; <span class="f">findById</span>(<span class="t">MasterBankId</span> id);
+<span class="c">// "tidak ada" diekspresikan oleh tipe, bukan null</span>
+bank.<span class="f">findById</span>(id).<span class="f">map</span>(<span class="t">MasterBank</span>::<span class="f">isActive</span>).<span class="f">orElse</span>(<span class="k">false</span>);</pre>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Dua disiplin: (1) <code>Objects.requireNonNull(...)</code> di compact constructor — null ditolak di perbatasan, bukan dibiarin merembet ke dalam. (2) Error yang nyampe ke HTTP dibungkus jadi <b>RFC 7807 ProblemDetail</b> (<b>ADR-006</b>) — bukan <code>null</code>, bukan stack trace yang bocor, tapi kontrak error yang konsisten dan kebaca sama klien.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 BOUNDARIES ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">07</div>
+        <div class="ctitle">
+          <div class="kicker">Boundaries</div>
+          <h2>Jaga perbatasan: kode kita tak boleh tahu detail dunia luar</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Tiap hal dari luar — database, jam sistem, generator UUID, SMTP — itu <strong>perbatasan</strong>. Bungkus di balik port yang <em>kita</em> miliki. Biar domain nggak pernah nyentuh detail framework.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi · Colokan listrik</span>
+          <p>Alat-alat di rumahmu nggak disolder langsung ke kabel PLN. Ada <em>stop kontak</em> — antarmuka standar. Ganti penyedia listrik, kulkasmu nggak peduli. Port itu stop kontaknya; adapter itu colokan spesifik PLN/TigerBeetle/PostgreSQL. Domain tinggal nancep.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 19v-6M28 19v-6"/><path d="M16 19h16v4a8 8 0 0 1-16 0Z"/><path d="M24 31v6"/></svg></div>
+      </div>
+
+      <div class="diptych reveal d1">
+        <div class="editor bad">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">DomainService.java</span><span class="editor__verdict">SMELL</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">BankService</span> {
+  <span class="t">UUID</span> id = <span class="t">UUID</span>.<span class="f">randomUUID</span>();      <span class="c">// infra di domain</span>
+  <span class="t">Instant</span> now = <span class="t">Instant</span>.<span class="f">now</span>();          <span class="c">// jam asli → test rapuh</span>
+  conn.<span class="f">prepareStatement</span>(<span class="s">"INSERT..."</span>);  <span class="c">// JDBC di domain</span>
+}
+<span class="c">// domain menikah dengan framework. tak bisa diuji</span>
+<span class="c">// tanpa DB nyata & tanggal hari ini.</span></pre>
+        </div>
+        <div class="xform">⟶<span>REFACTOR</span></div>
+        <div class="editor good">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">core/...outport (ports)</span><span class="editor__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">interface</span> <span class="t">IdGenerator</span>   { <span class="t">UUID</span> <span class="f">generate</span>(); }
+<span class="k">interface</span> <span class="t">Clock</span>         { <span class="t">Instant</span> <span class="f">now</span>(); }
+<span class="k">interface</span> <span class="t">BankGroupRepository</span> { <span class="k">void</span> <span class="f">save</span>(<span class="t">BankGroup</span> g); }
+
+<span class="c">// domain hanya bergantung pada interface (port):</span>
+<span class="k">new</span> <span class="t">BankGroupId</span>(idGenerator.<span class="f">generate</span>());
+<span class="c">// di test → fake; di prod → adapter Postgres. Domain tak tahu.</span></pre>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Ini jantung arsitektur kita: <b>Hexagonal / Ports &amp; Adapters</b> (<b>ADR-004</b>). <code>core/</code> itu <em>zero-framework</em> — dilarang import Micronaut, Spring, atau JPA. Larangan <code>UUID.randomUUID()</code> di domain itu <b>ADR-002</b>, dan <b>ArchUnit</b> (<b>ADR-008</b>) yang menjaganya otomatis. Perbatasan bukan cuma niat baik — ada test yang ngecek.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 UNIT TESTS ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">08</div>
+        <div class="ctitle">
+          <div class="kicker">Unit Tests</div>
+          <h2>Kode test sama pentingnya dengan kode produksi</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Test yang kotor lebih buruk daripada nggak ada test. Test kotor itu lama-lama menua, membusuk, akhirnya kamu buang. Pas dibuang, jaring pengamanmu ikut hilang. Test yang bersih bikin kamu <strong>berani</strong> ngubah kode.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi · F.I.R.S.T</span>
+          <p><b>F</b>ast, <b>I</b>ndependent, <b>R</b>epeatable, <b>S</b>elf-validating, <b>T</b>imely. Anggap test itu jaring pengaman pemain trapeze. Kalau cepat, mandiri, dan jujur, kamu berani melompat alias refactor. Kalau lambat dan saling bergantung, kamu malah takut gerak.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11l12 4.2v7.3c0 7.4-5.1 11.7-12 14.5-6.9-2.8-12-7.1-12-14.5v-7.3L24 11Z"/><path d="M18.5 24l3.8 3.8L30 20"/></svg></div>
+      </div>
+
+      <div class="diptych reveal d1">
+        <div class="editor bad">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">FlakyTest.java</span><span class="editor__verdict">SMELL</span></div>
+<pre class="code"><span class="a">@Test</span> <span class="k">void</span> <span class="f">test1</span>() {
+  <span class="k">var</span> svc = <span class="k">new</span> <span class="t">BankService</span>(realDb);  <span class="c">// butuh DB</span>
+  svc.<span class="f">create</span>(<span class="s">"BCA"</span>);
+  <span class="t">Instant</span> t = <span class="t">Instant</span>.<span class="f">now</span>();         <span class="c">// hasil beda tiap run</span>
+  assertTrue(svc.<span class="f">count</span>() &gt; <span class="n">0</span>);        <span class="c">// bergantung test lain</span>
+  <span class="c">// nama "test1"? menguji apa? lambat? flaky.</span>
+}</pre>
+        </div>
+        <div class="xform">⟶<span>REFACTOR</span></div>
+        <div class="editor good">
+          <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">CreateBankGroupUseCaseTest.java</span><span class="editor__verdict">CLEAN</span></div>
+<pre class="code"><span class="a">@Test</span>
+<span class="k">void</span> <span class="f">createsGroupInActorOrganizationScope</span>() {
+  <span class="c">// Arrange — fake port, jam tetap (deterministik)</span>
+  <span class="k">var</span> idGen = <span class="t">FixedIdGenerator</span>.<span class="f">of</span>(GROUP_ID);
+  <span class="k">var</span> clock = <span class="t">FixedClock</span>.<span class="f">at</span>(T0);
+  <span class="k">var</span> useCase = <span class="k">new</span> <span class="t">CreateBankGroupUseCase</span>(repo, tx, idGen, clock);
+
+  <span class="c">// Act</span>
+  <span class="k">var</span> result = useCase.<span class="f">execute</span>(commandFrom(owner));
+
+  <span class="c">// Assert — satu konsep diverifikasi</span>
+  assertThat(result.<span class="f">id</span>()).isEqualTo(GROUP_ID);
+}</pre>
+        </div>
+      </div>
+
+      <div class="pills reveal d2">
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-1">satu <b>assert-concept</b> per test <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-1" role="region" aria-label="assert-concept">
+            <span class="pop__def">Satu test memverifikasi <b>satu konsep</b> — boleh beberapa assert asalkan menguji satu ide yang sama.</span>
+            <span class="pop__ex"><span class="pop__good">assertThat(result.id()).isEqualTo(GROUP_ID);</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-2">pola <b>Arrange · Act · Assert</b> <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-2" role="region" aria-label="Arrange Act Assert">
+            <span class="pop__def">Susun test dalam tiga blok: <b>Arrange</b> (siapkan), <b>Act</b> (jalankan satu aksi), <b>Assert</b> (verifikasi hasilnya).</span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-3">nama test = <b>kalimat spesifikasi</b> <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-3" role="region" aria-label="nama test spesifikasi">
+            <span class="pop__def">Nama test adalah <b>kalimat spesifikasi</b> perilaku yang dijamin — bukan nomor urut.</span>
+            <span class="pop__ex"><span class="pop__bad">void test1()</span><span class="pop__good">void createsGroupInActorOrganizationScope()</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-4">port di-<b>fake</b>, bukan DB nyata <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-4" role="region" aria-label="fake port">
+            <span class="pop__def">Unit test pakai <b>fake</b> port (cepat &amp; deterministik). DB nyata hanya untuk integration test (Testcontainers).</span>
+            <span class="pop__ex"><span class="pop__good">FixedClock.at(T0); FixedIdGenerator.of(ID);</span></span>
+          </span>
+        </span>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Karena dependensi semuanya lewat port (Bab 07), unit test cukup pakai <em>fake</em> sederhana: cepat dan deterministik. Integration test (Failsafe + Testcontainers) yang ngetes adapter ke PostgreSQL beneran. Gate-nya: <b>JaCoCo ≥ 87%</b> line+branch per modul (<b>ADR-019</b>). Test di sini bukan formalitas, tapi syarat merge.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 CLASSES ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">09</div>
+        <div class="ctitle">
+          <div class="kicker">Classes</div>
+          <h2>Satu class, satu alasan untuk berubah</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Class itu harus kecil. Tapi ukurannya bukan jumlah baris, melainkan <strong>tanggung jawab</strong>. Single Responsibility Principle bilang: satu class cuma boleh punya satu alasan untuk berubah. Cohesion tinggi, coupling rendah.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi · Kotak perkakas</span>
+          <p>Pisau Swiss Army emang keren, tapi tukang kayu beneran pakai perkakas terpisah: satu buat motong, satu buat ngukur. <em>God class</em> itu kayak pisau Swiss Army dengan 40 fungsi. Begitu satu engsel rusak, semuanya kena risiko. Class kecil yang fokus jauh lebih bisa diandalkan.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M29.5 12.2a5.6 5.6 0 0 0-7.3 7.3l-9.6 9.6a2.3 2.3 0 0 0 0 3.2l1 1a2.3 2.3 0 0 0 3.2 0l9.6-9.6a5.6 5.6 0 0 0 7.3-7.3l-3.7 3.7-3.2-.8-.8-3.2 3.5-3.6Z"/></svg></div>
+      </div>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="bad-h">God class (smell)</h4>
+          <ul class="bad-l">
+            <li><code>BankManager</code>: validasi + SQL + email + format + audit</li>
+            <li>Berubah gara-gara <em>banyak</em> alasan beda</li>
+            <li>Banyak field nggak dipakai bareng → cohesion rendah</li>
+            <li>Susah dikasih nama tanpa kata “And” / “Manager” / “Util”</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Class kecil &amp; kohesif</h4>
+          <ul class="good-l">
+            <li><code>CreateBankGroupUseCase</code> — satu use case</li>
+            <li><code>TransactionAmountRange</code> — satu konsep nilai</li>
+            <li><code>BankGroupRepository</code> — satu peran (port)</li>
+            <li>Namanya nunjukin persis satu tanggung jawab</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Struktur paket kita <em>memaksa</em> SRP: satu use case = satu class (<code>...application.usecase</code>), satu value object = satu record (<code>...domain</code>), satu port = satu interface (<code>...outport</code>). Class gendut nggak punya tempat buat ngumpet. <b>Open–Closed</b> kita wujudkan lewat port: mau nambah perilaku, bikin adapter baru, jangan ngutak-atik domain.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 SIMPLE DESIGN ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">10</div>
+        <div class="ctitle">
+          <div class="kicker">Emergence · Simple Design</div>
+          <h2>Empat aturan desain sederhana</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Desain bagus nggak datang dari diagram megah di awal. Dia <strong>muncul (emerge)</strong> pelan-pelan dari disiplin kecil yang kamu ulang terus. Kent Beck merangkumnya jadi empat aturan, urut sesuai prioritas.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>1. Lulus semua test.</b> Sistem yang nggak teruji nggak bisa kamu percaya buat diubah.</li>
+          <li><b>2. Tidak ada duplikasi.</b> Duplikasi itu musuh nomor satu. Satu aturan, satu tempat.</li>
+          <li><b>3. Ekspresikan niat programmer.</b> Nama jelas, function kecil, struktur yang ngomong sendiri.</li>
+          <li><b>4. Minimalkan jumlah class &amp; method.</b> Tapi ini nomor empat, <em>setelah</em> tiga aturan di atas. Jangan kebablasan bikin padat.</li>
+        </ul>
+      </div>
+
+      <div class="analogy reveal d2">
+        <div class="analogy__body">
+          <span class="tag">Analogi · DRY vs YAGNI</span>
+          <p>Hapus duplikasi, tapi jangan bikin abstraksi buat sesuatu yang baru muncul <em>sekali</em>. Dua kode yang mirip cuma kebetulan, dan alasan berubahnya beda, itu <em>bukan</em> duplikasi. Kesederhanaan itu soal nyari titik tengah: DRY narik ke satu sisi, YAGNI nahan di sisi lain.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 12v23"/><path d="M17 35h14"/><path d="M13 18h22"/><path d="M13 18l-3.5 7h7Z"/><path d="M35 18l-3.5 7h7Z"/></svg></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di codebase ini</div>
+          <p>Aturan kita jelas soal ini (<code>design-principles-rules.md</code>): <em>jangan ekstrak abstraksi cuma buat 1 occurrence</em> (YAGNI &gt; DRY), <em>jangan hapus duplikasi yang alasan-berubahnya beda</em> (SRP &gt; DRY), <em>jangan bikin extension point sebelum ada konsumen kedua</em>. Yang kita jaga itu kesederhanaan, bukan kepintaran yang dipamerin.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 SMELLS ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">11</div>
+        <div class="ctitle">
+          <div class="kicker">Smells &amp; Heuristics</div>
+          <h2>Katalog bau kode — belajar mencium sebelum membusuk</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Bab penutup Clean Code itu daftar “bau” kode. Nggak perlu kamu hafal — yang penting hidungmu terlatih. Ini yang paling sering muncul, lengkap sama penawarnya.</p>
+
+      <div class="smells reveal d1">
+        <div class="smell"><div class="code-id">G5 · Duplication</div><h4>Duplikasi</h4><p>Aturan yang sama nyebar di banyak tempat. Penawar: tarik jadi satu method / value object.</p></div>
+        <div class="smell"><div class="code-id">G23 · Magic Number</div><h4>Angka ajaib</h4><p><code>if (s == 3)</code> — 3 itu apa? Penawar: konstanta bernama / enum yang ngejelasin maknanya.</p></div>
+        <div class="smell"><div class="code-id">F1 · Too Many Args</div><h4>Argumen berlebih</h4><p>Parameternya lebih dari 3. Penawar: bungkus jadi Command / parameter object.</p></div>
+        <div class="smell"><div class="code-id">G15 · Flag Args</div><h4>Argumen flag</h4><p><code>boolean</code> yang ngubah perilaku. Penawar: pecah jadi dua method dengan nama yang jelas.</p></div>
+        <div class="smell"><div class="code-id">N1 · Bad Names</div><h4>Nama menyesatkan</h4><p><code>d</code>, <code>tmp</code>, <code>data</code>, <code>Manager</code> — nggak ngomong apa-apa. Penawar: nama yang ngungkap niat.</p></div>
+        <div class="smell"><div class="code-id">G36 · Demeter</div><h4>Rantai pemanggilan</h4><p><code>a.b().c().d()</code> — merogoh isi orang lain. Penawar: tell-don't-ask, pindahin perilakunya ke pemilik data.</p></div>
+        <div class="smell"><div class="code-id">P1 · Primitive Obsession</div><h4>Obsesi primitif</h4><p>Pakai <code>String</code>/<code>long</code> buat konsep domain. Penawar: value object bertipe.</p></div>
+        <div class="smell"><div class="code-id">C2 · Obsolete Comment</div><h4>Komentar basi</h4><p>Komentar yang udah bohong. Penawar: hapus, biarin kodenya yang ngomong.</p></div>
+        <div class="smell"><div class="code-id">G14 · Feature Envy</div><h4>Iri fitur</h4><p>Method-nya lebih sibuk ngurusin data class lain. Penawar: pindahin ke class itu.</p></div>
+        <div class="smell"><div class="code-id">G9 · Dead Code</div><h4>Kode mati</h4><p>Nggak pernah dipanggil. Penawar: hapus aja — git yang inget.</p></div>
+        <div class="smell"><div class="code-id">T2 · Null Return</div><h4>Return / pass null</h4><p>Ranjau NPE buat pemanggil. Penawar: <code>Optional</code>, fail-fast, jangan terima null.</p></div>
+        <div class="smell"><div class="code-id">G6 · Wrong Level</div><h4>Level abstraksi campur</h4><p>SQL &amp; aturan bisnis nyampur di method yang sama. Penawar: pisahin per level.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 12 CLOSING ============ -->
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">12</div>
+        <div class="ctitle">
+          <div class="kicker">Penutup · The Craftsman</div>
+          <h2>Bersih itu sebuah praktik, bukan tujuan akhir</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Nggak ada yang nulis kode bersih di percobaan pertama. Kamu nulis dulu, baru <strong>dibersihin</strong>. Jadi profesional itu bukan soal nggak pernah bikin berantakan. Tapi soal nggak pernah ninggalin berantakan itu buat orang lain.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li>Nama <b>mengungkap niat</b> — kalau masih butuh komentar, ganti namanya.</li>
+          <li>Function <b>kecil</b> — satu hal, satu level abstraksi.</li>
+          <li>Komentar jelasin <b>kenapa</b>, bukan apa.</li>
+          <li>Perilaku nempel <b>bersama datanya</b> — tell, don't ask.</li>
+          <li>Null nggak boleh lewat; error itu <b>eksplisit</b>.</li>
+          <li>Perbatasan dijaga <b>port</b>; domain tetap bersih.</li>
+          <li>Test <b>bersih</b> = berani buat ngubah kode.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Clean Code → aturan proyek kita</h3>
+        <p>Di sini prinsip Uncle Bob bukan teori abstrak. Semuanya udah jadi aturan yang ditegakkan otomatis. Ini peta dari tiap bab ke ADR/rule kita:</p>
+        <div class="map">
+          <div><b>Meaningful Names</b><span>Value object · ADR-001/002</span></div>
+          <div><b>Functions / Classes</b><span>Use case per-SRP · java-clean-hexagonal</span></div>
+          <div><b>Error Handling</b><span>ProblemDetail · ADR-006</span></div>
+          <div><b>Boundaries</b><span>Ports &amp; Adapters · ADR-004</span></div>
+          <div><b>Enforcement</b><span>ArchUnit · ADR-008</span></div>
+          <div><b>Unit Tests</b><span>JaCoCo ≥ 87% · ADR-019</span></div>
+          <div><b>Simple Design</b><span>design-principles-rules.md</span></div>
+          <div><b>No ORM / no infra di domain</b><span>ADR-003 · core zero-framework</span></div>
+        </div>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:34px; font-family:var(--mono); color:var(--brass); font-size:15px;">
+        // "Leave the campground cleaner than you found it." — Robert C. Martin
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>The Refactor Manual</b> · Clean Code (Robert C. Martin) buat tim wallet-infrastructure · contohnya kita ambil dari modul <b>core</b> · mau pindah slide? pakai <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  // reveal on scroll
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) e.target.classList.add("in");
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  // active section + progress + counter
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  // keyboard navigation
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+
+  // pill popovers — definisi + contoh inline, tetap satu file
+  var pills = Array.prototype.slice.call(document.querySelectorAll("button.pill"));
+  function closePops(except) {
+    pills.forEach(function (b) {
+      if (b === except) return;
+      b.setAttribute("aria-expanded", "false");
+      var p = document.getElementById(b.getAttribute("aria-controls"));
+      if (p) p.classList.remove("open");
+    });
+  }
+  pills.forEach(function (b) {
+    b.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      var isOpen = b.getAttribute("aria-expanded") === "true";
+      closePops(b);
+      b.setAttribute("aria-expanded", isOpen ? "false" : "true");
+      var p = document.getElementById(b.getAttribute("aria-controls"));
+      if (p) {
+        p.classList.remove("pop--right");
+        p.classList.toggle("open", !isOpen);
+        if (!isOpen) {
+          var r = p.getBoundingClientRect();
+          if (r.right > window.innerWidth - 8) p.classList.add("pop--right");
+        }
+      }
+    });
+  });
+  // klik di dalam popover tidak menutupnya (mis. seleksi teks)
+  document.querySelectorAll(".pop").forEach(function (p) {
+    p.addEventListener("click", function (ev) { ev.stopPropagation(); });
+  });
+  document.addEventListener("click", function () { closePops(null); });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape") closePops(null);
+  });
+})();
+</script>
+</body>
+</html>

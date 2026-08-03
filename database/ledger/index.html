@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger Database — Riwayat yang Tak Bisa Diubah</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__home { color: var(--muted); text-decoration: none; letter-spacing: .02em; white-space: nowrap; }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 108px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- steps (best practice) ---------- */
+  .steps { max-width: 76ch; margin: 22px 0 6px; counter-reset: stepnum; }
+  .steps li {
+    list-style: none; counter-increment: stepnum; position: relative;
+    padding: 12px 0 12px 46px; border-bottom: 1px solid var(--line-soft);
+    font-size: 15.5px; color: var(--ink);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(stepnum, decimal-leading-zero);
+    position: absolute; left: 0; top: 10px;
+    width: 28px; height: 28px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 12px; color: var(--cyan);
+    border: 1px solid var(--cyan-dim); background: rgba(69,212,222,.08);
+  }
+  .steps li b { color: var(--ink-strong); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="topbar__home" href="../index.html">← Database</a>
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/ledger/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Jejak yang bisa dihapus</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Append-only & hash chain</a>
+    <a href="#c03"><span class="yr">03</span> Ledger vs blockchain vs audit log</a>
+
+    <div class="rail__part">III · Praktik</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">05</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Untung & keputusan</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">V · Dunia nyata</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools & ekosistem</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — saat riwayat data itu sendiri harus jadi bukti</div>
+      <h1 class="reveal d1">Riwayat yang <span class="accent">tak bisa diam-diam diubah</span>, apalagi dihapus.</h1>
+      <p class="sub reveal d2">
+        Di database biasa, <b>UPDATE</b> dan <b>DELETE</b> menimpa data lama sampai hilang tak berbekas — siapa pun
+        dengan akses admin bisa mengubah angka lalu menghapus jejaknya. <b>Ledger database</b> (seperti Amazon QLDB)
+        lahir untuk kasus di mana itu tidak boleh terjadi: tiap perubahan dicatat sebagai entri baru dalam jurnal
+        <b>append-only</b>, dan seluruh riwayatnya bisa diverifikasi secara <b>kriptografis</b>. Deck ini buat pemula:
+        dari <b>kenapa</b> ia lahir, <b>konsepnya</b>, bedanya dengan blockchain, sampai <b>kapan dipakai di production</b>.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>UPDATE/DELETE menghapus jejak</b> <span>— sulit membuktikan riwayat tak dimanipulasi</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Jurnal append-only + hash chain</b> <span>— tiap perubahan jadi entri baru, terkunci kriptografis</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bisa diaudit & diverifikasi</b> <span>— riwayat lengkap, terbukti tak diubah diam-diam</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Overhead storage & query terbatas</b> <span>— tidak semua tabel butuh ini</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Saat riwayat = bukti</b> <span>— finansial, kepatuhan, rantai pasok</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why" style="max-width:78ch;margin:32px auto 0;">
+    <div class="tag">◆ Buat apa ini? Kenapa pakai Ledger Database?</div>
+    <p><b>Given</b> — aplikasi dompet digital menyimpan saldo di tabel biasa: <code>UPDATE saldo SET nilai = nilai - 150000</code> menimpa angka lama, dan jejak perubahan hanya ada di tabel log terpisah yang bisa diedit oleh siapa pun yang punya akses admin ke database itu juga.</p>
+    <p><b>When</b> — auditor keuangan atau regulator meminta bukti bahwa saldo pengguna tidak pernah dimanipulasi diam-diam, atau muncul sengketa transaksi dan tim harus menunjukkan riwayat aslinya secara meyakinkan.</p>
+    <p><b>Then</b> — tim hanya bisa bilang "kami janji datanya tidak diubah", karena tabel log itu sendiri sama sekali tidak lebih terpercaya dari tabel data utama — keduanya sama-sama bisa ditimpa atau dihapus oleh orang yang sama, dan tak ada cara kriptografis untuk membuktikan riwayatnya utuh.</p>
+    <p style="margin-top:8px">→ makanya kita pakai <em>Ledger Database</em>.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA LEDGER DIBUTUHKAN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Jejak yang bisa dihapus</div>
+        <h2>Database biasa tidak bisa membuktikan riwayatnya sendiri</h2>
+      </div>
+      <p class="lead reveal">Saat kamu menjalankan <code>UPDATE saldo SET nilai = 100 WHERE id = 1</code>, nilai lama <strong>hilang begitu saja</strong>. Kalau ada yang mengubah angka secara curang lalu buru-buru "membetulkannya" lagi, hampir tak ada cara untuk membuktikan bahwa perubahan liar itu pernah terjadi — kecuali kamu sengaja menyimpan log terpisah, dan log itu sendiri bisa dihapus oleh orang yang sama.</p>
+
+      <div class="quote reveal d1">
+        <p>“Ledger database menyimpan riwayat perubahan data sebagai jurnal yang immutable dan transparan — setiap entri, begitu tercatat, dapat diverifikasi secara kriptografis untuk memastikan tak ada yang diam-diam mengubah atau menghapusnya.”</p>
+        <cite>— parafrase dari dokumentasi resmi Amazon QLDB</cite>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — buku kas akuntan, bukan papan tulis</div>
+        <p>Bayangkan akuntan lama yang mencatat transaksi di buku kas fisik: kalau salah tulis, dia <strong>tidak boleh</strong> menghapus atau menip-eks angka lama — dia harus mencoret dengan rapi lalu menulis <em>baris koreksi baru</em> di bawahnya, dengan tanda tangan & tanggal. Riwayat kesalahan itu sendiri tetap terlihat dan bisa diaudit. Database biasa lebih mirip <strong>papan tulis</strong>: hapus, tulis ulang, tak ada bekas. Ledger database memaksa gaya "buku kas" itu di level database.</p>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Ini bukan cuma soal "orang jahat menyembunyikan kecurangan." Auditor keuangan, regulator asuransi, dan tim <b>compliance</b> sering kali butuh <b>bukti</b> — bukan sekadar "kami janji datanya tidak diubah" — bahwa riwayat transaksi memang utuh sejak awal dicatat.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 APPEND-ONLY & HASH CHAIN ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Append-only journal</div>
+        <h2>Tiap perubahan jadi entri baru, bukan menimpa yang lama</h2>
+      </div>
+      <p class="lead reveal">Di ledger database, dokumen tidak pernah benar-benar "di-overwrite". Setiap <code>INSERT</code> atau <code>UPDATE</code> menambah <strong>revisi baru</strong> ke jurnal, lengkap dengan metadata (versi, waktu transaksi, hash). Nilai lama tetap ada, hanya saja tidak lagi jadi versi "terkini".</p>
+
+      <div class="quote reveal d1">
+        <p>“Menyimpan riwayat perubahan sebagai log yang hanya bisa ditambah (append-only), alih-alih menimpa state lama, memberi jejak audit yang lengkap — state saat ini selalu bisa direkonstruksi ulang kapan saja dari riwayatnya.”</p>
+        <cite>— parafrase dari Martin Kleppmann, <i>Designing Data-Intensive Applications</i> (Bab 11, tentang event sourcing & log)</cite>
+      </div>
+
+      <p class="body reveal d1">Amazon QLDB memakai <strong>PartiQL</strong> (superset SQL untuk data semi-terstruktur). Perhatikan: query-nya terasa seperti SQL biasa, tapi di baliknya setiap <code>UPDATE</code> tidak menghapus apa pun — QLDB juga menyediakan fungsi <code>history()</code> untuk membaca ulang seluruh riwayat revisi sebuah dokumen.</p>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">contoh-ledger.sql — PartiQL di Amazon QLDB</span><span class="lang">PartiQL</span></div>
+<pre class="code"><span class="c">-- 1) catat dokumen awal (masuk sebagai revisi pertama)</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> Wallet <span class="k">VALUE</span> {
+  <span class="t">'walletId'</span>: <span class="s">'W-001'</span>,
+  <span class="t">'balance'</span>: <span class="n">500000</span>
+};
+
+<span class="c">-- 2) "update" sebenarnya menambah revisi baru ke jurnal,</span>
+<span class="c">--    bukan menimpa baris lama</span>
+<span class="k">UPDATE</span> Wallet
+<span class="k">SET</span> balance = balance - <span class="n">150000</span>
+<span class="k">WHERE</span> walletId = <span class="s">'W-001'</span>;
+
+<span class="c">-- 3) lihat SELURUH riwayat revisi dokumen ini,</span>
+<span class="c">--    diurutkan dari yang paling lama</span>
+<span class="k">SELECT</span> h.metadata.version, h.data.balance, h.metadata.txTime
+<span class="k">FROM</span> history(Wallet) <span class="k">AS</span> h
+<span class="k">WHERE</span> h.metadata.id = <span class="s">'&lt;document-id-Wallet-W-001&gt;'</span>
+<span class="k">ORDER</span> <span class="k">BY</span> h.metadata.version;
+<span class="hl-good">-- hasil: baris versi 0 (saldo 500000) TETAP ada, disusul versi 1 (saldo 350000)</span></pre>
+      </div>
+
+      <div class="why reveal d3">
+        <div class="tag">◆ Cryptographic hash chain</div>
+        <p>Tiap blok revisi di jurnal disusun menjadi <em>hash chain</em>: hash blok baru dihitung dari isi blok itu <strong>plus</strong> hash blok sebelumnya (mirip semangat merkle tree pada blockchain). Kalau satu entri lama diam-diam diubah, hash-nya berubah, dan itu akan membuat seluruh rantai hash setelahnya tidak cocok lagi — sehingga manipulasi bisa <strong>terdeteksi</strong> lewat proses verifikasi (digest) berkala.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 LEDGER VS BLOCKCHAIN VS AUDIT LOG ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti keputusan</span> · Sering tertukar</div>
+        <h2>Ledger database bukan blockchain, dan bukan sekadar audit log</h2>
+      </div>
+      <p class="lead reveal">"Immutable & bisa diverifikasi" membuat ledger database terdengar seperti blockchain — tapi bedanya mendasar: <strong>siapa yang mengontrol</strong>. Ledger database juga sering disamakan dengan "tabel audit log biasa" — padahal audit log biasa masih bisa dimanipulasi kalau tak didesain khusus.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Tiga pendekatan, tiga jaminan berbeda</div>
+        <div class="erabox__row"><span class="erabox__lang">Ledger DB</span><code>Terpusat — 1 pihak (mis. AWS di QLDB) kontrol penuh infrastrukturnya, tanpa mining/konsensus</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Blockchain</span><code>Desentralisasi — banyak node independen mencapai konsensus, tak ada satu pihak berkuasa penuh</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Audit log biasa</span><code>Tabel biasa di database biasa — bisa di-UPDATE/DELETE oleh siapa pun yang punya akses admin</code></div>
+        <p class="erabox__note">Ledger database mengambil <b>semangat</b> blockchain (immutable, bisa diverifikasi kriptografis) tapi <b>tanpa</b> beban desentralisasi (konsensus multi-node, mining, token). Hasilnya: lebih praktis &amp; jauh lebih cepat untuk kebutuhan bisnis biasa yang tetap butuh satu otoritas tepercaya (mis. bank, perusahaan).</p>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="good-h">// Kenapa BUKAN blockchain</h4>
+          <ul class="good-l">
+            <li>Satu pemilik infrastruktur, bukan jaringan node.</li>
+            <li>Tak ada mining / proof-of-work / gas fee.</li>
+            <li>Throughput jauh lebih tinggi, latensi rendah.</li>
+            <li>Cocok saat kamu <em>memang</em> punya satu otoritas tepercaya.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Kenapa BUKAN "audit log biasa"</h4>
+          <ul class="bad-l">
+            <li>Audit log di tabel SQL biasa masih bisa di-<code>DELETE</code>.</li>
+            <li>Tak ada jaminan kriptografis bahwa log tak diutak-atik.</li>
+            <li>Sering ditambahkan belakangan, gampang bolong/inkonsisten.</li>
+            <li>Ledger DB menjadikan immutability sebagai <b>desain inti</b>, bukan tambahan.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Cara pakai yang benar</div>
+        <h2>Best practice pakai ledger database</h2>
+      </div>
+      <p class="lead reveal">Ledger database bukan pengganti database biasa untuk <em>semua</em> tabel — ia alat khusus untuk data yang benar-benar butuh jejak audit yang tak terbantahkan.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Pakai hanya untuk data yang benar-benar butuh audit trail</b> — transaksi finansial, perubahan stok kritikal, catatan kepatuhan. Jangan pasang di semua tabel karena overheadnya nyata.</li>
+        <li><b>Pisahkan dari data operasional biasa</b> — data yang sering berubah & tak butuh riwayat (mis. cache, session) tetap di database biasa yang lebih ringan.</li>
+        <li><b>Verifikasi hash/digest secara berkala</b> — jangan hanya percaya "immutable by design"; jadwalkan proses verifikasi rutin untuk mendeteksi anomali sedini mungkin.</li>
+        <li><b>Rancang skema dokumen yang ringkas</b> — karena tiap perubahan menambah revisi baru (bukan menimpa), dokumen yang gemuk membuat jurnal cepat membengkak.</li>
+        <li><b>Gunakan indeks secukupnya</b> — query di ledger database punya batasan dibanding SQL penuh; uji pola akses sebelum commit ke desain skema.</li>
+        <li><b>Simpan bukti verifikasi (digest) di luar sistem</b> — mis. arsipkan hash ringkasan berkala ke tempat terpisah, supaya ada bukti independen kalau suatu saat integritas dipertanyakan.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Roadmap · Belajar bertahap</div>
+        <h2>Tier belajar ledger database</h2>
+      </div>
+      <p class="lead reveal">Tak perlu langsung paham kriptografi hash chain di hari pertama. Berikut tahapan yang masuk akal, dari paham konsep sampai bisa memigrasikan sistem lama.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Paham konsep append-only</h4>
+          <p>Fokus dulu ke "kenapa" sebelum "bagaimana": kenapa append-only berbeda dari UPDATE biasa, dan kenapa itu penting untuk audit.</p>
+          <ul>
+            <li>Paham beda overwrite vs menambah revisi baru.</li>
+            <li>Coba query dasar PartiQL di QLDB (INSERT, SELECT, history()).</li>
+            <li>Kenali istilah: journal, document, revision, digest.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Desain audit trail nyata</h4>
+          <p>Mulai merancang skema & keputusan arsitektur untuk sistem finansial atau inventory sungguhan.</p>
+          <ul>
+            <li>Pilih tabel mana yang layak jadi ledger, mana yang tidak.</li>
+            <li>Rancang skema dokumen yang ringkas & mudah diaudit.</li>
+            <li>Integrasikan ledger DB dengan sistem pelaporan/compliance.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Verifikasi & migrasi end-to-end</h4>
+          <p>Menguasai sisi kriptografis penuh dan memindahkan sistem lama yang masih pakai audit log manual.</p>
+          <ul>
+            <li>Verifikasi hash chain / digest secara end-to-end & otomatis.</li>
+            <li>Migrasi dari audit log manual ke ledger database tanpa downtime.</li>
+            <li>Rancang proses respons insiden bila verifikasi gagal.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: yang kamu dapat & yang kamu korbankan</h2>
+      </div>
+      <p class="lead reveal">Jaminan immutability & auditability itu nyata, tapi datang dengan harga: storage yang lebih besar dan kemampuan query yang lebih terbatas dibanding database relasional biasa.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Riwayat data terjamin tak bisa diubah diam-diam.</li>
+            <li>Bisa diverifikasi secara kriptografis, bukan sekadar janji.</li>
+            <li>Audit trail lengkap "gratis" — bawaan desain, bukan tambahan.</li>
+            <li>Cocok memenuhi tuntutan regulator/compliance.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Storage lebih besar — tiap revisi tetap tersimpan selamanya.</li>
+            <li>Query lebih terbatas dibanding SQL relasional penuh.</li>
+            <li>Throughput tulis biasanya lebih rendah dari database biasa.</li>
+            <li>Overhead tak sepadan untuk data yang tak butuh audit.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan realistis</div>
+          <p>Banyak tim tidak mengganti seluruh database mereka dengan ledger database. Pola umum: database utama tetap seperti biasa, lalu <strong>tabel-tabel kritikal</strong> saja (transaksi finansial, perubahan stok, catatan persetujuan) dipindah atau direplikasi ke ledger database.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai ledger database</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>kalau kamu butuh membuktikan riwayat data tak pernah diam-diam diubah, pilih ledger database. Kalau butuh performa & fleksibilitas query maksimal untuk data operasional biasa, database biasa masih lebih pas.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai ledger database saat…</h4>
+          <ul class="good-l">
+            <li>Transaksi finansial yang wajib bisa diaudit.</li>
+            <li>Catatan kepatuhan regulasi (compliance) yang ketat.</li>
+            <li>Rantai pasok yang butuh bukti riwayat kepemilikan/lokasi.</li>
+            <li>Perubahan stok/inventory kritikal yang rawan sengketa.</li>
+            <li>Kamu butuh bukti kriptografis, bukan sekadar log biasa.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, pakai database biasa saat…</h4>
+          <ul class="bad-l">
+            <li>Data operasional yang sering berubah tanpa perlu riwayat.</li>
+            <li>Butuh query kompleks/analitik lintas-tabel yang berat.</li>
+            <li>Throughput tulis sangat tinggi jadi prioritas utama.</li>
+            <li>Tidak ada tuntutan audit/regulasi sama sekali.</li>
+            <li>Tim belum siap menanggung overhead operasionalnya.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan ke datamu: <strong>"Kalau suatu hari ada yang menuduh angka ini pernah dimanipulasi, bisakah aku membuktikan secara independen bahwa itu tidak terjadi?"</strong> Kalau jawabannya harus "ya, dan itu penting secara hukum/finansial" → ledger database. Kalau tidak → database biasa sudah lebih dari cukup.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Kapan tim memilih ledger database di production</h2>
+      </div>
+      <p class="lead reveal">Beberapa pola nyata di mana ledger database (atau pendekatan sejenis) jadi pilihan tepat — perhatikan benang merahnya: riwayat data itu sendiri yang jadi objek yang harus dipercaya.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// supply chain</div><h4>Pelacakan rantai pasok</h4><p><b>Kasus:</b> barang berpindah tangan dari pabrik → distributor → gudang → toko, tiap perpindahan harus tercatat & tak bisa dipalsukan belakangan. <b>Kenapa ledger:</b> bukti kepemilikan & lokasi historis yang tak terbantahkan. <b>Tool:</b> Amazon QLDB.</p></div>
+        <div class="card up"><div class="ic">// keuangan</div><h4>Catatan transaksi finansial</h4><p><b>Kasus:</b> sistem pembukuan/pembayaran yang wajib bisa diaudit auditor eksternal. <b>Kenapa ledger:</b> setiap koreksi tercatat sebagai entri baru, bukan menimpa data lama — sesuai prinsip akuntansi. <b>Tool:</b> Amazon QLDB, Azure SQL Database Ledger.</p></div>
+        <div class="card up"><div class="ic">// asuransi & regulasi</div><h4>Kepatuhan regulasi (compliance)</h4><p><b>Kasus:</b> lembaga keuangan & asuransi harus menunjukkan bukti bahwa catatan klaim/polis tidak diubah setelah diproses. <b>Kenapa ledger:</b> verifikasi kriptografis memenuhi tuntutan auditor & regulator. <b>Tool:</b> ledger database terkelola dari penyedia cloud.</p></div>
+        <div class="card up"><div class="ic">// inventory</div><h4>Manajemen stok gudang</h4><p><b>Kasus:</b> perubahan jumlah stok (masuk, keluar, retur) rawan sengketa antara gudang & mitra bisnis. <b>Kenapa ledger:</b> riwayat lengkap tiap perubahan stok, bisa dibuktikan ke pihak ketiga. <b>Tool:</b> Amazon QLDB.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di semua kasus di atas, yang dibutuhkan bukan cuma "data yang benar sekarang" — tapi <strong>bukti bahwa riwayatnya jujur</strong>. Begitu kebutuhan hanya soal performa operasional sehari-hari tanpa tuntutan audit, tim biasanya tetap memakai database relasional/NoSQL biasa — ledger database dipasang khusus untuk bagian yang benar-benar butuh jejak yang tak terbantahkan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat & pola arsitektur</div>
+        <h2>Tools & alternatif arsitektural</h2>
+      </div>
+      <p class="lead reveal">Ledger database bukan satu-satunya cara mendapat jejak audit yang kuat. Kenali beberapa nama & satu pola arsitektur alternatif yang sering disebut bersamaan.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// AWS</div><h4>Amazon QLDB</h4><p>Ledger database terkelola dari AWS. Query pakai PartiQL, punya fungsi <code>history()</code> bawaan & digest untuk verifikasi kriptografis. Titik awal paling umum untuk belajar konsep ini.</p></div>
+        <div class="card up"><div class="ic">// Microsoft</div><h4>Azure SQL Database Ledger</h4><p>Fitur "ledger" yang ditempelkan ke SQL Server/Azure SQL — kamu tetap pakai T-SQL biasa, tapi tabel tertentu ditandai immutable & bisa diverifikasi.</p></div>
+        <div class="card up"><div class="ic">// mendekati blockchain</div><h4>Hyperledger Fabric</h4><p>Untuk kasus yang benar-benar butuh <em>banyak organisasi independen</em> saling percaya tanpa satu otoritas tunggal — lebih dekat ke blockchain terizin (permissioned) daripada ledger database terpusat.</p></div>
+        <div class="card up"><div class="ic">// pola arsitektur</div><h4>Event Sourcing</h4><p>Alternatif tanpa produk khusus: simpan setiap perubahan sebagai <em>event</em> berurutan di database biasa (append-only by convention), lalu rekonstruksi state saat ini dari deretan event tersebut.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Bingung memilih? Kalau kebutuhanmu murni "riwayat yang bisa direkonstruksi ulang" tanpa tuntutan verifikasi kriptografis formal, <strong>pola event sourcing</strong> di atas database biasa sering sudah cukup. Pindah ke QLDB/Azure Ledger saat kamu butuh jaminan immutability yang dijamin oleh mesin database itu sendiri, bukan cuma konvensi tim.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Riwayat yang jujur, bukan sekadar state yang benar</h2>
+      </div>
+      <p class="lead reveal">Ledger database lahir dari kebutuhan yang sangat spesifik: bukan cuma "apa nilai sekarang", tapi "bisakah kamu buktikan riwayatnya tak pernah dimanipulasi". Ia bersinar saat kebutuhan itu nyata, dan jadi overhead yang tak perlu saat tidak.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Append-only journal</b> — tiap perubahan jadi entri baru, bukan menimpa yang lama.</li>
+          <li><b>Cryptographic hash chain</b> — integritas riwayat bisa diverifikasi, bukan sekadar dijanjikan.</li>
+          <li><b>Terpusat, bukan blockchain</b> — mengambil semangatnya tanpa beban konsensus multi-node.</li>
+          <li><b>Beda dari audit log biasa</b> — immutability adalah desain inti, bukan tambahan belakangan.</li>
+          <li><b>Pakai selektif</b> — hanya untuk data yang benar-benar butuh jejak audit tak terbantahkan.</li>
+          <li><b>Verifikasi itu wajib</b> — "immutable by design" tetap butuh dicek berkala secara nyata.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya: <strong>"Kalau riwayat data ini dipertanyakan di pengadilan atau audit, bisakah aku membuktikannya secara independen?"</strong> Kalau ya dan itu penting, ledger database memberimu jaminan yang tak bisa ditawar oleh database biasa. Kalau tidak, jangan bayar overhead-nya — simpan data itu di database biasa dan alokasikan usahamu ke tempat lain.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Riwayat yang tak bisa diubah, adalah riwayat yang bisa dipercaya."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Ledger Database</b> · Kenapa, konsep, trade-off, kapan, &amp; tools-nya · untuk pemula · rujukan: dokumentasi Amazon QLDB, DDIA (Kleppmann) · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../index.html">← kembali ke Database</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notebook Inggris — Level 4, Materi 4: Relative Clauses</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__back" href="../index.html">← Semua Materi</a>
+  <div class="topbar__file">docs/learning/english/level-4-materi-4/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 22</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+    <div class="rail__part">I · Kenapa &amp; Konsep</div>
+    <a href="#c01"><span class="yr">01</span> Tujuan pembelajaran</a>
+    <a href="#c02"><span class="yr">02</span> Penjelasan konsep</a>
+    <a href="#c03"><span class="yr">03</span> Kenapa ini penting</a>
+    <div class="rail__part">II · Contoh dalam Konteks</div>
+    <a href="#c04"><span class="yr">04</span> Contoh sederhana</a>
+    <a href="#c05"><span class="yr">05</span> Contoh sehari-hari</a>
+    <a href="#c06"><span class="yr">06</span> Contoh dunia kerja</a>
+    <a href="#c07"><span class="yr">07</span> Contoh software engineering</a>
+    <div class="rail__part">III · Hindari Salah &amp; Ingat</div>
+    <a href="#c08"><span class="yr">08</span> Kesalahan umum</a>
+    <a href="#c09"><span class="yr">09</span> Tips mengingat</a>
+    <a href="#c10"><span class="yr">10</span> Ringkasan</a>
+    <div class="rail__part">IV · Latihan &amp; Praktik</div>
+    <a href="#c11"><span class="yr">11</span> Latihan</a>
+    <a href="#c12"><span class="yr">12</span> Quiz</a>
+    <a href="#c13"><span class="yr">13</span> Percakapan</a>
+    <a href="#c14"><span class="yr">14</span> Writing exercise</a>
+    <a href="#c15"><span class="yr">15</span> Speaking exercise</a>
+    <div class="rail__part">V · Perkaya Kemampuan</div>
+    <a href="#c16"><span class="yr">16</span> Listening</a>
+    <a href="#c17"><span class="yr">17</span> Reading</a>
+    <a href="#c18"><span class="yr">18</span> Vocabulary</a>
+    <a href="#c19"><span class="yr">19</span> Pronunciation</a>
+    <div class="rail__part">VI · Lanjut</div>
+    <a href="#c20"><span class="yr">20</span> Review</a>
+    <a href="#c21"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c22"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Level 4 · Materi 4</div>
+      <h1 class="reveal d1">Relative Clauses — <span class="accent">satu kalimat, dua info</span></h1>
+      <p class="sub reveal d2">"The engineer who wrote this bug already fixed it." Satu kalimat pendek, tapi isinya dua fakta sekaligus: siapa engineer-nya, dan apa yang dia lakukan. Itulah relative clause — cara Bahasa Inggris menempelkan penjelasan tambahan langsung ke noun, tanpa perlu dua kalimat terpisah yang berulang-ulang.</p>
+      <div class="tl reveal d3">
+        <div class="tl__row"><span class="tl__dot"></span> who / whom → orang</div>
+        <div class="tl__row"><span class="tl__dot"></span> which / that → benda, hal, sistem</div>
+        <div class="tl__row"><span class="tl__dot"></span> whose → kepemilikan</div>
+        <div class="tl__row"><span class="tl__dot"></span> where → tempat</div>
+      </div>
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> scroll untuk mulai</div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Tujuan pembelajaran</h2></div>
+      <p class="lead reveal">Setelah materi ini kamu bisa:</p>
+      <ul class="plain reveal">
+        <li>Membedakan kapan pakai <b>who</b>, <b>whom</b>, <b>which</b>, <b>that</b>, <b>whose</b>, dan <b>where</b>.</li>
+        <li>Membedakan <b>defining clause</b> (info wajib, tanpa koma) dan <b>non-defining clause</b> (info tambahan, pakai koma).</li>
+        <li>Tahu kapan relative pronoun boleh <b>dihilangkan</b> sepenuhnya.</li>
+        <li>Menggabungkan dua kalimat pendek yang berulang jadi satu kalimat yang efisien — skill yang langsung kepakai waktu nulis PR description, commit message, atau incident report.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Penjelasan konsep</h2></div>
+      <p class="lead reveal">Relative clause adalah klausa yang menempel ke sebuah noun untuk menjelaskan noun itu lebih lanjut — fungsinya mirip seperti "adjective dalam bentuk kalimat". Klausa ini dibuka dengan <b>relative pronoun</b>:</p>
+      <div class="ttable-wrap reveal">
+        <table class="ttable">
+          <thead><tr><th>Pronoun</th><th>Dipakai untuk</th><th>Contoh</th></tr></thead>
+          <tbody>
+            <tr><td><b>who</b></td><td>orang — sebagai subjek</td><td>the reviewer <b>who</b> approved my PR</td></tr>
+            <tr><td><b>whom</b></td><td>orang — sebagai objek (formal)</td><td>the client <b>whom</b> we emailed</td></tr>
+            <tr><td><b>which</b></td><td>benda, sistem, hal</td><td>the API <b>which</b> we deprecated</td></tr>
+            <tr><td><b>that</b></td><td>orang/benda, hanya defining clause, informal</td><td>the bug <b>that</b> crashed prod</td></tr>
+            <tr><td><b>whose</b></td><td>kepemilikan (orang maupun benda)</td><td>the repo <b>whose</b> tests all failed</td></tr>
+            <tr><td><b>where</b></td><td>tempat</td><td>the server <b>where</b> logs are stored</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="body reveal">Ada dua jenis klausa yang perilakunya beda:</p>
+      <ul class="plain reveal">
+        <li><b>Defining clause</b> — informasi yang WAJIB ada supaya jelas noun mana yang dimaksud. Tidak pakai koma. <i>"The developer who fixed the bug got promoted."</i> (tanpa klausa ini, kita nggak tahu developer yang mana).</li>
+        <li><b>Non-defining clause</b> — informasi tambahan, bukan syarat identifikasi. Pakai koma di kedua sisi. <i>"Maya, who joined last year, already leads the platform team."</i> (kalau klausanya dihapus, kalimat masih jelas — kita sudah tahu itu Maya).</li>
+      </ul>
+      <div class="note reveal"><span class="note__tag">Catatan</span><p><b>that</b> HANYA boleh dipakai di defining clause. Setelah koma (non-defining), wajib pakai who/which — <b>that</b> tidak pernah muncul setelah koma.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Kenapa ini penting</h2></div>
+      <div class="why reveal"><span class="tag">Kenapa</span><p>Tanpa relative clause, kamu terpaksa menulis kalimat pendek-pendek yang berulang dan terasa kaku — persis seperti kode yang belum di-refactor, penuh duplikasi. Relative clause adalah "refactor" level kalimat: menggabungkan informasi yang berhubungan jadi satu unit yang mengalir, lebih natural, dan lebih dekat ke gaya native speaker maupun dokumentasi teknis profesional (README, PR description, code comment, incident report).</p></div>
+      <blockquote class="quote reveal">"The PR that broke staging was the one that nobody reviewed." — satu kalimat, dua fakta penting, nol pengulangan kata "PR".<cite>— kalimat sehari-hari tim engineering</cite></blockquote>
+    </div>
+  </section>
+
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh sederhana</h2></div>
+      <p class="lead reveal">Proses menggabungkan dua kalimat jadi satu relative clause:</p>
+      <ol class="steps reveal">
+        <li>Cari noun yang sama di kedua kalimat. <i>"I have a friend. My friend is a backend engineer."</i> → noun bersama: <b>friend</b>.</li>
+        <li>Ganti pengulangan noun itu di kalimat kedua dengan relative pronoun yang sesuai. <b>My friend</b> → <b>who</b> (karena orang &amp; jadi subjek).</li>
+        <li>Tempelkan klausa kedua langsung setelah noun di kalimat pertama. Hasil: <i>"I have a friend who is a backend engineer."</i></li>
+      </ol>
+      <ul class="plain reveal">
+        <li>"This is the laptop. I bought the laptop last year." → <b>"This is the laptop that I bought last year."</b></li>
+        <li>"I know a designer. Her portfolio is amazing." → <b>"I know a designer whose portfolio is amazing."</b></li>
+        <li>"We visited the office. The team works there." → <b>"We visited the office where the team works."</b></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh sehari-hari</h2></div>
+      <div class="grid reveal">
+        <div class="card"><div class="ic">☕</div><h4>Ngobrol santai</h4><p>"The café where we usually grab coffee just closed down."</p></div>
+        <div class="card"><div class="ic">🎬</div><h4>Cerita film</h4><p>"That's the movie that everyone's been talking about."</p></div>
+        <div class="card"><div class="ic">🏠</div><h4>Deskripsi rumah</h4><p>"This is the neighbor whose dog barks all night."</p></div>
+        <div class="card"><div class="ic">👋</div><h4>Kenalan baru</h4><p>"He's the guy who I met at the gym last week."</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh dunia kerja</h2></div>
+      <div class="grid reveal">
+        <div class="card up"><div class="ic">📋</div><h4>Rapat</h4><p>"The proposal which the finance team rejected needs revision."</p></div>
+        <div class="card up"><div class="ic">📧</div><h4>Email</h4><p>"Please loop in the vendor whose invoice is still pending."</p></div>
+        <div class="card down"><div class="ic">🧾</div><h4>Laporan</h4><p>"The quarter where revenue dropped was Q3, not Q4."</p></div>
+        <div class="card down"><div class="ic">🤝</div><h4>Klien</h4><p>"The client whom we onboarded last month already renewed."</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh software engineering</h2></div>
+      <p class="lead reveal">Relative clause paling sering muncul di tempat yang setiap hari kamu tulis: <b>code comment / JSDoc</b>, commit message, dan incident report. Bandingkan dua cara menulis komentar fungsi berikut — isinya sama persis, tapi versi kedua jauh lebih ringkas dan natural:</p>
+      <div class="diptych reveal">
+        <div class="code-card bad">
+          <div class="code-card__bar"><span class="lang">javascript · verbose</span></div>
+          <pre class="code"><span class="c">/**</span>
+<span class="c"> * Get the user object. The user object was flagged</span>
+<span class="c"> * by the fraud service. The fraud service runs nightly.</span>
+<span class="c"> */</span>
+<span class="k">function</span> <span class="f">getFlaggedUser</span>(<span class="a">id</span>) {
+  <span class="k">return</span> db.users.find(<span class="a">id</span>);
+}</pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><span class="lang">javascript · relative clause</span></div>
+          <pre class="code"><span class="c">/**</span>
+<span class="c"> * Get the user <span class="hl-good">that was flagged</span> by the fraud</span>
+<span class="c"> * service, <span class="hl-good">which runs</span> nightly.</span>
+<span class="c"> */</span>
+<span class="k">function</span> <span class="f">getFlaggedUser</span>(<span class="a">id</span>) {
+  <span class="k">return</span> db.users.find(<span class="a">id</span>);
+}</pre>
+        </div>
+      </div>
+      <p class="body reveal">Contoh lain yang bakal sering kamu tulis:</p>
+      <ul class="plain reveal">
+        <li><b>Commit message:</b> "Fix a race condition that only occurs under high load."</li>
+        <li><b>PR description:</b> "This PR removes the endpoint which nobody has called since 2023."</li>
+        <li><b>Incident report:</b> "The engineer who was on-call rolled back the deploy that caused the outage."</li>
+        <li><b>Standup update:</b> "I'm blocked on a ticket whose requirements aren't clear yet."</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Kesalahan umum</h2></div>
+      <div class="cols reveal">
+        <div class="bad-l">
+          <h4>❌ Salah</h4>
+          <ul>
+            <li>"The manager who he told me about is new." <i>(double subject: who + he)</i></li>
+            <li>"The API which broke, that we fixed." <i>(dobel relative pronoun)</i></li>
+            <li>"My laptop, that I bought last year, died." <i>(that setelah koma)</i></li>
+            <li>"The team which lead is Maya." <i>(harus whose, bukan which)</i></li>
+          </ul>
+        </div>
+        <div class="good-l">
+          <h4>✅ Benar</h4>
+          <ul>
+            <li>"The manager who told me about it is new."</li>
+            <li>"The API which broke has now been fixed."</li>
+            <li>"My laptop, which I bought last year, died."</li>
+            <li>"The team whose lead is Maya."</li>
+          </ul>
+        </div>
+      </div>
+      <div class="erabox reveal">
+        <p><b>Gaya lama (berulang):</b> "I have a colleague. My colleague works remotely. My colleague is in Bali."</p>
+        <p><b>Gaya efisien (relative clause):</b> "I have a colleague who works remotely from Bali."</p>
+      </div>
+      <div class="caution reveal"><p><b>Bukan dogma:</b> di percakapan sehari-hari, native speaker sering pakai <b>who</b> untuk objek juga ("the client who we emailed") — <b>whom</b> makin jarang dipakai kecuali di tulisan formal. Jangan terlalu kaku mengoreksi diri sendiri saat ngobrol santai; tapi di dokumen resmi (kontrak, laporan formal), tetap pakai whom.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Tips mengingat</h2></div>
+      <div class="qa reveal">
+        <details><summary>Gampangnya, kapan pakai who vs which vs where?</summary><p>Tanya: noun-nya <b>orang</b>? → who/whom. Noun-nya <b>benda/hal</b>? → which/that. Noun-nya <b>tempat</b>? → where. Noun-nya <b>punya sesuatu</b>? → whose.</p></details>
+        <details><summary>Kapan boleh menghapus relative pronoun-nya?</summary><p>Kalau pronoun itu berperan sebagai <b>objek</b> di klausa (bukan subjek), boleh dihilangkan di defining clause. "The PR (that) I reviewed" — boleh dihapus karena "I" tetap jadi subjek klausa. Tapi "The PR that broke prod" — TIDAK boleh dihapus karena "that" adalah subjek klausanya sendiri.</p></details>
+        <details><summary>Cara cepat cek defining vs non-defining?</summary><p>Coba hapus klausanya. Kalau kalimat jadi ambigu/nggak jelas, itu defining (tanpa koma). Kalau kalimat masih jelas maksudnya, itu non-defining (pakai koma, dan tidak boleh pakai that).</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Ringkasan</h2></div>
+      <ul class="creed reveal">
+        <li>Orang sebagai subjek → <b>who</b>. Orang sebagai objek formal → <b>whom</b>.</li>
+        <li>Benda, sistem, hal → <b>which</b> (bisa juga <b>that</b> kalau defining).</li>
+        <li>Kepemilikan → <b>whose</b> + noun, berlaku untuk orang maupun benda.</li>
+        <li>Tempat → <b>where</b>.</li>
+        <li>Defining clause: tanpa koma, boleh pakai that, pronoun objek boleh dihilangkan.</li>
+        <li>Non-defining clause: pakai koma di kedua sisi, TIDAK BOLEH pakai that.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Latihan</h2></div>
+      <p class="lead reveal">Isi titik-titik atau pilih jawaban yang paling tepat.</p>
+      <div class="quizmeta"><span class="quizmeta__count" id="quizCount">0 / 6 benar</span><div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill"></div></div></div>
+      <div id="quizLatihan"></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Quiz</h2></div>
+      <p class="lead reveal">Level lebih menantang — fokus ke tanda baca, penghilangan pronoun, dan pilihan kata yang paling formal. Tiga soal terakhir adalah <b>soal cerita</b> — baca ceritanya, lalu jawab.</p>
+      <div class="quizmeta"><span class="quizmeta__count" id="quizCount2">0 / 8 benar</span><div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill2"></div></div></div>
+      <div id="quizQuiz"></div>
+
+      <div class="code-card reveal">
+        <div class="code-card__bar"><span class="lang">STORY · Code Review Friday</span></div>
+        <pre class="code" style="white-space:pre-wrap;font-family:var(--sans)">Maya is the tech lead who reviews every pull request before it merges into main. Last Friday, she found a payment service, which had zero test coverage, that silently broke the checkout flow. The intern whose code triggered the incident felt terrible, but Maya just smiled and said, "This is the moment where you learn the most." Together, they wrote the tests that should have existed from the beginning, and pushed a fix that the whole team reviewed twice.</pre>
+      </div>
+      <div id="quizStory"></div>
+
+      <div class="completebanner" id="completeBanner"><h4>🎉 Materi 4 selesai!</h4><p>Semua soal Latihan &amp; Quiz sudah benar. Lanjut ke materi berikutnya.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Percakapan</h2></div>
+      <div class="dialogue reveal">
+        <div class="brow"><div class="bubble"><span class="who">Maya</span>The service that crashed last night is the one whose logs I couldn't find anywhere.</div></div>
+        <div class="brow you"><div class="bubble"><span class="who">You</span>Wait, the one where we store audit logs?</div></div>
+        <div class="brow"><div class="bubble"><span class="who">Maya</span>Exactly. It's the same server that hosts the payment queue, which nobody has touched in months.</div></div>
+        <div class="brow you"><div class="bubble"><span class="who">You</span>That's the engineer who set it up two years ago, right? He's the one whose name is still on the README.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Writing exercise</h2></div>
+      <p class="lead reveal">Tulis 5 kalimat tentang tim atau proyekmu, dan pastikan minimal <b>3 kalimat</b> memakai relative clause (who/which/that/whose/where) yang berbeda-beda. Contoh topik: rekan kerja, sistem yang kamu maintain, atau bug terakhir yang kamu perbaiki.</p>
+      <ul class="plain reveal">
+        <li>Contoh: "I work with a designer whose feedback always improves the UI."</li>
+        <li>Contoh: "We finally fixed the bug that had been open for three sprints."</li>
+      </ul>
+      <p class="body reveal">Kirim hasil tulisanmu kapan saja — akan dikoreksi, terutama bagian tanda baca (koma) dan pemilihan pronoun-nya.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Speaking exercise</h2></div>
+      <p class="lead reveal">Rekam dirimu mengucapkan 5 kalimat berikut dengan lancar (tanpa jeda sebelum relative pronoun-nya):</p>
+      <ol class="plain reveal">
+        <li>"The teammate who reviewed my code found a bug I missed."</li>
+        <li>"This is the branch that we should deploy first."</li>
+        <li>"The client whose contract expires next month wants a call."</li>
+        <li>"That's the staging environment where we test everything."</li>
+        <li>"I finally met the person whom I've only talked to on Slack."</li>
+      </ol>
+      <p class="body reveal">Fokus: relative pronoun diucapkan menyatu dengan noun sebelumnya, bukan dijeda seperti kata terpisah.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Listening</h2></div>
+      <p class="lead reveal">Belum ada audio asli di materi ini — sebagai gantinya, baca keras-keras skrip percakapan di bab 13 (Percakapan) sebanyak 3x, lalu rekam dirimu sendiri dan dengarkan ulang. Fokuskan telinga ke intonasi setelah relative pronoun — biasanya turun sedikit lalu lanjut tanpa jeda, seperti satu napas.</p>
+      <p class="body reveal">Latihan tambahan: cari video conference talk / podcast dev bahasa Inggris apa saja, lalu coba tangkap satu kalimat yang mengandung relative clause. Tulis ulang kalimatnya persis seperti yang kamu dengar.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Reading</h2></div>
+      <p class="lead reveal">Baca cuplikan incident report berikut. Perhatikan setiap relative clause yang muncul (digarisbawahi secara konsep, bukan visual — coba temukan sendiri):</p>
+      <p class="body reveal">"At 02:14 UTC, the on-call engineer who was paged first noticed a spike in error rates. The root cause was a config change that had been deployed an hour earlier by a script whose retry logic was broken. The team, which had already rolled back once that week, decided to freeze deploys until the postmortem — a meeting where everyone involved could walk through the timeline without blame."</p>
+      <p class="body reveal">Tantangan: tulis ulang paragraf ini jadi versi tanpa relative clause sama sekali (pecah jadi kalimat-kalimat pendek terpisah). Bandingkan panjangnya — kamu akan lihat kenapa relative clause dipakai luas di tulisan teknis.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Vocabulary</h2></div>
+      <p class="lead reveal">Kosakata yang muncul di contoh-contoh materi ini:</p>
+      <div class="grid reveal">
+        <div class="card"><div class="vocab-head"><span class="vocab-word">repository</span><span class="pos">n.</span></div><div class="vocab-ipa">/rɪˈpɒzɪtri/</div><div class="vocab-meaning">tempat penyimpanan kode</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">reviewer</span><span class="pos">n.</span></div><div class="vocab-ipa">/rɪˈvjuːər/</div><div class="vocab-meaning">orang yang memeriksa/menilai (PR, dokumen)</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">incident</span><span class="pos">n.</span></div><div class="vocab-ipa">/ˈɪnsɪdənt/</div><div class="vocab-meaning">insiden, gangguan tak terduga di sistem</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">root cause</span><span class="pos">n. phr.</span></div><div class="vocab-ipa">/ruːt kɔːz/</div><div class="vocab-meaning">akar penyebab masalah</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">on-call</span><span class="pos">adj.</span></div><div class="vocab-ipa">/ɒn kɔːl/</div><div class="vocab-meaning">siaga/siap dipanggil sewaktu-waktu</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">postmortem</span><span class="pos">n.</span></div><div class="vocab-ipa">/ˌpəʊstˈmɔːtəm/</div><div class="vocab-meaning">evaluasi setelah insiden selesai</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">deprecate</span><span class="pos">v.</span></div><div class="vocab-ipa">/ˈdɛprɪkeɪt/</div><div class="vocab-meaning">menghentikan penggunaan sesuatu secara bertahap</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">backlog</span><span class="pos">n.</span></div><div class="vocab-ipa">/ˈbæklɒg/</div><div class="vocab-meaning">daftar tugas/fitur yang belum dikerjakan</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c19">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Pronunciation</h2></div>
+      <ul class="plain reveal">
+        <li><b>who</b> /huː/ — bunyi "h" jelas, tidak dilafalkan seperti "hu-oh".</li>
+        <li><b>whom</b> /huːm/ — sama seperti "who" ditambah bunyi "m" di akhir.</li>
+        <li><b>which</b> /wɪtʃ/ — awalan "w" bulat, akhiran "-ch" seperti di "watch".</li>
+        <li><b>whose</b> /huːz/ — HATI-HATI, sering ketuker dengan "who's" (who is) yang bunyinya sama persis tapi maknanya beda total.</li>
+        <li><b>where</b> /wɛə(r)/ — vokal "e" pendek, bukan "way-r".</li>
+      </ul>
+      <div class="note reveal"><span class="note__tag">Jebakan bunyi</span><p>"whose" dan "who's" diucapkan IDENTIK. Bedanya cuma di tulisan/konteks: <b>whose</b> = kepemilikan ("whose laptop is this?"), <b>who's</b> = singkatan "who is/has" ("who's reviewing this PR?").</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c20">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Review</h2></div>
+      <p class="lead reveal">Cek dirimu sebelum lanjut — kalau semua ini terasa masuk akal, kamu siap:</p>
+      <ul class="plain reveal">
+        <li>☐ Bisa memilih who/whom/which/that/whose/where dengan tepat sesuai jenis noun-nya.</li>
+        <li>☐ Tahu bedanya defining clause (tanpa koma) dan non-defining clause (pakai koma, tanpa that).</li>
+        <li>☐ Tahu kapan relative pronoun objek boleh dihilangkan.</li>
+        <li>☐ Bisa menggabungkan dua kalimat pendek berulang jadi satu kalimat dengan relative clause.</li>
+        <li>☐ Semua soal Latihan &amp; Quiz (bab 11-12) sudah benar.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c21">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Tier belajar</h2></div>
+      <div class="tiers reveal">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Minimum sebelum lanjut</span>
+          <h4>Bisa dipakai, belum lancar</h4>
+          <ul class="plain">
+            <li>Paham who/which/where di kalimat sederhana.</li>
+            <li>Bisa menggabungkan 2 kalimat pendek jadi 1 relative clause dengan bantuan contoh.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Praktik nyata</span>
+          <h4>Dipakai natural sehari-hari</h4>
+          <ul class="plain">
+            <li>Menguasai whose &amp; perbedaan defining/non-defining dengan koma yang benar.</li>
+            <li>Menghilangkan relative pronoun objek secara alami saat menulis PR description atau commit message.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Arah belajar lanjut</span>
+          <h4>Level dokumen formal</h4>
+          <ul class="plain">
+            <li>Pakai whom dengan tepat di tulisan formal (kontrak, laporan resmi).</li>
+            <li>Menulis incident report / technical doc panjang dengan relative clause bertumpuk tanpa jadi ambigu.</li>
+            <li>Siap lanjut ke Materi 5: Gerund vs Infinitive, yang akan sering muncul berdampingan dengan relative clause di kalimat teknis kompleks.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c22">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Penutup</h2></div>
+      <div class="endcard reveal">
+        <h3>Relative clause = kalimat efisien</h3>
+        <p>Sekarang kamu punya alat untuk berhenti mengulang-ulang noun yang sama dan mulai menulis/bicara seperti native speaker — satu kalimat, informasi lengkap.</p>
+        <p id="endcardStatus">Memuat status...</p>
+        <a class="card__link" href="../level-4-materi-5/index.html">Lanjut ke Materi 5: Gerund vs Infinitive →</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <b>Notebook Inggris — Level 4, Materi 4</b> · Relative Clauses · <a href="../index.html">← kembali ke Belajar Inggris</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+window.LESSON_KEY = "english::level-4-materi-4";
+window.LESSON_DONE_HTML = "✅ Semua soal Latihan &amp; Quiz sudah benar — <b style=\"color:var(--good)\">Materi 5: Gerund vs Infinitive</b> sudah terbuka. Kirim hasil Writing Exercise-mu kapan saja untuk dikoreksi.";
+window.LESSON_LOCKED_HTML = "Materi 5: Gerund vs Infinitive terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar ({done}/{total} saat ini). Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.";
+window.LESSON_QUESTIONS = [
+  { id: "l1", type: "fill", prompt: "The senior engineer <span class=\"blank\">___</span> reviewed my PR left really detailed comments.", answer: ["who", "that"], explain: "Karena \"the senior engineer\" adalah orang dan berperan sebagai subjek klausa relatif (dia yang me-review), pakai who (atau that secara informal)." },
+  { id: "l2", type: "fill", prompt: "This is the repository <span class=\"blank\">___</span> we store all our microservices.", answer: ["where"], explain: "\"where\" dipakai karena \"the repository\" adalah tempat (lokasi penyimpanan), bukan orang atau benda yang jadi subjek/objek langsung." },
+  { id: "l3", type: "fill", prompt: "The bug <span class=\"blank\">___</span> crashed production last night has finally been fixed.", answer: ["which", "that"], explain: "\"the bug\" adalah benda/hal, jadi pakai which (formal) atau that (informal, defining clause)." },
+  { id: "l4", type: "fill", prompt: "I finally met the developer <span class=\"blank\">___</span> code I've been reading for months.", answer: ["whose"], explain: "\"whose\" menunjukkan kepemilikan: code itu milik si developer. Polanya whose + noun." },
+  { id: "l5", type: "mc", prompt: "Pilih kalimat yang tanda baca dan pronoun-nya paling tepat:", options: ["The PR, that I approved, is merged.", "The PR, which I approved, is merged.", "The PR who I approved is merged."], answer: "The PR, which I approved, is merged.", explain: "Setelah koma (non-defining clause), \"that\" TIDAK BOLEH dipakai — harus \"which\" untuk benda. \"who\" salah karena PR bukan orang." },
+  { id: "l6", type: "fill", prompt: "The company <span class=\"blank\">___</span> headquarters is in Bandung just launched a new API.", answer: ["whose"], explain: "\"whose\" dipakai karena headquarters adalah milik company — whose bisa dipakai untuk benda/organisasi, bukan cuma orang." },
+  { id: "q1", type: "mc", prompt: "Manakah kalimat yang paling tepat menggabungkan: 'I talked to the QA engineer. She found the critical bug.'", options: ["I talked to the QA engineer which found the critical bug.", "I talked to the QA engineer who found the critical bug.", "I talked to the QA engineer whose found the critical bug."], answer: "I talked to the QA engineer who found the critical bug.", explain: "QA engineer = orang & subjek klausa relatif → who. \"which\" untuk benda, dan \"whose found\" tidak gramatikal (whose harus diikuti noun, bukan verb)." },
+  { id: "q2", type: "mc", prompt: "Kalimat mana yang tanda bacanya paling tepat?", options: ["My laptop, that I bought last year, just died.", "My laptop that I bought last year just died.", "My laptop, that I bought last year just died."], answer: "My laptop that I bought last year just died.", explain: "Ini defining clause (info \"yang saya beli tahun lalu\" penting untuk menjelaskan laptop mana) — tidak pakai koma, dan that boleh dipakai karena tidak ada koma." },
+  { id: "q3", type: "mc", prompt: "Kalimat mana yang benar menghilangkan relative pronoun (boleh dihilangkan karena berfungsi sebagai objek)?", options: ["The ticket I closed yesterday was reopened.", "The ticket who I closed yesterday was reopened.", "The ticket, I closed yesterday, was reopened."], answer: "The ticket I closed yesterday was reopened.", explain: "Relative pronoun objek (that/which mewakili \"the ticket\" sebagai objek dari \"closed\") boleh dihilangkan dalam defining clause. Opsi lain salah karena \"who\" untuk orang, dan koma di opsi ketiga tidak tepat tanpa pronoun." },
+  { id: "q4", type: "mc", prompt: "Pilih kalimat paling formal dan tetap gramatikal:", options: ["The client whom we emailed hasn't replied.", "The client who we emailed hasn't replied.", "The client which we emailed hasn't replied."], answer: "The client whom we emailed hasn't replied.", explain: "whom adalah bentuk objek formal dari who, dipakai saat relative pronoun berfungsi sebagai objek (kita meng-email dia). \"which\" salah karena client adalah orang." },
+  { id: "q5", type: "mc", prompt: "Pilih yang benar: 'This is the office ___ we deploy every Friday.'", options: ["which", "where", "who"], answer: "where", explain: "\"the office\" adalah tempat (lokasi kegiatan deploy terjadi), jadi pakai where." },
+  { id: "s1", type: "mc", prompt: "Soal cerita — Berdasarkan cerita 'Code Review Friday' di atas, siapakah tech lead itu?", options: ["The intern", "Maya", "The whole team"], answer: "Maya", explain: "Kalimat pertama cerita: 'Maya is the tech lead who reviews every pull request...' — Maya adalah tech lead." },
+  { id: "s2", type: "mc", prompt: "Soal cerita — Relative pronoun apa yang menjelaskan 'a payment service' yang tidak punya test coverage?", options: ["who", "which", "whose"], answer: "which", explain: "'a payment service, which had zero test coverage,' — which dipakai karena payment service adalah benda/sistem, dan klausanya non-defining (diapit koma)." },
+  { id: "s3", type: "mc", prompt: "Soal cerita — Frasa 'whose code triggered the incident' menjelaskan tentang siapa?", options: ["Maya", "The intern", "The whole team"], answer: "The intern", explain: "'The intern whose code triggered the incident' — whose menunjukkan kode itu milik si intern, dan kode itulah yang memicu insiden." }
+];
+</script>
+<script src="../assets/lesson.js"></script>
+</body>
+</html>

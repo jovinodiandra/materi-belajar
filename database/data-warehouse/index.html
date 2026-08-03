@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Warehouse — Tempat untuk Bertanya Besar</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/<b>data-warehouse.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 12</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Study kasus pemicunya</a>
+    <a href="#c02"><span class="yr">02</span> OLTP vs OLAP</a>
+
+    <div class="rail__part">II · Apa &amp; bagaimana</div>
+    <a href="#c03"><span class="yr">03</span> Apa itu (kata buku)</a>
+    <a href="#c04"><span class="yr">04</span> ETL / ELT</a>
+
+    <div class="rail__part">III · Skema &amp; penyimpanan</div>
+    <a href="#c05"><span class="yr">05</span> Star schema</a>
+    <a href="#c05b"><span class="yr">06</span> Keluarga schema lain</a>
+    <a href="#c05c"><span class="yr">07</span> Medallion (Bronze/Silver/Gold)</a>
+    <a href="#c06"><span class="yr">08</span> Columnar storage</a>
+
+    <div class="rail__part">IV · Pertimbangan</div>
+    <a href="#c07"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c08"><span class="yr">◆</span> Kapan dipakai</a>
+
+    <div class="rail__part">V · Ekosistem</div>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — saat kamu butuh bertanya, bukan mencatat</div>
+      <h1 class="reveal d1">Database produksi untuk <span class="accent">mencatat</span>. Data warehouse untuk <span class="accent">bertanya</span>.</h1>
+      <p class="sub reveal d2">
+        Database aplikasi kamu jago melayani jutaan transaksi kecil: tambah pesanan, ubah saldo, simpan profil.
+        Tapi begitu bos minta laporan <b>"total penjualan per wilayah per kuartal selama 3 tahun"</b>, database
+        yang sama bisa <b>megap-megap</b> — query berat itu mengunci tabel dan bikin aplikasi lemot untuk semua orang.
+        <b>Data warehouse</b> lahir dari rasa sakit ini: database <b>terpisah</b>, khusus untuk analisis. Deck ini
+        buat pemula — dari <b>kenapa</b> ia ada, cara kerjanya, trade-off-nya, kapan dipakai, sampai tools-nya,
+        diselingi kalimat dari buku rujukan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Analitik bikin OLTP lemot</b> <span>— query berat mengunci database produksi</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Pisah</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bikin database khusus analisis</b> <span>— salinan data, terpisah dari produksi</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Isi</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>ETL dari banyak sumber</b> <span>— kumpulkan, bersihkan, satukan</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Tata</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Star schema + columnar</b> <span>— ditata supaya query analitik kilat</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>BI, dashboard, tren</b> <span>— ambil keputusan dari data</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+
+      <div class="why reveal d4">
+        <div class="tag">◆ Buat apa ini? Kenapa pakai Data Warehouse?</div>
+        <p><strong>Given</strong> — database produksi (OLTP) kamu dioptimalkan untuk transaksi kecil-cepat: checkout, update stok, simpan profil — bukan untuk menjumlahkan jutaan baris sekaligus, dan datanya tersebar di banyak sistem terpisah (order, stok, CRM) dengan format masing-masing.</p>
+        <p><strong>When</strong> — tim bisnis minta laporan gabungan seperti <em>"total penjualan per wilayah per kuartal, 3 tahun terakhir"</em>, yang berarti scan &amp; join tabel raksasa lintas sistem sekaligus.</p>
+        <p><strong>Then</strong> — kalau query analitik itu dijalankan langsung di database produksi, ia mengunci tabel, menyedot CPU &amp; memori, dan bikin aplikasi yang melayani pelanggan ikut lemot untuk semua orang — sementara datanya sendiri tetap tercerai-berai dan sulit disatukan.</p>
+        <p>→ makanya kita pakai <strong>Data Warehouse</strong>: database terpisah, berisi salinan data yang sudah dirapikan &amp; ditata khusus untuk pertanyaan analitik besar, tanpa mengganggu database produksi.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 01 STUDY KASUS ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Study kasus</span> · Rasa sakit yang melahirkannya</div>
+        <h2>Saat satu laporan membuat seluruh aplikasi tersendat</h2>
+      </div>
+      <p class="lead reveal">Bayangkan sebuah perusahaan ritel. Database produksinya sibuk 24 jam: pelanggan checkout, stok berkurang, pembayaran masuk. Lalu tim bisnis bertanya: <em>"Berapa total penjualan per kategori, per wilayah, per bulan, selama 3 tahun terakhir?"</em></p>
+
+      <div class="code-card bad reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">query analitik di database PRODUKSI</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="k">SELECT</span> wilayah, kategori, date_trunc(<span class="s">'month'</span>, tanggal) <span class="k">AS</span> bulan,
+       <span class="k">SUM</span>(total) <span class="k">AS</span> omzet
+<span class="k">FROM</span> orders
+<span class="k">JOIN</span> order_items <span class="k">USING</span> (order_id)
+<span class="k">JOIN</span> products  <span class="k">USING</span> (product_id)
+<span class="k">WHERE</span> tanggal &gt;= <span class="s">'2022-01-01'</span>
+<span class="k">GROUP BY</span> wilayah, kategori, bulan;
+<span class="hl-bad">-- 🐢 memindai PULUHAN JUTA baris, mengunci tabel,</span>
+<span class="hl-bad">-- aplikasi checkout ikut melambat untuk SEMUA pelanggan</span></pre>
+      </div>
+
+      <p class="body reveal d1">Dua masalah menumpuk sekaligus, dan keduanya nyata:</p>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">// Mengganggu produksi</h4>
+          <ul class="bad-l">
+            <li>Query analitik berat memakan CPU, memori, &amp; mengunci tabel.</li>
+            <li>Aplikasi yang melayani pelanggan ikut tersendat.</li>
+            <li>DBA pun ogah mengizinkan analis bermain di DB produksi.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Data tercerai-berai</h4>
+          <ul class="bad-l">
+            <li>Penjualan di satu sistem, stok di lain, CRM di lain lagi.</li>
+            <li>Mau gabungkan semua untuk satu laporan? Rumit &amp; rapuh.</li>
+            <li>Tiap sistem punya format &amp; istilah berbeda.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — dapur restoran vs. ruang manajer</div>
+        <p>Dapur restoran (database produksi) dirancang untuk <strong>kecepatan melayani pesanan satu per satu</strong> saat jam sibuk. Kalau kamu menyuruh seorang analis berdiri di tengah dapur untuk <em>menghitung total bahan yang terpakai sepanjang tahun</em>, dia akan menghalangi semua koki. Solusinya: pindahkan analisis ke <strong>ruang terpisah</strong> berisi salinan catatan — itulah data warehouse.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 OLTP VS OLAP ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Dua pola beban berbeda</div>
+        <h2>OLTP vs OLAP: mencatat vs. menganalisis</h2>
+      </div>
+      <p class="lead reveal">Akar persoalannya: ada <strong>dua jenis beban kerja</strong> yang sangat berbeda, dan satu database sulit jago di keduanya sekaligus. Database produksi adalah <strong>OLTP</strong> (Online Transaction Processing); data warehouse adalah <strong>OLAP</strong> (Online Analytical Processing).</p>
+
+      <div class="quote reveal d1">
+        <p>“Data warehouse adalah database terpisah yang bisa dikueri analis sepuasnya, <span style="font-style:normal">tanpa mengganggu operasi OLTP</span>.”</p>
+        <cite>— Martin Kleppmann, <i>Designing Data-Intensive Applications</i> (Bab 3)</cite>
+      </div>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Membandingkan dua dunia</div>
+        <div class="erabox__row"><span class="erabox__lang">OLTP</span><code>banyak transaksi kecil — "tambah 1 pesanan"</code></div>
+        <div class="erabox__row"><span class="erabox__lang">OLAP</span><code>sedikit query besar — "rata-rata semua pesanan 3 tahun"</code></div>
+        <div class="erabox__row"><span class="erabox__lang">OLTP</span><code>baca/tulis beberapa baris per ID (acak)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">OLAP</span><code>memindai jutaan baris, hanya beberapa kolom</code></div>
+        <p class="erabox__note">OLTP mengutamakan <b>tulis cepat &amp; konsisten</b> (kasir). OLAP mengutamakan <b>baca &amp; agregasi masif</b> (analis). Karena polanya berlawanan, cara penyimpanan optimalnya pun berbeda — itu sebabnya keduanya dipisah.</p>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="good-h">// OLTP — database aplikasi</h4>
+          <ul class="good-l">
+            <li>Contoh: PostgreSQL, MySQL melayani aplikasi.</li>
+            <li>Pertanyaan: "ambil pesanan #12345".</li>
+            <li>Data terbaru, real-time, sering berubah.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">// OLAP — data warehouse</h4>
+          <ul class="good-l">
+            <li>Contoh: BigQuery, Snowflake, Redshift.</li>
+            <li>Pertanyaan: "tren omzet 5 tahun per wilayah".</li>
+            <li>Data historis, read-only, diperbarui berkala.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 APA ITU (BUKU) ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Definisi</span> · Kata para pendirinya</div>
+        <h2>Jadi, apa itu data warehouse?</h2>
+      </div>
+      <p class="lead reveal">Dua nama besar mendefinisikan bidang ini, dan dua-duanya layak kamu kenal: <strong>Bill Inmon</strong> (sering disebut "bapak data warehouse") dan <strong>Ralph Kimball</strong> (pelopor dimensional modeling).</p>
+
+      <div class="quote reveal d1">
+        <p>“Data warehouse adalah kumpulan data yang <span style="font-style:normal">berorientasi subjek, terintegrasi, terikat-waktu, dan tidak berubah</span>, untuk mendukung proses pengambilan keputusan manajemen.”</p>
+        <cite>— Bill Inmon, <i>Building the Data Warehouse</i> (1992)</cite>
+      </div>
+
+      <p class="body reveal d1">Empat kata kunci Inmon, diterjemahkan ke bahasa sehari-hari:</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// subject-oriented</div><h4>Berorientasi subjek</h4><p>Ditata seputar topik bisnis ("penjualan", "pelanggan"), bukan seputar satu aplikasi.</p></div>
+        <div class="card up"><div class="ic">// integrated</div><h4>Terintegrasi</h4><p>Data dari banyak sistem disatukan &amp; diseragamkan formatnya menjadi satu kebenaran.</p></div>
+        <div class="card up"><div class="ic">// time-variant</div><h4>Terikat waktu</h4><p>Menyimpan sejarah bertahun-tahun, bukan cuma kondisi "sekarang". Bisa lihat tren.</p></div>
+        <div class="card up"><div class="ic">// nonvolatile</div><h4>Tidak berubah</h4><p>Data dimuat lalu jarang diubah/dihapus — dibaca, bukan ditransaksikan ulang.</p></div>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>“Data warehouse adalah <span style="font-style:normal">salinan data transaksi</span> yang secara khusus distrukturkan untuk kueri dan analisis.”</p>
+        <cite>— Ralph Kimball, <i>The Data Warehouse Toolkit</i></cite>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Perhatikan kata <b>"salinan"</b>. Data warehouse <b>tidak menggantikan</b> database produksi — ia <b>menyalin</b> datanya secara berkala ke tempat yang aman untuk dianalisis. Produksi tetap jadi sumber kebenaran untuk operasi sehari-hari.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 ETL / ELT ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Aliran data</span> · ETL / ELT</div>
+        <h2>Bagaimana data masuk ke gudang?</h2>
+      </div>
+      <p class="lead reveal">Data tidak ajaib muncul di warehouse. Ia dipindahkan lewat pipeline bernama <strong>ETL</strong>: <strong>Extract</strong> (ambil dari sumber), <strong>Transform</strong> (bersihkan &amp; seragamkan), <strong>Load</strong> (muat ke warehouse). Varian modern membalik urutannya jadi <strong>ELT</strong> — muat dulu, baru transformasi di dalam warehouse yang kuat.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — gudang &amp; rantai pasok</div>
+        <p>Bayangkan gudang besar yang menerima barang dari banyak pemasok. <strong>Extract</strong> = truk menjemput barang dari tiap pemasok (sistem penjualan, stok, CRM). <strong>Transform</strong> = barang dicek, dibersihkan, diberi label seragam, dirapikan ke ukuran standar. <strong>Load</strong> = ditata di rak gudang sesuai kategori. Sekali tertata rapi, siapa pun bisa mengambil &amp; menghitung stok dengan cepat.</p>
+      </div>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">alur pipeline (disederhanakan)</span><span class="lang c">pipeline</span></div>
+<pre class="code"><span class="c"># EXTRACT — tarik dari banyak sumber</span>
+penjualan  &lt;- baca dari Postgres (produksi)
+stok       &lt;- baca dari API gudang
+pemasaran  &lt;- baca dari CSV / Google Sheets
+
+<span class="c"># TRANSFORM — bersihkan &amp; seragamkan</span>
+- samakan format tanggal &amp; mata uang
+- buang duplikat, perbaiki nilai kosong
+- gabungkan "Jkt"/"DKI"/"Jakarta" -&gt; "Jakarta"
+
+<span class="c"># LOAD — muat ke warehouse, terjadwal (mis. tiap malam)</span>
+muat ke  warehouse.fact_sales</pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ ETL vs ELT</div>
+          <p><strong>ETL</strong> (transform sebelum load) klasik, dipakai saat warehouse mahal/terbatas. <strong>ELT</strong> (load dulu, transform di dalam) populer sekarang karena warehouse cloud sangat kuat &amp; murah untuk mengolah data mentah — alat seperti <code>dbt</code> melakukan transformasi langsung di dalam warehouse.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 STAR SCHEMA ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Pemodelan</span> · Dimensional modeling (Kimball)</div>
+        <h2>Star schema: fakta di tengah, dimensi mengelilingi</h2>
+      </div>
+      <p class="lead reveal">Database produksi ditata <em>ternormalisasi</em> (dipecah jadi banyak tabel kecil agar hemat &amp; konsisten saat menulis). Warehouse justru sebaliknya: ditata <strong>denormalisasi</strong> agar query analitik sederhana &amp; cepat. Pola paling terkenal dari Ralph Kimball adalah <strong>star schema</strong>.</p>
+
+      <p class="body reveal d1">Bentuknya seperti bintang: satu <strong>tabel fakta</strong> (angka yang diukur, mis. nilai penjualan) di tengah, dikelilingi <strong>tabel dimensi</strong> (konteks: siapa, apa, kapan, di mana).</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">star schema — fact dikelilingi dimension</span><span class="lang c">model</span></div>
+<pre class="code">        <span class="t">dim_waktu</span>          <span class="t">dim_produk</span>
+              \              /
+               \            /
+            ┌─────────────────┐
+            │   <span class="f">fact_sales</span>     │   &lt;- angka: qty, omzet
+            │  (jutaan baris) │
+            └─────────────────┘
+               /            \
+              /              \
+        <span class="t">dim_pelanggan</span>      <span class="t">dim_wilayah</span>
+
+<span class="c">-- query analitik jadi sederhana &amp; cepat:</span>
+<span class="k">SELECT</span> w.nama_wilayah, <span class="k">SUM</span>(f.omzet)
+<span class="k">FROM</span> fact_sales f <span class="k">JOIN</span> dim_wilayah w <span class="k">USING</span>(wilayah_id)
+<span class="k">GROUP BY</span> w.nama_wilayah;</pre>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — struk belanja &amp; buku katalog</div>
+        <p><strong>Tabel fakta</strong> ibarat tumpukan jutaan <em>struk belanja</em>: tiap baris satu peristiwa terukur (produk X, 3 buah, Rp90.000). <strong>Tabel dimensi</strong> ibarat <em>buku katalog</em> yang menjelaskan kode-kode di struk: siapa pelanggannya, produk apa, di toko mana, tanggal berapa. Untuk menganalisis, kamu tinggal menumpuk struk dan melihat katalog — tanpa menggali ke banyak tabel rumit.</p>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Di OLTP, <b>denormalisasi itu "dosa"</b> karena bikin data ganda &amp; sulit dijaga saat sering menulis. Di warehouse, denormalisasi justru <b>diinginkan</b> — karena datanya jarang diubah (nonvolatile) dan tujuannya membaca secepat mungkin. Konteks menentukan aturan.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05b KELUARGA SCHEMA LAIN ============ -->
+  <section class="chapter" id="c05b">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Pemodelan</span> · Bukan cuma star</div>
+        <h2>Keluarga schema: snowflake, galaxy, OBT, data vault</h2>
+      </div>
+      <p class="lead reveal">Star schema paling populer, tapi bukan satu-satunya cara menata gudang. Tiap pola punya trade-off &amp; kasus pakai sendiri. Sebagai pemula, cukup <strong>kenali bentuk &amp; kapan masing-masing masuk akal</strong>.</p>
+
+      <p class="body reveal d1"><strong>1 · Snowflake schema</strong> — seperti star, tapi tabel dimensinya <em>dinormalisasi</em> (dipecah jadi sub-tabel). Bentuknya bercabang seperti kepingan salju.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">STAR — dimensi gepeng (denormal)</span><span class="lang c">model</span></div>
+<pre class="code"><span class="f">fact_sales</span> ── <span class="t">dim_produk</span>
+   (produk_id, nama, kategori,
+    departemen)   <span class="c"># semua jadi satu</span>
+
+<span class="c"># 1 JOIN, query simpel</span></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">SNOWFLAKE — dimensi dipecah</span><span class="lang c">model</span></div>
+<pre class="code"><span class="f">fact_sales</span> ── <span class="t">dim_produk</span> ── <span class="t">dim_kategori</span>
+                              └─ <span class="t">dim_departemen</span>
+
+<span class="c"># hemat ruang, tapi lebih banyak JOIN</span></pre>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — alamat ditulis lengkap vs. pakai kode pos</div>
+        <p>Star = tiap baris menulis alamat lengkap berulang ("Jl. Merdeka, Bandung, Jawa Barat"). Boros tapi langsung kebaca. Snowflake = cukup tulis <em>kode pos</em>, lalu detailnya disimpan di tabel terpisah. Hemat, tapi tiap kali butuh detail kamu harus "menengok" tabel lain (JOIN tambahan).</p>
+      </div>
+
+      <p class="body reveal d2"><strong>2 · Galaxy / Fact Constellation</strong> — beberapa <em>tabel fakta</em> berbagi tabel dimensi yang sama. <strong>3 · One Big Table (OBT)</strong> — semua digabung jadi satu tabel super-lebar, tanpa JOIN. <strong>4 · Data Vault</strong> — pola untuk enterprise besar: Hub (kunci bisnis) + Link (relasi) + Satellite (atribut &amp; riwayat).</p>
+
+      <div class="grid reveal d3">
+        <div class="card up"><div class="ic">// star schema</div><h4>Star ⭐</h4><p><b>Bentuk:</b> 1 fakta + dimensi gepeng. <b>Untung:</b> simpel &amp; cepat. <b>Kasus:</b> dashboard penjualan ritel di Power BI / Tableau — pola default kebanyakan BI.</p></div>
+        <div class="card up"><div class="ic">// snowflake schema</div><h4>Snowflake ❄️</h4><p><b>Bentuk:</b> dimensi dinormalisasi. <b>Untung:</b> hemat ruang, rapi untuk hierarki. <b>Kasus:</b> DW enterprise dengan dimensi besar &amp; berjenjang (produk → kategori → departemen).</p></div>
+        <div class="card up"><div class="ic">// galaxy schema</div><h4>Galaxy / Constellation 🌌</h4><p><b>Bentuk:</b> banyak fakta berbagi dimensi. <b>Kasus:</b> perusahaan menganalisis <em>penjualan</em> &amp; <em>stok</em> sekaligus, dua-duanya pakai <code>dim_waktu</code> &amp; <code>dim_produk</code> yang sama.</p></div>
+        <div class="card up"><div class="ic">// one big table</div><h4>One Big Table (OBT) 📋</h4><p><b>Bentuk:</b> satu tabel super-lebar, tanpa JOIN. <b>Untung:</b> sangat cepat di warehouse columnar. <b>Kasus:</b> analitik event/clickstream di <b>BigQuery</b> + <code>dbt</code>; tabel produk analytics.</p></div>
+        <div class="card up"><div class="ic">// data vault</div><h4>Data Vault 🔐</h4><p><b>Bentuk:</b> Hub + Link + Satellite. <b>Untung:</b> jejak audit &amp; riwayat penuh, tahan perubahan sumber. <b>Kasus:</b> <b>bank, asuransi, pemerintah</b> — banyak sumber &amp; wajib auditable.</p></div>
+        <div class="card up"><div class="ic">// normalized (3NF)</div><h4>Normalized / Inmon 🏛️</h4><p><b>Bentuk:</b> 3NF terpusat (gaya Inmon), lalu diturunkan ke data mart. <b>Kasus:</b> korporasi besar yang mengutamakan satu model perusahaan yang konsisten.</p></div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Mana yang dipilih?</div>
+          <p>Untuk mayoritas tim &amp; pemula: mulai dari <strong>star schema</strong> — paling mudah dipahami &amp; didukung semua tool BI. Naik ke <strong>snowflake/galaxy</strong> saat dimensi membesar atau proses bisnis bertambah. <strong>OBT</strong> cocok di warehouse cloud columnar yang JOIN-nya mahal. <strong>Data Vault</strong> hanya saat skala enterprise &amp; kebutuhan audit benar-benar menuntut — jangan dipakai untuk proyek kecil, terlalu rumit.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05c MEDALLION ============ -->
+  <section class="chapter" id="c05c">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Arsitektur layer</span> · Medallion (Databricks)</div>
+        <h2>Medallion: Bronze → Silver → Gold</h2>
+      </div>
+      <p class="lead reveal">Penting dibedakan: Medallion <strong>bukan schema tabel</strong> seperti star, melainkan <strong>cara menata data dalam beberapa lapisan kualitas</strong>. Polanya dipopulerkan oleh <strong>Databricks</strong> di arsitektur <em>lakehouse</em>. Data mengalir dari mentah ke siap-pakai lewat tiga tingkat: <strong>Bronze</strong>, <strong>Silver</strong>, <strong>Gold</strong>.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — pengolahan air bersih</div>
+        <p><strong>Bronze</strong> = air mentah dari sungai, apa adanya (kotor, lengkap). <strong>Silver</strong> = air sudah disaring &amp; dibersihkan (siap diolah). <strong>Gold</strong> = air kemasan siap minum, dikemas untuk konsumen. Tiap tahap menaikkan kualitas &amp; kegunaan. Kamu menyimpan ketiganya, jadi kalau ada salah olah, kamu bisa kembali ke air mentah dan memproses ulang.</p>
+      </div>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">aliran data di medallion architecture</span><span class="lang c">layer</span></div>
+<pre class="code"><span class="c"># BRONZE — mentah, persis dari sumber (disimpan apa adanya)</span>
+sumber (app, IoT, log, API)  ──&gt;  <span class="t">bronze.events_raw</span>
+
+<span class="c"># SILVER — dibersihkan, divalidasi, digabung, ter-deduplikasi</span>
+<span class="t">bronze.events_raw</span>  ──&gt;  <span class="t">silver.events_clean</span>
+  - buang duplikat &amp; baris rusak
+  - samakan tipe, gabung dengan data referensi
+
+<span class="c"># GOLD — agregat siap pakai untuk bisnis / BI / ML</span>
+<span class="t">silver.events_clean</span>  ──&gt;  <span class="f">gold.penjualan_harian</span>
+  <span class="k">SELECT</span> tanggal, wilayah, <span class="k">SUM</span>(omzet) ... <span class="k">GROUP BY</span> ...</pre>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// bronze</div><h4>🥉 Bronze — mentah</h4><p>Salinan data sumber apa adanya, lengkap &amp; tak diubah. Berfungsi sebagai arsip &amp; titik proses-ulang kalau logika berubah.</p></div>
+        <div class="card up"><div class="ic">// silver</div><h4>🥈 Silver — bersih</h4><p>Sudah divalidasi, dibersihkan, di-deduplikasi, &amp; digabung antar sumber. "Satu versi kebenaran" tingkat detail.</p></div>
+        <div class="card up"><div class="ic">// gold</div><h4>🥇 Gold — siap pakai</h4><p>Agregasi level bisnis untuk dashboard, laporan, &amp; ML. <strong>Sering berbentuk star schema di sini.</strong></p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Contoh kasus program</div>
+          <p>Sebuah platform e-commerce mengalirkan <strong>clickstream</strong> (jutaan klik/hari): event mentah ditampung di <strong>Bronze</strong> (Delta Lake); job Spark/<code>dbt</code> membersihkan &amp; menggabungkannya dengan data produk di <strong>Silver</strong>; lalu agregat "produk paling dilihat per jam" dibangun di <strong>Gold</strong> untuk dashboard tim marketing. Tools khasnya: <strong>Databricks + Delta Lake + Spark</strong>, atau kombinasi <strong>dbt</strong> di atas warehouse seperti Snowflake/BigQuery.</p>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Medallion &amp; star schema <b>tidak bersaing</b> — mereka <b>saling melengkapi</b>. Medallion mengatur <em>perjalanan</em> data (mentah → bersih → siap), sedangkan star schema mengatur <em>bentuk</em> tabel di tujuan akhir. Lapisan <b>Gold</b> sering kali justru ditata sebagai star schema.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 COLUMNAR STORAGE ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Di balik layar</span> · Columnar storage</div>
+        <h2>Kenapa warehouse bisa menjumlah miliaran baris dengan cepat</h2>
+      </div>
+      <p class="lead reveal">Rahasia teknis utamanya: data warehouse menyimpan data <strong>per kolom</strong>, bukan <strong>per baris</strong> seperti database biasa. Untuk analitik yang cuma butuh sedikit kolom dari jutaan baris, ini bedanya siang dan malam.</p>
+
+      <div class="quote reveal d1">
+        <p>“Idenya sederhana: jangan simpan semua nilai dari satu baris bersama-sama, tetapi simpan semua nilai dari setiap <span style="font-style:normal">kolom</span> bersama-sama.”</p>
+        <cite>— Martin Kleppmann, <i>Designing Data-Intensive Applications</i> (Bab 3)</cite>
+      </div>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — membaca satu kolom dari buku besar</div>
+        <p>Kamu punya buku besar berisi sejuta transaksi, tiap baris: <em>tanggal, nama, produk, harga</em>. Pertanyaanmu cuma: <em>"berapa total semua harga?"</em>. Penyimpanan <strong>per baris</strong> memaksamu membaca seluruh isi tiap baris (tanggal, nama, produk) padahal cuma butuh harga. Penyimpanan <strong>per kolom</strong> = semua "harga" disimpan berdampingan, jadi kamu cukup membaca <strong>satu jalur</strong> angka dan menjumlahkannya. Jauh lebih sedikit yang dibaca.</p>
+      </div>
+
+      <div class="diptych reveal d2">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">row-based (OLTP)</span><span class="lang c">layout</span></div>
+<pre class="code"><span class="c"># tiap baris utuh berdekatan</span>
+[2024, Budi, Kopi, 25000]
+[2024, Sari, Teh,  18000]
+[2024, Adi,  Roti, 12000]
+<span class="hl-bad"># SUM(harga) -&gt; tetap baca semua kolom</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">columnar (OLAP)</span><span class="lang c">layout</span></div>
+<pre class="code"><span class="c"># tiap kolom berdekatan</span>
+tanggal: [2024, 2024, 2024]
+nama:    [Budi, Sari, Adi]
+harga:   [25000, 18000, 12000]
+<span class="hl-good"># SUM(harga) -&gt; cukup baca 1 kolom ⚡</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Bonusnya: karena nilai sejenis berkumpul (semua angka, semua tanggal), datanya jauh lebih mudah <strong>dikompres</strong> — hemat ruang sekaligus mempercepat pembacaan.</p>
+    </div>
+  </section>
+
+  <!-- ============ 07 TRADE-OFF ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: yang kamu dapat & yang kamu korbankan</h2>
+      </div>
+      <p class="lead reveal">Data warehouse luar biasa untuk analitik — tapi ia bukan pengganti database produksi, dan punya konsekuensi yang harus disadari sejak awal.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Query analitik masif yang sangat cepat.</li>
+            <li>Satu sumber data terpadu dari banyak sistem.</li>
+            <li>Sejarah bertahun-tahun untuk analisis tren.</li>
+            <li>Analis bebas bermain tanpa mengganggu produksi.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Data <em>tidak real-time</em> — telat menit/jam/hari (ikut jadwal ETL).</li>
+            <li>Buruk untuk transaksi &amp; ambil satu baris per ID.</li>
+            <li>Pipeline ETL harus dibangun &amp; dirawat (rapuh bila diabaikan).</li>
+            <li>Biaya penyimpanan &amp; komputasi tambahan.</li>
+            <li>Data ganda — warehouse adalah salinan, perlu sinkronisasi.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Inti trade-off-nya</div>
+          <p>Kamu menukar <strong>kesegaran &amp; kelincahan transaksi</strong> demi <strong>kecepatan analisis dalam skala besar</strong>. Itu pertukaran yang sangat sepadan untuk pelaporan &amp; pengambilan keputusan — tapi salah total kalau dipakai sebagai database utama aplikasi.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 KAPAN DIPAKAI ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan pakai data warehouse (dan kapan tidak)</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya sederhana: <strong>kalau pertanyaanmu bersifat "analisis lintas banyak data &amp; waktu", pakai warehouse. Kalau bersifat "operasi satu transaksi sekarang", tetap di OLTP.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai warehouse saat…</h4>
+          <ul class="good-l">
+            <li>Bikin dashboard &amp; laporan bisnis (BI).</li>
+            <li>Menganalisis tren historis lintas tahun.</li>
+            <li>Menggabungkan data dari banyak sistem.</li>
+            <li>Query agregasi berat (SUM, AVG, GROUP BY masif).</li>
+            <li>Bahan untuk analitik &amp; machine learning.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, tetap OLTP saat…</h4>
+          <ul class="bad-l">
+            <li>Melayani transaksi aplikasi real-time.</li>
+            <li>Ambil/ubah satu baris per ID (profil, pesanan).</li>
+            <li>Butuh data detik-terbaru yang konsisten.</li>
+            <li>Banyak operasi tulis kecil &amp; sering.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kerabat yang sering tertukar</div>
+        <p><strong>Data lake</strong> = "danau" berisi data mentah apa adanya (termasuk file, gambar, log) — fleksibel tapi belum tertata. <strong>Data warehouse</strong> = data sudah bersih &amp; terstruktur untuk analisis. <strong>Lakehouse</strong> = gabungan keduanya (mis. Databricks). <strong>Data mart</strong> = "warehouse mini" untuk satu departemen (mis. khusus tim keuangan).</p>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Untuk startup kecil dengan data sedikit, kamu <b>belum tentu butuh</b> warehouse terpisah — sebuah read-replica dari database produksi sudah cukup untuk laporan. Warehouse mulai masuk akal saat <b>data &amp; pertanyaan analitik membesar</b> dan mulai mengganggu produksi. Jangan bangun gudang sebelum punya cukup barang.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai di lapangan</div>
+        <h2>Tools data warehouse modern</h2>
+      </div>
+      <p class="lead reveal">Sebagai pemula, kamu tidak perlu menguasai semuanya — cukup tahu <strong>kategorinya</strong> dan satu-dua nama populer di tiap kategori, supaya tidak bingung saat mendengar istilah-istilah ini.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// gudangnya (warehouse)</div><h4>Snowflake · BigQuery · Redshift</h4><p>Tempat data disimpan &amp; dikueri. Plus Azure Synapse, ClickHouse, Databricks. Kebanyakan cloud, columnar, &amp; bisa skala besar.</p></div>
+        <div class="card up"><div class="ic">// memasukkan data (E/L)</div><h4>Fivetran · Airbyte</h4><p>Menarik data dari ratusan sumber (database, SaaS, API) ke warehouse secara otomatis &amp; terjadwal.</p></div>
+        <div class="card up"><div class="ic">// transformasi (T)</div><h4>dbt</h4><p>Standar de-facto untuk transformasi data <em>di dalam</em> warehouse pakai SQL, dengan versioning &amp; testing.</p></div>
+        <div class="card up"><div class="ic">// orkestrasi jadwal</div><h4>Apache Airflow · Dagster</h4><p>Menjadwalkan &amp; mengatur urutan pipeline ("jalankan extract jam 1, transform jam 2").</p></div>
+        <div class="card up"><div class="ic">// visualisasi (BI)</div><h4>Tableau · Power BI · Metabase</h4><p>Mengubah hasil query jadi dashboard &amp; grafik yang dibaca tim bisnis. Plus Looker.</p></div>
+        <div class="card up"><div class="ic">// open-source</div><h4>ClickHouse · DuckDB</h4><p>Mesin analitik columnar cepat &amp; gratis. DuckDB bahkan jalan di laptop — bagus untuk belajar.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Mau coba sendiri?</div>
+          <p>Untuk belajar tanpa biaya cloud, <strong>DuckDB</strong> pilihan terbaik: satu file, jalan di laptop, pakai SQL biasa, dan columnar. Kamu bisa merasakan kecepatan query analitik atas jutaan baris langsung dari komputermu sendiri.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Tempat terpisah untuk bertanya besar</h2>
+      </div>
+      <p class="lead reveal">Data warehouse lahir dari satu kebutuhan: menganalisis data dalam skala besar <strong>tanpa melumpuhkan</strong> aplikasi yang melayani pelanggan. Ia menyalin data dari banyak sistem, menatanya untuk membaca, dan membiarkan tim bisnis bertanya sepuasnya.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>OLTP vs OLAP</b> — mencatat transaksi vs. menganalisis massal; dua dunia, dipisah.</li>
+          <li><b>Salinan, bukan pengganti</b> — produksi tetap sumber kebenaran operasional.</li>
+          <li><b>ETL/ELT</b> — ambil, bersihkan, muat dari banyak sumber ke satu gudang.</li>
+          <li><b>Star schema</b> — fakta di tengah, dimensi mengelilingi; denormalisasi disengaja.</li>
+          <li><b>Columnar</b> — simpan per kolom; menjumlah miliaran baris jadi kilat.</li>
+          <li><b>Trade-off</b> — cepat &amp; terpadu, tapi tidak real-time &amp; butuh pipeline.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Pakai data warehouse ketika pertanyaanmu berubah dari <strong>"ambil baris ini sekarang"</strong> menjadi <strong>"apa pola dari semua data ini sepanjang waktu"</strong>. Saat analitik mulai mengganggu produksi atau data tercerai di banyak sistem, di situlah gudang mulai bernilai. Jangan bangun lebih awal dari kebutuhan — tapi saat dibutuhkan, ia mengubah data jadi keputusan.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Database produksi untuk mencatat. Data warehouse untuk bertanya."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Data Warehouse</b> · Kenapa, bagaimana, kapan, &amp; tools-nya · untuk pemula · rujukan: Inmon, Kimball, DDIA · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

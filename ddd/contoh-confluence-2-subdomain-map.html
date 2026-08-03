@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Peta Subdomain — Core / Supporting / Generic · RideGo</title>
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --text:#172b4d; --subtle:#6b778c; --link:#0052cc; --line:#dfe1e6; --bg:#f4f5f7;
+    --panel-info-bg:#deebff; --panel-info-ic:#0747a6;
+    --panel-warn-bg:#fffae6; --panel-warn-ic:#974f0c;
+    --panel-ok-bg:#e3fcef;   --panel-ok-ic:#006644;
+    --panel-note-bg:#eae6ff; --panel-note-ic:#403294;
+    --mono:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;
+  }
+  body { background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .page { max-width:940px; margin:24px auto 60px; background:#fff; border:1px solid var(--line);
+    border-radius:6px; padding:32px clamp(20px,5vw,56px) 48px; box-shadow:0 1px 3px rgba(9,30,66,.13); }
+
+  .breadcrumb { font-size:13px; color:var(--subtle); margin-bottom:14px; }
+  .breadcrumb a { color:var(--link); text-decoration:none; }
+  .breadcrumb a:hover { text-decoration:underline; }
+  .breadcrumb span { margin:0 6px; color:#c1c7d0; }
+
+  h1 { font-size:29px; font-weight:600; line-height:1.25; margin-bottom:10px; }
+  h1 .pgicon { margin-right:10px; }
+  .byline { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:6px; color:var(--subtle); font-size:13.5px; }
+  .avatars { display:flex; }
+  .avatar { width:26px; height:26px; border-radius:50%; color:#fff; font-size:11.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
+  .avatar + .avatar { margin-left:-8px; }
+  .av-1 { background:#de350b; } .av-2 { background:#00875a; }
+
+  .lozenges { display:flex; gap:8px; margin:10px 0 26px; flex-wrap:wrap; }
+  .lozenge { font-size:11px; font-weight:700; letter-spacing:.04em; padding:3px 8px; border-radius:3px; text-transform:uppercase; white-space:nowrap; }
+  .lz-green { background:var(--panel-ok-bg); color:var(--panel-ok-ic); }
+  .lz-blue  { background:var(--panel-info-bg); color:var(--panel-info-ic); }
+  .lz-yellow{ background:var(--panel-warn-bg); color:var(--panel-warn-ic); }
+  .lz-gray  { background:#f4f5f7; color:#42526e; border:1px solid var(--line); }
+
+  h2 { font-size:21px; font-weight:600; margin:38px 0 12px; }
+  h3 { font-size:16.5px; font-weight:600; margin:26px 0 8px; }
+  p { margin:10px 0; max-width:80ch; }
+  strong { font-weight:600; }
+  code { font-family:var(--mono); font-size:.85em; background:var(--bg); border:1px solid var(--line); border-radius:3px; padding:1px 5px; }
+  blockquote { border-left:3px solid var(--link); padding:8px 16px; margin:14px 0; background:#fafbfc; font-size:16px; }
+
+  .panel { display:flex; gap:12px; border-radius:4px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+  .panel .ic { font-size:16px; line-height:1.5; flex:none; }
+  .panel p { margin:4px 0; }
+  .panel-info { background:var(--panel-info-bg); }
+  .panel-warn { background:var(--panel-warn-bg); }
+  .panel-ok   { background:var(--panel-ok-bg); }
+  .panel-note { background:var(--panel-note-bg); }
+
+  .tbl-wrap { overflow-x:auto; margin:14px 0; }
+  table { border-collapse:collapse; width:100%; min-width:700px; font-size:14px; }
+  th { background:#f4f5f7; text-align:left; font-weight:600; }
+  th, td { border:1px solid var(--line); padding:8px 12px; vertical-align:top; }
+  tr:hover td { background:#fafbfc; }
+
+  pre.flow { font-family:var(--mono); font-size:13px; line-height:1.7; background:#fafbfc; border:1px solid var(--line);
+    border-radius:4px; padding:16px 18px; overflow-x:auto; margin:14px 0; }
+
+  footer { max-width:940px; margin:0 auto 40px; text-align:center; color:var(--subtle); font-size:12.5px; }
+  footer a { color:var(--link); }
+  @media (max-width:600px){ .page { margin:0; border-radius:0; border-left:0; border-right:0; } }
+</style>
+</head>
+<body>
+<a id="__exitbtn" href="index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">← Materi DDD</a>
+
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="#">RideGo</a><span>/</span><a href="#">Engineering Wiki</a><span>/</span><a href="#">Domain</a><span>/</span>Peta Subdomain
+  </div>
+
+  <h1><span class="pgicon">🗺️</span>Peta Subdomain — Core / Supporting / Generic</h1>
+
+  <div class="byline">
+    <div class="avatars"><div class="avatar av-1">DM</div><div class="avatar av-2">RA</div></div>
+    Dimiliki <strong>&nbsp;Dimas (Tech Lead) &amp; Ratna (PO)</strong>&nbsp;· Diperbarui 12 Jul 2026 · direview tiap kuartal
+  </div>
+  <div class="lozenges">
+    <span class="lozenge lz-green">Living Document</span>
+    <span class="lozenge lz-blue">Review berikutnya: Okt 2026</span>
+  </div>
+
+  <div class="panel panel-info">
+    <span class="ic">ℹ️</span>
+    <div><p><strong>Halaman ini adalah peta alokasi sumber daya engineering.</strong> Ia menjawab: ke mana talenta terbaik dikerahkan, mana yang cukup "jalan dengan benar", dan mana yang dibeli. Dipakai saat staffing, prioritisasi refactor, dan keputusan build-vs-buy.</p></div>
+  </div>
+
+  <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px 0;border-radius:0 10px 10px 0;max-width:70ch">
+    <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+    <p style="margin:5px 0"><b>Given</b> — semua bagian sistem dianggap sama pentingnya, tanpa peta yang membedakan mana yang core, supporting, atau generic</p>
+    <p style="margin:5px 0"><b>When</b> — tim harus memutuskan ke mana talenta terbaik dikerahkan, mana yang dibangun sendiri, dan mana yang cukup dibeli/dipakai library</p>
+    <p style="margin:5px 0"><b>Then</b> — investasi tersebar rata ke semua area; bagian yang justru jadi keunggulan kompetitif (seperti Matching &amp; Dispatch) malah kurang perhatian, sementara area yang harusnya cukup "beli" (seperti Notifikasi) dibangun sendiri dan menyita waktu tim terbaik</p>
+    <p style="margin:8px 0 0">→ makanya kita bikin <b>Peta Subdomain</b>, supaya alokasi sumber daya mengikuti mana yang benar-benar jadi pembeda kompetitif (core), mana yang wajib benar tapi bukan pembeda (supporting), dan mana yang solved problem (generic).</p>
+  </div>
+
+  <h2>Visi produk — alat uji klasifikasi</h2>
+  <blockquote>RideGo menang karena <strong>penumpang mendapat driver paling cepat dengan tarif paling masuk akal</strong> — bukan karena notifikasinya paling bagus.</blockquote>
+  <p>Kalimat ini adalah alat uji: subdomain yang langsung menopang kalimat ini = kandidat <strong>core</strong>. Yang tidak, turun kelas.</p>
+
+  <h2>Peta subdomain</h2>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th style="width:19%">Subdomain</th><th style="width:12%">Jenis</th><th>Kenapa</th><th>Strategi investasi</th><th style="width:13%">Bounded Context</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Matching &amp; Dispatch</strong></td><td><span class="lozenge lz-yellow">Core</span></td><td>Kecepatan mendapat driver = alasan utama penumpang memilih kami</td><td>Talenta terbaik; bangun &amp; tuning sendiri; eksperimen algoritma berkelanjutan</td><td>Matching</td></tr>
+      <tr><td><strong>Dynamic Pricing (surge)</strong></td><td><span class="lozenge lz-yellow">Core</span></td><td>Keseimbangan supply–demand = margin &amp; retensi driver; salah hitung = rugi dua arah</td><td>Bangun sendiri; data scientist + domain expert; A/B testing</td><td>Pricing</td></tr>
+      <tr><td><strong>Trip Lifecycle</strong></td><td><span class="lozenge lz-yellow">Core</span></td><td>Integritas status perjalanan menopang semua tagihan &amp; pembayaran</td><td>Bangun sendiri; invariant ketat (aggregate); test menyeluruh</td><td>Trip</td></tr>
+      <tr><td><strong>Dompet &amp; Payout</strong> ⚠️</td><td><span class="lozenge lz-blue">Supporting</span></td><td>Wajib benar (uang!) tapi bukan alasan orang memilih RideGo — <em>lihat catatan di bawah</em></td><td>Bangun secukupnya, disiplin tinggi di correctness; jangan berinovasi di sini</td><td>Payout</td></tr>
+      <tr><td><strong>Rating &amp; Review</strong></td><td><span class="lozenge lz-blue">Supporting</span></td><td>Perlu untuk kualitas layanan; pola solusinya standar</td><td>Bangun sederhana; jangan over-engineer</td><td>Rating</td></tr>
+      <tr><td><strong>Promo &amp; Voucher</strong></td><td><span class="lozenge lz-blue">Supporting</span></td><td>Alat marketing; aturan spesifik bisnis tapi bukan pembeda teknis</td><td>Rule engine sederhana</td><td>Promo</td></tr>
+      <tr><td><strong>Notifikasi (push/SMS)</strong></td><td><span class="lozenge lz-gray">Generic</span></td><td>Masalah umum; banyak penyedia jadi</td><td><strong>Beli</strong> (FCM, vendor SMS)</td><td>—</td></tr>
+      <tr><td><strong>Autentikasi &amp; OTP</strong></td><td><span class="lozenge lz-gray">Generic</span></td><td>Solved problem; solusi teruji justru lebih aman</td><td>Library / layanan standar</td><td>—</td></tr>
+      <tr><td><strong>Peta &amp; Geocoding</strong></td><td><span class="lozenge lz-gray">Generic</span></td><td>Google Maps/OSM jauh lebih baik dari buatan sendiri</td><td><strong>Beli</strong>; bungkus adapter <code>MapsPort</code> supaya vendor bisa diganti</td><td>dipakai Matching &amp; Trip</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Keputusan yang diperdebatkan</h2>
+  <p>Klasifikasi adalah <strong>keputusan strategis, bukan fakta alam</strong> — perdebatannya direkam di sini supaya tidak diulang tiap kuartal.</p>
+
+  <h3>Dompet &amp; Payout: supporting, bukan core — kenapa?</h3>
+  <div class="panel panel-warn">
+    <span class="ic">⚖️</span>
+    <div>
+      <p><strong>Argumen "harusnya core":</strong> menyentuh uang; salah hitung = fatal &amp; merusak kepercayaan driver.</p>
+      <p><strong>Keputusan (Jul 2026): kritikal ≠ core.</strong> Core = pembeda kompetitif. Dompet kami tidak membuat penumpang memilih RideGo; ia harus <strong>benar</strong>, bukan <strong>unggul</strong>. Maka: supporting, dengan standar correctness paling tinggi di kelasnya (coverage &amp; review lebih ketat).</p>
+      <p><strong>Pemicu naik kelas:</strong> kalau strategi menjadikan dompet produk sendiri (seperti GoPay bagi Gojek — dari fitur pembayaran jadi bisnis fintech), klasifikasi naik ke <strong>CORE</strong> dan alokasi tim ikut berubah.</p>
+    </div>
+  </div>
+
+  <h3>Peta: generic, walau dipakai oleh core</h3>
+  <div class="panel panel-note">
+    <span class="ic">📌</span>
+    <div><p>Matching (core) <em>memakai</em> peta (generic). <strong>Alat generic boleh melayani subdomain core</strong> — yang core adalah algoritma pencocokannya, bukan petanya. Jangan menaik-kelaskan teknologi hanya karena ia dipakai oleh sesuatu yang penting.</p></div>
+  </div>
+
+  <h2>Panduan mengklasifikasi</h2>
+  <pre class="flow">Apakah area ini alasan pelanggan memilih produk kita / pembeda kompetitif?
+ ├─ YA  → CORE      (bangun sendiri · talenta terbaik · kualitas maksimal)
+ └─ TIDAK
+     ├─ Apakah aturannya spesifik ke bisnis kita?
+     │   ├─ YA  → SUPPORTING  (bangun secukupnya)
+     │   └─ TIDAK → GENERIC   (beli / pakai library · bungkus dengan adapter)
+     └─ Ragu? → default SUPPORTING, review kuartal berikutnya</pre>
+
+  <div class="panel panel-ok">
+    <span class="ic">✅</span>
+    <div><p><strong>Cara membaca peta ini saat sprint planning:</strong> story yang menyentuh baris <span class="lozenge lz-yellow">Core</span> diprioritaskan ke engineer paling senior dan dapat porsi review paling ketat. Story di baris <span class="lozenge lz-gray">Generic</span> yang mulai memakan waktu &gt; 1 sprint adalah sinyal build-vs-buy perlu ditinjau ulang.</p></div>
+  </div>
+
+  <h2>Changelog</h2>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th style="width:14%">Tanggal</th><th>Perubahan</th><th style="width:34%">Alasan</th></tr></thead>
+    <tbody>
+      <tr><td>2026-07-01</td><td>Trip Lifecycle dinaikkan supporting → <strong>core</strong></td><td>Insiden salah status trip berdampak ke seluruh tagihan</td></tr>
+      <tr><td>2026-06-01</td><td>Halaman dibuat; 9 subdomain diklasifikasi</td><td>Kick-off pemetaan domain</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<footer>RideGo Engineering Wiki · Domain · terkait: <a href="contoh-confluence-1-glossary.html">Glossary</a> · <a href="contoh-confluence-3-context-map.html">Context Map</a></footer>
+</body>
+</html>

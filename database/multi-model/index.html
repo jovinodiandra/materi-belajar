@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Model Database — Satu Mesin, Banyak Model Data</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home { color: var(--muted); text-decoration: none; white-space: nowrap; padding-right: 12px; border-right: 1px solid var(--line); transition: color .18s; }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card p b { color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- ordered steps ---------- */
+  .steps { max-width: 74ch; margin: 22px 0 6px; counter-reset: stepnum; }
+  .steps li {
+    list-style: none; counter-increment: stepnum; position: relative;
+    padding: 12px 0 12px 46px; border-bottom: 1px solid var(--line-soft);
+    font-size: 15.5px; color: var(--ink);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(stepnum, decimal-leading-zero);
+    position: absolute; left: 0; top: 10px;
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 12px; color: var(--cyan);
+    border: 1px solid var(--cyan-dim); border-radius: 7px; background: rgba(69,212,222,.08);
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Database</a>
+  <div class="topbar__file">docs/learning/database/multi-model/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Polyglot persistence</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Satu mesin, banyak API</a>
+    <a href="#c03"><span class="yr">03</span> Polyglot vs multi-model</a>
+
+    <div class="rail__part">III · Praktik</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">🎓</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Untung &amp; harga</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">V · Keputusan &amp; praktik</div>
+    <a href="#c08"><span class="yr">!</span> Study kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — satu mesin, banyak wajah</div>
+      <h1 class="reveal d1">Satu database yang bisa <span class="accent">bicara banyak bahasa data</span>.</h1>
+      <p class="sub reveal d2">
+        Aplikasi modern jarang cuma butuh satu bentuk data. Kamu butuh <b>dokumen</b> untuk katalog produk,
+        <b>graph</b> untuk relasi &amp; rekomendasi, dan <b>key-value</b> untuk cache session — kadang ketiganya
+        dalam fitur yang sama. Database <b>multi-model</b> seperti ArangoDB, Azure Cosmos DB, dan PostgreSQL
+        (dengan ekstensinya) mencoba menjawab ini: <b>satu mesin</b>, banyak cara mengakses data, tanpa harus
+        memelihara sekumpulan database berbeda sekaligus. Deck ini buat pemula: dari <b>kenapa</b> ia lahir,
+        <b>konsep intinya</b>, <b>trade-off</b>-nya, sampai <b>kapan harus dipakai di production</b>.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Polyglot persistence</b> <span>— tiap kebutuhan data pakai database berbeda</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Beban</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Ops menumpuk</b> <span>— tiap DB butuh deploy, backup, monitoring sendiri</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Satu mesin, banyak API</b> <span>— document, graph, key-value dalam satu engine</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Operasional lebih sederhana</b> <span>— satu sistem untuk dijaga &amp; diskalakan</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Tak sekuat spesialis</b> <span>— generalist, bukan pemenang di tiap model</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why reveal" style="max-width:78ch;margin:0 auto;">
+    <div class="tag">◆ Kenapa pakai ini?</div>
+    <p><b>Given</b> — tim sudah punya MongoDB untuk katalog produk, Neo4j untuk graph rekomendasi pertemanan, dan Redis untuk session login — tiga database terpisah, tiga cara deploy, tiga backup policy, tiga skillset yang harus dikuasai on-call.</p>
+    <p><b>When</b> — muncul fitur baru yang butuh ketiganya sekaligus, misalnya "rekomendasi produk berbasis riwayat belanja <em>dan</em> relasi pertemanan user", dan data yang sama (profil user, produk) harus tetap konsisten di ketiga sistem itu.</p>
+    <p><b>Then</b> — tanpa satu mesin yang bisa jadi ketiganya, tim terjebak menulis job sinkronisasi antar-database yang rawan <em>stale data</em> &amp; race condition, plus ongkos operasional naik tiap kali ada database baru masuk stack.</p>
+    <p>→ makanya kita pakai <b>Multi-Model Database</b>.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA MULTI-MODEL LAHIR ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Polyglot persistence</div>
+        <h2>Satu aplikasi, banyak bentuk data, banyak database</h2>
+      </div>
+      <p class="lead reveal">Aplikasi e-commerce yang sehat biasanya butuh <strong>lebih dari satu model data</strong> sekaligus: katalog produk yang bentuknya fleksibel (cocok jadi <em>document</em>), rekomendasi "orang yang beli ini juga beli itu" (cocok jadi <em>graph</em>), dan session login yang harus dibaca super cepat (cocok jadi <em>key-value</em>). Solusi lama: pasang satu database khusus untuk tiap kebutuhan itu.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — dapur dengan lima alat masak berbeda</div>
+        <p>Bayangkan satu dapur yang harus punya <em>rice cooker</em> khusus nasi, <em>air fryer</em> khusus gorengan, <em>slow cooker</em> khusus sup — masing-masing bagus di tugasnya, tapi kamu jadi sibuk mengurus lima alat: lima kali dibersihkan, lima manual berbeda, lima kali dicek kalau rusak. Itulah <code>polyglot persistence</code> — istilah untuk memakai beberapa jenis database berbeda dalam satu sistem, satu per kebutuhan.</p>
+      </div>
+
+      <div class="quote reveal d1">
+        <p>Aplikasi modern sering paling baik dilayani dengan memakai beberapa jenis database berbeda untuk kebutuhan berbeda dalam satu sistem yang sama — alih-alih memaksakan satu jenis database untuk segalanya.</p>
+        <cite>— parafrase dari Pramod Sadalage &amp; Martin Fowler, <i>NoSQL Distilled</i> (Addison-Wesley)</cite>
+      </div>
+
+      <p class="body reveal d2">Masalahnya bukan di ide polyglot persistence itu sendiri — memang benar tiap model data punya kekuatan berbeda. Masalahnya ada di <strong>ongkos operasionalnya</strong>: makin banyak jenis database berjalan, makin banyak yang harus dipelajari tim, di-<em>deploy</em>, di-<em>backup</em>, dipantau, dan disinkronkan satu sama lain saat data yang sama perlu muncul di lebih dari satu tempat.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP INTI ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Satu representasi, banyak API</div>
+        <h2>Bagaimana satu mesin bisa "jadi" banyak database</h2>
+      </div>
+      <p class="lead reveal">Trik utamanya: data disimpan secara internal dengan <strong>representasi yang sama</strong> (biasanya berbasis dokumen), lalu mesin database menyediakan <strong>beberapa API berbeda</strong> di atasnya — API document untuk baca/tulis dokumen biasa, API graph untuk menelusuri relasi antar dokumen (dianggap sebagai <em>vertex</em> &amp; <em>edge</em>), dan akses cepat by-key yang berperilaku seperti key-value.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Satu storage engine, tiga cara akses (contoh ArangoDB)</div>
+        <div class="erabox__row"><span class="erabox__lang">Document</span><code>→  collection biasa, query pakai AQL/filter field</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Graph</span><code>→  edge collection: dokumen berisi _from &amp; _to</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Key-Value</span><code>→  ambil dokumen langsung lewat _key, tanpa query</code></div>
+        <p class="erabox__note">Grafik <b>bukan</b> struktur data terpisah dari dokumen — edge cuma dokumen biasa yang punya dua field penunjuk (<code>_from</code>, <code>_to</code>). Karena representasinya sama, satu query bisa <b>mencampur</b> filter dokumen dengan penelusuran graph.</p>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">contoh — filter document + traversal graph, dalam satu query</span><span class="lang">AQL</span></div>
+<pre class="code"><span class="c">// cari user di Jakarta, lalu telusuri graph pertemanan 2 lompatan</span>
+<span class="k">FOR</span> u <span class="k">IN</span> <span class="f">users</span>
+  <span class="k">FILTER</span> u.city == <span class="s">"Jakarta"</span>
+  <span class="k">LET</span> teman = (
+    <span class="k">FOR</span> v, e <span class="k">IN</span> <span class="n">1</span>..<span class="n">2</span> <span class="k">OUTBOUND</span> u <span class="k">GRAPH</span> <span class="s">"social_graph"</span>
+      <span class="k">RETURN</span> v.name
+  )
+  <span class="k">RETURN</span> { user: u.name, teman: teman }</pre>
+      </div>
+
+      <p class="body reveal d2">Perhatikan: <code>FILTER u.city == "Jakarta"</code> adalah query <em>document</em> biasa, sedangkan <code>OUTBOUND u GRAPH "social_graph"</code> adalah traversal <em>graph</em> — keduanya jalan dalam satu query, di satu mesin, tanpa perlu memindahkan data ke database lain untuk "bagian graph"-nya.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 POLYGLOT VS MULTI-MODEL ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Perbandingan · Arsitektur</div>
+        <h2>Polyglot persistence vs multi-model</h2>
+      </div>
+      <p class="lead reveal">Keduanya mengakui hal yang sama — <strong>satu model data tidak cukup</strong> — tapi menjawabnya dengan cara berbeda: polyglot menjawab dengan <em>banyak mesin</em>, multi-model menjawab dengan <em>satu mesin, banyak API</em>.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">polyglot persistence — 4 database terpisah</span><span class="lang">STACK</span></div>
+<pre class="code"><span class="c"># Katalog produk</span>
+<span class="t">MongoDB</span>       <span class="c">→ document store</span>
+
+<span class="c"># Rekomendasi & relasi user</span>
+<span class="t">Neo4j</span>         <span class="c">→ graph store</span>
+
+<span class="c"># Session & cache</span>
+<span class="t">Redis</span>         <span class="c">→ key-value store</span>
+
+<span class="c"># Transaksi & laporan</span>
+<span class="t">PostgreSQL</span>    <span class="c">→ relational store</span>
+
+<span class="hl-bad">## 4 mesin, 4 cara deploy & backup, sinkronisasi manual</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">multi-model — 1 mesin, banyak API</span><span class="lang c">STACK</span></div>
+<pre class="code"><span class="t">ArangoDB</span>      <span class="c">→ satu cluster</span>
+
+<span class="k">document API</span>    <span class="c">→ katalog produk</span>
+<span class="k">graph API</span>       <span class="c">→ rekomendasi & relasi user</span>
+<span class="k">akses by-key</span>    <span class="c">→ session & cache ringan</span>
+
+<span class="hl-good">## 1 mesin, 1 cara deploy & backup, konsisten secara internal</span></pre>
+        </div>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>Tidak ada satu model data yang menang untuk segala kebutuhan — wajar jika sistem database berevolusi untuk menawarkan lebih dari satu model data sekaligus, demi mengurangi kebutuhan mengoperasikan banyak sistem terpisah.</p>
+        <cite>— parafrase dari Martin Kleppmann, <i>Designing Data-Intensive Applications</i>, penutup Bab 2</cite>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Multi-model <b>bukan pengganti mutlak</b> polyglot persistence. Kalau salah satu kebutuhanmu ekstrem — misalnya butuh graph database yang dioptimalkan habis-habisan untuk traversal jutaan hop, atau key-value store dengan latensi sub-milidetik brutal — spesialis terpisah biasanya masih menang. Multi-model paling masuk akal saat kebutuhanmu <b>cukup beragam tapi tidak ekstrem</b> di tiap model.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Cara pakai yang sehat</div>
+        <h2>Best practice memakai multi-model database</h2>
+      </div>
+      <p class="lead reveal">Godaan terbesar multi-model adalah "karena bisa, ya dipakai semua modelnya". Ini jebakan. Berikut beberapa hal yang perlu kamu pegang.</p>
+
+      <ol class="steps reveal d1">
+        <li><b>Jangan pakai semua model sekaligus tanpa alasan.</b> Hanya karena mesinnya mendukung document, graph, <em>dan</em> key-value, bukan berarti fitur kamu harus memakai ketiganya. Pakai yang benar-benar dibutuhkan pola akses datamu.</li>
+        <li><b>Evaluasi dulu: benar-benar butuh multi-model, atau cukup satu model + ekstensi?</b> Kalau kamu sudah pakai PostgreSQL dan cuma butuh sedikit fleksibilitas dokumen, kolom <code>JSONB</code> mungkin sudah cukup — tak perlu database baru.</li>
+        <li><b>Rancang skema per-model dengan sadar.</b> Bentuk dokumen untuk API document dan bentuk edge untuk API graph sebaiknya dirancang terpisah, bukan asal dipetakan 1:1 — traversal graph yang efisien butuh struktur edge yang ramping.</li>
+        <li><b>Ukur, jangan asumsikan, performa tiap model.</b> Query graph di mesin multi-model bisa jadi tidak secepat graph database khusus untuk traversal dalam. Benchmark pola akses kritismu sebelum production.</li>
+        <li><b>Batasi jumlah tim/fitur yang "menyentuh" tiap model.</b> Kalau semua orang bebas memakai API apa saja di collection yang sama, konsistensi skema gampang berantakan — tetap perlu konvensi &amp; dokumentasi.</li>
+        <li><b>Siapkan jalur keluar.</b> Kalau suatu hari satu model tumbuh jadi kebutuhan dominan &amp; ekstrem, rencanakan bagaimana memisahkannya ke database spesialis tanpa menulis ulang seluruh aplikasi.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">🎓 Tier belajar · Jenjang paham</div>
+        <h2>Sejauh mana kamu perlu memahami multi-model?</h2>
+      </div>
+      <p class="lead reveal">Tidak semua orang perlu menguasai topik ini sampai level yang sama. Berikut tiga jenjang, dari sekadar tahu sampai bisa merancang &amp; migrasi.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Paham kenapa multi-model ada</h4>
+          <p>Cukup mengerti masalah yang dijawabnya &amp; bisa menyebut contohnya saat diskusi arsitektur.</p>
+          <ul>
+            <li>Tahu istilah polyglot persistence &amp; kenapa ia mahal secara ops.</li>
+            <li>Tahu bahwa satu mesin bisa punya lebih dari satu API data.</li>
+            <li>Kenal minimal satu contoh: ArangoDB, Cosmos DB, atau Postgres+JSONB.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Memilih kapan 1 mesin cukup</h4>
+          <p>Bisa menimbang: pakai fitur multi-model dari database yang sudah ada, atau tambah database spesialis baru?</p>
+          <ul>
+            <li>Bisa membandingkan JSONB/PostGIS/pgvector vs pasang MongoDB/Neo4j terpisah.</li>
+            <li>Paham kapan kebutuhan sudah "ekstrem" hingga butuh spesialis.</li>
+            <li>Bisa mengukur trade-off ops vs performa untuk tim kecil-menengah.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Desain skema lintas-model &amp; migrasi</h4>
+          <p>Bisa merancang skema yang konsisten lintas API, dan memimpin migrasi arsitektur data.</p>
+          <ul>
+            <li>Merancang struktur document &amp; edge yang selaras untuk graph traversal efisien.</li>
+            <li>Memimpin migrasi dari polyglot ke multi-model, atau sebaliknya, tanpa downtime besar.</li>
+            <li>Menentukan strategi sharding/replikasi lintas model pada skala production.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: sederhana secara ops, tapi generalist</h2>
+      </div>
+      <p class="lead reveal">Multi-model menukar sesuatu yang nyata: kamu dapat kesederhanaan operasional, tapi biasanya melepas sedikit kekuatan puncak yang dimiliki database spesialis di tiap model.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Satu sistem untuk di-<em>deploy</em>, di-<em>backup</em>, dipantau.</li>
+            <li>Query bisa menggabungkan model (mis. filter document + traversal graph).</li>
+            <li>Tidak perlu sinkronisasi manual data antar database berbeda.</li>
+            <li>Tim cukup belajar satu ekosistem, bukan banyak.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Query graph biasanya kalah cepat dari graph database khusus.</li>
+            <li>Fitur key-value-nya sering lebih sederhana dari Redis/DynamoDB murni.</li>
+            <li>Tuning satu mesin untuk banyak beban kerja sekaligus lebih rumit.</li>
+            <li>Vendor lock-in bisa lebih dalam kalau API multi-model-nya proprietary.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan jujur</div>
+          <p>"Multi-model" bukan berarti "sama kuatnya di semua model". Ia lebih tepat disebut <strong>generalist yang cukup baik di banyak hal</strong> — sangat berguna kalau kebutuhanmu memang beragam tapi tidak ekstrem di satu sisi tertentu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI VS TIDAK ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan pakai multi-model, kapan tidak</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>kalau kebutuhan data kamu beragam tapi masih moderat, satu mesin multi-model bisa menyederhanakan hidupmu. Kalau salah satu kebutuhan ekstrem, spesialis terpisah lebih aman.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai multi-model saat…</h4>
+          <ul class="good-l">
+            <li>Butuh 2-3 model data tapi masing-masing skala moderat.</li>
+            <li>Tim kecil, ingin minimalkan jumlah sistem yang dijaga.</li>
+            <li>Query lintas-model (document + graph) sering muncul.</li>
+            <li>Sudah pakai Postgres &amp; ekstensinya (JSONB/PostGIS/pgvector) cukup menjawab kebutuhan.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, pilih spesialis saat…</h4>
+          <ul class="bad-l">
+            <li>Traversal graph super dalam &amp; frekuensi tinggi (butuh graph DB murni).</li>
+            <li>Latensi key-value harus sub-milidetik konsisten (butuh Redis dsb).</li>
+            <li>Volume salah satu model jauh lebih besar dari yang lain.</li>
+            <li>Butuh fitur khusus vendor spesialis (mis. full-text search canggih).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan: <strong>"Apakah ada satu model data yang bebannya jauh lebih besar &amp; kritis dibanding yang lain?"</strong> Kalau ya → pertimbangkan spesialis untuk model itu. Kalau kebutuhanmu relatif seimbang &amp; tidak ekstrem → multi-model layak dicoba lebih dulu.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Siapa yang benar-benar memakai multi-model</h2>
+      </div>
+      <p class="lead reveal">Beberapa contoh nyata bagaimana tim memilih pendekatan multi-model — perhatikan alasannya: distribusi global, atau ingin menambah kemampuan tanpa mengganti database yang sudah ada.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// global scale</div><h4>Azure Cosmos DB di Microsoft</h4><p><b>Kasus:</b> berbagai layanan internal Microsoft memakai Cosmos DB, termasuk kebutuhan awal yang mendorong pengembangannya untuk layanan seperti Skype. <b>Kenapa multi-model:</b> butuh distribusi global dengan latensi rendah, sambil tetap bisa diakses lewat beberapa API data (document, graph, key-value) sesuai kebutuhan tim yang berbeda-beda.</p></div>
+        <div class="card up"><div class="ic">// praktis, tanpa migrasi</div><h4>PostgreSQL + ekstensi</h4><p><b>Kasus:</b> tim yang sudah punya PostgreSQL sebagai database utama, lalu butuh menyimpan data semi-terstruktur, data spasial, atau embedding vector untuk fitur AI. <b>Kenapa multi-model:</b> <code>JSONB</code> untuk document, <code>PostGIS</code> untuk spatial, <code>pgvector</code> untuk vector — semua tanpa mengganti database utama.</p></div>
+        <div class="card up"><div class="ic">// startup, graph + document</div><h4>ArangoDB di startup</h4><p><b>Kasus:</b> startup yang produknya butuh graph (rekomendasi, jaringan relasi) sekaligus document (profil, konten) tapi belum punya sumber daya untuk mengoperasikan dua database spesialis terpisah. <b>Kenapa multi-model:</b> satu mesin cukup untuk kedua kebutuhan di tahap awal, mengurangi beban ops tim kecil.</p></div>
+        <div class="card up"><div class="ic">// fitur AI tanpa DB baru</div><h4>Tambah pgvector, bukan vector DB baru</h4><p><b>Kasus:</b> tim yang ingin menambah fitur pencarian semantik/RAG pada aplikasi yang sudah berjalan di atas Postgres. <b>Kenapa multi-model:</b> menambah ekstensi <code>pgvector</code> ke database yang sudah ada jauh lebih murah secara ops dibanding mengoperasikan vector database terpisah.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di semua kasus di atas, alasan memilih multi-model bukan "karena ikut tren", tapi karena <strong>mengurangi jumlah sistem yang harus dioperasikan</strong> — baik demi skala global (Cosmos DB), baik demi memanfaatkan database yang sudah dipercaya tim (Postgres), maupun demi menghemat sumber daya tim kecil (ArangoDB di startup).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools multi-model database</h2>
+      </div>
+      <p class="lead reveal">Cukup kenali nama populernya &amp; kapan kira-kira dipakai. Sebagai pemula, mulai dari PostgreSQL (kalau sudah pakai relasional) atau ArangoDB (kalau mulai dari nol &amp; butuh document+graph).</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// document + graph native</div><h4>ArangoDB</h4><p>Open-source, dirancang dari awal untuk multi-model: document, graph, dan akses key-value dalam satu mesin, satu bahasa query (AQL).</p></div>
+        <div class="card up"><div class="ic">// cloud, global scale</div><h4>Azure Cosmos DB</h4><p>Layanan terkelola dari Microsoft. Satu database, banyak API kompatibel (SQL/document, MongoDB, Cassandra, Gremlin/graph, table/key-value), dengan distribusi global bawaan.</p></div>
+        <div class="card up"><div class="ic">// relasional + ekstensi</div><h4>PostgreSQL (dengan ekstensi)</h4><p>Relasional yang jadi "multi-model praktis" lewat ekstensi: <code>JSONB</code> untuk document, <code>PostGIS</code> untuk data spasial, <code>pgvector</code> untuk vector/AI — tanpa ganti database.</p></div>
+        <div class="card up"><div class="ic">// multi-model + multi-mesin</div><h4>OrientDB</h4><p>Open-source, menggabungkan document &amp; graph dengan dukungan objek &amp; sedikit rasa key-value. Salah satu pionir kategori multi-model sebelum ArangoDB populer.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Kalau tim kamu sudah pakai PostgreSQL, coba dulu ekstensinya sebelum menambah database baru — <code>JSONB</code>/<code>PostGIS</code>/<code>pgvector</code> sering sudah cukup. Kalau memang mulai dari nol &amp; kebutuhan document+graph jelas sejak awal, ArangoDB atau Cosmos DB layak dicoba.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Satu mesin, dipilih karena kebutuhan — bukan karena tren</h2>
+      </div>
+      <p class="lead reveal">Multi-model database lahir dari kejujuran bahwa satu model data jarang cukup untuk aplikasi modern — tapi memelihara banyak database berbeda juga mahal. Ia menawarkan jalan tengah: satu mesin, beberapa cara mengakses data, dengan ongkos operasional yang lebih ringan.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Polyglot persistence itu valid</b> — tapi ongkos opsnya nyata &amp; bertambah tiap database baru.</li>
+          <li><b>Multi-model = satu representasi, banyak API</b> — document, graph, key-value di atas mesin yang sama.</li>
+          <li><b>Bukan pengganti mutlak spesialis</b> — untuk kebutuhan ekstrem, database khusus masih menang.</li>
+          <li><b>Jangan pakai semua model tanpa alasan</b> — pakai yang memang dibutuhkan pola aksesmu.</li>
+          <li><b>Cek dulu: butuh mesin baru, atau cukup ekstensi?</b> — JSONB/PostGIS/pgvector sering sudah cukup.</li>
+          <li><b>Pilih berdasar keseimbangan kebutuhan</b> — bukan karena ikut tren atau malas evaluasi.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya: <strong>"Apakah kebutuhan data saya beragam tapi seimbang, atau ada satu sisi yang ekstrem?"</strong> Kalau beragam &amp; seimbang, multi-model memberimu kesederhanaan operasional yang berharga. Kalau ada satu sisi yang ekstrem, database spesialis di sisi itu akan menyelamatkanmu dari kompromi performa. Tidak ada satu model data yang menang untuk segalanya — begitu juga tidak ada satu mesin yang menang untuk segala beban kerja.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Satu mesin, banyak wajah — dipilih karena kebutuhan, bukan karena tren."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Multi-Model Database</b> · ArangoDB, Azure Cosmos DB, PostgreSQL &amp; ekstensinya · untuk pemula · rujukan: NoSQL Distilled (Sadalage &amp; Fowler), DDIA (Kleppmann) · <a href="../index.html">← Kembali ke Database</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

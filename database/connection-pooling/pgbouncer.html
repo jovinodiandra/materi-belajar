@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PgBouncer — Pooler Eksternal untuk PostgreSQL</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .topbar__home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; transition: color .18s, border-color .18s; }
+  .topbar__home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 96px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 13px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 720px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 72px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.ini { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- flow diagram ---------- */
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 24px 0 6px; max-width: 880px; flex-wrap: wrap; }
+  .flow__node { flex: 1; min-width: 150px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 14px 16px; text-align: center; }
+  .flow__node.accent { border-color: var(--cyan-dim); background: linear-gradient(160deg, rgba(69,212,222,.08), var(--panel)); }
+  .flow__node .lab { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--muted-2); text-transform: uppercase; }
+  .flow__node .big { font-size: 15.5px; color: var(--ink-strong); font-weight: 600; margin: 4px 0; }
+  .flow__node .small { font-size: 12.5px; color: var(--muted); font-family: var(--mono); }
+  .flow__arrow { flex: none; display: flex; align-items: center; justify-content: center; width: 42px; color: var(--cyan); font-family: var(--mono); font-size: 18px; }
+  @media (max-width: 720px) { .flow { flex-direction: column; } .flow__arrow { width: 100%; height: 30px; transform: rotate(90deg); } }
+
+  /* ---------- step list ---------- */
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 9px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700;
+    background: var(--cyan); border-radius: 50%;
+  }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 80px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/connection-pooling/<b>pgbouncer.md</b></div>
+  <a class="topbar__home" href="index.html">← Connection Pooling</a>
+  <div class="topbar__counter" id="counter">00 / 11</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// PgBouncer</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenalan</div>
+    <a href="#c01"><span class="yr">01</span> Apa itu PgBouncer</a>
+    <a href="#c02"><span class="yr">02</span> Di mana ia duduk</a>
+
+    <div class="rail__part">II · Inti</div>
+    <a href="#c03"><span class="yr">03</span> Tiga pool mode</a>
+    <a href="#c04"><span class="yr">04</span> Konfigurasi .ini</a>
+    <a href="#c05"><span class="yr">05</span> Autentikasi</a>
+
+    <div class="rail__part">III · Operasi</div>
+    <a href="#c06"><span class="yr">06</span> Sizing pool</a>
+    <a href="#c07"><span class="yr">⚙</span> Admin console &amp; SHOW</a>
+    <a href="#c08"><span class="yr">⚙</span> PAUSE / RELOAD</a>
+
+    <div class="rail__part">IV · Praktik</div>
+    <a href="#c09"><span class="yr">!</span> Batasan &amp; jebakan</a>
+    <a href="#c10"><span class="yr">◆</span> Kapan pakai</a>
+    <a href="#c11"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Pendalaman dari deck Connection Pooling — pooler eksternal #1 untuk Postgres</div>
+      <h1 class="reveal d1">PgBouncer — <span class="accent">resepsionis</span> ringan di depan PostgreSQL.</h1>
+      <p class="sub reveal d2">
+        Di deck induk kita belajar bahwa tiap koneksi Postgres = <b>satu proses OS yang mahal</b>, jadi jumlah koneksi
+        adalah sumber daya langka. <b>PgBouncer</b> adalah jawaban standar: satu program kecil (~2 MB) yang menerima
+        <b>ribuan koneksi dari aplikasi</b> tapi cuma memegang <b>segelintir koneksi nyata</b> ke Postgres, lalu
+        membagikannya bergiliran. Deck ini membahas lengkap: pool mode, konfigurasi, autentikasi, monitoring,
+        sampai jebakannya.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Masalah</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Ribuan proses app</b> <span>— auto-scaling &amp; serverless membanjiri DB</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Solusi</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Pooler eksternal</b> <span>— satu gerbang di depan Postgres</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Kunci</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Pool mode</b> <span>— session / transaction / statement</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Hasil</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>2000 client → 20 koneksi</b> <span>— Postgres tetap sehat</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 APA ITU ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kenalan</span> · Apa itu PgBouncer</div>
+        <h2>Connection pooler eksternal khusus PostgreSQL</h2>
+      </div>
+      <p class="lead reveal"><strong>PgBouncer</strong> adalah <em>lightweight connection pooler</em> untuk PostgreSQL. Ia satu proses kecil yang berdiri <strong>di antara aplikasi dan database</strong>. Aplikasi tersambung ke PgBouncer seolah-olah itu Postgres; PgBouncer yang memegang sedikit koneksi nyata ke Postgres dan menggilirkannya.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// lightweight</div><h4>Sangat ringan</h4><p>Satu proses, jejak memori cuma sekitar <b>2 MB</b>, single-threaded berbasis event loop. Bisa menangani ribuan koneksi client tanpa membebani server.</p></div>
+        <div class="card up"><div class="ic">// transparan</div><h4>Tampak seperti Postgres</h4><p>Bicara protokol wire Postgres. Aplikasi &amp; driver tidak perlu diubah — cukup arahkan host/port ke PgBouncer.</p></div>
+        <div class="card up"><div class="ic">// fokus</div><h4>Satu tugas, dikerjakan baik</h4><p>Bukan proxy serba bisa. Ia hanya mem-pool koneksi — justru itu yang membuatnya stabil &amp; jadi standar de-facto.</p></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Mengapa "eksternal" itu penting</div>
+        <p>Pool <em>di dalam</em> aplikasi (mis. HikariCP, <code>pg.Pool</code>) hanya menghemat koneksi untuk <strong>satu proses</strong>. Saat kamu punya 100 pod atau ribuan invocation serverless, tiap proses punya poolnya sendiri — totalnya tetap membanjiri Postgres. PgBouncer duduk di luar semua proses itu dan meredam <em>total</em> koneksi ke satu angka kecil yang terkendali.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 DI MANA IA DUDUK ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Arsitektur</span> · Posisi di jalur</div>
+        <h2>Di mana PgBouncer duduk</h2>
+      </div>
+      <p class="lead reveal">PgBouncer adalah lapisan perantara. Banyak client menumpuk di sisi kiri; sedikit koneksi nyata keluar di sisi kanan. Inilah inti "many in, few out".</p>
+
+      <div class="flow reveal d1">
+        <div class="flow__node"><div class="lab">Aplikasi</div><div class="big">2.000 client</div><div class="small">pod, serverless, worker</div></div>
+        <div class="flow__arrow">▶</div>
+        <div class="flow__node accent"><div class="lab">PgBouncer</div><div class="big">1 proses ~2 MB</div><div class="small">pool &amp; antrian</div></div>
+        <div class="flow__arrow">▶</div>
+        <div class="flow__node"><div class="lab">PostgreSQL</div><div class="big">20 koneksi</div><div class="small">20 proses backend</div></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — resepsionis bersama</div>
+        <p>Gedung dengan 100 kantor. Kalau tiap kantor punya saluran telepon langsung ke pusat, kabelnya habis. Solusinya: satu <strong>resepsionis</strong> (PgBouncer) menerima semua penelepon, tapi hanya memegang 20 saluran ke pusat (Postgres), lalu menyambungkan bergiliran. Pusat merasa hanya melayani 20 orang — padahal di depan ada ribuan.</p>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Dua sisi koneksi PgBouncer</div>
+        <div class="erabox__row"><span class="erabox__lang">Client</span><code>koneksi dari aplikasi → PgBouncer (boleh ribuan)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Server</span><code>koneksi PgBouncer → Postgres (sedikit, mahal)</code></div>
+        <p class="erabox__note">Istilah ini muncul terus di konfigurasi &amp; monitoring: <b>client connection</b> = sisi aplikasi, <b>server connection</b> = sisi Postgres. Tujuan PgBouncer: banyak <em>client</em>, sedikit <em>server</em>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 POOL MODE ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti</span> · Pool mode</div>
+        <h2>Tiga pool mode: seberapa "lengket" koneksinya</h2>
+      </div>
+      <p class="lead reveal">Ini konsep terpenting di PgBouncer. <strong>Pool mode</strong> menentukan <em>kapan</em> koneksi server (ke Postgres) dilepas kembali ke pool. Makin cepat dilepas, makin hemat — tapi makin banyak fitur level-sesi yang berisiko rusak.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// session</div><h4>Session pooling</h4><p>Koneksi server dipegang <b>selama client tetap terhubung</b>. Baru dilepas saat client disconnect. Paling aman &amp; kompatibel — semua fitur sesi jalan — tapi <b>paling sedikit</b> menghemat.</p></div>
+        <div class="card up"><div class="ic">// transaction ★</div><h4>Transaction pooling</h4><p>Koneksi server dipinjam <b>per transaksi</b>, lalu langsung balik begitu <code>COMMIT</code>/<code>ROLLBACK</code>. Rasio penghematan terbesar. <b>Default pilihan</b> untuk web &amp; serverless.</p></div>
+        <div class="card up"><div class="ic">// statement</div><h4>Statement pooling</h4><p>Koneksi dilepas <b>tiap selesai satu statement</b>. Paling agresif &amp; hemat, tapi <b>melarang transaksi multi-statement</b>. Untuk kasus khusus (mis. mode auto-commit ketat).</p></div>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Spektrum: hemat ⟷ kompatibel</div>
+        <div class="erabox__row"><span class="erabox__lang">session</span><code>paling kompatibel · paling boros koneksi</code></div>
+        <div class="erabox__row"><span class="erabox__lang">transaction</span><code>titik tengah · paling umum dipakai ★</code></div>
+        <div class="erabox__row"><span class="erabox__lang">statement</span><code>paling hemat · paling banyak batasan</code></div>
+        <p class="erabox__note">Aturan praktis: mulai dari <b>transaction</b>. Pakai <b>session</b> hanya jika aplikasimu butuh fitur sesi yang tak bisa ditawar (mis. <code>LISTEN/NOTIFY</code>, advisory lock antar transaksi).</p>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Di <b>transaction pooling</b>, koneksi server gonta-ganti tiap transaksi. Maka hal yang "menempel" ke satu sesi bisa rusak: <code>SET</code> level sesi, session-level advisory lock, <code>LISTEN/NOTIFY</code>, temporary table lintas transaksi, dan <em>dulu</em> prepared statement. <b>Catatan penting:</b> PgBouncer ≥ 1.21 sudah mendukung <b>protocol-level prepared statements</b> di mode transaction (<code>max_prepared_statements</code>), jadi batasan ini sebagian besar sudah hilang di versi modern.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 KONFIGURASI ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti</span> · pgbouncer.ini</div>
+        <h2>Konfigurasi: file .ini yang sederhana</h2>
+      </div>
+      <p class="lead reveal">PgBouncer dikonfigurasi lewat satu file INI. Dua bagian wajib: <code>[databases]</code> (alias yang diteruskan ke Postgres asli) dan <code>[pgbouncer]</code> (perilaku pooler).</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">pgbouncer.ini — konfigurasi inti beranotasi</span><span class="lang ini">ini</span></div>
+<pre class="code"><span class="c">[databases]</span>
+<span class="c">; alias 'app' yang dipakai aplikasi → diteruskan ke Postgres asli</span>
+app = host=<span class="n">127.0.0.1</span> port=<span class="n">5432</span> dbname=app
+
+<span class="c">[pgbouncer]</span>
+listen_addr = <span class="n">0.0.0.0</span>            <span class="c">; PgBouncer dengarkan di alamat ini</span>
+listen_port = <span class="n">6432</span>               <span class="c">; port PgBouncer (app connect ke sini, bukan 5432)</span>
+
+pool_mode = transaction          <span class="c">; mode paling umum</span>
+max_client_conn = <span class="n">2000</span>          <span class="c">; ribuan client boleh nyambung ke PgBouncer...</span>
+default_pool_size = <span class="n">20</span>          <span class="c">; ...tapi cuma 20 koneksi nyata ke Postgres per (db,user)</span>
+reserve_pool_size = <span class="n">5</span>           <span class="c">; cadangan saat pool utama penuh</span>
+reserve_pool_timeout = <span class="n">3</span>        <span class="c">; aktifkan cadangan setelah antri 3 detik</span>
+server_idle_timeout = <span class="n">600</span>       <span class="c">; tutup koneksi server yang nganggur 10 menit</span>
+max_db_connections = <span class="n">50</span>         <span class="c">; batas keras total koneksi ke satu database</span>
+
+auth_type = scram-sha-<span class="n">256</span>        <span class="c">; metode autentikasi (lihat bab berikut)</span>
+auth_file = /etc/pgbouncer/userlist.txt</pre>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Parameter yang paling sering diutak-atik</div>
+        <div class="erabox__row"><span class="erabox__lang">pool_mode</span><code>session | transaction | statement</code></div>
+        <div class="erabox__row"><span class="erabox__lang">max_client</span><code>max_client_conn — batas koneksi dari aplikasi</code></div>
+        <div class="erabox__row"><span class="erabox__lang">pool_size</span><code>default_pool_size — koneksi nyata ke Postgres</code></div>
+        <div class="erabox__row"><span class="erabox__lang">reserve</span><code>reserve_pool_size — buffer saat puncak</code></div>
+        <p class="erabox__note">Hubungan kuncinya: <code>max_client_conn</code> jauh lebih besar dari <code>default_pool_size</code>. Itulah rasio penghematannya — mis. 2000 client di depan, 20 koneksi nyata di belakang.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 AUTENTIKASI ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti</span> · Autentikasi</div>
+        <h2>Bagaimana PgBouncer memverifikasi user</h2>
+      </div>
+      <p class="lead reveal">Karena client login ke PgBouncer (bukan langsung ke Postgres), PgBouncer perlu tahu cara memverifikasi mereka. Ada dua pola umum: daftar statis (<code>userlist.txt</code>) atau menanyakan ke Postgres (<code>auth_query</code>).</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">userlist.txt — daftar user statis</span><span class="lang ini">txt</span></div>
+<pre class="code"><span class="c">; format: "username" "password-atau-hash-scram"</span>
+<span class="s">"app_user"</span> <span class="s">"SCRAM-SHA-256$4096:..."</span>
+<span class="s">"readonly"</span> <span class="s">"SCRAM-SHA-256$4096:..."</span></pre>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">auth_query — tanyakan password ke Postgres (lebih dinamis)</span><span class="lang ini">ini</span></div>
+<pre class="code"><span class="c">; daripada me-list semua user manual, biar PgBouncer query ke DB</span>
+auth_type  = scram-sha-<span class="n">256</span>
+auth_user  = pgbouncer_auth          <span class="c">; user khusus untuk lookup</span>
+auth_query = <span class="s">"SELECT usename, passwd FROM pg_shadow WHERE usename=$1"</span>
+<span class="c">; (praktik aman: bungkus dalam SECURITY DEFINER function, bukan akses pg_shadow langsung)</span></pre>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// scram</div><h4>scram-sha-256</h4><p>Metode auth modern &amp; direkomendasikan untuk Postgres terbaru. Lebih aman dari md5.</p></div>
+        <div class="card up"><div class="ic">// tls</div><h4>TLS/SSL</h4><p><code>client_tls_sslmode</code> &amp; <code>server_tls_sslmode</code> mengenkripsi kedua sisi. PgBouncer aman ditaruh sebagai gerbang depan.</p></div>
+        <div class="card up"><div class="ic">// hba</div><h4>auth_hba_file</h4><p>Bisa meniru gaya <code>pg_hba.conf</code> untuk aturan akses berbasis host/user.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 SIZING ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Operasi · Sizing</div>
+        <h2>Menentukan ukuran pool</h2>
+      </div>
+      <p class="lead reveal">Sama seperti pool di aplikasi: <strong>kecil-tapi-pas mengalahkan besar</strong>. <code>default_pool_size</code> adalah jumlah koneksi nyata ke Postgres — angka inilah yang melindungi (atau membahayakan) database.</p>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">menghitung default_pool_size</span><span class="lang c">rule of thumb</span></div>
+<pre class="code"><span class="c"># titik awal: mirip rumus pool aplikasi</span>
+default_pool_size ≈ (core_CPU_postgres × <span class="n">2</span>) + jumlah_disk
+
+<span class="c"># contoh: Postgres 4 core, 1 SSD → ~9-10</span>
+
+<span class="c"># PENTING — hitung TOTAL ke Postgres:</span>
+<span class="c"># default_pool_size berlaku PER (database, user).</span>
+<span class="c"># Banyak db/user → kalikan. Batasi dengan max_db_connections</span>
+<span class="c"># agar total tak pernah melebihi max_connections Postgres.</span></pre>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">// Pool kekecilan</h4>
+          <ul class="bad-l">
+            <li>Client antri lama menunggu koneksi server.</li>
+            <li>Latensi naik, bisa kena <code>query_wait_timeout</code>.</li>
+            <li>Postgres nganggur padahal app megap.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Pool kebesaran</h4>
+          <ul class="bad-l">
+            <li>Postgres kebanjiran proses → rebutan CPU/lock.</li>
+            <li>Menghapus manfaat utama PgBouncer.</li>
+            <li>Risiko lewat <code>max_connections</code> Postgres.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Hubungan dengan max_connections Postgres</div>
+          <p>Aturan emas: <strong>(total semua pool PgBouncer) + koneksi langsung lain (admin, migrasi, replikasi, monitoring) ≤ <code>max_connections</code> Postgres</strong>. PgBouncer melindungi Postgres justru dengan menjaga sisi kanan ini tetap kecil &amp; pasti.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 ADMIN CONSOLE ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Operasi · Monitoring</div>
+        <h2>Admin console &amp; perintah SHOW</h2>
+      </div>
+      <p class="lead reveal">PgBouncer punya <strong>console admin bawaan</strong>: kamu sambung ke database virtual bernama <code>pgbouncer</code> lalu jalankan perintah <code>SHOW</code> untuk mengintip kondisi pool secara real-time — tanpa tool tambahan.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">masuk console admin &amp; lihat status</span><span class="lang">psql</span></div>
+<pre class="code"><span class="c"># sambung ke database admin virtual "pgbouncer"</span>
+psql -p <span class="n">6432</span> -U admin pgbouncer
+
+pgbouncer=# <span class="k">SHOW</span> POOLS;     <span class="c">-- isi tiap pool: aktif, nunggu, idle</span>
+pgbouncer=# <span class="k">SHOW</span> STATS;     <span class="c">-- throughput query/transaksi per db</span>
+pgbouncer=# <span class="k">SHOW</span> CLIENTS;   <span class="c">-- koneksi dari aplikasi</span>
+pgbouncer=# <span class="k">SHOW</span> SERVERS;   <span class="c">-- koneksi nyata ke Postgres</span>
+pgbouncer=# <span class="k">SHOW</span> DATABASES; <span class="c">-- konfigurasi tiap database</span>
+pgbouncer=# <span class="k">SHOW</span> CONFIG;    <span class="c">-- semua parameter aktif</span></pre>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// SHOW POOLS</div><h4>Kesehatan pool</h4><p>Kolom <code>cl_waiting</code> &gt; 0 terus = pool kekecilan / Postgres lambat. Sinyal paling penting untuk tuning.</p></div>
+        <div class="card up"><div class="ic">// SHOW STATS</div><h4>Throughput</h4><p>Lihat query/detik &amp; rata-rata waktu. Berguna untuk kapasitas &amp; deteksi anomali.</p></div>
+        <div class="card up"><div class="ic">// metrics</div><h4>Eksporter Prometheus</h4><p>Untuk produksi, pasang <code>pgbouncer_exporter</code> agar metrik masuk Grafana/Prometheus.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 PAUSE / RELOAD ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Operasi · Maintenance</div>
+        <h2>PAUSE, RESUME, RELOAD: maintenance tanpa downtime</h2>
+      </div>
+      <p class="lead reveal">Kemampuan operasional inilah yang membuat PgBouncer dicintai tim ops. Ia bisa <strong>menahan trafik sementara</strong> agar Postgres bisa di-restart/maintenance tanpa memutus aplikasi.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">perintah kontrol di console admin</span><span class="lang">psql</span></div>
+<pre class="code">pgbouncer=# <span class="k">PAUSE</span>;      <span class="c">-- tahan: query baru diantrikan, tunggu transaksi selesai</span>
+<span class="c">-- ... lakukan restart / failover / maintenance Postgres di sini ...</span>
+pgbouncer=# <span class="k">RESUME</span>;     <span class="c">-- lepas lagi: antrian mengalir, app tak pernah putus</span>
+
+pgbouncer=# <span class="k">RELOAD</span>;     <span class="c">-- muat ulang pgbouncer.ini tanpa drop koneksi</span>
+pgbouncer=# <span class="k">SHOW</span> CONFIG; <span class="c">-- verifikasi perubahan</span>
+
+pgbouncer=# <span class="k">RECONNECT</span>;  <span class="c">-- minta koneksi server dibuat ulang (mis. setelah failover)</span></pre>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kenapa ini berharga</div>
+        <p>Tanpa PgBouncer, restart Postgres = semua aplikasi langsung kena error koneksi. Dengan <code>PAUSE</code>/<code>RESUME</code>, aplikasi cuma merasakan <em>jeda sesaat</em> (query-nya menunggu), lalu lanjut seolah tak terjadi apa-apa. Maintenance yang tadinya butuh "maintenance window" jadi nyaris tak terlihat user.</p>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// RELOAD</div><h4>Ganti config online</h4><p>Ubah <code>pgbouncer.ini</code> lalu <code>RELOAD</code> — koneksi client yang sedang jalan tidak terputus.</p></div>
+        <div class="card up"><div class="ic">// online restart</div><h4>Restart mulus</h4><p>PgBouncer baru bisa "mengambil alih" socket dari yang lama (<code>-R</code> / SO_REUSEPORT) saat upgrade PgBouncer sendiri.</p></div>
+        <div class="card up"><div class="ic">// KILL</div><h4>Kontrol granular</h4><p><code>KILL db</code> memutus koneksi satu database tertentu; berguna saat isolasi masalah.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 BATASAN ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Praktik</span> · Jebakan</div>
+        <h2>Batasan &amp; jebakan yang harus diwaspadai</h2>
+      </div>
+      <p class="lead reveal">PgBouncer luar biasa, tapi bukan sihir. Hampir semua jebakannya berakar dari satu hal: di transaction/statement mode, <strong>koneksi server tidak lengket ke satu client</strong>.</p>
+
+      <div class="grid reveal d1">
+        <div class="card down"><div class="ic">// session state</div><h4>Fitur level-sesi</h4><p><code>SET</code> sesi, <code>LISTEN/NOTIFY</code>, advisory lock antar transaksi, temp table lintas transaksi — bisa rusak di transaction mode. Pakai session mode kalau wajib.</p></div>
+        <div class="card down"><div class="ic">// prepared</div><h4>Prepared statement (versi lama)</h4><p>Di PgBouncer lama, prepared statement bermasalah di transaction mode. Solusi: upgrade ke ≥ 1.21 &amp; set <code>max_prepared_statements</code>, atau matikan di driver.</p></div>
+        <div class="card down"><div class="ic">// SPOF</div><h4>Titik kegagalan tunggal</h4><p>Kalau cuma 1 instance PgBouncer, ia jadi single point of failure. Produksi: jalankan beberapa instance + load balancer / HAProxy.</p></div>
+        <div class="card down"><div class="ic">// single thread</div><h4>Single-threaded</h4><p>Satu proses = satu core. Untuk throughput sangat tinggi, jalankan beberapa proses (mis. <code>so_reuseport</code>) di belakang LB.</p></div>
+        <div class="card down"><div class="ic">// search_path</div><h4>search_path &amp; SET lain</h4><p>Jangan andalkan <code>SET search_path</code> bertahan antar transaksi di pooling mode. Set eksplisit per transaksi atau di koneksi.</p></div>
+        <div class="card down"><div class="ic">// transaksi panjang</div><h4>Transaksi lama menahan</h4><p>Satu transaksi panjang memegang koneksi server lama → mengurangi yang tersedia. Jaga transaksi tetap pendek.</p></div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Cara cek aman: jalankan aplikasi di <b>transaction mode</b> di staging, perhatikan error aneh seputar prepared statement / <code>SET</code> / temp table. Kalau ada &amp; tak bisa dihindari, naikkan ke <b>session mode</b> untuk pool itu — kamu kehilangan sebagian penghematan tapi mendapat kembali kompatibilitas penuh.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan butuh PgBouncer</h2>
+      </div>
+      <p class="lead reveal">PgBouncer paling bersinar saat <strong>jumlah proses aplikasi besar atau berumur pendek</strong> — situasi di mana pool di dalam app saja tidak cukup.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai PgBouncer saat…</h4>
+          <ul class="good-l">
+            <li>Banyak instance app / auto-scaling (puluhan–ratusan pod).</li>
+            <li>Serverless (Lambda/Cloud Functions) — proses pendek.</li>
+            <li>Total koneksi mendekati <code>max_connections</code> Postgres.</li>
+            <li>Butuh maintenance Postgres tanpa memutus app.</li>
+            <li>Banyak app/bahasa berbagi satu Postgres.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Mungkin belum perlu saat…</h4>
+          <ul class="bad-l">
+            <li>Satu app monolit berumur panjang dengan pool in-app yang sehat.</li>
+            <li>Jumlah koneksi jauh di bawah kapasitas DB.</li>
+            <li>Sangat bergantung fitur sesi (pertimbangkan biayanya).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Dua lapis: pool app + PgBouncer</div>
+          <p>Pool in-app (mis. <strong>HikariCP</strong>) &amp; PgBouncer <strong>saling melengkapi</strong>, bukan menggantikan. Pool app menghemat handshake untuk satu proses; PgBouncer meredam <em>total</em> koneksi dari semua proses ke Postgres. Alternatif terkelola dengan prinsip sama: <strong>RDS Proxy</strong> (AWS), pooler bawaan <strong>Supabase</strong> &amp; <strong>Neon</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 PENUTUP ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>PgBouncer dalam satu tarikan napas</h2>
+      </div>
+      <p class="lead reveal">Satu proses ringan di depan Postgres yang mengubah "ribuan koneksi mahal" jadi "segelintir koneksi yang digilirkan rapi". Pahami pool mode, jaga ukurannya, pantau lewat SHOW, dan manfaatkan PAUSE/RELOAD untuk operasi mulus.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Pooler eksternal ringan</b> — ~2 MB, di antara app &amp; Postgres.</li>
+          <li><b>Many in, few out</b> — ribuan client → segelintir koneksi nyata.</li>
+          <li><b>Pool mode = kunci</b> — transaction (default), session (aman), statement (agresif).</li>
+          <li><b>Sizing kecil-tapi-pas</b> — total pool ≤ <code>max_connections</code> Postgres.</li>
+          <li><b>SHOW POOLS</b> — pantau <code>cl_waiting</code> untuk tuning.</li>
+          <li><b>PAUSE/RESUME/RELOAD</b> — maintenance tanpa memutus aplikasi.</li>
+          <li><b>Pelengkap pool in-app</b> — dua lapis, bukan saling menggantikan.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah belajar berikutnya</h3>
+        <p>Jalankan PgBouncer lokal (Docker), arahkan aplikasimu ke port <code>6432</code> alih-alih <code>5432</code>, set <code>pool_mode = transaction</code> &amp; <code>default_pool_size = 10</code>. Lalu buka console admin dan jalankan <code>SHOW POOLS</code> sambil memberi beban — lihat <code>cl_active</code>, <code>cl_waiting</code>, &amp; <code>sv_active</code> bergerak. Itu memperlihatkan "many in, few out" secara langsung.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Biar ribuan client mengetuk — Postgres cukup kenal segelintir."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>PgBouncer</b> · Pool mode, konfigurasi, auth, monitoring, maintenance · pendalaman dari deck Connection Pooling · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

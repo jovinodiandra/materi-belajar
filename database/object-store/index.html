@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Object Storage — Simpan Miliaran File Tanpa Filesystem</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home {
+    color: var(--muted); text-decoration: none; font-family: var(--mono); font-size: 12.5px;
+    padding: 4px 9px; border-radius: 6px; border: 1px solid var(--line);
+    white-space: nowrap; transition: color .15s, background .15s, border-color .15s;
+  }
+  .topbar__home:hover { color: var(--cyan); background: rgba(69,212,222,.08); border-color: var(--cyan-dim); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- steps (best practice) ---------- */
+  .steps { list-style: none; max-width: 76ch; margin: 24px 0 6px; counter-reset: step; }
+  .steps li {
+    position: relative; padding: 11px 0 11px 42px; font-size: 15.5px;
+    color: var(--ink); border-bottom: 1px solid var(--line-soft); counter-increment: step;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 9px;
+    width: 25px; height: 25px; border-radius: 50%;
+    background: rgba(69,212,222,.1); border: 1px solid var(--cyan-dim); color: var(--cyan);
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps li b { color: var(--ink-strong); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Database</a>
+  <div class="topbar__file">docs/learning/database/object-store/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Gudang raksasa untuk file</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Apa itu object storage</a>
+    <a href="#c03"><span class="yr">03</span> Object vs File vs Block</a>
+
+    <div class="rail__part">III · Untung &amp; harga</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">05</span> Tier belajar</a>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+
+    <div class="rail__part">IV · Keputusan &amp; praktik</div>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — cara menyimpan file & blob dalam skala masif</div>
+      <h1 class="reveal d1">Simpan <span class="accent">miliaran file</span>, tanpa pernah menyentuh filesystem.</h1>
+      <p class="sub reveal d2">
+        Foto profil, video, backup database, file PDF — semuanya butuh disimpan dalam jumlah besar dan diakses
+        cepat dari mana saja. Menaruhnya di kolom database atau di disk satu server terasa masuk akal di awal,
+        tapi cepat runtuh begitu jumlahnya jutaan. <b>Object storage</b> — seperti Amazon S3 dan Google Cloud
+        Storage — lahir untuk soal ini: menyimpan objek (data + metadata) datar di dalam <b>bucket</b>, diakses
+        lewat <b>HTTP API</b>, bukan lewat filesystem biasa. Deck ini buat pemula: dari <b>kenapa</b> ia lahir,
+        <b>konsep inti</b>-nya, <b>trade-off</b>, sampai <b>kapan dipakai di production</b>.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Filesystem kewalahan</b> <span>— satu server tak sanggup menyimpan jutaan file besar</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Simpan sebagai objek datar</b> <span>— data + metadata + key unik, lewat HTTP API</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Skala nyaris tak terbatas</b> <span>— murah, sangat durabel, terdistribusi otomatis</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bukan pengganti database</b> <span>— lambat untuk update sebagian & query kompleks</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Saat data = blob mandiri</b> <span>— gambar, video, dokumen, backup</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why" style="max-width:78ch;margin:34px auto 0;">
+    <div class="tag">◆ Buat apa ini? Kenapa pakai ini?</div>
+    <p><b>Given</b> — file profil & video pengguna disimpan sebagai kolom <code>BLOB</code> di database relasional, atau ditaruh di disk satu server aplikasi.</p>
+    <p><b>When</b> — jumlah pengguna naik ke jutaan: database membengkak jadi puluhan terabyte, proses backup & replikasi jadi berjam-jam, dan disk server aplikasi itu penuh atau servernya mati.</p>
+    <p><b>Then</b> — restore database jadi lambat sekali karena ukurannya raksasa, file yang cuma ada di satu mesin hilang total saat server itu down, dan menambah kapasitas berarti beli disk lebih besar (bukan tinggal skala horizontal).</p>
+    <p>→ makanya kita pakai <em>Object Storage</em>.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA OBJECT STORAGE DIBUTUHKAN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Skala file yang tak masuk akal untuk database biasa</div>
+        <h2>Jutaan file besar tak muat di satu server</h2>
+      </div>
+      <p class="lead reveal">Bayangkan aplikasimu punya satu juta pengguna, masing-masing mengunggah foto profil & beberapa video. Itu bisa puluhan terabyte data biner. Menaruhnya sebagai kolom <code>BLOB</code> di database relasional membuat backup & replikasi jadi berat. Menaruhnya di disk satu server aplikasi berarti kapasitasnya terbatas pada disk itu — dan kalau server itu mati, filenya ikut hilang.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — gudang logistik raksasa dengan barcode</div>
+        <p>Menyimpan file di server aplikasi ibarat menumpuk barang di lemari kantor sendiri: cepat penuh, rawan hilang kalau kantornya kebakaran, dan cuma bisa diambil orang yang datang ke kantor itu. Object storage ibarat <strong>gudang logistik raksasa</strong> — dirancang khusus menampung apa saja dalam jumlah nyaris tak terbatas. Tiap barang yang masuk diberi <em>nomor barcode</em> unik (key). Kamu tidak perlu tahu barang itu ada di rak fisik mana; cukup sebut barcode-nya, gudang akan mengurus penyimpanan, penggandaan, dan pengambilannya — dari cabang gudang mana pun di dunia.</p>
+      </div>
+
+      <p class="body reveal d2">Karena itulah object storage dirancang berbeda dari awal: bukan sebagai perluasan filesystem satu server, tapi sebagai <strong>layanan terdistribusi</strong> yang otomatis mereplikasi data ke banyak mesin & lokasi, diakses lewat jaringan (HTTP), dan diskalakan secara horizontal — tambah kapasitas cukup dengan menambah mesin di baliknya, tanpa aplikasi kamu perlu tahu detailnya.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP INTI ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Object storage</div>
+        <h2>Objek = data + metadata + key unik, bukan folder</h2>
+      </div>
+      <p class="lead reveal">Object storage menyimpan tiap file sebagai <strong>objek</strong> di dalam wadah bernama <strong>bucket</strong>. Satu objek terdiri dari tiga bagian: <strong>data</strong> (isi file dalam bytes mentah), <strong>metadata</strong> (content-type, ukuran, tag custom), dan <strong>key</strong> — string unik yang jadi satu-satunya cara mengenali objek itu di dalam bucket. Semua diakses lewat <strong>HTTP API</strong> (mis. <code>PUT</code>, <code>GET</code>, <code>DELETE</code>), bukan dengan memasang bucket sebagai drive di sistem operasi.</p>
+
+      <div class="quote reveal d1">
+        <p>Objek disimpan datar sebagai pasangan key-value di dalam bucket — bukan struktur direktori bertingkat seperti filesystem tradisional — sehingga sistemnya bisa didistribusikan & diskalakan secara horizontal dengan sangat sederhana.</p>
+        <cite>— parafrasa dari konsep desain object storage, dokumentasi Amazon S3</cite>
+      </div>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">upload & baca objek lewat AWS CLI</span><span class="lang">bash</span></div>
+<pre class="code"><span class="c"># upload file lokal ke bucket, disimpan dengan key "images/avatar-budi.jpg"</span>
+aws s3 cp ./avatar.jpg s3://materi-belajar-bucket/images/avatar-budi.jpg
+
+<span class="c"># lihat daftar objek dengan prefix "images/" (bukan folder sungguhan)</span>
+aws s3 ls s3://materi-belajar-bucket/images/
+
+<span class="c"># ambil objek lewat REST API biasa, kalau bucket/objek diatur public-read</span>
+curl -O https://materi-belajar-bucket.s3.amazonaws.com/images/avatar-budi.jpg
+
+<span class="c"># hapus objek — cukup rujuk key-nya, tidak perlu tahu lokasi fisik data</span>
+aws s3 rm s3://materi-belajar-bucket/images/avatar-budi.jpg</pre>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Padanan istilah filesystem ↔ object storage</div>
+        <div class="erabox__row"><span class="erabox__lang">Nama file</span><code>→  Key (string unik dalam satu bucket)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Folder</span><code>→  Prefix (bagian dari key, cuma ilusi tampilan)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Isi file</span><code>→  Data / value (bytes mentah objek)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Atribut</span><code>→  Metadata (content-type, ukuran, tag custom)</code></div>
+        <p class="erabox__note">Console yang menampilkan <code>images/2024/avatar.jpg</code> seperti struktur folder bertingkat sebenarnya cuma mengelompokkan key berdasarkan karakter <code>/</code> — di balik layar, tidak ada direktori fisik sama sekali. Semua objek berada <b>datar</b> dalam satu bucket.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 OBJECT vs FILE vs BLOCK ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Perbandingan</span> · Tiga jenis storage yang sering tertukar</div>
+        <h2>Object, file, & block storage itu tiga hal berbeda</h2>
+      </div>
+      <p class="lead reveal">Orang sering menyamakan "storage" begitu saja, padahal ketiganya dirancang untuk kebutuhan berbeda. Bedanya ada di <strong>bagaimana data diakses</strong>, bukan sekadar di mana data itu disimpan.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Object vs File vs Block storage</div>
+        <div class="erabox__row"><span class="erabox__lang">Block</span><code>→  Volume mentah spt hard disk virtual, dipasang di 1 server, dibaca lewat OS filesystem — cocok utk database & OS (mis. AWS EBS)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">File</span><code>→  Filesystem bersama spt NFS, punya struktur direktori sungguhan, dipasang & diakses banyak server sekaligus</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Object</span><code>→  Bucket datar berisi key-value, diakses via HTTP API, skala nyaris tak terbatas — bukan utk update sebagian isi objek</code></div>
+        <p class="erabox__note">Semakin ke atas (block), semakin cepat & mirip disk lokal tapi semakin terbatas skalanya. Semakin ke bawah (object), semakin murah & terskala tapi semakin jauh dari semantik <b>filesystem</b> tradisional — kamu tidak bisa <code>seek()</code> atau menimpa sebagian byte di tengah objek seperti mengubah sebagian file di disk.</p>
+      </div>
+
+      <p class="body reveal d2">Praktiknya, ketiganya sering dipakai bersamaan dalam satu sistem: block storage untuk disk database, file storage untuk berbagi file antar service lama yang butuh mount NFS, dan object storage untuk aset besar seperti gambar, video, & backup.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik baik · Supaya tidak bocor biaya & performa</div>
+        <h2>Best practice memakai object storage</h2>
+      </div>
+      <p class="lead reveal">Object storage mudah dipakai, tapi ada beberapa kebiasaan yang membedakan setup asal-jalan dari setup yang siap production.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Taruh CDN di depan bucket</b> untuk asset publik (gambar, video, file statis) — CDN meng-cache dekat pengguna & mengurangi beban langsung ke bucket, sekaligus mempercepat akses.</li>
+        <li><b>Atur lifecycle policy</b> supaya objek yang jarang diakses otomatis pindah ke storage class lebih murah (mis. Glacier, Coldline), atau otomatis terhapus setelah periode tertentu — jangan biarkan bucket menumpuk data selamanya secara manual.</li>
+        <li><b>Jangan simpan data yang butuh update sering/parsial.</b> Object storage optimal untuk pola <em>write-once-read-many</em>, bukan untuk field yang berubah tiap detik — itu tugas database.</li>
+        <li><b>Desain key naming yang tidak jadi hot spot</b> — pada beban tulis sangat tinggi, key yang berurutan (mis. timestamp berurutan di depan) bisa membebani satu partisi; tambahkan prefix acak kalau throughput-nya besar.</li>
+        <li><b>Jangan expose bucket publik sembarangan.</b> Atur IAM/bucket policy secara eksplisit & pakai signed URL untuk akses privat yang sementara, alih-alih membuka seluruh bucket ke publik.</li>
+        <li><b>Aktifkan versioning</b> untuk data penting, supaya overwrite atau delete yang tidak sengaja masih bisa dipulihkan.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Roadmap · Belajar object storage bertahap</div>
+        <h2>Tier belajar: dari upload file sampai skala global</h2>
+      </div>
+      <p class="lead reveal">Tidak perlu langsung paham semuanya. Ini jalur bertahap dari sekadar bisa upload file sampai mendesain sistem object storage untuk aplikasi berskala besar.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Upload & Download File Dasar</h4>
+          <p>Fokus ke operasi dasar objek — upload, download, list, hapus — lewat console, CLI, atau SDK.</p>
+          <ul>
+            <li>Buat bucket & upload file lewat AWS CLI/console.</li>
+            <li>Pahami perbedaan bucket, key, dan public vs private access.</li>
+            <li>Coba generate signed URL sederhana untuk file privat.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Desain Key & Lifecycle Aplikasi Nyata</h4>
+          <p>Mulai merancang skema key naming yang scalable & mengatur automasi lifecycle untuk aplikasi sungguhan.</p>
+          <ul>
+            <li>Rancang naming convention key (mis. per-tenant, per-tanggal).</li>
+            <li>Atur lifecycle policy untuk pindah tier / auto-hapus objek lama.</li>
+            <li>Integrasikan CDN di depan bucket untuk asset publik.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Multipart, Tiering & Konsistensi Global</h4>
+          <p>Menangani file raksasa dan distribusi data lintas region tanpa mengorbankan durabilitas.</p>
+          <ul>
+            <li>Implementasi multipart upload untuk file besar (video, backup).</li>
+            <li>Desain strategi cross-region replication & storage tiering otomatis.</li>
+            <li>Pahami trade-off konsistensi (eventual vs strong) di skala global.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: murah & tak terbatas, tapi bukan database</h2>
+      </div>
+      <p class="lead reveal">Object storage sangat murah & durabel, tapi itu bukan berarti ia bisa menggantikan semua jenis storage lain. Ia sengaja mengorbankan sejumlah kemampuan demi bisa diskalakan sesederhana mungkin.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Sangat murah per GB dibanding block/file storage.</li>
+            <li>Durabilitas tinggi — replikasi otomatis lintas mesin/zona/region.</li>
+            <li>Skala nyaris tak terbatas, tanpa perlu provisioning kapasitas manual.</li>
+            <li>Diakses dari mana saja lewat HTTP, tanpa mengurus server file sendiri.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Bukan pengganti database — tak ada query kompleks, index, atau JOIN.</li>
+            <li>Tidak cocok untuk data yang sering di-update sebagian isinya.</li>
+            <li>Latency lebih tinggi dibanding block storage yang menempel lokal.</li>
+            <li>Sebagian layanan awalnya memilih model konsistensi <em>eventually consistent</em>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>Sistem penyimpanan terdistribusi skala besar sering harus memilih antara konsistensi ketat dan ketersediaan tinggi — dan banyak layanan object storage pada awalnya memilih model "eventually consistent", supaya data tetap bisa diakses meski sebagian infrastrukturnya sedang bermasalah.</p>
+        <cite>— parafrasa dari Werner Vogels (CTO Amazon), "Eventually Consistent"</cite>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan</div>
+          <p>Model konsistensi terus membaik seiring waktu — banyak layanan object storage populer sekarang menawarkan <code>strong read-after-write consistency</code> untuk operasi dasar. Tapi arsitektur intinya tetap sama: dioptimalkan untuk skala & durabilitas, bukan untuk pola akses seperti database transaksional.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai object storage</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>kalau data kamu adalah blob mandiri yang jarang berubah dan cuma butuh ambil-taruh, pilih object storage. Kalau butuh query, update sebagian, atau latency sangat rendah, itu tugas alat lain.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai object storage saat…</h4>
+          <ul class="good-l">
+            <li>Menyimpan file besar/blob: gambar, video, dokumen, backup.</li>
+            <li>Pola aksesnya <em>write-once-read-many</em>.</li>
+            <li>Butuh distribusi global & durabilitas tinggi.</li>
+            <li>Menaruh asset statis di depan CDN.</li>
+            <li>Backup & arsip jangka panjang.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, pakai alat lain saat…</h4>
+          <ul class="bad-l">
+            <li>Butuh query/transaksi kompleks → pakai database.</li>
+            <li>Data berubah sangat sering/parsial → pakai database.</li>
+            <li>Butuh latency setara disk lokal → pakai block storage (mis. EBS).</li>
+            <li>Butuh struktur direktori asli & semantik POSIX → pakai file storage/NFS.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan: <strong>"Apakah ini blob mandiri yang jarang berubah, dan aku cuma butuh ambil-taruh (GET/PUT) lewat HTTP?"</strong> Kalau ya → object storage. Kalau kamu butuh mengubah sebagian isi file berulang kali per detik, atau butuh JOIN/query kompleks lintas data → itu tugas database atau block storage, bukan object storage.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Object storage di sistem production nyata</h2>
+      </div>
+      <p class="lead reveal">Empat pola nyata di mana object storage jadi lapisan penyimpanan inti — perhatikan benang merahnya: data berupa blob mandiri, dibaca apa adanya, dalam volume yang terus tumbuh.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// streaming media</div><h4>Netflix menyimpan aset media di S3</h4><p>Netflix menaruh master file video, gambar, dan aset produksi di Amazon S3 sebagai lapisan penyimpanan utamanya, lalu mendistribusikannya lewat jaringan CDN ke seluruh dunia — S3 dipilih karena durabilitasnya & kemampuannya menampung volume data sangat besar tanpa harus mengurus infrastruktur storage sendiri.</p></div>
+        <div class="card up"><div class="ic">// self-built storage</div><h4>Dropbox membangun "Magic Pocket"</h4><p>Dropbox awalnya memakai S3, tapi seiring skalanya tumbuh ke miliaran file, mereka membangun sistem object storage sendiri bernama <b>Magic Pocket</b> agar bisa mengontrol biaya & infrastruktur secara langsung — bukti bahwa prinsip object storage (key-value datar, replikasi, skala horizontal) bisa diterapkan sendiri, bukan cuma lewat cloud publik.</p></div>
+        <div class="card up"><div class="ic">// aplikasi modern</div><h4>Upload pengguna di hampir semua aplikasi</h4><p>Foto profil, dokumen, lampiran chat, hasil ekspor laporan — hampir semua aplikasi modern menaruh file yang diunggah pengguna langsung ke S3/GCS, bukan di disk server aplikasi, supaya server aplikasi tetap stateless & mudah diskalakan horizontal.</p></div>
+        <div class="card up"><div class="ic">// data lake & arsip</div><h4>Fondasi data lake & backup jangka panjang</h4><p>Object storage kerap jadi lapisan penyimpanan dasar untuk data lake — data mentah yang nanti dianalisis pakai tool query terpisah — serta tujuan backup/arsip, karena biaya per GB yang rendah & tersedianya storage tier dingin untuk data yang jarang diakses.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di semua kasus di atas, datanya adalah <strong>blob mandiri</strong> — bukan baris yang perlu di-JOIN — dan volumenya terus tumbuh dari waktu ke waktu. Begitu kebutuhan bergeser ke query terstruktur atau update sebagian data berulang kali, tim biasanya menambah database atau cache di sampingnya, bukan memaksakan object storage untuk peran itu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools object storage</h2>
+      </div>
+      <p class="lead reveal">Sebagai pemula, cukup kenali nama populernya dulu. Amazon S3 adalah titik awal paling umum karena dokumentasinya luas & API-nya jadi standar de-facto yang ditiru layanan lain.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// paling populer</div><h4>Amazon S3</h4><p>Object storage paling banyak dipakai di industri. API-nya (S3 API) jadi standar de-facto yang ditiru banyak layanan lain, termasuk yang self-hosted.</p></div>
+        <div class="card up"><div class="ic">// google cloud</div><h4>Google Cloud Storage</h4><p>Setara S3 di ekosistem Google Cloud. Terintegrasi rapi dengan BigQuery & tool data lain di GCP, dengan pilihan storage class serupa (standard, nearline, coldline, archive).</p></div>
+        <div class="card up"><div class="ic">// microsoft azure</div><h4>Azure Blob Storage</h4><p>Layanan object storage di Microsoft Azure. Sering jadi pilihan default kalau stack aplikasi kamu sudah banyak berjalan di Azure.</p></div>
+        <div class="card up"><div class="ic">// self-hosted</div><h4>MinIO</h4><p>Object storage open-source yang kompatibel dengan S3 API, bisa dijalankan sendiri di server/on-premise. Cocok untuk lingkungan yang tidak boleh atau tidak mau pakai cloud publik.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Karena API S3 sudah jadi standar de-facto, banyak SDK & tool (termasuk MinIO) dibuat kompatibel dengannya. Belajar S3 API dengan baik berarti skill itu ikut terpakai di hampir semua layanan object storage lain.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Gudang raksasa untuk blob, bukan pengganti database</h2>
+      </div>
+      <p class="lead reveal">Object storage lahir dari kebutuhan menyimpan file besar dalam jumlah masif — dengan cara yang murah, sangat durabel, dan mudah diskalakan. Ia bersinar untuk blob mandiri, dan tersandung saat dipaksa berperan seperti database.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Objek = data + metadata + key</b> — disimpan datar di dalam bucket, bukan folder sungguhan.</li>
+          <li><b>Diakses lewat HTTP API</b> — PUT/GET/DELETE, bukan mounting filesystem.</li>
+          <li><b>Beda dari file & block storage</b> — object storage bukan pengganti keduanya.</li>
+          <li><b>Murah & sangat durabel</b> — cocok untuk skala yang terus tumbuh.</li>
+          <li><b>Bukan pengganti database</b> — hindari data yang sering di-update sebagian.</li>
+          <li><b>CDN & lifecycle policy</b> — dua kebiasaan yang membuat setup siap production.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya: <strong>"Apakah ini blob mandiri yang jarang berubah, dan aku cuma butuh ambil-taruh lewat HTTP?"</strong> Kalau ya, object storage memberimu skala & durabilitas tanpa harus mengurus server file sendiri. Kalau datamu butuh diperbarui sebagian berulang kali atau butuh query kompleks, itu tugas database — pilih alat sesuai bentuk & pola akses datanya, bukan karena ingin satu alat untuk semua.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Data disimpan datar sebagai key-value — bukan direktori bertingkat."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Object Storage</b> · Kenapa, konsep inti, trade-off, kapan, &amp; tools-nya · untuk pemula · rujukan: dokumentasi Amazon S3, Werner Vogels ("Eventually Consistent") · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../index.html">← Kembali ke Database</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

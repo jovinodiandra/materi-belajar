@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CQRS — Deep Dive · dari CQS sampai Read Store Terpisah</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  :root {
+    --ink:#0d1117; --ink-2:#0f141b; --panel:#161b22; --panel-2:#1b212b;
+    --line:#232b36; --line-soft:#1c232d; --fg:#c4cdda; --fg-strong:#f0f4f9;
+    --muted:#76828f; --muted-2:#5a6675; --brass:#d9a441; --brass-dim:#8a6d2f;
+    --bad:#f0746a; --bad-bg:rgba(240,116,106,.07); --bad-line:rgba(240,116,106,.32);
+    --good:#4ec9b0; --good-bg:rgba(78,201,176,.07); --good-line:rgba(78,201,176,.32);
+    --t-comment:#5f6b78; --t-key:#c99bf0; --t-type:#4ec9b0; --t-str:#9fc7f0;
+    --t-num:#e0a96b; --t-fn:#d9a441; --t-anno:#7fa6c4;
+    --mono:"Cascadia Code","Cascadia Mono","JetBrains Mono",Consolas,"SF Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --rail-w:250px; --maxw:1080px;
+  }
+
+  body { background:var(--ink); color:var(--fg); font-family:var(--sans);
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility; overflow-x:hidden; }
+
+  .topbar { position:fixed; top:0; left:0; right:0; z-index:50; height:44px;
+    background:rgba(13,17,23,.86); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px;
+    padding:0 16px; font-family:var(--mono); font-size:12.5px; }
+  .topbar__dots { display:flex; gap:7px; }
+  .topbar__dots i { width:11px; height:11px; border-radius:50%; display:block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#d9a441; }
+  .topbar__dots i:nth-child(3){ background:#4ec9b0; }
+  .topbar__file { color:var(--muted); letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .topbar__file b { color:var(--fg-strong); font-weight:600; }
+  .topbar__counter { margin-left:auto; color:var(--brass); letter-spacing:.12em; white-space:nowrap; }
+  .progress { position:fixed; top:44px; left:0; height:2px; width:0%;
+    background:linear-gradient(90deg,var(--brass-dim),var(--brass)); z-index:51; transition:width .15s linear; }
+
+  .rail { position:fixed; top:44px; left:0; bottom:0; width:var(--rail-w);
+    border-right:1px solid var(--line); background:var(--ink-2); padding:26px 0 40px;
+    overflow-y:auto; z-index:40; font-family:var(--mono); }
+  .rail__title { font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted-2); padding:0 22px 16px; }
+  .rail a { display:flex; align-items:baseline; gap:11px; padding:8px 22px; color:var(--muted);
+    text-decoration:none; font-size:13px; border-left:2px solid transparent;
+    transition:color .18s, border-color .18s, background .18s; }
+  .rail a .num { color:var(--brass-dim); font-size:11.5px; min-width:20px; transition:color .18s; }
+  .rail a:hover { color:var(--fg-strong); background:rgba(255,255,255,.02); }
+  .rail a.active { color:var(--fg-strong); border-left-color:var(--brass); background:rgba(217,164,65,.05); }
+  .rail a.active .num { color:var(--brass); }
+
+  .stage { margin-left:var(--rail-w); }
+  section.chapter { min-height:100vh; padding:96px clamp(22px,5vw,80px) 90px;
+    border-bottom:1px solid var(--line-soft); scroll-margin-top:44px;
+    display:flex; flex-direction:column; justify-content:center; }
+  .wrap { width:100%; max-width:var(--maxw); margin:0 auto; }
+
+  .reveal { opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity:1; transform:none; }
+  .reveal.d1 { transition-delay:.08s; } .reveal.d2 { transition-delay:.16s; } .reveal.d3 { transition-delay:.24s; }
+
+  .hero { text-align:left; }
+  .hero .eyebrow { font-family:var(--mono); color:var(--brass); font-size:13px; letter-spacing:.04em; margin-bottom:26px; max-width:70ch; }
+  .hero h1 { font-family:var(--mono); font-weight:700; font-size:clamp(30px,6.2vw,72px);
+    line-height:1.05; letter-spacing:-.02em; color:var(--fg-strong); max-width:18ch; }
+  .hero h1 .accent { color:var(--brass); }
+  .cursor { display:inline-block; width:.58ch; height:1.02em; background:var(--brass);
+    margin-left:.08em; transform:translateY(.12em); animation:blink 1.05s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .hero .sub { margin-top:30px; max-width:64ch; font-size:19px; color:var(--fg); }
+  .hero .byline { margin-top:22px; font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .hero .byline b { color:var(--fg-strong); font-weight:600; }
+  .scrollcue { margin-top:52px; font-family:var(--mono); font-size:12.5px; color:var(--muted-2);
+    letter-spacing:.14em; display:inline-flex; align-items:center; gap:10px; }
+  .scrollcue .arrow { animation:bob 1.6s ease-in-out infinite; color:var(--brass); }
+  @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(5px);} }
+  .herostats { display:flex; flex-wrap:wrap; gap:14px; margin-top:50px; font-family:var(--mono); }
+  .herostats .chip { border:1px solid var(--line); border-radius:8px; padding:12px 16px; background:var(--panel); font-size:12.5px; color:var(--muted); }
+  .herostats .chip b { color:var(--fg-strong); }
+
+  .chead { display:flex; align-items:flex-start; gap:22px; margin-bottom:16px; }
+  .chead .cnum { font-family:var(--mono); font-weight:700; font-size:clamp(34px,5vw,58px);
+    color:transparent; -webkit-text-stroke:1.4px var(--brass-dim); line-height:.9; letter-spacing:-.02em; flex:none; }
+  .chead .ctitle { padding-top:4px; }
+  .chead .ctitle .kicker { font-family:var(--mono); font-size:13px; font-weight:600; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--brass); margin-bottom:8px; display:flex; align-items:center; gap:9px; }
+  .chead .ctitle .kicker::before { content:""; flex:none; width:3px; height:13px; background:var(--brass); border-radius:1px; }
+  .chead h2 { font-family:var(--mono); font-weight:700; font-size:clamp(24px,3.6vw,38px); line-height:1.1; letter-spacing:-.015em; color:var(--fg-strong); }
+
+  .lead { font-size:19px; color:var(--fg); max-width:72ch; margin:6px 0 8px; }
+  .lead strong { color:var(--fg-strong); font-weight:600; }
+  p.body { max-width:74ch; margin:14px 0; color:var(--fg); }
+  p.body strong { color:var(--fg-strong); }
+  p.body code, li code, .lead code, td code { font-family:var(--mono); font-size:.88em; color:var(--brass); background:rgba(217,164,65,.08); padding:1px 6px; border-radius:4px; }
+
+  .note { display:flex; gap:16px; margin:28px 0 4px; max-width:82ch; border:1px solid var(--line);
+    border-radius:10px; overflow:hidden; background:var(--panel); }
+  .note__spine { flex:none; width:8px; background:linear-gradient(var(--brass),var(--brass-dim)); }
+  .note__body { padding:16px 20px 18px; }
+  .note__tag { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--brass); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .note__tag .ico { font-size:13px; }
+  .note p { color:var(--fg); font-size:15.5px; max-width:none; }
+  .note p strong { color:var(--fg-strong); }
+  .note p + p { margin-top:10px; }
+  .note code { font-family:var(--mono); font-size:.86em; color:var(--good); background:rgba(78,201,176,.08); padding:1px 6px; border-radius:4px; }
+
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin:24px 0; }
+  .cols h4 { font-family:var(--mono); font-size:14px; margin-bottom:8px; color:var(--brass); }
+  .cols.split .l-h { color:var(--bad); } .cols.split .r-h { color:var(--good); }
+  .cols ul { list-style:none; }
+  .cols li { padding:7px 0 7px 24px; position:relative; font-size:15.5px; color:var(--fg); border-bottom:1px solid var(--line-soft); }
+  .cols li::before { position:absolute; left:0; font-family:var(--mono); color:var(--brass); content:"\2192"; }
+  .cols.split .bad-l li::before { content:"\2715"; color:var(--bad); }
+  .cols.split .good-l li::before { content:"\2713"; color:var(--good); }
+  .cols li b { color:var(--fg-strong); }
+
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; margin-top:26px; }
+  .card { border:1px solid var(--line); border-radius:10px; padding:18px 18px 16px; background:var(--panel); transition:border-color .2s, transform .2s; }
+  .card:hover { border-color:var(--brass-dim); transform:translateY(-3px); }
+  .card .code-id { font-family:var(--mono); font-size:11.5px; color:var(--brass); letter-spacing:.06em; text-transform:uppercase; }
+  .card h4 { font-size:16px; color:var(--fg-strong); margin:6px 0 7px; font-weight:600; }
+  .card p { font-size:14.5px; color:var(--muted); }
+  .card p em { color:var(--fg); font-style:normal; }
+
+  .editor { border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--panel);
+    display:flex; flex-direction:column; box-shadow:0 14px 40px -28px rgba(0,0,0,.9); margin:28px 0 8px; max-width:940px; }
+  .editor.good { border-color:var(--good-line); }
+  .editor.bad { border-color:var(--bad-line); }
+  .editor__bar { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--line);
+    background:var(--panel-2); font-family:var(--mono); font-size:12px; }
+  .editor__bar .dots { display:flex; gap:6px; }
+  .editor__bar .dots i { width:9px; height:9px; border-radius:50%; display:block; background:var(--line); }
+  .editor__name { color:var(--muted); }
+  .editor__verdict { margin-left:auto; font-weight:600; letter-spacing:.04em; font-size:11.5px; color:var(--good); }
+  .editor.bad .editor__verdict { color:var(--bad); }
+  pre.code { font-family:var(--mono); font-size:13px; line-height:1.62; padding:16px 18px; overflow-x:auto; color:var(--fg); tab-size:2; flex:1; white-space:pre; }
+  pre.code::-webkit-scrollbar { height:9px; }
+  pre.code::-webkit-scrollbar-thumb { background:var(--line); border-radius:6px; }
+  .c{ color:var(--t-comment); font-style:italic; } .k{ color:var(--t-key); } .t{ color:var(--t-type); }
+  .s{ color:var(--t-str); } .n{ color:var(--t-num); } .f{ color:var(--t-fn); } .a{ color:var(--t-anno); }
+
+  .dtable-wrap { overflow-x:auto; margin:24px 0 8px; }
+  table.dtable { border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px; }
+  table.dtable th, table.dtable td { text-align:left; padding:9px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  table.dtable th { font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--brass); border-bottom:1px solid var(--brass-dim); }
+  table.dtable td { color:var(--fg); }
+  table.dtable td strong { color:var(--fg-strong); }
+  table.dtable tr:hover td { background:rgba(255,255,255,.015); }
+  table.dtable td.num { font-family:var(--mono); }
+
+  .creed { max-width:74ch; }
+  .creed li { list-style:none; font-family:var(--mono); font-size:clamp(14px,1.9vw,17px); color:var(--fg);
+    padding:12px 0 12px 30px; position:relative; border-bottom:1px solid var(--line-soft); line-height:1.55; }
+  .creed li::before { content:"\2192"; position:absolute; left:0; color:var(--brass); }
+  .creed li b { color:var(--fg-strong); }
+  .endcard { margin-top:38px; border:1px solid var(--line); border-radius:12px;
+    background:linear-gradient(160deg,var(--panel),var(--ink-2)); padding:30px clamp(20px,4vw,40px); }
+  .endcard h3 { font-family:var(--mono); color:var(--fg-strong); font-size:22px; margin-bottom:10px; }
+  .endcard p { color:var(--fg); max-width:70ch; }
+  .endcard .map { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:22px; font-family:var(--mono); font-size:12.5px; }
+  .endcard .map div { border:1px solid var(--line); border-radius:8px; padding:11px 13px; background:rgba(0,0,0,.2); }
+  .endcard .map b { color:var(--brass); display:block; margin-bottom:3px; }
+  .endcard .map span { color:var(--muted); }
+  .endcard .map a { color:var(--muted); text-decoration:none; }
+  .endcard .map a:hover { color:var(--fg-strong); text-decoration:underline; }
+
+  .quotes { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:16px; margin:26px 0 8px; }
+  .qcard { border:1px solid var(--line); border-radius:10px; padding:16px 20px 16px; background:var(--panel); }
+  .qcard .mark { font-family:var(--mono); font-size:30px; line-height:.7; color:var(--brass-dim); }
+  .qcard blockquote { color:var(--fg-strong); font-size:15px; line-height:1.55; margin:8px 0 12px; font-style:italic; }
+  .qcard .who { font-family:var(--mono); font-size:12px; color:var(--brass); }
+  .qcard .who span { display:block; color:var(--muted); font-size:11px; margin-top:2px; }
+
+  footer { margin-left:var(--rail-w); padding:34px clamp(22px,5vw,80px); font-family:var(--mono);
+    font-size:12.5px; color:var(--muted-2); border-top:1px solid var(--line); }
+  footer b { color:var(--muted); }
+  footer a { color:var(--muted); }
+
+  @media (max-width:920px) {
+    :root { --rail-w:0px; }
+    .rail { display:none; } .stage, footer { margin-left:0; }
+    .cols { grid-template-columns:1fr; } body { font-size:16px; } .topbar__file { font-size:11px; }
+  }
+  @media (max-width:520px) { .chead { gap:14px; } section.chapter { padding-left:18px; padding-right:18px; } }
+  @media (prefers-reduced-motion:reduce) { * { animation:none !important; scroll-behavior:auto !important; }
+    .reveal { opacity:1; transform:none; transition:none; } html { scroll-behavior:auto; } }
+  a:focus-visible { outline:2px solid var(--brass); outline-offset:3px; border-radius:4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/ddd/cqrs/<b>cqrs-deep-dive.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 11</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__title">// Bab</div>
+  <a href="#c00"><span class="num">00</span> Pembuka</a>
+  <a href="#c01"><span class="num">01</span> Akar: CQS → CQRS</a>
+  <a href="#c02"><span class="num">02</span> Satu model, dua tuan</a>
+  <a href="#c03"><span class="num">03</span> Spektrum adopsi (L0–L3)</a>
+  <a href="#c04"><span class="num">04</span> Contoh 1 · Riwayat trip</a>
+  <a href="#c05"><span class="num">05</span> Contoh 2 · Dashboard driver</a>
+  <a href="#c06"><span class="num">06</span> Sisi Command</a>
+  <a href="#c07"><span class="num">07</span> Sisi Query</a>
+  <a href="#c08"><span class="num">08</span> Eventual consistency &amp; UX</a>
+  <a href="#c09"><span class="num">09</span> Kapan pakai, kapan jangan</a>
+  <a href="#c10"><span class="num">10</span> Anti-pattern &amp; smells</a>
+  <a href="#c11"><span class="num">11</span> Penutup</a>
+</nav>
+
+<main class="stage">
+
+  <!-- 00 HERO -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// "CQRS is simply the creation of two objects where there was previously only one." — Greg Young</div>
+      <h1 class="reveal d1">CQRS <span class="accent">deep dive</span><span class="cursor" aria-hidden="true"></span></h1>
+      <p class="sub reveal d2">
+        Di materi DDD utama, CQRS cuma dapat satu bab. Di sini kita bedah tuntas: dari akar prinsipnya (<span style="color:var(--brass)">CQS</span>),
+        naik pelan-pelan lewat <span style="color:var(--brass)">4 level adopsi</span>, dua contoh lengkap dengan kode + tabel + diagram,
+        sampai urusan paling nyebelin-nya: <span style="color:var(--brass)">eventual consistency</span> di layar user.
+        Tetap pakai dunia <strong>ride-hailing</strong> (RideGo) biar nyambung.
+      </p>
+      <div class="byline reveal d2">Lanjutan dari <b>docs/learning/ddd</b> bab 12 · berdiri sendiri juga bisa</div>
+      <div class="herostats reveal d3">
+        <div class="chip"><b>4 level</b> adopsi — dari gratis sampai mahal</div>
+        <div class="chip"><b>2 contoh</b> end-to-end</div>
+        <div class="chip">kode · tabel · <b>flow diagram</b></div>
+      </div>
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--brass)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="wrap" style="margin:0 auto;max-width:var(--maxw);padding:0 clamp(22px,5vw,80px)">
+    <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px 0;border-radius:0 10px 10px 0;max-width:70ch">
+      <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+      <p style="margin:5px 0"><b>Given</b> — model data yang sama dipakai buat baca (read) dan tulis (write) sekaligus.</p>
+      <p style="margin:5px 0"><b>When</b> — traffic baca jauh lebih besar dari tulis, atau kebutuhan tampilan (dashboard, riwayat, laporan) makin kompleks dan beda bentuk dari model tulisnya.</p>
+      <p style="margin:5px 0"><b>Then</b> — satu model itu jadi kompromi buruk buat keduanya: query jadi lambat/berat, atau model tulis dipaksa nampung field-field khusus tampilan — performa dan skalabilitas dua-duanya terganggu.</p>
+      <p style="margin:8px 0 0">→ makanya kita pakai <b>CQRS</b>, pisahkan sisi command (tulis) dan query (baca).</p>
+    </div>
+  </div>
+
+  <!-- 01 CQS -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">01</div><div class="ctitle">
+        <div class="kicker">Akar · 1988 → 2010</div><h2>CQS: prinsip kecil yang jadi arsitektur</h2></div></div>
+      <p class="lead reveal">CQRS nggak muncul dari langit. Akarnya prinsip lama bernama <strong>CQS</strong> (Command-Query Separation) dari <strong>Bertrand Meyer</strong> (1988): <em>sebuah method itu <strong>command</strong> (mengubah state, nggak mengembalikan data) ATAU <strong>query</strong> (mengembalikan data, nggak mengubah apa pun) — jangan dua-duanya.</em></p>
+
+      <div class="editor bad reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">DriverWallet.java — melanggar CQS</span><span class="editor__verdict">CAMPUR ADUK</span></div>
+<pre class="code"><span class="c">// satu method, dua kepribadian: ngubah state DAN balikin data</span>
+<span class="k">public</span> <span class="t">Money</span> <span class="f">withdraw</span>(<span class="t">Money</span> amount) {
+    <span class="k">this</span>.saldo = saldo.minus(amount);   <span class="c">// command: mutasi</span>
+    <span class="k">return this</span>.saldo;                  <span class="c">// query: baca</span>
+}
+<span class="c">// akibatnya: manggil buat "cek saldo" bisa nggak sengaja narik duit.</span>
+<span class="c">// method-nya nggak bisa dipercaya cuma dari namanya.</span></pre>
+      </div>
+
+      <div class="editor good reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">DriverWallet.java — patuh CQS</span><span class="editor__verdict">JELAS PERANNYA</span></div>
+<pre class="code"><span class="k">public void</span> <span class="f">withdraw</span>(<span class="t">Money</span> amount) { <span class="k">this</span>.saldo = saldo.minus(amount); }  <span class="c">// command: void</span>
+<span class="k">public</span> <span class="t">Money</span> <span class="f">saldo</span>() { <span class="k">return</span> saldo; }                                  <span class="c">// query: tanpa efek</span></pre>
+      </div>
+
+      <p class="body reveal d2">Sekitar 2010, <strong>Greg Young</strong> ngangkat prinsip method ini ke level <strong>arsitektur</strong>: kalau memisahkan command dan query bagus di satu method, kenapa nggak dipisah di level <em>model</em>? Lahirlah <strong>CQRS</strong>: satu model buat menulis, satu (atau lebih) model buat membaca.</p>
+
+      <div class="quotes reveal d3">
+        <div class="qcard">
+          <div class="mark">&ldquo;</div>
+          <blockquote>CQRS is simply the creation of two objects where there was previously only one.</blockquote>
+          <div class="who">Greg Young <span>pencetus istilah CQRS · CQRS Documents</span></div>
+        </div>
+        <div class="qcard">
+          <div class="mark">&ldquo;</div>
+          <blockquote>CQRS bukan arsitektur level atas aplikasi — ia pola yang diterapkan di bagian tertentu sistem, bukan di semua tempat.</blockquote>
+          <div class="who">Martin Fowler <span>posisinya · bliki "CQRS"</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 MASALAH -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">02</div><div class="ctitle">
+        <div class="kicker">Masalahnya</div><h2>Satu model, dua tuan yang maunya beda</h2></div></div>
+      <p class="lead reveal">Kenapa repot-repot misahin? Karena sisi tulis dan sisi baca itu <strong>dua tuan dengan tuntutan yang bertolak belakang</strong>. Satu model yang melayani dua-duanya bakal kompromi di dua-duanya.</p>
+
+      <div class="dtable-wrap reveal d1">
+        <table class="dtable">
+          <thead><tr><th></th><th>Sisi TULIS maunya…</th><th>Sisi BACA maunya…</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Bentuk data</strong></td><td>Normalized, ngikutin aturan bisnis (aggregate kecil &amp; ketat)</td><td>Denormalized, gepeng, persis bentuk layar</td></tr>
+            <tr><td><strong>Yang dijaga</strong></td><td>Invariant — data nggak boleh masuk kondisi tak sah</td><td>Kecepatan — user nggak mau nunggu</td></tr>
+            <tr><td><strong>Pola akses</strong></td><td>Load satu aggregate by ID → ubah → simpan</td><td>List, filter, sort, agregasi, join ke mana-mana</td></tr>
+            <tr><td><strong>Frekuensi</strong></td><td>Relatif jarang</td><td>Biasanya 10–100× lebih sering dari tulis</td></tr>
+            <tr><td><strong>Konsistensi</strong></td><td>Harus strong (transaksional)</td><td>Sering boleh telat sepersekian detik</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="body reveal d2">Contoh nyata: layar <strong>"Riwayat Perjalanan"</strong> di aplikasi penumpang butuh: nama driver, plat motor, foto, alamat jemput/tujuan, tarif final, metode bayar, rating yang kamu kasih. Itu data dari <strong>5–6 aggregate berbeda</strong> (Trip, Driver, Billing, Rating…). Kalau dipaksa lewat model tulis: load 6 aggregate × N baris riwayat = <strong>N+1 query, mapping berat, dan aggregate-mu mulai ditambahin getter aneh-aneh</strong> demi kebutuhan layar. Model tulismu pelan-pelan rusak justru karena dipakai buat baca.</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Gejala yang paling sering kelihatan</div>
+          <p>Aggregate yang tadinya rapi mulai numbuh method kayak <code>getDriverNameForHistoryScreen()</code> atau field yang cuma dipakai satu layar. Itu tandanya model tulis lagi disandera kebutuhan baca. CQRS bilang: <strong>lepasin — kasih layar itu model bacanya sendiri.</strong></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 SPEKTRUM -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">03</div><div class="ctitle">
+        <div class="kicker">Peta keputusan</div><h2>4 level adopsi — dari gratis sampai mahal</h2></div></div>
+      <p class="lead reveal">Kesalahan terbesar orang belajar CQRS: ngira ini pilihan biner "pakai / nggak pakai". Padahal dia <strong>spektrum</strong>. Naik level cuma kalau sakitnya nyata — tiap level nambah kompleksitas.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">spektrum-cqrs.txt — makin ke bawah makin mahal</span><span class="editor__verdict">PILIH SEPERLUNYA</span></div>
+<pre class="code"><span class="t">LEVEL 0</span>  satu model buat semua
+         [ Model ] ◀──tulis+baca──▶ [ DB ]
+         <span class="c">cukup buat CRUD &amp; layar sederhana. mayoritas fitur hidup nyaman di sini.</span>
+
+<span class="t">LEVEL 1</span>  pisah INTERFACE (CQRS "ringan")
+         [ TripRepository ] ──tulis──▶ ┐
+                                       ├─▶ [ DB yang sama ]
+         [ TripHistoryReader ] ◀─baca─ ┘
+         <span class="c">murah, hampir selalu worth it. reader boleh SQL join seenaknya.</span>
+
+<span class="t">LEVEL 2</span>  pisah MODEL BACA, masih 1 database
+         tulis ─▶ [ tabel utama ] ─(trigger/proyeksi)─▶ [ tabel/VIEW baca ] ◀─ baca
+         <span class="c">buat layar berat yang join-nya mulai nyakitin.</span>
+
+<span class="t">LEVEL 3</span>  pisah READ STORE (CQRS "penuh")
+         tulis ─▶ [ DB transaksi ] ─event─▶ [ projector ] ─▶ [ DB baca ] ◀─ baca
+         <span class="c">skala &amp; bentuk beda total (dashboard, analytics, search). bayar: eventual consistency.</span></pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Aturan mainnya</div>
+          <p><strong>Per fitur, bukan per sistem.</strong> Satu aplikasi sehat biasanya campur: 80% fitur di Level 0–1, beberapa layar berat di Level 2, dan satu-dua kasus khusus di Level 3. Kalau ada yang bilang "sistem kita full CQRS Level 3 semuanya" — itu bukan prestasi, itu tagihan kompleksitas yang belum jatuh tempo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 CONTOH 1 -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">04</div><div class="ctitle">
+        <div class="kicker">Contoh 1 · Level 1–2</div><h2>Riwayat perjalanan penumpang</h2></div></div>
+      <p class="lead reveal">Layar riwayat: daftar perjalanan sebulan terakhir, lengkap dengan nama driver, tarif, dan rating. Data dari banyak aggregate, tapi <strong>nggak butuh real-time banget</strong> dan masih satu database. Level 1–2 cukup.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">port — sisi tulis dan sisi baca dipisah sejak interface</span><span class="editor__verdict">LEVEL 1</span></div>
+<pre class="code"><span class="c">// SISI TULIS — lewat aggregate, jaga invariant</span>
+<span class="k">public interface</span> <span class="t">TripRepository</span> {
+    <span class="t">Optional</span>&lt;<span class="t">Trip</span>&gt; <span class="f">findById</span>(<span class="t">TripId</span> id);
+    <span class="k">void</span> <span class="f">save</span>(<span class="t">Trip</span> trip);
+}
+
+<span class="c">// SISI BACA — DTO siap-tampil. NGGAK lewat aggregate, nggak ada aturan bisnis.</span>
+<span class="k">public interface</span> <span class="t">TripHistoryReader</span> {
+    <span class="t">List</span>&lt;<span class="t">TripHistoryRow</span>&gt; <span class="f">listByPassenger</span>(<span class="t">PassengerId</span> id, <span class="t">Month</span> month);
+}
+<span class="k">public record</span> <span class="t">TripHistoryRow</span>(          <span class="c">// bentuknya = bentuk LAYAR, bukan bentuk domain</span>
+    <span class="t">String</span> tripId, <span class="t">Instant</span> completedAt,
+    <span class="t">String</span> driverName, <span class="t">String</span> plateNumber,
+    <span class="k">long</span> finalFare, <span class="t">Integer</span> myRating) { }</pre>
+      </div>
+
+      <div class="editor reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">implementasi reader — SQL join bebas, satu kali jalan</span><span class="editor__verdict">LEVEL 2 (VIEW)</span></div>
+<pre class="code"><span class="c">-- reader nggak perlu sopan santun aggregate. join aja langsung:</span>
+<span class="k">CREATE VIEW</span> <span class="t">v_trip_history</span> <span class="k">AS</span>
+<span class="k">SELECT</span> t.id, t.completed_at, t.passenger_id,
+       d.display_name  <span class="k">AS</span> driver_name,
+       d.plate_number,
+       b.final_fare,
+       r.stars         <span class="k">AS</span> my_rating
+<span class="k">FROM</span>   trips t
+<span class="k">JOIN</span>   drivers d  <span class="k">ON</span> d.id = t.driver_id
+<span class="k">JOIN</span>   billing b  <span class="k">ON</span> b.trip_id = t.id
+<span class="k">LEFT JOIN</span> ratings r <span class="k">ON</span> r.trip_id = t.id
+<span class="k">WHERE</span>  t.status = <span class="s">'COMPLETED'</span>;</pre>
+      </div>
+
+      <p class="body reveal d2">Perhatikan yang terjadi: <strong>model tulis (aggregate <code>Trip</code>) nggak disentuh sama sekali</strong> — nggak perlu ditambahin getter buat layar. Reader hidup di dunianya sendiri: satu query, bentuk pas, kelar. Dan karena masih satu database, hasilnya <strong>selalu konsisten</strong> — nggak ada lag.</p>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Kenapa nggak lewat repository aja?</div>
+          <p>Coba bandingkan: lewat model tulis = load N aggregate <code>Trip</code>, terus per trip load <code>Driver</code>, <code>Billing</code>, <code>Rating</code> (N+1!), terus mapping manual ke DTO. Lewat reader = <strong>satu</strong> query view. Lebih cepat, lebih sedikit kode, dan aggregate-mu tetap perawan dari urusan layar.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 CONTOH 2 -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">05</div><div class="ctitle">
+        <div class="kicker">Contoh 2 · Level 3</div><h2>Dashboard pendapatan harian driver</h2></div></div>
+      <p class="lead reveal">Layar yang dibuka <strong>ratusan ribu driver</strong> berkali-kali sehari: "hari ini dapet berapa?". Agregasi (jumlah trip, gross, komisi, net) yang kalau dihitung on-the-fly dari tabel transaksi bakal ngebebanin DB utama. Ini kasus sah buat <strong>Level 3</strong>: read store terpisah, di-update lewat event.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">alur — dari transaksi ke dashboard</span><span class="editor__verdict">LEVEL 3 · ASYNC</span></div>
+<pre class="code">  <span class="t">SISI TULIS</span> (harus ngebut &amp; konsisten)          <span class="t">SISI BACA</span> (boleh telat ~detik)
+
+  [ Trip.complete() ]
+        │ transaksi yang sama
+        ▼
+  [ DB transaksi ] ──▶ [ outbox: TripCompleted ]
+                              │ (publish andal)
+                              ▼
+                        [ Projector ] ── upsert ──▶ [ driver_daily_earnings ]
+                                                            │
+                                        GET /driver/earnings/today ◀── aplikasi driver</pre>
+      </div>
+
+      <p class="body reveal d1">Tabel read model-nya <strong>udah berbentuk jawaban</strong>, bukan bahan mentah — satu baris per driver per hari:</p>
+
+      <div class="dtable-wrap reveal d2">
+        <table class="dtable">
+          <thead><tr><th>driver_id</th><th>tanggal</th><th>trips</th><th>gross</th><th>komisi</th><th>net</th><th>updated_at</th></tr></thead>
+          <tbody>
+            <tr><td class="num">D-4471</td><td class="num">2026-07-24</td><td class="num">17</td><td class="num">412.000</td><td class="num">82.400</td><td class="num"><strong>329.600</strong></td><td class="num">14:02:11</td></tr>
+            <tr><td class="num">D-4471</td><td class="num">2026-07-23</td><td class="num">21</td><td class="num">498.000</td><td class="num">99.600</td><td class="num"><strong>398.400</strong></td><td class="num">23:58:40</td></tr>
+            <tr><td class="num">D-8102</td><td class="num">2026-07-24</td><td class="num">9</td><td class="num">201.000</td><td class="num">40.200</td><td class="num"><strong>160.800</strong></td><td class="num">13:47:03</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="editor good reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">EarningsProjector.java — dengar event, update read model</span><span class="editor__verdict">PROJECTOR</span></div>
+<pre class="code"><span class="k">public final class</span> <span class="t">EarningsProjector</span> {
+
+    <span class="c">// dipanggil consumer event (dari outbox) — BUKAN dari use case</span>
+    <span class="k">public void</span> <span class="f">on</span>(<span class="t">TripCompleted</span> e) {
+        <span class="k">var</span> commission = e.fare().multiply(<span class="n">0.20</span>);          <span class="c">// snapshot rate saat itu</span>
+        db.<span class="f">upsert</span>(<span class="s">"""
+            INSERT INTO driver_daily_earnings (driver_id, tanggal, trips, gross, komisi)
+            VALUES (?, ?, 1, ?, ?)
+            ON CONFLICT (driver_id, tanggal) DO UPDATE SET
+              trips = driver_daily_earnings.trips + 1,
+              gross = driver_daily_earnings.gross + EXCLUDED.gross,
+              komisi = driver_daily_earnings.komisi + EXCLUDED.komisi
+            """</span>, e.driver(), date(e.at()), e.fare(), commission);
+    }
+
+    <span class="c">// event lain yang relevan ikut didengar:</span>
+    <span class="k">public void</span> <span class="f">on</span>(<span class="t">TripCancelled</span> e) { <span class="c">/* cancellation fee masuk gross juga */</span> }
+}</pre>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Yang dibeli dan yang dibayar</div>
+          <p><strong>Dibeli:</strong> query dashboard = 1 baris by primary key — nggak peduli driver punya 10 atau 10.000 trip. DB transaksi nggak keganggu sama sekali. Read store-nya bahkan boleh mesin lain (mis. columnar DB buat analytics). <strong>Dibayar:</strong> dashboard bisa telat beberapa detik dari kejadian (eventual consistency — bab 08), plus ada komponen baru (projector) yang harus dimonitor: <em>kalau projector mati, dashboard beku diam-diam</em>. Kasih metric lag!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 COMMAND SIDE -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">06</div><div class="ctitle">
+        <div class="kicker">Zoom in · Sisi tulis</div><h2>Anatomi sisi Command</h2></div></div>
+      <p class="lead reveal">Command = <strong>niat user untuk mengubah sesuatu</strong>, dinamai pakai kata kerja bahasa bisnis: <code>BookTrip</code>, <code>CancelTrip</code>, <code>WithdrawEarnings</code>. Bukan "updateTrip" — itu bahasa CRUD, bukan bahasa niat.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">alur satu command — dari HTTP sampai event</span><span class="editor__verdict">COMMAND FLOW</span></div>
+<pre class="code"><span class="c">// 1. command = niat, immutable, bahasa bisnis</span>
+<span class="k">public record</span> <span class="t">BookTripCommand</span>(<span class="t">PassengerId</span> passenger, <span class="t">Location</span> pickup, <span class="t">Location</span> destination) { }
+
+<span class="c">// 2. use case = sutradara (application service)</span>
+<span class="k">public final class</span> <span class="t">BookTripUseCase</span> {
+    <span class="k">public</span> <span class="t">TripId</span> <span class="f">handle</span>(<span class="t">BookTripCommand</span> cmd) {
+        <span class="k">var</span> fare = pricing.<span class="f">estimate</span>(cmd.pickup(), cmd.destination()); <span class="c">// domain service</span>
+        <span class="k">var</span> trip = <span class="t">Trip</span>.<span class="f">create</span>(idGen.<span class="f">next</span>(), cmd.passenger(), fare);  <span class="c">// aggregate jaga invariant</span>
+        tripRepository.<span class="f">save</span>(trip);                                    <span class="c">// + event ke outbox, 1 transaksi</span>
+        <span class="k">return</span> trip.<span class="f">id</span>();     <span class="c">// ← balikin ID doang. BUKAN data buat layar!</span>
+    }
+}</pre>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4>Validasi (bentuk) — di tepi</h4>
+          <ul>
+            <li>"lat/lng keisi?" · "format bener?"</li>
+            <li>Dicek di controller / constructor VO</li>
+            <li>Gagal cepat, murah, tanpa DB</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Invariant (bisnis) — di aggregate</h4>
+          <ul>
+            <li>"penumpang ini masih punya trip aktif?"</li>
+            <li>Dicek di dalam <b>Trip</b> / use case, transaksional</li>
+            <li>Nggak bisa di-bypass dari mana pun</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Kenapa command cuma balikin ID?</div>
+          <p>Kalau command balikin data layar, kamu diam-diam balik lagi ke "satu model dua tuan" — use case tulis mulai dijejali join buat kebutuhan tampilan. Kontraknya: <strong>command mengubah, query menampilkan.</strong> Setelah <code>BookTrip</code> sukses, UI ambil detail lewat query (atau pakai data yang dia kirim sendiri — bab 08).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 QUERY SIDE -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">07</div><div class="ctitle">
+        <div class="kicker">Zoom in · Sisi baca</div><h2>Anatomi sisi Query</h2></div></div>
+      <p class="lead reveal">Sisi query itu <strong>bodoh dengan sengaja</strong> — dan justru itu kekuatannya: ambil data, bentuk sesuai layar, kembalikan. Nggak ada keputusan bisnis, nggak ada mutasi, nggak ada aggregate.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">contoh reader lain — pencarian trip oleh Customer Service</span><span class="editor__verdict">QUERY = TANYA DOANG</span></div>
+<pre class="code"><span class="c">// filter fleksibel khas layar admin — hal yang bikin aggregate nangis</span>
+<span class="k">public interface</span> <span class="t">TripSearchReader</span> {
+    <span class="t">Page</span>&lt;<span class="t">TripSearchRow</span>&gt; <span class="f">search</span>(<span class="t">TripSearchFilter</span> f);   <span class="c">// status, rentang tanggal, driver,</span>
+}                                                        <span class="c">// area, metode bayar, keyword…</span>
+
+<span class="k">public record</span> <span class="t">TripSearchRow</span>(
+    <span class="t">String</span> tripId, <span class="t">String</span> status, <span class="t">Instant</span> requestedAt,
+    <span class="t">String</span> passengerName, <span class="t">String</span> driverName,
+    <span class="k">long</span> finalFare, <span class="t">String</span> cancelReason) { }         <span class="c">// gepeng. siap tampil. titik.</span></pre>
+      </div>
+
+      <div class="cols split reveal d2">
+        <div>
+          <h4 class="r-h">Boleh di sisi query</h4>
+          <ul class="good-l">
+            <li>SQL join / view / index khusus layar</li>
+            <li>DTO per layar — 5 layar, 5 DTO, gapapa</li>
+            <li>Cache (data baca gampang di-cache)</li>
+            <li>Baca dari replica / read store terpisah</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="l-h">Haram di sisi query</h4>
+          <ul class="bad-l">
+            <li>Mutasi data (sekecil apa pun — "sekalian update counter")</li>
+            <li>Keputusan bisnis (<b>if</b> yang menentukan aturan)</li>
+            <li>Balikin domain object / aggregate ke controller</li>
+            <li>Manggil use case tulis dari dalam reader</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> "Tapi kan duplikasi DTO…"</div>
+          <p>Lima layar, lima DTO yang mirip-mirip — kok nggak DRY? <strong>Sengaja.</strong> Layar riwayat penumpang dan layar pencarian CS itu <em>berubah karena alasan berbeda</em> (penumpang vs kebutuhan ops) — nyatuin DTO-nya berarti tiap perubahan satu layar ngerusak layar lain. Duplikasi bentuk yang murah &gt; kopling yang mahal. Yang haram itu duplikasi <em>aturan bisnis</em>, bukan duplikasi bentuk tampilan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 EVENTUAL CONSISTENCY -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">08</div><div class="ctitle">
+        <div class="kicker">Bagian tersulit</div><h2>Eventual consistency &amp; UX: jeda yang harus dijinakkan</h2></div></div>
+      <p class="lead reveal">Begitu naik ke Level 3, ada jeda antara "command sukses" dan "read model ke-update". Biasanya milidetik — tapi Murphy bilang user bakal nemu momen itu. Yang penting bukan menghilangkan jedanya (nggak bisa), tapi <strong>mendesain UX yang jujur terhadap jeda itu</strong>.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">timeline — di mana jedanya hidup</span><span class="editor__verdict">THE GAP</span></div>
+<pre class="code">t0   driver tap "Selesaikan Trip"  ─▶  command OK, DB transaksi commit  ✓
+t0+ε (outbox → projector lagi kerja…)
+t1   driver buka dashboard pendapatan
+       ├─ kalau t1 &gt; t0+lag  → angka udah bener  ✓
+       └─ kalau t1 &lt; t0+lag  → trip barusan BELUM kelihatan  ⚠ ← momen ini yang harus didesain</pre>
+      </div>
+
+      <p class="body reveal d1">Strategi yang umum dipakai — pilih sesuai layarnya:</p>
+
+      <div class="dtable-wrap reveal d2">
+        <table class="dtable">
+          <thead><tr><th>Strategi</th><th>Cara kerja</th><th>Cocok buat</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Optimistic UI</strong></td><td>UI langsung nampilin hasil dari data yang user kirim sendiri, tanpa nunggu read model</td><td>Aksi user sendiri: habis complete trip, tampilkan "+Rp32.000" dari respons command</td></tr>
+            <tr><td><strong>Read-your-own-writes</strong></td><td>Khusus data yang barusan ditulis user, baca dari sumber tulis (atau tunggu versi ≥ X)</td><td>Form edit profil, setting — user nggak boleh lihat data lamanya sendiri</td></tr>
+            <tr><td><strong>Status "diproses"</strong></td><td>Tampilkan badge pending sampai proyeksi selesai</td><td>Payout / pencairan — user paham uang butuh proses</td></tr>
+            <tr><td><strong>Terima aja</strong></td><td>Nggak diapa-apain — lag sub-detik nggak akan disadari</td><td>Dashboard agregat, laporan, leaderboard</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Trik yang jarang disadari</div>
+          <p>Dunia nyata itu udah eventual consistent dari sononya. Struk belanja nggak langsung muncul di mutasi rekening; resi paket telat beberapa menit dari paketnya. User <strong>udah terlatih</strong> menerima jeda — asal UI-nya nggak bohong. Yang bikin marah bukan jedanya, tapi <em>data yang kelihatan hilang tanpa penjelasan</em>. Makanya optimistic UI + badge "diproses" hampir selalu cukup.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 KAPAN -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">09</div><div class="ctitle">
+        <div class="kicker">Keputusan</div><h2>Kapan pakai, kapan jangan</h2></div></div>
+      <p class="lead reveal">Level 1 (pisah interface) itu hampir selalu layak — murah dan bikin kode lebih jelas. Pertanyaan sebenarnya: <strong>kapan layak naik ke Level 2–3?</strong></p>
+
+      <div class="cols split reveal d1">
+        <div>
+          <h4 class="r-h">Sinyal buat naik level</h4>
+          <ul class="good-l">
+            <li>Beban baca <b>jauh</b> lebih besar dari tulis (10×+) dan mulai ganggu sisi transaksi</li>
+            <li>Bentuk data layar <b>beda jauh</b> dari bentuk domain (agregasi, search, dashboard)</li>
+            <li>Butuh <b>mesin beda</b>: full-text search, columnar/analytics DB</li>
+            <li>Aggregate mulai dijejali getter demi layar</li>
+            <li>Tim bisa monitor komponen async (projector lag)</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="l-h">Sinyal buat DIAM di level bawah</h4>
+          <ul class="bad-l">
+            <li>CRUD form biasa — create, edit, list sederhana</li>
+            <li>Data wajib <b>selalu</b> fresh dan strong-consistent di semua layar</li>
+            <li>Tim kecil, belum ada monitoring async</li>
+            <li>"Biar keren aja" / "biar kayak arsitektur Netflix"</li>
+            <li>Belum ada masalah performa yang <b>terukur</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Framing yang sehat</div>
+          <p>Jangan tanya "sistem kita pakai CQRS nggak?" — tanya <strong>"layar INI butuh level berapa?"</strong>. Riwayat trip: Level 1–2. Dashboard pendapatan: Level 3. Form edit profil driver: Level 0, udah, gitu aja. Keputusannya per kasus, dan boleh berubah seiring beban tumbuh.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 ANTI-PATTERN -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">10</div><div class="ctitle">
+        <div class="kicker">Jebakan</div><h2>Anti-pattern &amp; smells</h2></div></div>
+      <p class="lead reveal">Kumpulan cara paling populer buat nyakitin diri sendiri pakai CQRS:</p>
+
+      <div class="cards reveal d1">
+        <div class="card"><div class="code-id">SMELL 1</div><h4>Update dua model manual</h4><p>Use case tulis <em>sekalian</em> update tabel read model di kode yang sama, tanpa event. Dua-duanya pelan-pelan beda isi, dan nggak ada yang tahu mana yang bener. <em>Read model di-update dari event, titik.</em></p></div>
+        <div class="card"><div class="code-id">SMELL 2</div><h4>Reader yang sok pinter</h4><p>Reader mulai berisi <code>if</code> aturan bisnis ("kalau VIP, diskon 10%"). Sekarang aturan hidup di dua tempat dan bakal beda. <em>Aturan bisnis cuma boleh di domain.</em></p></div>
+        <div class="card"><div class="code-id">SMELL 3</div><h4>Command balikin data layar</h4><p><code>BookTrip</code> mengembalikan seluruh detail trip + nama driver + ETA buat layar. Selamat, kamu baru aja nyatuin lagi yang tadinya dipisah.</p></div>
+        <div class="card"><div class="code-id">SMELL 4</div><h4>Level 3 buat CRUD</h4><p>Read store terpisah + projector + monitoring… buat form master data yang diakses 10 orang. Kompleksitasnya nggak beli apa-apa.</p></div>
+        <div class="card"><div class="code-id">SMELL 5</div><h4>Projector tanpa monitoring</h4><p>Projector mati jam 2 pagi, dashboard beku, nggak ada alert. User yang jadi monitoring-mu. <em>Ukur &amp; alert-kan lag proyeksi.</em></p></div>
+        <div class="card"><div class="code-id">SMELL 6</div><h4>"CQRS = wajib Event Sourcing"</h4><p>Salah kaprah paling umum. CQRS jalan normal dengan DB biasa. ES itu keputusan terpisah (lihat deck sebelah) — jangan beli dua-duanya sekaligus cuma karena sering disebut barengan.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 PENUTUP -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">11</div><div class="ctitle">
+        <div class="kicker">Sintesis</div><h2>Penutup</h2></div></div>
+      <p class="lead reveal">Kalau diperas: CQRS itu pengakuan jujur bahwa <strong>menulis dan membaca adalah dua pekerjaan yang beda</strong> — dan tiap layar berhak dapat model yang pas buat dirinya.</p>
+
+      <ul class="creed reveal d1">
+        <li><b>Akar:</b> CQS (method) → CQRS (model). Command mengubah, query menampilkan.</li>
+        <li><b>Spektrum, bukan saklar:</b> Level 0–3. Naik cuma kalau sakitnya nyata &amp; terukur.</li>
+        <li><b>Per fitur, bukan per sistem</b> — satu aplikasi sehat mencampur semua level.</li>
+        <li><b>Sisi baca boleh "bodoh"</b> — DTO per layar, join bebas, tanpa aturan bisnis.</li>
+        <li><b>Level 3 dibayar pakai eventual consistency</b> — desain UX-nya, monitor projector-nya.</li>
+        <li><b>CQRS ≠ Event Sourcing</b> — dua keputusan terpisah yang kebetulan akrab.</li>
+      </ul>
+
+      <div class="endcard reveal d2">
+        <h3>Lanjut ke mana</h3>
+        <p>Pasangan alami materi ini adalah <strong>Event Sourcing</strong> — karena begitu event jadi sumber proyeksi read model, tinggal selangkah lagi buat bertanya: "kenapa nggak sekalian event-nya yang jadi sumber kebenaran?" Jawabannya (dan bahayanya) ada di deck sebelah.</p>
+        <div class="map">
+          <div><b>Deck utama DDD</b><span><a href="../index.html">../index.html</a></span></div>
+          <div><b>Event Sourcing deep dive</b><span><a href="../event-sourcing/index.html">../event-sourcing/index.html</a></span></div>
+          <div><b>Bacaan</b><span>Greg Young "CQRS Documents" · Fowler bliki CQRS · Udi Dahan "Clarified CQRS"</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>docs/learning/ddd/cqrs/</b> — CQRS deep dive · lanjutan dari <a href="../index.html">materi DDD</a>.<br>
+  Navigasi: scroll, klik bab di panel kiri, atau tekan <b>←</b>/<b>→</b> (juga <b>j</b>/<b>k</b>, Home/End).
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") { ev.preventDefault(); goTo(current + 1); }
+    else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") { ev.preventDefault(); goTo(current - 1); }
+    else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

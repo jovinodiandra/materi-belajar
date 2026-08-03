@@ -1,0 +1,1548 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notebook Inggris — Level 3, Materi 1: Present Perfect</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__back { color: var(--muted); text-decoration: none; padding-right: 12px; border-right: 1px solid var(--line); white-space: nowrap; transition: color .18s; }
+  .topbar__back:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+  ul.plain, ol.plain { max-width: 72ch; padding-left: 22px; margin: 14px 0; }
+  ul.plain li, ol.plain li { margin-bottom: 8px; color: var(--ink); font-size: 15.5px; }
+  ul.plain li i, ol.plain li i { color: var(--ink-strong); font-style: italic; }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- conjugation table ---------- */
+  .ttable-wrap { overflow-x: auto; margin: 20px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); max-width: 820px; }
+  table.ttable { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14.5px; }
+  table.ttable th, table.ttable td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink); }
+  table.ttable th { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); }
+  table.ttable tr:last-child td { border-bottom: none; }
+  table.ttable td b { color: var(--ink-strong); }
+  table.ttable code { font-family: var(--mono); font-size: .9em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- quiz accordion ---------- */
+  .qa { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 4px 18px; margin: 12px 0; max-width: 78ch; }
+  .qa summary { cursor: pointer; list-style: none; padding: 13px 0; font-size: 15.5px; color: var(--ink-strong); display: flex; align-items: baseline; gap: 10px; }
+  .qa summary::-webkit-details-marker { display: none; }
+  .qa summary::before { content: "▸"; color: var(--cyan); flex: none; }
+  .qa[open] summary::before { content: "▾"; }
+  .qa .qa__a { padding: 0 0 16px 20px; border-top: 1px dashed var(--line-soft); margin-top: -2px; padding-top: 12px; color: var(--ink); font-size: 14.5px; }
+  .qa .qa__a b { color: var(--cyan); }
+  .qa .qa__a code { font-family: var(--mono); font-size: .88em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- interactive quiz ---------- */
+  .quizmeta { display:flex; align-items:center; gap:14px; margin:18px 0 22px; flex-wrap:wrap; max-width: 78ch; }
+  .quizmeta__count { font-family:var(--mono); font-size:13px; color:var(--cyan); letter-spacing:.04em; white-space:nowrap; }
+  .quizmeta__bar { flex:1; min-width:140px; height:6px; border-radius:4px; background:var(--panel-2); overflow:hidden; border:1px solid var(--line); }
+  .quizmeta__fill { height:100%; width:0%; background:linear-gradient(90deg,var(--cyan-dim),var(--cyan)); transition:width .3s ease; }
+
+  .qbox { display:flex; gap:14px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:16px 18px; margin:12px 0; max-width:78ch; transition:border-color .25s, background .25s; }
+  .qbox.correct { border-color: var(--good-line); background: linear-gradient(100deg, var(--good-bg), var(--panel) 60%); }
+  .qbox__num { flex:none; width:28px; height:28px; border-radius:50%; background:var(--panel-2); border:1px solid var(--line); color:var(--muted); font-family:var(--mono); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .qbox.correct .qbox__num { background:var(--good); border-color:var(--good); color:var(--void); }
+  .qbox__body { flex:1; min-width:0; }
+  .qbox__prompt { font-size:15.5px; color:var(--ink-strong); margin-bottom:12px; }
+  .qbox__prompt .blank { color:var(--amber); font-family:var(--mono); }
+  .qbox__options { display:flex; flex-wrap:wrap; gap:8px; }
+  .qopt {
+    font-family:var(--mono); font-size:13.5px; color:var(--ink); background:var(--panel-2);
+    border:1px solid var(--line); border-radius:7px; padding:7px 14px; cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .qopt:hover { border-color:var(--cyan-dim); color:var(--ink-strong); }
+  .qopt.is-correct { border-color:var(--good); background:var(--good-bg); color:var(--good); }
+  .qopt.is-wrong { border-color:var(--bad); background:var(--bad-bg); color:var(--bad); animation:qshake .3s; }
+  .qopt:disabled { cursor:default; opacity:.6; }
+  .qbox__input-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .qinput {
+    font-family:var(--mono); font-size:14px; color:var(--ink-strong); background:var(--void-2);
+    border:1px solid var(--line); border-radius:7px; padding:8px 12px; min-width:160px; flex:1;
+  }
+  .qinput:focus { outline:none; border-color:var(--cyan-dim); }
+  .qinput.is-wrong { border-color:var(--bad); animation:qshake .3s; }
+  .qinput.is-correct { border-color:var(--good); color:var(--good); }
+  .qbtn {
+    font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--void); background:var(--cyan);
+    border:none; border-radius:7px; padding:8px 16px; font-weight:700; cursor:pointer; transition:opacity .15s;
+  }
+  .qbtn:hover { opacity:.85; }
+  .qbtn:disabled { opacity:.5; cursor:default; }
+  .qbox__feedback { margin-top:10px; font-size:13.5px; min-height:1px; }
+  .qbox__feedback.ok { color:var(--good); }
+  .qbox__feedback.bad { color:var(--bad); }
+  .qbox__feedback b { color:inherit; }
+  @keyframes qshake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
+
+  .completebanner {
+    margin-top:24px; border:1px solid var(--good-line); border-radius:12px;
+    background:linear-gradient(160deg, var(--good-bg), var(--panel) 70%);
+    padding:20px 24px; max-width:78ch; display:none;
+  }
+  .completebanner.show { display:block; }
+  .completebanner h4 { font-family:var(--serif); color:var(--ink-strong); font-size:19px; margin-bottom:6px; }
+  .completebanner p { color:var(--ink); font-size:14.5px; }
+
+  .progresspill {
+    position:fixed; top:52px; right:14px; z-index:45; font-family:var(--mono); font-size:11.5px;
+    color:var(--muted); background:rgba(20,26,46,.92); border:1px solid var(--line); border-radius:20px;
+    padding:6px 12px; backdrop-filter:blur(6px); display:flex; align-items:center; gap:8px;
+  }
+  .progresspill b { color:var(--cyan); }
+  .progresspill.done { border-color:var(--good-line); color:var(--good); }
+  .progresspill.done b { color:var(--good); }
+  @media (max-width: 640px){ .progresspill { top:auto; bottom:14px; right:14px; } }
+
+  /* ---------- dialogue bubbles ---------- */
+  .dialogue { margin: 22px 0 6px; max-width: 640px; }
+  .brow { display: flex; margin-bottom: 12px; }
+  .brow.you { justify-content: flex-end; }
+  .bubble { max-width: 84%; padding: 11px 16px; border-radius: 14px; font-size: 14.5px; color: var(--ink); border: 1px solid var(--line); background: var(--panel); }
+  .brow.you .bubble { background: rgba(69,212,222,.08); border-color: var(--cyan-dim); border-bottom-right-radius: 4px; }
+  .brow:not(.you) .bubble { border-bottom-left-radius: 4px; }
+  .bubble .who { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .brow.you .bubble .who { color: var(--cyan); }
+  .bubble .id { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); font-style: italic; }
+
+  /* ---------- vocab card bits ---------- */
+  .vocab-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .vocab-word { font-family: var(--serif); font-weight: 600; font-size: 17px; color: var(--ink-strong); }
+  .vocab-ipa { font-family: var(--mono); font-size: 12px; color: var(--muted-2); }
+  .vocab-meaning { color: var(--cyan); font-weight: 600; font-size: 13.5px; margin-left: auto; }
+  .pos { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 9px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700; background: var(--cyan); border-radius: 50%; }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--cyan); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .tiers { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__back" href="../index.html">← Belajar Inggris</a>
+  <div class="topbar__file">docs/learning/english/level-3-materi-1/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 22</div>
+</div>
+<div class="progress" id="progress"></div>
+<div class="progresspill" id="progressPill">Progress materi: <b id="progressPillCount">0/17</b></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa &amp; Konsep</div>
+    <a href="#c01"><span class="yr">01</span> Tujuan pembelajaran</a>
+    <a href="#c02"><span class="yr">02</span> Penjelasan konsep</a>
+    <a href="#c03"><span class="yr">03</span> Kenapa ini penting</a>
+
+    <div class="rail__part">II · Contoh dalam Konteks</div>
+    <a href="#c04"><span class="yr">04</span> Contoh sederhana</a>
+    <a href="#c05"><span class="yr">05</span> Contoh sehari-hari</a>
+    <a href="#c06"><span class="yr">06</span> Contoh dunia kerja</a>
+    <a href="#c07"><span class="yr">07</span> Contoh software engineering</a>
+
+    <div class="rail__part">III · Hindari Salah &amp; Ingat</div>
+    <a href="#c08"><span class="yr">08</span> Kesalahan umum</a>
+    <a href="#c09"><span class="yr">09</span> Tips mengingat</a>
+    <a href="#c10"><span class="yr">10</span> Ringkasan</a>
+
+    <div class="rail__part">IV · Latihan &amp; Praktik</div>
+    <a href="#c11"><span class="yr">11</span> Latihan</a>
+    <a href="#c12"><span class="yr">12</span> Quiz</a>
+    <a href="#c13"><span class="yr">13</span> Percakapan</a>
+    <a href="#c14"><span class="yr">14</span> Writing exercise</a>
+    <a href="#c15"><span class="yr">15</span> Speaking exercise</a>
+
+    <div class="rail__part">V · Perkaya Kemampuan</div>
+    <a href="#c16"><span class="yr">16</span> Listening</a>
+    <a href="#c17"><span class="yr">17</span> Reading</a>
+    <a href="#c18"><span class="yr">18</span> Vocabulary</a>
+    <a href="#c19"><span class="yr">19</span> Pronunciation</a>
+
+    <div class="rail__part">VI · Lanjut</div>
+    <a href="#c20"><span class="yr">20</span> Review</a>
+    <a href="#c21"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c22"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Notebook Inggris — Level 3 · Materi 1 dari 5</div>
+      <h1 class="reveal d1">Present Perfect — <span class="accent">have / has + V3</span></h1>
+      <p class="sub reveal d2">
+        Sekarang kita masuk ke tenses yang <b>tidak punya padanan langsung</b> di Bahasa Indonesia — bukan masa lalu,
+        bukan juga sekarang, tapi <b>jembatan</b> di antara keduanya. Present perfect dipakai saat masa lalu itu
+        masih "nyambung" dengan sekarang: pengalaman yang pernah terjadi, pekerjaan yang baru selesai, atau kondisi
+        yang mulai dulu dan masih berlangsung. Ini salah satu tenses paling sering dipakai di standup, pull request,
+        dan changelog — jadi worth pelan-pelan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row"><div class="tl__yr">Lv 0</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Fondasi Nol</b> <span>— Kalimat &amp; To Be, Nouns, Simple Present, Adjective</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 1</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Dasar Kokoh</b> <span>— Simple Past, Simple Future, Question Words, Preposisi</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 2</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Memperluas Struktur</b> <span>— Present Continuous, Past Continuous, Modal Verbs, Comparative, Quantifiers</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Lv 3</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Menyambung Gagasan</b> <span>— Present Perfect (materi ini), Passive Voice, Conditionals, Linking Words</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 4</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bicara Seperti Native</b> <span>— Past Perfect, Reported Speech, Third Conditional, Relative Clauses, Gerund/Infinitive, Phrasal Verbs</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 5</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Advance</b> <span>— Future Perfect, Advanced Modals, Inversion, Subjunctive, Academic Writing, Idiom</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 TUJUAN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">01</span> Tujuan pembelajaran</div>
+        <h2>Apa yang akan kamu kuasai</h2>
+      </div>
+      <p class="lead reveal">Setelah materi ini selesai, kamu akan bisa:</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// struktur</div><h4>Menyusun kalimat present perfect</h4><p>Menyusun <code>Subject + have/has + V3</code> dengan benar, tahu kapan pakai <code>have</code> dan kapan <code>has</code>.</p></div>
+        <div class="card up"><div class="ic">// makna</div><h4>Membedakan 4 penggunaan utama</h4><p>Membedakan pengalaman, aksi baru selesai, aksi yang masih berlanjut, dan hasil yang masih terasa — empat makna berbeda dari satu bentuk yang sama.</p></div>
+        <div class="card up"><div class="ic">// signal words</div><h4>Menempatkan already/yet/just/ever/never/since/for dengan tepat</h4><p>Tahu posisi tiap signal word dalam kalimat, dan bedanya <code>since</code> (titik waktu) vs <code>for</code> (durasi).</p></div>
+        <div class="card up"><div class="ic">// dunia kerja</div><h4>Membaca &amp; menulis update kerja</h4><p>Membaca changelog, menulis update standup, dan mendeskripsikan pull request memakai present perfect secara natural.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">02</span> Konsep inti</div>
+        <h2>Bentuk &amp; 4 makna present perfect</h2>
+      </div>
+      <p class="lead reveal">Bentuknya sederhana secara struktur, tapi maknanya perlu diurai satu-satu — karena satu bentuk yang sama dipakai untuk 4 situasi berbeda.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--ink-strong)">Rumusnya:</strong> <code>Subject + have/has + Past Participle (V3)</code>. <code>Have</code> dipakai untuk I/you/we/they, <code>has</code> untuk he/she/it — mirip pola auxiliary yang sudah kamu kenal dari materi-materi sebelumnya. Yang baru di sini adalah kata kerjanya harus dalam bentuk <b>V3</b> (past participle), bukan V1 atau V2.</p>
+
+      <div class="ttable-wrap reveal d2">
+        <table class="ttable">
+          <tr><th>Subjek</th><th>Aux</th><th>Contoh</th><th>Arti</th></tr>
+          <tr><td><code>I</code></td><td><code>have</code></td><td>I <b>have finished</b> the report.</td><td>Saya sudah menyelesaikan laporan.</td></tr>
+          <tr><td><code>You</code></td><td><code>have</code></td><td>You <b>have improved</b> a lot.</td><td>Kamu sudah banyak berkembang.</td></tr>
+          <tr><td><code>He / She / It</code></td><td><code>has</code></td><td>She <b>has fixed</b> the bug.</td><td>Dia sudah memperbaiki bug-nya.</td></tr>
+          <tr><td><code>We</code></td><td><code>have</code></td><td>We <b>have used</b> this tool for years.</td><td>Kami sudah pakai alat ini selama bertahun-tahun.</td></tr>
+          <tr><td><code>They</code></td><td><code>have</code></td><td>They <b>have merged</b> the PR.</td><td>Mereka sudah merge PR-nya.</td></tr>
+        </table>
+      </div>
+
+      <p class="body reveal d2">Sekarang ke bagian yang lebih penting: <b>kenapa</b> present perfect dipakai, bukan sekadar bagaimana bentuknya. Ada 4 penggunaan utama.</p>
+
+      <p class="body reveal d3"><strong style="color:var(--ink-strong)">1. Pengalaman (pernah / belum pernah).</strong> Menceritakan apakah sesuatu pernah terjadi dalam hidup seseorang, tanpa peduli <i>kapan tepatnya</i>. <code>I have used Docker before.</code> <code>She has never worked with Kubernetes.</code> Yang penting di sini bukan waktunya, tapi fakta bahwa pengalaman itu ada (atau tidak ada) di masa lalu sampai sekarang.</p>
+
+      <p class="body reveal d3"><strong style="color:var(--ink-strong)">2. Aksi baru selesai (relevan dengan sekarang).</strong> Sesuatu yang baru saja tuntas, dan hasilnya masih "hangat" sekarang. <code>I have just finished the sprint.</code> <code>We have completed the migration.</code> Bandingkan dengan simple past yang lebih fokus ke waktu kejadian, bukan relevansinya ke sekarang — ini akan kita bedah tuntas di Materi 2.</p>
+
+      <p class="body reveal d3"><strong style="color:var(--ink-strong)">3. Aksi dimulai di masa lalu, masih berlanjut sampai sekarang.</strong> Dipakai bersama <code>since</code> atau <code>for</code>. <code>I have worked here since 2020.</code> <code>We have used this framework for three years.</code> Aksinya belum berhenti — masih terjadi sampai detik ini.</p>
+
+      <p class="body reveal d3"><strong style="color:var(--ink-strong)">4. Hasil yang masih terasa sekarang.</strong> Aksinya sudah selesai, tapi dampaknya masih ada di masa sekarang. <code>I have fixed the bug.</code> (bug-nya sekarang sudah beres) <code>The server has crashed.</code> (makanya sekarang down)</p>
+
+      <div class="why reveal d4">
+        <div class="tag">◆ Benang merah dari 4 makna itu</div>
+        <p>Perhatikan pola yang sama di semua contoh di atas: <em>selalu ada garis penghubung ke "sekarang"</em>. Itulah inti present perfect — bukan "kapan tepatnya terjadi", tapi "bagaimana masa lalu itu nyambung dengan kondisi sekarang". Kalau kamu ingat satu hal saja dari materi ini, ingat prinsip ini.</p>
+      </div>
+
+      <p class="body reveal d4"><strong style="color:var(--ink-strong)">Signal words (kata penanda) yang sering menyertai present perfect:</strong> <code>already</code>, <code>yet</code>, <code>just</code>, <code>ever</code>, <code>never</code>, <code>since</code>, <code>for</code>, <code>recently</code>, <code>so far</code>. Posisinya tidak sembarangan:</p>
+      <ul class="plain reveal d4">
+        <li><code>already</code> &amp; <code>just</code> — diletakkan <i>di antara</i> have/has dan V3. <i>"I have already deployed it."</i> / <i>"She has just merged the PR."</i></li>
+        <li><code>yet</code> — diletakkan di <i>akhir kalimat</i>, khusus untuk pertanyaan atau kalimat negatif. <i>"Have you tested it yet?"</i> / <i>"I haven't tested it yet."</i></li>
+        <li><code>ever</code> — diletakkan setelah subjek, khusus untuk pertanyaan. <i>"Have you ever used Rust in production?"</i></li>
+        <li><code>never</code> — diletakkan di antara have/has dan V3, menggantikan bentuk negatif biasa. <i>"She has never worked with legacy code."</i></li>
+        <li><code>since</code> — diikuti <b>titik waktu</b> (tahun, tanggal, hari, momen tertentu). <i>"since 2020"</i>, <i>"since last Friday"</i>, <i>"since I joined"</i>.</li>
+        <li><code>for</code> — diikuti <b>durasi waktu</b> (berapa lama). <i>"for three years"</i>, <i>"for two hours"</i>, <i>"for a while"</i>.</li>
+      </ul>
+
+      <div class="note reveal d4">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Cara paling gampang bedakan since vs for</div>
+          <p>Tanyakan: apakah kata setelahnya menjawab pertanyaan "<b>sejak kapan</b>" atau "<b>berapa lama</b>"? Kalau jawabannya sebuah titik di garis waktu (2020, Senin, jam 3) → pakai <code>since</code>. Kalau jawabannya rentang durasi (3 tahun, 2 jam, sebentar) → pakai <code>for</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 KENAPA PENTING ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">03</span> Kenapa penting</div>
+        <h2>Kenapa materi ini penting</h2>
+      </div>
+      <p class="lead reveal">Present perfect adalah tenses paling umum dipakai dalam komunikasi kerja sehari-hari di dunia software engineering — jauh lebih sering muncul daripada yang kamu duga:</p>
+
+      <ul class="plain reveal d1">
+        <li>Daily standup: <i>"I have finished the login page, but I haven't tested it yet."</i></li>
+        <li>Pull request description: <i>"This PR has fixed the memory leak reported in issue #42."</i></li>
+        <li>Changelog: <i>"We have released three updates this month."</i></li>
+        <li>Interview kerja: <i>"Have you ever worked with microservices before?"</i></li>
+      </ul>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kenapa ini "menyambung gagasan"</div>
+        <p>Level 3 ini bernama "Menyambung Gagasan" karena tenses seperti present perfect membantu kamu bicara tentang <b>hubungan antar-waktu</b> — bukan cuma "apa yang terjadi", tapi "bagaimana masa lalu itu terhubung dengan sekarang". Ini kemampuan penting saat kamu melaporkan progres, menulis dokumentasi, atau menjelaskan status pekerjaan ke tim.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 CONTOH SEDERHANA ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">04</span> Contoh</div>
+        <h2>Contoh sederhana</h2>
+      </div>
+      <p class="lead reveal">Delapan kalimat paling dasar — perhatikan pola <code>have/has + V3</code>-nya.</p>
+      <ul class="plain reveal d1">
+        <li><code>I have eaten breakfast.</code> — Saya sudah sarapan.</li>
+        <li><code>You have grown taller.</code> — Kamu sudah tambah tinggi.</li>
+        <li><code>He has lost his keys.</code> — Dia kehilangan kuncinya.</li>
+        <li><code>She has visited Japan.</code> — Dia pernah mengunjungi Jepang.</li>
+        <li><code>It has rained all day.</code> — Sudah hujan seharian.</li>
+        <li><code>We have moved to a new house.</code> — Kami sudah pindah ke rumah baru.</li>
+        <li><code>They have never met before.</code> — Mereka belum pernah bertemu sebelumnya.</li>
+        <li><code>I have not finished yet.</code> — Saya belum selesai.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 SEHARI-HARI ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">05</span> Konteks nyata</div>
+        <h2>Contoh dalam kehidupan sehari-hari</h2>
+      </div>
+      <p class="lead reveal">Situasi harian yang biasa kamu alami:</p>
+      <ul class="plain reveal d1">
+        <li>Nanya ke tetangga: <i>"Have you had lunch yet?"</i> (Kamu sudah makan siang belum?)</li>
+        <li>Cerita ke teman: <i>"I have never tried durian before."</i> (Saya belum pernah coba durian.)</li>
+        <li>Ngobrol soal rumah: <i>"We have lived here for ten years."</i> (Kami sudah tinggal di sini selama sepuluh tahun.)</li>
+        <li>Basa-basi di angkot: <i>"The price has gone up again."</i> (Harganya naik lagi.)</li>
+      </ul>
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Perhatikan</div>
+          <p>Tidak ada satu pun dari kalimat itu yang menyebut waktu spesifik seperti "kemarin" atau "tahun lalu" — karena begitu kamu sebut waktu spesifik di masa lalu, kamu harus pindah ke simple past (dibahas tuntas di Materi 2).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 DUNIA KERJA ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">06</span> Konteks nyata</div>
+        <h2>Contoh dalam dunia kerja</h2>
+      </div>
+      <ul class="plain reveal">
+        <li>Melapor status ke atasan: <i>"I have completed the onboarding checklist."</i></li>
+        <li>Menjelaskan pencapaian: <i>"Our team has achieved the quarterly target."</i></li>
+        <li>Menanyakan progres rekan kerja: <i>"Have you submitted the report yet?"</i></li>
+        <li>Update ke klien: <i>"We have addressed all the feedback from your last review."</i></li>
+      </ul>
+      <p class="body reveal d1">Kalimat-kalimat ini terdengar profesional justru karena present perfect menekankan <b>hasil yang sudah tercapai</b>, bukan sekadar kapan aksinya terjadi — cocok untuk laporan status kerja.</p>
+    </div>
+  </section>
+
+  <!-- ============ 07 SWE ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">07</span> Konteks nyata</div>
+        <h2>Contoh dalam software engineering</h2>
+      </div>
+      <p class="lead reveal">Ini bagian intinya — present perfect adalah tulang punggung komunikasi standup, pull request, dan changelog.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">daily standup</span><span class="lang">STANDUP</span></div>
+<pre class="code"><span class="c">// Update harian tim engineering</span>
+I <b style="color:var(--cyan)">have deployed</b> the app to production.
+The team <b style="color:var(--cyan)">has merged</b> the pull request.
+<b style="color:var(--cyan)">Have</b> you <b style="color:var(--cyan)">reviewed</b> my code yet?
+I <b style="color:var(--cyan)">haven't tested</b> this feature yet.</pre>
+      </div>
+
+      <p class="body reveal d2">Contoh dari changelog / release notes (gaya open-source project):</p>
+      <ul class="plain reveal d2">
+        <li><i>"This library <b>has had</b> three major releases this year."</i></li>
+        <li><i>"We <b>have fixed</b> a critical security vulnerability in v2.4.1."</i></li>
+        <li><i>"The API <b>has been</b> stable since the last update."</i></li>
+      </ul>
+
+      <div class="code-card reveal d3">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">pull request description</span><span class="lang">PR</span></div>
+<pre class="code"><span class="c">## Summary</span>
+This PR <b style="color:var(--cyan)">has resolved</b> issue #128 — the login form
+<b style="color:var(--cyan)">has stopped</b> crashing on empty input.
+
+<span class="c">## Testing</span>
+I <b style="color:var(--cyan)">have added</b> unit tests for the edge cases.
+I <b style="color:var(--cyan)">have not</b> tested this on Safari <b style="color:var(--amber)">yet</b> — will follow up.</pre>
+      </div>
+
+      <div class="why reveal d4">
+        <div class="tag">◆ Di daily standup</div>
+        <p><em>"I have deployed the app to production, and the team has merged three PRs today."</em> Perhatikan bagaimana present perfect menekankan <b>progres yang sudah dicapai</b> — inilah kenapa hampir semua standup update secara natural pakai tenses ini.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 KESALAHAN ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">08</span> Awas salah</div>
+        <h2>Kesalahan yang sering dilakukan</h2>
+      </div>
+      <p class="lead reveal">Empat kesalahan paling umum — kenali polanya supaya tidak terulang.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--bad)">Kesalahan #1 — Pakai present perfect dengan penanda waktu spesifik masa lalu.</strong> <code>yesterday</code>, <code>last week</code>, <code>in 2019</code> adalah penanda waktu yang sudah "tertutup" — waktunya jelas dan sudah lewat, jadi harus pakai simple past, bukan present perfect (akan dibahas tuntas di Materi 2).</p>
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">salah — waktu spesifik + present perfect</span><span class="lang" style="color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)">✕ SALAH</span></div>
+<pre class="code"><span class="hl-bad">I have deployed it yesterday.</span>
+<span class="hl-bad">We have finished the sprint last week.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">benar — tanpa waktu spesifik / pakai simple past</span><span class="lang" style="color:var(--good);border-color:var(--good-line);background:var(--good-bg)">✓ BENAR</span></div>
+<pre class="code"><span class="hl-good">I <b style="color:var(--good)">deployed</b> it yesterday.</span>
+<span class="hl-good">I have <b style="color:var(--good)">already</b> deployed it.</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d2"><strong style="color:var(--bad)">Kesalahan #2 — Salah bentuk V3 kata kerja tak beraturan.</strong></p>
+      <div class="diptych reveal d2">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">salah — V3 disamakan seperti kata kerja beraturan</span><span class="lang" style="color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)">✕ SALAH</span></div>
+<pre class="code"><span class="hl-bad">She has goed to the office.</span>
+<span class="hl-bad">I have writed the documentation.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">benar — V3 kata kerja tak beraturan</span><span class="lang" style="color:var(--good);border-color:var(--good-line);background:var(--good-bg)">✓ BENAR</span></div>
+<pre class="code"><span class="hl-good">She has <b style="color:var(--good)">gone</b> to the office.</span>
+<span class="hl-good">I have <b style="color:var(--good)">written</b> the documentation.</span></pre>
+        </div>
+      </div>
+      <p class="body reveal d2">Kata kerja tak beraturan (irregular verbs) punya bentuk V3 sendiri yang harus dihafal satu-satu: <code>go → gone</code>, <code>write → written</code>, <code>see → seen</code>, <code>eat → eaten</code>, <code>break → broken</code>. Tidak ada rumus pasti — ini butuh eksposur berulang.</p>
+
+      <div class="caution reveal d3">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          <b>Kesalahan #3 — Salah pasangan have/has dengan subjek.</b> <code>❌ He have finished the task.</code> — ini salah karena "he" itu tunggal (satu orang), pasangannya <code>has</code>, bukan <code>have</code>. Sama seperti pola auxiliary lain yang sudah kamu kenal: I/you/we/they → have, he/she/it → has.
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Kesalahan #4 — Lupa "have/has" sama sekali</div>
+          <p><code>❌ I finished the report.</code> (kalau maksudnya present perfect) — tanpa <code>have</code>, kalimat ini otomatis jadi simple past, artinya berubah. Present perfect wajib punya auxiliary <code>have/has</code>, sama seperti "to be" wajib ada di kalimat keadaan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TIPS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">09</span> Cara mengingat</div>
+        <h2>Tips mengingat materi</h2>
+      </div>
+      <ul class="plain reveal d1">
+        <li><b>Uji "garis waktu spesifik".</b> Kalau kalimatmu bisa dijawab dengan "kapan tepatnya?" dan jawabannya sebuah titik waktu yang jelas (kemarin, tahun lalu) → itu simple past, bukan present perfect.</li>
+        <li><b>Ingat "hasilnya masih terasa".</b> Present perfect selalu punya efek yang nyambung ke sekarang. Tanyakan ke diri sendiri: "apakah ini masih relevan sekarang?" Kalau ya, present perfect pas dipakai.</li>
+        <li><b>Since = titik, for = durasi.</b> Bayangkan <code>since</code> seperti menunjuk satu titik di kalender, dan <code>for</code> seperti mengukur panjang sebuah garis waktu.</li>
+        <li>Kumpulkan daftar V3 kata kerja tak beraturan yang paling sering kamu pakai di kerjaan: <code>write→written</code>, <code>fix→fixed</code>, <code>break→broken</code>, <code>build→built</code>, <code>find→found</code> — hafalkan lima dulu, tambah pelan-pelan.</li>
+      </ul>
+
+      <div class="quote reveal d2">
+        <p>Present perfect bukan tentang kapan sesuatu terjadi — tapi tentang bagaimana masa lalu itu masih berbicara ke kita hari ini.</p>
+        <cite>— prinsip inti "current relevance" dalam grammar Bahasa Inggris</cite>
+      </div>
+      <p class="body reveal d2">Artinya: setiap kali kamu ragu antara simple past dan present perfect, tanyakan "apakah waktu kejadiannya penting di sini, atau yang penting cuma hasilnya sekarang?" Kalau yang penting hasilnya — pakai present perfect.</p>
+    </div>
+  </section>
+
+  <!-- ============ 10 RINGKASAN ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">10</span> Ringkasan</div>
+        <h2>Ringkasan materi</h2>
+      </div>
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Subject + have/has + V3</b> — rumus dasar present perfect.</li>
+          <li><b>I/You/We/They → have</b>, <b>He/She/It → has</b>.</li>
+          <li>4 makna: <b>pengalaman</b>, <b>aksi baru selesai</b>, <b>berlanjut sampai sekarang</b>, dan <b>hasil yang masih terasa</b>.</li>
+          <li><b>Since</b> = titik waktu, <b>for</b> = durasi waktu — jangan tertukar.</li>
+          <li>Jangan pakai bersama penanda waktu spesifik masa lalu seperti <code>yesterday</code> atau <code>last week</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 LATIHAN ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">11</span> Latihan</div>
+        <h2>Latihan: isi titik-titik</h2>
+      </div>
+      <p class="lead reveal">Lengkapi kalimat memakai present perfect (<code>have/has + V3</code>), lalu klik <b>Cek</b>. Jawaban salah boleh dicoba lagi — kamu baru bisa lanjut ke Materi 2 kalau <b>semua</b> soal di bagian Latihan &amp; Quiz sudah benar.</p>
+
+      <div class="quizmeta reveal d1">
+        <span class="quizmeta__count" id="quizCount">0 / 17 benar</span>
+        <div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill"></div></div>
+      </div>
+
+      <div id="quizLatihan" class="reveal d1"></div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Cara pakai bagian ini</div>
+          <p>Ketik jawabanmu lengkap (misalnya "have finished", bukan cuma "finished"), tekan <b>Enter</b> atau klik <b>Cek</b>. Kalau salah lebih dari 2-3 kali di soal yang sama, ulangi bagian "Penjelasan Konsep" (bab 02) sebelum lanjut.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 12 QUIZ ============ -->
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">12</span> Uji pemahaman</div>
+        <h2>Quiz</h2>
+      </div>
+      <p class="lead reveal">Lima soal campuran pilihan ganda &amp; isian. Setelah itu ada satu <b>soal cerita</b> (reading comprehension) — baca laporan standup di bawah, lalu jawab pertanyaannya. Semuanya menentukan materi ini <b>selesai</b> atau belum.</p>
+
+      <div class="quizmeta reveal d1">
+        <span class="quizmeta__count" id="quizCount2">0 / 17 benar</span>
+        <div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill2"></div></div>
+      </div>
+
+      <div id="quizQuiz" class="reveal d1"></div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">soal cerita — baca dulu, baru jawab di bawah</span><span class="lang">STORY</span></div>
+        <pre class="code" style="white-space:pre-wrap;font-family:var(--sans);font-size:15px;line-height:1.7;color:var(--ink-strong)">Good morning, team. I have deployed the new authentication service to staging, and QA has already tested it twice. I have also fixed the login bug — it has been broken since last Friday. However, I haven't reviewed Dimas's pull request yet because I have been busy with the deployment all morning. Has anyone checked the changelog for version 2.3 yet? We have released three updates this month already, and the client has noticed the improvement.</pre>
+      </div>
+      <p class="body reveal d2" style="font-size:14px;color:var(--muted)"><i>(Terjemahan bebas: Selamat pagi, tim. Saya sudah deploy layanan autentikasi baru ke staging, dan QA sudah mengetesnya dua kali. Saya juga sudah memperbaiki bug login — bug itu rusak sejak Jumat lalu. Tapi, saya belum meninjau pull request Dimas karena saya sibuk dengan deployment sepanjang pagi. Apakah ada yang sudah cek changelog untuk versi 2.3? Kami sudah merilis tiga update bulan ini, dan klien sudah menyadari peningkatannya.)</i></p>
+
+      <div id="quizStory" class="reveal d2"></div>
+
+      <div class="completebanner" id="completeBanner">
+        <h4>🎉 Materi 1 selesai!</h4>
+        <p>Semua soal Latihan &amp; Quiz sudah benar. <b>Materi 2</b> sekarang terbuka — cek halaman <a href="../index.html" style="color:var(--good)">Belajar Inggris</a> untuk lanjut.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 13 PERCAKAPAN ============ -->
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">13</span> Praktik</div>
+        <h2>Percakapan — sprint retrospective</h2>
+      </div>
+      <p class="lead reveal">Situasi: meeting retrospective mingguan, tim membahas apa yang sudah dicapai minggu ini.</p>
+
+      <div class="dialogue reveal d1">
+        <div class="brow"><div class="bubble"><span class="who">Lead</span>Alright team, what have we accomplished this sprint?<span class="id">Baik tim, apa yang sudah kita capai sprint ini?</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>I have finished the payment integration, and I have fixed two critical bugs.<span class="id">Saya sudah menyelesaikan integrasi pembayaran, dan sudah memperbaiki dua bug kritis.</span></div></div>
+        <div class="brow"><div class="bubble"><span class="who">Teammate</span>Nice! Have you deployed it to production yet?<span class="id">Bagus! Sudah deploy ke production belum?</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>Not yet — I haven't tested it on the staging environment yet.<span class="id">Belum — saya belum tes di staging.</span></div></div>
+        <div class="brow"><div class="bubble"><span class="who">Lead</span>That's fine. We have made great progress this week overall.<span class="id">Tidak apa-apa. Secara keseluruhan kita sudah membuat kemajuan bagus minggu ini.</span></div></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Perhatikan</div>
+          <p>Lihat bagaimana present perfect terus berulang: <code>have finished</code>, <code>have fixed</code>, <code>Have you deployed</code>, <code>haven't tested</code>, <code>have made</code> — inilah kenapa tenses ini fondasi untuk laporan progres kerja.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 14 WRITING ============ -->
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">14</span> Praktik</div>
+        <h2>Writing exercise</h2>
+      </div>
+      <p class="lead reveal">Tulis 5 kalimat tentang progres kerjamu minggu ini, wajib pakai present perfect (<code>have/has + V3</code>) minimal sekali per kalimat. Contoh kerangka:</p>
+
+      <ul class="plain reveal d1">
+        <li>Sesuatu yang sudah kamu selesaikan — <i>"I have completed / finished ..."</i></li>
+        <li>Pengalaman yang pernah/belum pernah kamu alami — <i>"I have never ... / I have already ..."</i></li>
+        <li>Sesuatu yang berlangsung sejak waktu tertentu — <i>"I have worked on ... since / for ..."</i></li>
+        <li>Sesuatu yang belum kamu lakukan — <i>"I haven't ... yet."</i></li>
+        <li>Pertanyaan ke rekan kerja — <i>"Have you ever ...?"</i></li>
+      </ul>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kirimkan hasilnya</div>
+        <p>Kirimkan hasil tulisanmu di chat kapan saja — akan dikoreksi grammar, pemilihan V3, dan posisi signal words sebelum kamu lanjut ke Materi 2.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 15 SPEAKING ============ -->
+  <section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">15</span> Praktik</div>
+        <h2>Speaking exercise</h2>
+      </div>
+      <p class="lead reveal">Ucapkan keras-keras (boleh rekam suara sendiri untuk didengar ulang):</p>
+
+      <ol class="steps reveal d1">
+        <li>"I have worked on [proyekmu] since [waktu mulai]."</li>
+        <li>"I have already finished [tugas yang sudah selesai], but I haven't started [tugas yang belum]."</li>
+        <li>"Have you ever used [teknologi/tools]? I have used it for [durasi]."</li>
+        <li>"My team has completed [pencapaian] this month."</li>
+      </ol>
+
+      <p class="body reveal d2">Fokus bukan pada kecepatan, tapi kejelasan kontraksi <code>have</code> → <code>'ve</code> dan <code>has</code> → <code>'s</code> saat diucapkan santai (lihat bagian Pronunciation berikutnya).</p>
+    </div>
+  </section>
+
+  <!-- ============ 16 LISTENING ============ -->
+  <section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">16</span> Perkaya telinga</div>
+        <h2>Listening recommendation</h2>
+      </div>
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">🎧 channel</div><h4>Standup / retro meeting recordings (YouTube: "agile standup example")</h4><p>Cari video contoh daily standup atau sprint retrospective di tim engineering asli — perhatikan seberapa sering present perfect muncul secara natural saat orang melaporkan progres.</p></div>
+        <div class="card up"><div class="ic">🎧 podcast</div><h4>Changelog Podcast / Syntax.fm — segmen "what's new"</h4><p>Podcast developer yang sering membahas rilis terbaru sebuah tool — bagian pembukanya biasanya penuh present perfect: "This release has added...", "The team has fixed...".</p></div>
+      </div>
+      <p class="body reveal d2">Kenapa direkomendasikan level ini: keduanya konteks kerja nyata, jadi kamu langsung dengar present perfect dipakai bukan sebagai latihan grammar, tapi sebagai komunikasi asli.</p>
+    </div>
+  </section>
+
+  <!-- ============ 17 READING ============ -->
+  <section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">17</span> Perkaya bacaan</div>
+        <h2>Reading recommendation</h2>
+      </div>
+      <div class="quote reveal d1">
+        <p>"This release has introduced several improvements. We have upgraded the core dependencies, and we have resolved a memory leak that has affected users since version 2.0. The team has also added support for dark mode, which many users have requested for months. We have not finished the mobile redesign yet, but it is planned for the next release."</p>
+        <cite>Paragraf changelog ini sengaja dipadatkan dengan pola have/has + V3 supaya kamu langsung latihan mengenali polanya dalam teks utuh, bukan cuma kalimat lepas.</cite>
+      </div>
+      <p class="body reveal d2">Kalau sudah lancar, coba baca bagian "Changelog" atau "Release Notes" dari project open-source apa pun di GitHub — hampir semuanya ditulis dengan present perfect: <i>"We have fixed...", "This version has added...", "Contributors have improved..."</i></p>
+    </div>
+  </section>
+
+  <!-- ============ 18 VOCAB ============ -->
+  <section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">18</span> Perkaya kosakata</div>
+        <h2>Vocabulary list (20 kata)</h2>
+      </div>
+      <p class="lead reveal">Kata-kata ini akan <b>muncul lagi</b> di materi-materi berikutnya (spaced repetition) — jadi tidak perlu dihafal mati sekarang, cukup familiar.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">have</span><span class="vocab-ipa">/hæv/</span><span class="vocab-meaning">bentuk present perfect (I/you/we/they)</span></div><p><span class="pos">aux / verb</span> — Contoh: <i>"I have finished the report."</i> Tips: sering dikontraksi jadi <code>'ve</code> dalam speaking.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">has</span><span class="vocab-ipa">/hæz/</span><span class="vocab-meaning">bentuk present perfect (he/she/it)</span></div><p><span class="pos">aux / verb</span> — Contoh: <i>"She has fixed the bug."</i> Tips: dikontraksi jadi <code>'s</code> — jangan bingung dengan <code>is</code>.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">already</span><span class="vocab-ipa">/ɔːlˈredi/</span><span class="vocab-meaning">sudah</span></div><p><span class="pos">adverb</span> — Contoh: <i>"We have already deployed the update."</i> Posisi: antara have/has dan V3.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">yet</span><span class="vocab-ipa">/jet/</span><span class="vocab-meaning">belum (untuk pertanyaan/negatif)</span></div><p><span class="pos">adverb</span> — Contoh: <i>"Have you tested it yet?"</i> Posisi: di akhir kalimat.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">just</span><span class="vocab-ipa">/dʒʌst/</span><span class="vocab-meaning">baru saja</span></div><p><span class="pos">adverb</span> — Contoh: <i>"I have just merged the pull request."</i> Posisi: antara have/has dan V3.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">ever</span><span class="vocab-ipa">/ˈevər/</span><span class="vocab-meaning">pernah (dalam pertanyaan)</span></div><p><span class="pos">adverb</span> — Contoh: <i>"Have you ever used Rust in production?"</i> Posisi: setelah subjek.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">never</span><span class="vocab-ipa">/ˈnevər/</span><span class="vocab-meaning">tidak pernah</span></div><p><span class="pos">adverb</span> — Contoh: <i>"She has never worked with legacy code."</i> Posisi: antara has dan V3, menggantikan "not".</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">since</span><span class="vocab-ipa">/sɪns/</span><span class="vocab-meaning">sejak</span></div><p><span class="pos">preposition / conjunction</span> — Contoh: <i>"I have worked here since 2020."</i> Diikuti titik waktu, bukan durasi.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">for</span><span class="vocab-ipa">/fɔːr/</span><span class="vocab-meaning">selama</span></div><p><span class="pos">preposition</span> — Contoh: <i>"We have used this library for three years."</i> Diikuti durasi, bukan titik waktu.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">recently</span><span class="vocab-ipa">/ˈriːsntli/</span><span class="vocab-meaning">baru-baru ini</span></div><p><span class="pos">adverb</span> — Contoh: <i>"The team has recently migrated to microservices."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">experience</span><span class="vocab-ipa">/ɪkˈspɪəriəns/</span><span class="vocab-meaning">pengalaman</span></div><p><span class="pos">noun</span> — Contoh: <i>"I have five years of experience in backend development."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">achievement</span><span class="vocab-ipa">/əˈtʃiːvmənt/</span><span class="vocab-meaning">pencapaian</span></div><p><span class="pos">noun</span> — Contoh: <i>"Shipping this feature is a big achievement for the team."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">deploy</span><span class="vocab-ipa">/dɪˈplɔɪ/</span><span class="vocab-meaning">menerapkan / merilis</span></div><p><span class="pos">verb, V3: deployed</span> — Contoh: <i>"We have deployed the app three times today."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">complete</span><span class="vocab-ipa">/kəmˈpliːt/</span><span class="vocab-meaning">menyelesaikan</span></div><p><span class="pos">verb, V3: completed</span> — Contoh: <i>"He has completed the onboarding checklist."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">finish</span><span class="vocab-ipa">/ˈfɪnɪʃ/</span><span class="vocab-meaning">menyelesaikan</span></div><p><span class="pos">verb, V3: finished</span> — Contoh: <i>"I have finished writing the unit tests."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">submit</span><span class="vocab-ipa">/səbˈmɪt/</span><span class="vocab-meaning">mengirimkan</span></div><p><span class="pos">verb, V3: submitted</span> — Contoh: <i>"She has submitted the pull request for review."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">resolve</span><span class="vocab-ipa">/rɪˈzɒlv/</span><span class="vocab-meaning">menyelesaikan masalah</span></div><p><span class="pos">verb, V3: resolved</span> — Contoh: <i>"The team has resolved the production incident."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">update</span><span class="vocab-ipa">/ʌpˈdeɪt/</span><span class="vocab-meaning">memperbarui</span></div><p><span class="pos">verb, V3: updated</span> — Contoh: <i>"I have updated the dependencies to the latest version."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">review</span><span class="vocab-ipa">/rɪˈvjuː/</span><span class="vocab-meaning">meninjau</span></div><p><span class="pos">verb, V3: reviewed</span> — Contoh: <i>"Have you reviewed my code yet?"</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">milestone</span><span class="vocab-ipa">/ˈmaɪlstəʊn/</span><span class="vocab-meaning">tonggak pencapaian</span></div><p><span class="pos">noun</span> — Contoh: <i>"Launching v1.0 is our biggest milestone this year."</i></p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 19 PRONUNCIATION ============ -->
+  <section class="chapter" id="c19">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">19</span> Perkaya ucapan</div>
+        <h2>Pronunciation tips</h2>
+      </div>
+      <ul class="plain reveal d1">
+        <li><b>have /hæv/</b> — bunyi "æ" seperti pada kata "bebek" tapi mulut dibuka lebih lebar. Dalam kalimat penuh, "v" di akhir sering melemah, hampir jadi "haf" saat diikuti kata lain.</li>
+        <li><b>has /hæz/</b> — akhiran "s"-nya bunyi seperti "z", bukan "s" tajam. Coba ucapkan "haz", bukan "has" dengan "s" keras.</li>
+        <li><b>haven't /ˈhævnt/</b> — huruf "e" di tengah nyaris tidak terdengar, seperti "havnt" satu suku kata pendek.</li>
+      </ul>
+      <div class="why reveal d2">
+        <div class="tag">◆ Contraction (kependekan)</div>
+        <p>Dalam kalimat natural, <code>have</code> hampir selalu "ditempel" ke kata sebelumnya: <code>I've</code>, <code>you've</code>, <code>we've</code>, <code>they've</code> — dan <code>has</code> jadi <code>he's</code>, <code>she's</code>, <code>it's</code>. Untuk speaking santai, pakai bentuk kontraksi ini. Hati-hati: <code>he's</code> bisa berarti "he is" ATAU "he has" — bedanya cuma bisa ditebak dari konteks kata setelahnya (kata sifat/benda → is, V3 → has). Untuk tulisan formal (email kerja, dokumentasi), bentuk penuh lebih disukai.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 20 REVIEW ============ -->
+  <section class="chapter" id="c20">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">20</span> Sebelum lanjut</div>
+        <h2>Review sebelum lanjut ke Materi 2</h2>
+      </div>
+      <p class="lead reveal">Sebelum masuk ke Materi 2 (Present Perfect vs Simple Past — dua tenses ini paling sering tertukar), pastikan fondasi present perfect di materi ini sudah kokoh.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Checklist sebelum lanjut ke Materi 2</div>
+        <ul class="plain" style="margin:6px 0 0;">
+          <li>Bisa membedakan kapan pakai <code>have</code> dan kapan pakai <code>has</code> tanpa ragu.</li>
+          <li>Bisa menjelaskan 4 makna present perfect (pengalaman, aksi baru selesai, berlanjut, hasil masih terasa) dengan contoh sendiri.</li>
+          <li>Paham bedanya <code>since</code> (titik waktu) dan <code>for</code> (durasi), dan bisa memakai keduanya dengan benar.</li>
+          <li>Tahu kenapa present perfect tidak boleh dipasangkan dengan penanda waktu spesifik seperti "yesterday".</li>
+        </ul>
+      </div>
+
+      <p class="body reveal d2">Kalau salah satu poin di atas masih ragu, tidak apa — kirim saja hasil Latihan/Writing Exercise-mu, dan ulangi bagian yang belum kuat sebelum lanjut ke <b>Materi 2: Present Perfect vs Simple Past</b>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 21 TIER BELAJAR ============ -->
+  <section class="chapter" id="c21">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Arah belajar</div>
+        <h2>Tier belajar: dari materi ini ke depan</h2>
+      </div>
+      <p class="lead reveal">Materi ini adalah <b>Level 3 — Menyambung Gagasan, Materi 1 dari 5</b>. Tiga tier di bawah membagi: apa yang wajib kamu kuasai dari materi ini, bagaimana mempraktikkannya di kehidupan nyata, dan ke arah mana kamu belajar setelah ini.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Kuasai dulu materi ini</h4>
+          <p>Target minimum sebelum lanjut ke Materi 2 — semua ada di checklist bab Review.</p>
+          <ul>
+            <li>Hafal pasangan subjek: <code>I/You/We/They → have</code>, <code>He/She/It → has</code>.</li>
+            <li>Paham 4 makna present perfect dan bisa memberi contoh sendiri untuk masing-masing.</li>
+            <li>Bisa bikin kalimat pola <code>Subject + have/has + V3</code> dari nol, termasuk bentuk negatif &amp; tanya.</li>
+            <li>Kenali &amp; hindari 4 kesalahan umum di bab 08, terutama soal <code>since</code> vs <code>for</code>.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Praktikkan di kehidupan nyata</h4>
+          <p>Setelah hafal rumus, pindahkan ke situasi asli — bukan cuma soal latihan.</p>
+          <ul>
+            <li>Pakai present perfect saat melaporkan progres kerja di standup atau chat tim.</li>
+            <li>Tulis deskripsi pull request/changelog memakai pola <code>have/has + V3</code>.</li>
+            <li>Latih dengar lewat rekomendasi di bab Listening (rekaman standup, podcast developer).</li>
+            <li>Coba kenali pola present perfect di changelog project open-source di GitHub.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Arah belajar lanjut</h4>
+          <p>Setelah checklist Materi 1 tuntas, ini yang menanti di sisa Level 3.</p>
+          <ul>
+            <li><b>Materi 2</b> — Present Perfect vs Simple Past (kapan pakai yang mana).</li>
+            <li><b>Materi 3</b> — Passive Voice (kalimat pasif).</li>
+            <li><b>Materi 4</b> — Conditionals (kalimat pengandaian), lalu <b>Materi 5</b> — Linking Words.</li>
+            <li>Mulai biasakan menulis update kerja harianmu sendiri memakai present perfect, walau singkat.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 22 PENUTUP ============ -->
+  <section class="chapter" id="c22">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Jembatan antara masa lalu dan sekarang</h2>
+      </div>
+      <p class="lead reveal">Materi 1 Level 3 selesai — present perfect memang lebih rumit maknanya dibanding tenses sebelumnya, tapi ini adalah salah satu tenses paling sering kamu pakai di dunia kerja software engineering. Jangan buru-buru; pastikan checklist di bab Review benar-benar tuntas.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Subject + have/has + V3</b> — kerangka dasar present perfect.</li>
+          <li><b>4 makna</b> — pengalaman, aksi baru selesai, berlanjut sampai sekarang, hasil yang masih terasa.</li>
+          <li><b>Since vs for</b> — titik waktu vs durasi waktu, jangan tertukar.</li>
+          <li><b>Latih di dunia nyata</b> — standup, pull request, changelog, laporan progres kerja.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Level 3 · Materi 1 dari 5</h3>
+        <p id="endcardStatus">Materi 2 (Present Perfect vs Simple Past) terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar. Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // Subject + have/has + V3 — cara Bahasa Inggris menyambungkan masa lalu ke sekarang.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Notebook Inggris — Level 3, Materi 1</b> · Present Perfect (have/has + V3) · Menyambung Gagasan · <a href="../index.html">← kembali ke Belajar Inggris</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var MATERI_KEY = "english::level-3-materi-1";
+  var STATE_KEY = "materi-answers::" + MATERI_KEY;
+  var DONE_KEY = "materi-progress::" + MATERI_KEY;
+
+  var QUESTIONS = [
+    { id: "l1", type: "fill", prompt: "I <span class=\"blank\">___</span> (finish) the sprint report.", answer: ["have finished"], explain: "Subjek “I” → <b>have</b>, dan “finish” bentuk V3-nya <b>finished</b>." },
+    { id: "l2", type: "fill", prompt: "She <span class=\"blank\">___</span> (never / work) with Kubernetes.", answer: ["has never worked"], explain: "“She” → <b>has</b>, dan “never” diletakkan di antara has dan V3: <b>has never worked</b>." },
+    { id: "l3", type: "fill", prompt: "We <span class=\"blank\">___</span> (use) this framework for three years.", answer: ["have used"], explain: "“We” → <b>have</b>. “for three years” menandakan durasi, cocok dengan present perfect yang masih berlanjut." },
+    { id: "l4", type: "fill", prompt: "He <span class=\"blank\">___</span> (already / deploy) the new version.", answer: ["has already deployed"], explain: "“He” → <b>has</b>, “already” diletakkan di antara has dan V3: <b>has already deployed</b>." },
+    { id: "l5", type: "fill", prompt: "They <span class=\"blank\">___</span> (not / test) this feature yet.", answer: ["have not tested", "haven't tested"], explain: "“They” → <b>have</b>. Bentuk negatif: <b>have not tested</b> (atau <b>haven't tested</b>), dengan “yet” di akhir kalimat." },
+    { id: "l6", type: "fill", prompt: "<span class=\"blank\">___</span> you ever reviewed a pull request this big?", answer: ["have"], explain: "Bentuk pertanyaan present perfect: <b>Have</b> + subjek + V3. “Ever” muncul setelah subjek." },
+    { id: "l7", type: "fill", prompt: "I <span class=\"blank\">___</span> (work) here since 2020.", answer: ["have worked"], explain: "“I” → <b>have</b>. “since 2020” menandakan titik waktu mulai, aksinya masih berlanjut sampai sekarang." },
+    { id: "l8", type: "mc", prompt: "My manager <span class=\"blank\">___</span> approved the merge.", options: ["has", "have", "having"], answer: "has", explain: "“My manager” = dia (satu orang, tunggal) → pasangannya <b>has</b>." },
+    { id: "q1", type: "mc", prompt: "“I have <span class=\"blank\">___</span> finished the deployment.”", options: ["already", "yesterday", "ago"], answer: "already", explain: "“Already” cocok diletakkan di antara have dan V3. “Yesterday”/“ago” adalah penanda waktu spesifik masa lalu — tidak cocok dengan present perfect." },
+    { id: "q2", type: "mc", prompt: "Pilih bentuk V3 yang benar: “She has ___ to the conference.”", options: ["gone", "went", "go"], answer: "gone", explain: "“Go” adalah kata kerja tak beraturan: go → went (V2) → <b>gone</b> (V3). Bukan “goed”." },
+    { id: "q3", type: "fill", prompt: "The server <span class=\"blank\">___</span> (crash) twice today.", answer: ["has crashed"], explain: "“The server” = it → <b>has</b>. “Today” di sini masih dianggap “waktu yang belum tertutup” karena harinya belum selesai, jadi present perfect tetap cocok." },
+    { id: "q4", type: "mc", prompt: "“I have worked here ___ 2020.”", options: ["since", "for", "from"], answer: "since", explain: "2020 adalah titik waktu spesifik (tahun mulai) → pakai <b>since</b>." },
+    { id: "q5", type: "mc", prompt: "“We have used this library ___ three years.”", options: ["since", "for", "during"], answer: "for", explain: "“Three years” adalah durasi waktu, bukan titik waktu → pakai <b>for</b>." },
+    { id: "s1", type: "mc", prompt: "Soal cerita — Apa yang sudah dideploy ke staging?", options: ["Layanan autentikasi baru", "Payment module", "Changelog versi 2.3"], answer: "Layanan autentikasi baru", explain: "Ceritanya bilang: “I have deployed the new authentication service to staging.”" },
+    { id: "s2", type: "mc", prompt: "Soal cerita — Sejak kapan login bug rusak?", options: ["Sejak kemarin", "Sejak last Friday (Jumat lalu)", "Sejak bulan lalu"], answer: "Sejak last Friday (Jumat lalu)", explain: "Ceritanya bilang: “it has been broken since last Friday” — “since” diikuti titik waktu spesifik." },
+    { id: "s3", type: "fill", prompt: "Soal cerita — Lengkapi: “I ___ reviewed Dimas's pull request yet.” (isi dengan kata dari cerita)", answer: ["haven't", "have not"], explain: "Ceritanya bilang: “I haven't reviewed Dimas's pull request yet” — bentuk negatif present perfect dengan “yet” di akhir." },
+    { id: "s4", type: "mc", prompt: "Soal cerita — Berapa update yang sudah dirilis bulan ini menurut cerita?", options: ["One", "Two", "Three"], answer: "Three", explain: "Ceritanya bilang: “We have released three updates this month already.”" }
+  ];
+
+  function normalize(s) {
+    return String(s || "").trim().toLowerCase().replace(/[.!?]+$/, "").replace(/\s+/g, " ");
+  }
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveState(state) {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var state = loadState();
+
+  function countDone() {
+    return QUESTIONS.filter(function (q) { return state[q.id] === true; }).length;
+  }
+
+  function renderProgress() {
+    var done = countDone();
+    var total = QUESTIONS.length;
+    var pct = Math.round((done / total) * 100);
+    ["quizCount", "quizCount2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = done + " / " + total + " benar";
+    });
+    ["quizFill", "quizFill2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.width = pct + "%";
+    });
+    var pill = document.getElementById("progressPill");
+    var pillCount = document.getElementById("progressPillCount");
+    if (pillCount) pillCount.textContent = done + "/" + total;
+    if (pill) pill.classList.toggle("done", done === total);
+
+    var banner = document.getElementById("completeBanner");
+    if (banner) banner.classList.toggle("show", done === total);
+
+    var endcardStatus = document.getElementById("endcardStatus");
+    if (endcardStatus) {
+      endcardStatus.innerHTML = done === total
+        ? "✅ Semua soal Latihan &amp; Quiz sudah benar — <b style=\"color:var(--good)\">Materi 2</b> sudah terbuka. Kirim hasil Writing Exercise-mu kapan saja untuk dikoreksi."
+        : "Materi 2 (Present Perfect vs Simple Past) terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar (" + done + "/" + total + " saat ini). Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.";
+    }
+
+    try { localStorage.setItem(DONE_KEY, done === total ? "true" : "false"); } catch (e) {}
+  }
+
+  function markCorrect(id) {
+    state[id] = true;
+    saveState(state);
+    renderProgress();
+  }
+
+  function buildFillBox(q, index) {
+    var box = document.createElement("div");
+    box.className = "qbox";
+    box.setAttribute("data-qid", q.id);
+
+    var num = document.createElement("div");
+    num.className = "qbox__num";
+    num.textContent = String(index);
+    box.appendChild(num);
+
+    var body = document.createElement("div");
+    body.className = "qbox__body";
+
+    var prompt = document.createElement("p");
+    prompt.className = "qbox__prompt";
+    prompt.innerHTML = q.prompt;
+    body.appendChild(prompt);
+
+    var row = document.createElement("div");
+    row.className = "qbox__input-row";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "qinput";
+    input.placeholder = "ketik jawabanmu…";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "qbtn";
+    btn.textContent = "Cek";
+
+    row.appendChild(input);
+    row.appendChild(btn);
+    body.appendChild(row);
+
+    var feedback = document.createElement("div");
+    feedback.className = "qbox__feedback";
+    body.appendChild(feedback);
+
+    box.appendChild(body);
+
+    var isDone = state[q.id] === true;
+    if (isDone) {
+      box.classList.add("correct");
+      input.value = q.answer[0];
+      input.disabled = true;
+      input.classList.add("is-correct");
+      btn.disabled = true;
+      feedback.className = "qbox__feedback ok";
+      feedback.innerHTML = "✓ Benar! " + q.explain;
+    }
+
+    function check() {
+      var val = normalize(input.value);
+      var ok = q.answer.some(function (a) { return normalize(a) === val; });
+      if (!val) return;
+      if (ok) {
+        box.classList.add("correct");
+        input.disabled = true;
+        input.classList.remove("is-wrong");
+        input.classList.add("is-correct");
+        btn.disabled = true;
+        feedback.className = "qbox__feedback ok";
+        feedback.innerHTML = "✓ Benar! " + q.explain;
+        markCorrect(q.id);
+      } else {
+        input.classList.remove("is-wrong");
+        void input.offsetWidth;
+        input.classList.add("is-wrong");
+        feedback.className = "qbox__feedback bad";
+        feedback.innerHTML = "✕ Belum tepat, coba lagi.";
+      }
+    }
+
+    btn.addEventListener("click", check);
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); check(); }
+    });
+
+    return box;
+  }
+
+  function buildMcBox(q, index) {
+    var box = document.createElement("div");
+    box.className = "qbox";
+    box.setAttribute("data-qid", q.id);
+
+    var num = document.createElement("div");
+    num.className = "qbox__num";
+    num.textContent = String(index);
+    box.appendChild(num);
+
+    var body = document.createElement("div");
+    body.className = "qbox__body";
+
+    var prompt = document.createElement("p");
+    prompt.className = "qbox__prompt";
+    prompt.innerHTML = q.prompt;
+    body.appendChild(prompt);
+
+    var opts = document.createElement("div");
+    opts.className = "qbox__options";
+
+    var feedback = document.createElement("div");
+    feedback.className = "qbox__feedback";
+
+    var isDone = state[q.id] === true;
+    var buttons = [];
+
+    q.options.forEach(function (optVal) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "qopt";
+      b.textContent = optVal;
+      b.setAttribute("data-value", optVal);
+      buttons.push(b);
+
+      if (isDone) {
+        b.disabled = true;
+        if (optVal === q.answer) b.classList.add("is-correct");
+      }
+
+      b.addEventListener("click", function () {
+        if (box.classList.contains("correct")) return;
+        if (optVal === q.answer) {
+          b.classList.add("is-correct");
+          buttons.forEach(function (o) { o.disabled = true; });
+          box.classList.add("correct");
+          feedback.className = "qbox__feedback ok";
+          feedback.innerHTML = "✓ Benar! " + q.explain;
+          markCorrect(q.id);
+        } else {
+          b.classList.remove("is-wrong");
+          void b.offsetWidth;
+          b.classList.add("is-wrong");
+          feedback.className = "qbox__feedback bad";
+          feedback.innerHTML = "✕ Belum tepat, coba lagi.";
+          setTimeout(function () { b.classList.remove("is-wrong"); }, 500);
+        }
+      });
+
+      opts.appendChild(b);
+    });
+
+    body.appendChild(opts);
+    body.appendChild(feedback);
+    box.appendChild(body);
+
+    if (isDone) {
+      box.classList.add("correct");
+      feedback.className = "qbox__feedback ok";
+      feedback.innerHTML = "✓ Benar! " + q.explain;
+    }
+
+    return box;
+  }
+
+  var latihanHost = document.getElementById("quizLatihan");
+  var quizHost = document.getElementById("quizQuiz");
+  var storyHost = document.getElementById("quizStory");
+  var qNum = 0;
+
+  QUESTIONS.forEach(function (q) {
+    qNum++;
+    var box = q.type === "mc" ? buildMcBox(q, qNum) : buildFillBox(q, qNum);
+    var host = latihanHost;
+    if (q.id.indexOf("l") === 0) host = latihanHost;
+    else if (q.id.indexOf("s") === 0) host = storyHost;
+    else host = quizHost;
+    if (host) host.appendChild(box);
+  });
+
+  renderProgress();
+})();
+</script>
+</body>
+</html>

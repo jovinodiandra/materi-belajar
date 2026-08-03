@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agile — Dari Waterfall ke Manifesto</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --ink:        #0d1117;
+    --ink-2:      #0f141b;
+    --panel:      #161b22;
+    --panel-2:    #1b212b;
+    --line:       #232b36;
+    --line-soft:  #1c232d;
+    --fg:         #c4cdda;
+    --fg-strong:  #f0f4f9;
+    --muted:      #76828f;
+    --muted-2:    #5a6675;
+    --brass:      #d9a441;
+    --brass-dim:  #8a6d2f;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.32);
+    --good:       #4ec9b0;
+    --good-bg:    rgba(78,201,176,.07);
+    --good-line:  rgba(78,201,176,.32);
+
+    /* syntax */
+    --t-comment:  #5f6b78;
+    --t-key:      #c99bf0;
+    --t-type:     #4ec9b0;
+    --t-str:      #9fc7f0;
+    --t-num:      #e0a96b;
+    --t-fn:       #d9a441;
+    --t-anno:     #7fa6c4;
+
+    --mono: "Cascadia Code","Cascadia Mono","JetBrains Mono",Consolas,"SF Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+
+    --rail-w: 232px;
+    --maxw: 1180px;
+  }
+
+  body {
+    background: var(--ink);
+    color: var(--fg);
+    font-family: var(--sans);
+    line-height: 1.65;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(13,17,23,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#d9a441; }
+  .topbar__dots i:nth-child(3){ background:#4ec9b0; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--fg-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--brass); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--brass-dim), var(--brass));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- chapter rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--ink-2);
+    padding: 26px 0 40px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__title {
+    font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 16px;
+  }
+  .rail a {
+    display: flex; align-items: baseline; gap: 11px;
+    padding: 7px 22px; color: var(--muted);
+    text-decoration: none; font-size: 13px;
+    border-left: 2px solid transparent;
+    transition: color .18s, border-color .18s, background .18s;
+  }
+  .rail a .num { color: var(--brass-dim); font-size: 11.5px; min-width: 20px; transition: color .18s; }
+  .rail a:hover { color: var(--fg-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--fg-strong); border-left-color: var(--brass); background: rgba(217,164,65,.05); }
+  .rail a.active .num { color: var(--brass); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 96px clamp(22px, 5vw, 80px) 90px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+
+  /* ---------- hero ---------- */
+  .hero { text-align: left; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--brass);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 26px;
+  }
+  .hero h1 {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: clamp(30px, 6.2vw, 76px);
+    line-height: 1.04; letter-spacing: -.02em;
+    color: var(--fg-strong);
+    max-width: 18ch;
+  }
+  .hero h1 .accent { color: var(--brass); }
+  .cursor {
+    display: inline-block; width: .58ch; height: 1.02em;
+    background: var(--brass); margin-left: .08em;
+    transform: translateY(.12em);
+    animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .hero .sub {
+    margin-top: 30px; max-width: 60ch; font-size: 19px; color: var(--fg);
+  }
+  .hero .byline {
+    margin-top: 22px; font-family: var(--mono); font-size: 13px; color: var(--muted);
+  }
+  .hero .byline b { color: var(--fg-strong); font-weight: 600; }
+  .scrollcue {
+    margin-top: 56px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--brass); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  .herostats {
+    display: flex; flex-wrap: wrap; gap: 14px; margin-top: 52px;
+    font-family: var(--mono);
+  }
+  .herostats .chip {
+    border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px;
+    background: var(--panel); font-size: 12.5px; color: var(--muted);
+  }
+  .herostats .chip b { color: var(--fg-strong); }
+
+  /* ---------- chapter heading ---------- */
+  .chead { display: flex; align-items: flex-start; gap: 22px; margin-bottom: 14px; }
+  .chead .cnum {
+    font-family: var(--mono); font-weight: 700; font-size: clamp(34px, 5vw, 58px);
+    color: transparent; -webkit-text-stroke: 1.4px var(--brass-dim);
+    line-height: .9; letter-spacing: -.02em; flex: none;
+  }
+  .chead .ctitle { padding-top: 4px; }
+  .chead .ctitle .kicker {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--brass); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .chead .ctitle .kicker::before {
+    content: ""; flex: none; width: 3px; height: 13px;
+    background: var(--brass); border-radius: 1px;
+  }
+  .chead h2 {
+    font-family: var(--mono); font-weight: 700;
+    font-size: clamp(24px, 3.6vw, 40px); line-height: 1.08; letter-spacing: -.015em;
+    color: var(--fg-strong);
+  }
+
+  .lead { font-size: 19px; color: var(--fg); max-width: 70ch; margin: 6px 0 8px; }
+  .lead strong { color: var(--fg-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--fg); }
+  p.body strong { color: var(--fg-strong); }
+  p.body code, li code, .lead code { font-family: var(--mono); font-size: .88em; color: var(--brass); background: rgba(217,164,65,.08); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- analogy ---------- */
+  .analogy {
+    border-left: 3px solid var(--brass);
+    background: linear-gradient(90deg, rgba(217,164,65,.06), transparent 80%);
+    padding: 18px 24px; margin: 26px 0; border-radius: 0 8px 8px 0;
+    max-width: 730px;
+    display: grid; grid-template-columns: 1fr 150px; gap: 26px; align-items: center;
+  }
+  .analogy__body { min-width: 0; }
+  .analogy .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--brass); display: block; margin-bottom: 6px;
+  }
+  .analogy p { color: var(--fg); font-size: 16.5px; }
+  .analogy em { color: var(--fg-strong); font-style: italic; }
+  .analogy__icon {
+    width: 150px; height: 140px; color: var(--brass); opacity: .9;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(closest-side, rgba(217,164,65,.08), transparent);
+    border-radius: 14px;
+  }
+  .analogy__icon svg { width: 110px; height: 110px; display: block; }
+
+  /* ---------- diptych ---------- */
+  .diptych {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: stretch;
+    margin: 30px 0 8px;
+  }
+  .xform {
+    align-self: center; font-family: var(--mono); font-size: 26px; color: var(--brass);
+    text-align: center; padding: 0 2px; user-select: none;
+  }
+  .xform span { display: block; font-size: 10px; letter-spacing: .18em; color: var(--brass-dim); margin-top: 4px; }
+
+  /* ---------- editor card ---------- */
+  .editor {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); display: flex; flex-direction: column;
+    box-shadow: 0 14px 40px -28px rgba(0,0,0,.9);
+  }
+  .editor.bad  { border-color: var(--bad-line); }
+  .editor.good { border-color: var(--good-line); }
+  .editor__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .editor__bar .dots { display: flex; gap: 6px; }
+  .editor__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .editor__name { color: var(--muted); }
+  .editor__verdict { margin-left: auto; font-weight: 600; letter-spacing: .04em; font-size: 11.5px; }
+  .editor.bad  .editor__verdict { color: var(--bad); }
+  .editor.good .editor__verdict { color: var(--good); }
+  .editor.bad  .editor__bar { background: var(--bad-bg); }
+  .editor.good .editor__bar { background: var(--good-bg); }
+
+  pre.code {
+    font-family: var(--mono);
+    font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto;
+    color: var(--fg); tab-size: 2; flex: 1;
+    white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+
+  /* syntax tokens */
+  .c   { color: var(--t-comment); font-style: italic; }
+  .k   { color: var(--t-key); }
+  .t   { color: var(--t-type); }
+  .s   { color: var(--t-str); }
+  .n   { color: var(--t-num); }
+  .f   { color: var(--t-fn); }
+  .a   { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* single full-width editor (not a diptych) */
+  .editor.solo { margin: 28px 0 8px; max-width: 920px; }
+
+  /* ---------- repo note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 30px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel);
+  }
+  .note__spine {
+    flex: none; width: 8px; background: linear-gradient(var(--brass), var(--brass-dim));
+  }
+  .note__body { padding: 16px 20px 18px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--brass); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .note__tag .ico { font-size: 13px; }
+  .note p { color: var(--fg); font-size: 15.5px; max-width: none; }
+  .note code { font-family: var(--mono); font-size: .86em; color: var(--good); background: rgba(78,201,176,.08); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- principle pills ---------- */
+  .pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0; }
+  .pill-wrap { position: relative; display: inline-block; }
+  .pill {
+    font-family: var(--mono); font-size: 12.5px; color: var(--fg);
+    border: 1px solid var(--line); border-radius: 999px; padding: 7px 15px;
+    background: var(--panel);
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; text-align: left; line-height: 1.2;
+    transition: border-color .18s, color .18s, background .18s;
+  }
+  .pill:hover { border-color: var(--brass-dim); color: var(--fg-strong); }
+  .pill[aria-expanded="true"] { border-color: var(--brass); color: var(--fg-strong); background: rgba(217,164,65,.06); }
+  .pill b { color: var(--brass); }
+  .pill .caret { color: var(--brass); font-size: 9px; transition: transform .18s; flex: none; }
+  .pill[aria-expanded="true"] .caret { transform: rotate(90deg); }
+
+  .pop {
+    display: none; position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
+    width: max-content; max-width: min(380px, 84vw);
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px;
+    box-shadow: 0 18px 46px -24px rgba(0,0,0,.92);
+    text-align: left; white-space: normal;
+  }
+  .pop.open { display: block; animation: popin .16s ease; }
+  .pop.pop--right { left: auto; right: 0; }
+  @keyframes popin { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .pop__def { display: block; font-family: var(--sans); font-size: 13.5px; color: var(--fg); line-height: 1.55; }
+  .pop__def b { color: var(--fg-strong); font-weight: 600; }
+  .pop__ex { display: block; margin-top: 11px; font-family: var(--mono); font-size: 12px; line-height: 1.75; }
+  .pop__bad, .pop__good { display: block; white-space: pre-wrap; }
+  .pop__bad  { color: var(--bad); }
+  .pop__good { color: var(--good); }
+  .pop__bad::before  { content: "\2715  "; }
+  .pop__good::before { content: "\2713  "; }
+
+  /* ---------- two-col explainer ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--fg); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "✕"; color: var(--bad); }
+  .cols .good-l li::before { content: "✓"; color: var(--good); }
+
+  /* ---------- people / card grid ---------- */
+  .smells { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 16px; margin-top: 28px; }
+  .smell {
+    border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .smell:hover { border-color: var(--brass-dim); transform: translateY(-3px); }
+  .smell .code-id { font-family: var(--mono); font-size: 11.5px; color: var(--brass); letter-spacing: .08em; }
+  .smell h4 { font-size: 16px; color: var(--fg-strong); margin: 6px 0 7px; font-weight: 600; }
+  .smell p { font-size: 14.5px; color: var(--muted); }
+
+  /* ---------- timeline ---------- */
+  .timeline { position: relative; margin: 30px 0 8px; max-width: 780px; padding-left: 26px; }
+  .timeline::before {
+    content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px;
+    background: linear-gradient(var(--brass-dim), var(--line));
+  }
+  .tl-item { position: relative; padding: 0 0 24px 18px; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before {
+    content: ""; position: absolute; left: -26px; top: 7px; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--ink); border: 2px solid var(--brass);
+  }
+  .tl-item .tl-year { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--brass); letter-spacing: .06em; }
+  .tl-item h4 { font-size: 16.5px; color: var(--fg-strong); margin: 3px 0 5px; font-weight: 600; }
+  .tl-item p { font-size: 15px; color: var(--fg); max-width: 66ch; }
+  .tl-item p em { color: var(--fg-strong); }
+
+  /* ---------- manifesto values ---------- */
+  .value-card {
+    border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+    padding: 22px clamp(18px, 3vw, 30px); margin: 22px 0; max-width: 860px;
+  }
+  .value-card .v-num { font-family: var(--mono); font-size: 12px; color: var(--brass); letter-spacing: .16em; }
+  .value-card .v-line {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px;
+    font-family: var(--mono); font-size: clamp(16px, 2.4vw, 22px); font-weight: 700; margin: 8px 0 12px;
+  }
+  .value-card .v-line .left  { color: var(--good); }
+  .value-card .v-line .over  { color: var(--muted-2); font-size: .62em; font-weight: 400; letter-spacing: .18em; text-transform: uppercase; }
+  .value-card .v-line .right { color: var(--muted); text-decoration: none; }
+  .value-card p { font-size: 15.5px; color: var(--fg); max-width: 74ch; }
+  .value-card p + p { margin-top: 10px; }
+  .value-card p em { color: var(--fg-strong); }
+  .value-card .v-then {
+    border-left: 3px solid var(--bad-line); background: var(--bad-bg);
+    padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 12px;
+  }
+  .value-card .v-then .v-tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    display: block; margin-bottom: 4px;
+  }
+  .value-card .v-then .v-tag { color: var(--bad); }
+  .value-card code { font-family: var(--mono); font-size: .88em; color: var(--brass); background: rgba(217,164,65,.08); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 62ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(15px,2vw,18px);
+    color: var(--fg); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "→"; position: absolute; left: 0; color: var(--brass); }
+  .creed li b { color: var(--fg-strong); }
+
+  .endcard {
+    margin-top: 40px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--ink-2));
+    padding: 30px clamp(20px,4vw,40px);
+  }
+  .endcard h3 { font-family: var(--mono); color: var(--fg-strong); font-size: 22px; margin-bottom: 10px; }
+  .endcard p { color: var(--fg); max-width: 66ch; }
+  .endcard .map { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 12px; margin-top: 22px; font-family: var(--mono); font-size: 12.5px; }
+  .endcard .map div { border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; background: rgba(0,0,0,.2); }
+  .endcard .map b { color: var(--brass); display: block; margin-bottom: 3px; }
+  .endcard .map span { color: var(--muted); }
+
+  footer {
+    margin-left: var(--rail-w); padding: 34px clamp(22px,5vw,80px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 920px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .diptych { grid-template-columns: 1fr; }
+    .xform { transform: rotate(90deg); padding: 6px 0; }
+    .xform span { transform: rotate(-90deg); white-space: nowrap; }
+    .cols { grid-template-columns: 1fr; }
+    .analogy { grid-template-columns: 1fr; gap: 0; }
+    .analogy__icon { display: none; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    .chead { gap: 14px; }
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .herostats .chip { font-size: 11.5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* keyboard focus */
+  a:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<a id="__exitbtn" href="../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/agile/<b>from-waterfall-to-agile.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 12</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__title">// Bab</div>
+  <a href="#c00"><span class="num">00</span> Pembuka</a>
+  <a href="#c01"><span class="num">01</span> Era Waterfall</a>
+  <a href="#c02"><span class="num">02</span> Masalah Waterfall</a>
+  <a href="#c03"><span class="num">03</span> Pemberontakan '90-an</a>
+  <a href="#c04"><span class="num">04</span> Snowbird 2001</a>
+  <a href="#c05"><span class="num">05</span> 4 Nilai Manifesto</a>
+  <a href="#c06"><span class="num">06</span> 12 Prinsip</a>
+  <a href="#c07"><span class="num">07</span> Scrum</a>
+  <a href="#c08"><span class="num">08</span> Extreme Programming</a>
+  <a href="#c09"><span class="num">09</span> Lean &amp; Kanban</a>
+  <a href="#c10"><span class="num">10</span> Keluarga Lainnya</a>
+  <a href="#c11"><span class="num">11</span> Salah Kaprah</a>
+  <a href="#c12"><span class="num">12</span> Penutup</a>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// "We are uncovering better ways of developing software…" — agilemanifesto.org, 2001</div>
+      <h1 class="reveal d1">Dari air terjun ke <span class="accent">lincah</span>: sejarah cara kita bekerja<span class="cursor" aria-hidden="true"></span></h1>
+      <p class="sub reveal d2">
+        Agile itu bukan ritual meeting pagi atau papan penuh sticky note. Agile adalah <strong>jawaban atas rasa sakit</strong> —
+        puluhan tahun proyek software telat, over-budget, dan menghasilkan barang yang nggak dipakai siapa-siapa.
+        Buat ngerti kenapa kita kerja pakai sprint dan bukan Gantt chart setahun, kita harus mulai dari
+        <span style="color:var(--bad)">air terjunnya</span> dulu, baru ke <span style="color:var(--good)">pemberontakannya</span>.
+      </p>
+      <div class="byline reveal d2">Dibikin buat tim · satu cerita utuh: <b>Waterfall → Manifesto → Scrum · XP · Lean · Kanban</b></div>
+
+      <div class="herostats reveal d3">
+        <div class="chip"><b>12</b> bab</div>
+        <div class="chip">sejarah · <b>tokoh</b> · analogi</div>
+        <div class="chip"><b>4 nilai</b> + 12 prinsip dibedah</div>
+        <div class="chip">dipetakan ke <b>cara kerja tim kita</b></div>
+      </div>
+
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--brass)">→</b> BUAT MULAI</div>
+    </div>
+  </section>
+
+  <div class="wrap" style="padding:0 clamp(22px, 5vw, 80px)">
+    <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px 0;border-radius:0 10px 10px 0;max-width:70ch">
+      <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+      <p style="margin:5px 0"><b>Given</b> — rencana proyek dibuat detail di awal ala waterfall: requirement dikunci, jadwal Gantt setahun disusun, semua fase dijadwalkan sebelum satu baris kode pun ditulis.</p>
+      <p style="margin:5px 0"><b>When</b> — requirement berubah di tengah jalan (hampir selalu terjadi — user baru sadar apa yang mereka mau setelah lihat produknya, pasar bergeser, atau asumsi awal ternyata salah).</p>
+      <p style="margin:5px 0"><b>Then</b> — seluruh rencana itu jadi usang, dan tim baru sadar salah arah setelah bulan-bulan kerja — sudah telanjur over-budget, telat, dan hasilnya nggak dipakai siapa-siapa.</p>
+      <p style="margin:8px 0 0">→ makanya kita pakai <b>agile</b>: iterasi pendek dengan feedback cepat, biar arah salah ketahuan dalam minggu, bukan bulan.</p>
+    </div>
+  </div>
+
+  <!-- ============ 01 WATERFALL ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">01</div>
+        <div class="ctitle">
+          <div class="kicker">Sebelum Agile · 1970</div>
+          <h2>Era Waterfall: rencanakan semua, baru bangun</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Tahun 1970, insinyur bernama <strong>Winston W. Royce</strong> nulis paper <em>"Managing the Development of Large Software Systems"</em>. Di dalamnya ada diagram fase yang mengalir ke bawah kayak air terjun: <strong>requirement → desain → koding → testing → operasi</strong>. Industri jatuh cinta sama diagram itu... dan melewatkan poin utamanya.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Waterfall itu kayak <em>bangun rumah</em>: gambar blueprint lengkap, tanda tangan kontrak, tuang fondasi, pasang tembok, atap, baru pemilik boleh masuk. Masuk akal buat rumah — karena tembok yang udah berdiri mahal banget buat dipindah. Masalahnya: software itu <em>bukan tembok</em>. Software itu lunak, bisa diubah — justru itu kenapa namanya <em>soft</em>-ware.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h12v8H8zM14 18v6M14 24h12v8H14zM26 32v6M26 38h12" /><path d="M40 38v2" /></svg></div>
+      </div>
+
+      <div class="editor bad solo reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">project-plan-1975.txt — satu lintasan, tanpa jalan balik</span><span class="editor__verdict">SINGLE PASS</span></div>
+<pre class="code"><span class="c">// fase mengalir ke bawah. sekali lewat, pintu dikunci.</span>
+<span class="t">REQUIREMENTS</span>  ──┐   <span class="c">bulan 1–4   : tulis SEMUA kebutuhan, di-sign-off</span>
+               ▼
+   <span class="t">DESIGN</span>     ──┐   <span class="c">bulan 5–9   : desain SEMUA arsitektur, dibekukan</span>
+               ▼
+    <span class="t">CODE</span>      ──┐   <span class="c">bulan 10–18 : baru mulai ngoding</span>
+               ▼
+    <span class="t">TEST</span>      ──┐   <span class="c">bulan 19–22 : baru tahu jalan/nggaknya</span>
+               ▼
+  <span class="t">OPERATE</span>        <span class="c">bulan 23    : user LIHAT PERTAMA KALI 🎉 (atau 💀)</span></pre>
+      </div>
+
+      <p class="body reveal d2">Ironinya legendaris: di paper yang sama, Royce sendiri bilang pendekatan single-pass ini <strong>"berisiko dan mengundang kegagalan"</strong> (<em>"risky and invites failure"</em>), lalu mengusulkan iterasi dan feedback antar fase. Tapi yang difotokopi orang cuma halaman diagramnya. Militer AS bahkan membakukan model ini jadi standar (<code>DOD-STD-2167</code>, 1985) — dan seluruh industri, dari bank sampai vendor pemerintah, ikut arus selama dua dekade.</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Fun fact</div>
+          <p>Royce nggak pernah pakai kata "waterfall" di papernya. Nama itu datang belakangan dari orang lain yang mendeskripsikan diagramnya. Jadi "bapak waterfall" sebenarnya adalah orang pertama yang <strong>memperingatkan</strong> bahayanya. Sejarah memang suka bercanda.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 MASALAH ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">02</div>
+        <div class="ctitle">
+          <div class="kicker">Kenapa Air Terjun Tenggelam</div>
+          <h2>Feedback datang saat sudah terlambat</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Semua masalah waterfall bermuara ke satu akar: <strong>momen belajar paling penting — user memakai barangnya — ditaruh paling akhir</strong>, saat uangnya sudah habis dan keputusannya sudah beku.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Bayangin pesen kado nikahan buat temen, tapi barangnya baru boleh dilihat <em>dua tahun</em> setelah kamu deskripsiin ke tokonya. Selama dua tahun itu selera temenmu berubah, dia pindah rumah, punya anak. Pas kadonya datang: persis seperti yang <em>dulu</em> kamu minta — dan sama sekali bukan yang <em>sekarang</em> dia butuhkan. Kontraknya terpenuhi; tujuannya gagal.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="18" width="28" height="20" rx="2"/><path d="M10 24h28M24 18v20M24 18s-4-8-9-8-5 6 0 8M24 18s4-8 9-8 5 6 0 8"/></svg></div>
+      </div>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="bad-h">Asumsi waterfall</h4>
+          <ul class="bad-l">
+            <li>Requirement bisa lengkap &amp; benar <b>di awal</b>, sebelum ada yang dibangun</li>
+            <li>Requirement <b>nggak berubah</b> selama 12–24 bulan proyek</li>
+            <li>Progress = dokumen selesai (spec 300 halaman = "50% jadi")</li>
+            <li>Integrasi &amp; testing bisa ditunda ke akhir (<b>big bang</b>)</li>
+            <li>Estimasi di hari paling bodoh (hari pertama) itu akurat</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Kenyataan di lapangan</h4>
+          <ul class="good-l">
+            <li>User baru <b>tahu apa yang mereka mau</b> setelah melihat sesuatu yang jalan</li>
+            <li>Pasar, regulasi, dan kompetitor berubah <b>tiap kuartal</b></li>
+            <li>Satu-satunya ukuran progress yang jujur: <b>software yang jalan</b></li>
+            <li>Integrasi di akhir = semua bug ketemu <b>sekaligus</b>, di momen terburuk</li>
+            <li>Ketidakpastian justru <b>paling tinggi di awal</b> (cone of uncertainty)</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Hasilnya terekam di data. Laporan <strong>CHAOS Report</strong> dari Standish Group (1994) menghitung: cuma <strong>~16% proyek software</strong> yang selesai tepat waktu dan tepat budget. Sisanya molor, bengkak, atau dibatalkan total. Dan fitur yang berhasil di-ship pun banyak yang mubazir — studi-studi berikutnya menemukan sebagian besar fitur <strong>jarang atau tidak pernah dipakai</strong>. Industri menghabiskan miliaran dolar membangun barang yang salah, dengan sangat disiplin.</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Poin kuncinya</div>
+          <p>Waterfall gagal bukan karena orangnya malas atau bodoh. Waterfall gagal karena dia memperlakukan pembangunan software seperti <strong>manufaktur</strong> (spesifikasi tetap, eksekusi berulang), padahal software itu <strong>desain produk baru</strong> — kegiatan penuh penemuan, di mana rencana terbaik hari ini pasti salah sebagian besok. Masalahnya bukan eksekusi; masalahnya <strong>model mentalnya</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 PEMBERONTAKAN ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">03</div>
+        <div class="ctitle">
+          <div class="kicker">1986–2000 · Jalan Menuju Agile</div>
+          <h2>Pemberontakan kecil-kecilan di mana-mana</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Agile nggak lahir tiba-tiba di 2001. Sepanjang '80–'90-an, praktisi-praktisi di berbagai tempat — yang <strong>saling nggak kenal</strong> — sampai di kesimpulan yang sama: kerjakan dalam potongan kecil, tunjukkan cepat, dengarkan, ulangi. Metode-metode ini disebut <em>"lightweight methods"</em>, sebagai lawan dari metode "berat" ala waterfall.</p>
+
+      <div class="timeline reveal d1">
+        <div class="tl-item">
+          <div class="tl-year">1986</div>
+          <h4>Spiral Model — Barry Boehm</h4>
+          <p>Model pengembangan berbentuk spiral: bangun bertahap, tiap putaran evaluasi <em>risiko</em> dulu. Bukti akademis pertama yang serius bahwa iterasi mengalahkan single-pass.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">1986</div>
+          <h4>"The New New Product Development Game" — Takeuchi &amp; Nonaka</h4>
+          <p>Paper Harvard Business Review tentang tim produk di Honda, Canon, Fuji-Xerox yang bekerja <em>tumpang-tindih seperti tim rugby</em> — bukan estafet antar departemen. Dari metafora rugby inilah kata <strong>"scrum"</strong> dipinjam. Menariknya: paper ini tentang hardware, bukan software.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">1993–1995</div>
+          <h4>Scrum — Jeff Sutherland &amp; Ken Schwaber</h4>
+          <p>Sutherland (di Easel Corp.) merakit ide Takeuchi–Nonaka jadi kerangka kerja tim software: sprint, backlog, daily meeting. Bareng Schwaber, mereka mempresentasikannya di konferensi <em>OOPSLA 1995</em>. Scrum resmi lahir.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">1994</div>
+          <h4>DSDM — konsorsium industri (Inggris)</h4>
+          <p>Dynamic Systems Development Method: timebox ketat, prioritas <em>MoSCoW</em> (Must/Should/Could/Won't), keterlibatan user aktif. Agile rasa korporat, jauh sebelum kata "agile" ada.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">1996–1999</div>
+          <h4>Extreme Programming — Kent Beck, Ward Cunningham, Ron Jeffries</h4>
+          <p>Di proyek payroll Chrysler (<em>C3</em>), Kent Beck ambil praktik-praktik bagus yang sudah dikenal — testing, review, integrasi — lalu <em>putar kenopnya ke maksimal</em> (makanya "extreme"). Bukunya, <em>Extreme Programming Explained</em> (1999), jadi manifesto sebelum Manifesto.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">1990-an akhir</div>
+          <h4>Crystal, FDD, ASD — Cockburn, De Luca &amp; Coad, Highsmith</h4>
+          <p>Alistair Cockburn (Crystal: metode harus <em>menyesuaikan ukuran tim</em>), Jeff De Luca &amp; Peter Coad (Feature-Driven Development), Jim Highsmith (Adaptive Software Development). Semua variasi dari tema yang sama: iterasi pendek, manusia di tengah.</p>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Benang merahnya</div>
+          <p>Perhatikan polanya: orang-orang ini nggak saling kontek, tapi obatnya sama semua — <strong>perpendek jarak antara "membangun" dan "belajar"</strong>. Kalau banyak dokter yang nggak saling kenal meresepkan obat yang sama untuk penyakit yang sama, kemungkinan besar diagnosisnya benar. Tinggal satu langkah lagi: para dokter ini duduk satu meja.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 SNOWBIRD ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">04</div>
+        <div class="ctitle">
+          <div class="kicker">Februari 2001 · Kelahiran</div>
+          <h2>17 orang, satu lodge ski, satu manifesto</h2>
+        </div>
+      </div>
+      <p class="lead reveal">11–13 Februari 2001, di resor ski <strong>Snowbird, Utah</strong>, tujuh belas praktisi "lightweight methods" ngumpul buat cari kesamaan di antara metode mereka. Mereka datang sebagai rival — pulang membawa <strong>Manifesto for Agile Software Development</strong>: 4 nilai dan 12 prinsip, dimuat di <code>agilemanifesto.org</code>.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Ini kayak festival musik di mana tujuh belas musisi beda aliran — jazz, rock, blues — jam session bareng dan nemuin bahwa lagunya beda tapi <em>kuncinya sama</em>. Mereka nggak bikin genre baru yang mengalahkan genre lama; mereka nulis <em>teori musiknya</em>: prinsip bersama yang bikin semua aliran itu enak didengar.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 34l10-18 7 12 5-8 10 14z"/><circle cx="36" cy="12" r="3.5"/></svg></div>
+      </div>
+
+      <p class="body reveal d1">Nama "agile" sendiri hasil debat. "Lightweight" ditolak — kedengarannya kayak metode kurus yang nggak serius. Alternatif lain "adaptive". Akhirnya <strong>"agile"</strong> menang: lincah, responsif, tapi tetap atletis dan disiplin. Beberapa nama di ruangan itu (dan perannya):</p>
+
+      <div class="smells reveal d2">
+        <div class="smell"><div class="code-id">SCRUM</div><h4>Jeff Sutherland &amp; Ken Schwaber</h4><p>Pencipta Scrum. Belakangan menulis <em>Scrum Guide</em> yang jadi definisi resminya sampai sekarang. Mike Beedle (co-author buku Scrum pertama) juga hadir.</p></div>
+        <div class="smell"><div class="code-id">XP</div><h4>Kent Beck, Ward Cunningham, Ron Jeffries</h4><p>Trio Extreme Programming. Beck kelak juga menulis framework testing xUnit (moyangnya JUnit); Cunningham adalah penemu <em>wiki</em> dan istilah <em>technical debt</em>.</p></div>
+        <div class="smell"><div class="code-id">TUAN RUMAH</div><h4>Robert C. Martin (Uncle Bob)</h4><p>Penginisiasi pertemuan Snowbird. Kamu kenal dia dari materi Clean Code sebelah — orang yang sama.</p></div>
+        <div class="smell"><div class="code-id">PENULIS</div><h4>Martin Fowler</h4><p>Penulis <em>Refactoring</em> dan <em>Patterns of Enterprise Application Architecture</em>. Bersama Highsmith menulis artikel yang menjelaskan manifesto ke publik.</p></div>
+        <div class="smell"><div class="code-id">CRYSTAL</div><h4>Alistair Cockburn</h4><p>Pencipta keluarga metode Crystal. Paling vokal soal software sebagai "permainan kooperatif penemuan" — manusia &gt; proses.</p></div>
+        <div class="smell"><div class="code-id">ASD / DSDM</div><h4>Jim Highsmith &amp; Arie van Bennekum</h4><p>Highsmith (Adaptive Software Development) dan van Bennekum (wakil DSDM) membawa perspektif adaptif &amp; keterlibatan user.</p></div>
+      </div>
+
+      <p class="body reveal d3">Plus sepuluh lainnya — termasuk <strong>Dave Thomas &amp; Andy Hunt</strong> (penulis <em>The Pragmatic Programmer</em>), <strong>Brian Marick</strong> (testing), dan <strong>Jon Kern</strong>. Yang penting dipahami: manifesto ini <strong>bukan metode</strong>. Nggak ada instruksi "meeting jam 9 pagi" di dalamnya. Dia adalah <em>sistem nilai</em> — kompas, bukan peta. Metodenya (Scrum, XP, dst.) adalah kendaraan; manifesto cuma nunjukin arah utara.</p>
+    </div>
+  </section>
+
+  <!-- ============ 05 EMPAT NILAI ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">05</div>
+        <div class="ctitle">
+          <div class="kicker">Isi Manifesto · Bagian 1</div>
+          <h2>Empat nilai: "kiri" lebih berharga dari "kanan"</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Format manifestonya cerdik: <strong>"X over Y"</strong>. Bukan "Y itu buruk, buang" — tapi <em>"Y ada nilainya, cuma X lebih berharga"</em>. Kalimat penutupnya sering dilupakan orang: <em>"while there is value in the items on the right, we value the items on the left more."</em> Ini pernyataan prioritas, bukan larangan. Dan keempatnya bukan filosofi dari langit — tiap nilai adalah <strong>obat untuk satu penyakit spesifik</strong> yang diderita industri di era waterfall. Makanya tiap kartu di bawah dimulai dari penyakitnya dulu.</p>
+
+      <div class="value-card reveal d1">
+        <div class="v-num">NILAI 1</div>
+        <div class="v-line"><span class="left">Individuals &amp; interactions</span> <span class="over">over</span> <span class="right">processes &amp; tools</span></div>
+        <p class="v-then"><span class="v-tag">✕ Penyakitnya di era waterfall</span>Programmer, analis, dan tester duduk di <em>departemen terpisah</em> dan dilarang ngobrol langsung — komunikasi wajib lewat dokumen spesifikasi formal dan form resmi. Orang diperlakukan sebagai "resource" yang bisa ditukar-tukar kayak spare part. Dan tiap kali proyek gagal, obat yang diresepkan selalu sama: <em>tambah proses lagi</em> — approval berlapis, template dokumen baru, audit metodologi. Prosesnya makin gemuk, softwarenya tetap gagal.</p>
+        <p><em>Analogi:</em> restoran bintang lima nggak jadi enak karena punya oven termahal — tapi karena koki-kokinya jago dan saling ngomong di dapur. Kasih oven itu ke tim yang nggak saling percaya, hasilnya tetap gosong.</p>
+        <p><em style="color:var(--good)">✓ Obatnya — artinya buat kita:</em> kalau ada yang stuck, <strong>ngobrol 5 menit</strong> mengalahkan 3 hari saling lempar komentar di tiket. Proses dan tool (Jira, pipeline, board) itu pelayan komunikasi — bukan penggantinya. Tim hebat dengan proses jelek biasanya tetap selamat; proses hebat dengan tim yang nggak saling ngomong, nggak pernah.</p>
+      </div>
+
+      <div class="value-card reveal d1">
+        <div class="v-num">NILAI 2</div>
+        <div class="v-line"><span class="left">Working software</span> <span class="over">over</span> <span class="right">comprehensive documentation</span></div>
+        <p class="v-then"><span class="v-tag">✕ Penyakitnya di era waterfall</span>Progress diukur dari <em>dokumen yang selesai</em>: requirement spec 500 halaman di-sign-off → "proyek 30% jadi". Design document disetujui → "60% jadi". Padahal belum ada <em>satu baris kode pun yang jalan</em>. Standar militer kayak DOD-STD-2167 bahkan mewajibkan berlembar-lembar dokumen sebagai deliverable kontrak. Baru di bulan ke-20 semua sadar: dokumennya sempurna, softwarenya nggak bisa dipakai — dan nggak ada dokumen yang bisa di-deploy ke produksi.</p>
+        <p><em>Analogi:</em> mau beli mobil, mana yang lebih meyakinkan — brosur 400 halaman, atau <strong>test drive 10 menit</strong>? Dokumen mendeskripsikan niat; software yang jalan membuktikan kenyataan.</p>
+        <p><em style="color:var(--good)">✓ Obatnya — artinya buat kita:</em> ukuran progress yang jujur adalah fitur yang bisa dipakai, bukan spec yang di-approve. Catatan penting: ini <strong>bukan anti-dokumentasi</strong> — ADR, UC, dan runbook kita justru contoh dokumentasi yang <em>earn their place</em> karena merekam keputusan yang nggak kebaca dari kode. Yang dilawan manifesto adalah dokumen sebagai <em>proxy palsu untuk progress</em>.</p>
+      </div>
+
+      <div class="value-card reveal d2">
+        <div class="v-num">NILAI 3</div>
+        <div class="v-line"><span class="left">Customer collaboration</span> <span class="over">over</span> <span class="right">contract negotiation</span></div>
+        <p class="v-then"><span class="v-tag">✕ Penyakitnya di era waterfall</span>Proyek dijual <em>fixed-scope, fixed-price</em>: requirement dikunci di lampiran kontrak, lalu customer "jangan ganggu dulu ya" sampai serah terima 18 bulan lagi. Tiap perubahan = <em>change request</em> berbayar plus amandemen kontrak — vendor bahkan punya tim khusus buat <em>menolak</em> perubahan, karena tiap perubahan menggerus margin. Hasilnya vendor dan customer jadi lawan di meja negosiasi: pas produknya melenceng, energi habis buat saling nyalahin pakai pasal, bukan buat memperbaiki produknya.</p>
+        <p><em>Analogi:</em> jahit jas. Cara kontrak: ukur sekali, ambil 3 bulan kemudian, jadi atau nggak jadi ya itu risikomu — kan sesuai ukuran awal. Cara kolaborasi: <strong>fitting berkala</strong> — penjahit nyesuaikan tiap ketemu, dan jasnya pasti pas walau badanmu berubah.</p>
+        <p><em style="color:var(--good)">✓ Obatnya — artinya buat kita:</em> requirement itu percakapan berkelanjutan, bukan dokumen sekali tanda tangan. PO/domain expert bukan lawan negosiasi yang harus "dikunci scope-nya" — dia partner yang duduk satu perahu. Kalau spec dan kebutuhan nyata mulai bercerai, yang menang kebutuhan nyata, bukan pasal kontrak.</p>
+      </div>
+
+      <div class="value-card reveal d2">
+        <div class="v-num">NILAI 4</div>
+        <div class="v-line"><span class="left">Responding to change</span> <span class="over">over</span> <span class="right">following a plan</span></div>
+        <p class="v-then"><span class="v-tag">✕ Penyakitnya di era waterfall</span>Gantt chart 18 bulan disusun di minggu pertama — <em>hari paling bodoh</em> dalam hidup proyek, saat informasi paling sedikit — lalu dibekukan jadi "baseline". Sejak itu manajer proyek dinilai dari <em>kepatuhan pada baseline</em>, bukan dari hasilnya: deviasi dari rencana harus dipertanggungjawabkan di depan steering committee. Jadi walau di bulan ke-8 semua orang sudah tahu produknya salah arah, proyek jalan terus — karena berhenti atau belok berarti "gagal planning", sedangkan nabrak tembok <em>sesuai jadwal</em> masih dihitung "on track".</p>
+        <p><em>Analogi:</em> GPS vs peta cetak. Peta cetak itu rencana: akurat saat dicetak, buta terhadap jalan macet dan jembatan tutup hari ini. GPS <strong>re-route</strong> saat kondisi berubah — tujuannya tetap, rutenya adaptif. Nggak ada yang bilang "kita harus setia sama rute yang diprint minggu lalu".</p>
+        <p><em style="color:var(--good)">✓ Obatnya — artinya buat kita:</em> rencana tetap dibuat (sprint planning itu <em>planning</em>!) — tapi rencana adalah <strong>hipotesis terbaik saat ini</strong>, bukan janji suci. Saat sprint berjalan dan ternyata asumsinya salah, mengubah rencana itu profesionalisme, bukan kegagalan planning.</p>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Kesalahan baca paling umum</div>
+          <p>Membaca "over" sebagai "instead of". Lalu muncullah tim yang buang semua dokumentasi ("kan agile!"), nggak mau bikin rencana ("kan responding to change!"), dan nggak punya proses sama sekali ("kan individuals over processes!"). Itu bukan agile — itu <strong>chaos yang minjem nama agile</strong>. Sisi kanan tetap bernilai; dia cuma kalah prioritas saat keduanya bentrok.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 DUA BELAS PRINSIP ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">06</div>
+        <div class="ctitle">
+          <div class="kicker">Isi Manifesto · Bagian 2</div>
+          <h2>12 prinsip: nilai yang diturunkan jadi perilaku</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Empat nilai itu kompasnya; dua belas prinsip ini <strong>petunjuk jalannya</strong>. Klik tiap pill buat lihat maksudnya + wujud kongkretnya sehari-hari.</p>
+
+      <div class="pills reveal d1">
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-1"><b>1</b> · puaskan customer, delivery dini &amp; kontinu <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-1" role="region" aria-label="prinsip 1">
+            <span class="pop__def">Prioritas tertinggi = customer puas lewat <b>delivery software berharga, sedini dan sesering mungkin</b>.</span>
+            <span class="pop__ex"><span class="pop__bad">"Rilis besar tahun depan"</span><span class="pop__good">Increment tiap sprint yang bisa dipakai</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-2"><b>2</b> · sambut perubahan, walau telat <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-2" role="region" aria-label="prinsip 2">
+            <span class="pop__def">Perubahan requirement diterima <b>bahkan di akhir development</b> — perubahan = senjata kompetitif customer, bukan gangguan.</span>
+            <span class="pop__ex"><span class="pop__bad">"Change request? Ajukan CR form, dibahas kuartal depan"</span><span class="pop__good">"Oke, masuk backlog, diprioritaskan planning berikutnya"</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-3"><b>3</b> · rilis sering, siklus pendek <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-3" role="region" aria-label="prinsip 3">
+            <span class="pop__def">Deliver software jalan tiap <b>beberapa minggu</b>, bukan beberapa bulan. Makin pendek makin baik.</span>
+            <span class="pop__ex"><span class="pop__bad">Integrasi big-bang jelang deadline</span><span class="pop__good">Sprint 1–2 minggu, tiap sprint ada increment</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-4"><b>4</b> · bisnis &amp; dev kerja bareng harian <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-4" role="region" aria-label="prinsip 4">
+            <span class="pop__def">Orang bisnis dan developer <b>kerja bersama tiap hari</b> sepanjang proyek — bukan serah terima dokumen.</span>
+            <span class="pop__ex"><span class="pop__bad">Requirement dilempar lewat dokumen, dev nebak-nebak</span><span class="pop__good">PO available buat ditanya kapan pun</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-5"><b>5</b> · percayai orang yang termotivasi <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-5" role="region" aria-label="prinsip 5">
+            <span class="pop__def">Bangun proyek di sekitar <b>individu termotivasi</b>. Kasih lingkungan &amp; dukungan, lalu <b>percayai</b> mereka menyelesaikannya.</span>
+            <span class="pop__ex"><span class="pop__bad">Micromanage: laporan per jam, approval per baris</span><span class="pop__good">Kasih goal, tim yang menentukan caranya</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-6"><b>6</b> · ngobrol langsung paling efisien <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-6" role="region" aria-label="prinsip 6">
+            <span class="pop__def">Cara paling efisien menyalurkan informasi ke &amp; dalam tim = <b>percakapan tatap muka</b> (2001 belum ada huddle/call — semangatnya: kanal ter-kaya yang tersedia).</span>
+            <span class="pop__ex"><span class="pop__bad">Debat 40 komentar di thread</span><span class="pop__good">"Call 5 menit yuk" → beres</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-7"><b>7</b> · working software = ukuran progress <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-7" role="region" aria-label="prinsip 7">
+            <span class="pop__def"><b>Software yang jalan</b> adalah ukuran kemajuan utama. Bukan dokumen, bukan persentase Gantt, bukan jumlah commit.</span>
+            <span class="pop__ex"><span class="pop__bad">"Progress 80%" (di slide)</span><span class="pop__good">"Fitur X udah bisa dicoba di staging"</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-8"><b>8</b> · sustainable pace <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-8" role="region" aria-label="prinsip 8">
+            <span class="pop__def">Sponsor, developer, dan user harus bisa mempertahankan <b>kecepatan konstan tanpa batas waktu</b>. Marathon, bukan sprint lari 100m (ironis ya istilah "sprint").</span>
+            <span class="pop__ex"><span class="pop__bad">Crunch &amp; lembur permanen → burnout → bug</span><span class="pop__good">Ritme stabil yang bisa dijaga bertahun-tahun</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-9"><b>9</b> · technical excellence mempercepat <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-9" role="region" aria-label="prinsip 9">
+            <span class="pop__def">Perhatian terus-menerus pada <b>keunggulan teknis &amp; desain yang baik</b> justru <b>meningkatkan</b> kelincahan. Kode jorok = makin lama makin lambat.</span>
+            <span class="pop__ex"><span class="pop__bad">"Nggak sempet refactor, kejar target"</span><span class="pop__good">Clean code + test = bisa berubah arah dengan cepat</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-10"><b>10</b> · simplicity — maksimalkan yang TIDAK dikerjakan <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-10" role="region" aria-label="prinsip 10">
+            <span class="pop__def">Simplicity = seni <b>memaksimalkan jumlah pekerjaan yang tidak dilakukan</b>. Fitur yang nggak dibangun = nol bug, nol maintenance.</span>
+            <span class="pop__ex"><span class="pop__bad">"Sekalian bikin generic biar future-proof"</span><span class="pop__good">YAGNI: bangun yang dibutuhkan sekarang saja</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-11"><b>11</b> · arsitektur terbaik itu emergent <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-11" role="region" aria-label="prinsip 11">
+            <span class="pop__def">Arsitektur, requirement, dan desain terbaik muncul dari <b>tim yang self-organizing</b> — bukan diturunkan utuh dari menara gading arsitek.</span>
+            <span class="pop__ex"><span class="pop__bad">Desain lengkap dibekukan sebelum baris pertama</span><span class="pop__good">Arsitektur berevolusi seiring pemahaman bertambah</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-06-12"><b>12</b> · refleksi berkala → tuning <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-06-12" role="region" aria-label="prinsip 12">
+            <span class="pop__def">Secara berkala, tim <b>merefleksikan</b> cara jadi lebih efektif, lalu <b>menyetel perilakunya</b>. Inilah akar retrospective.</span>
+            <span class="pop__ex"><span class="pop__bad">Proses beku bertahun-tahun "karena udah gitu dari dulu"</span><span class="pop__good">Retro tiap sprint → satu perbaikan konkret</span></span>
+          </span>
+        </span>
+      </div>
+
+      <p class="body reveal d2">Kalau diperas, dua belas prinsip ini muter di tiga tema: <strong>deliver cepat &amp; sering</strong> (1, 3, 7), <strong>manusia &amp; kolaborasi</strong> (4, 5, 6, 8, 11, 12), dan <strong>kualitas teknis &amp; kesederhanaan</strong> (2, 9, 10). Perhatikan tema ketiga — orang sering lupa bahwa manifesto secara eksplisit bilang <em>kelincahan itu ditopang keunggulan teknis</em>. Agile tanpa disiplin engineering itu cuma cara lebih cepat untuk menumpuk sampah.</p>
+    </div>
+  </section>
+
+  <!-- ============ 07 SCRUM ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">07</div>
+        <div class="ctitle">
+          <div class="kicker">Tipe Agile · Scrum</div>
+          <h2>Scrum: kerangka kerja, bukan metode lengkap</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Scrum (Sutherland &amp; Schwaber) adalah anggota keluarga agile yang paling populer. Fondasinya <strong>empirisme</strong> — tiga pilar: <strong>transparency</strong> (semua kelihatan), <strong>inspection</strong> (sering dicek), <strong>adaptation</strong> (langsung disesuaikan). Scrum sengaja minimalis: dia mendefinisikan <em>rangka</em>, bukan cara ngoding.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Scrum itu kayak <em>denah dapur restoran</em> plus ritme service-nya: ada yang pegang menu (PO), ada head chef yang jaga kelancaran dapur (Scrum Master), ada koki-koki (Developers), dan ada ritme — briefing sebelum buka, service, evaluasi setelah tutup. Tapi denah dapur <em>nggak ngajarin masak</em>. Resep dan teknik masaknya kamu bawa sendiri — biasanya dari XP.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 38a14 14 0 0 1 28 0z"/><circle cx="24" cy="16" r="6"/><path d="M6 38h36"/></svg></div>
+      </div>
+
+      <div class="editor good solo reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">scrum-in-one-screen.txt</span><span class="editor__verdict">FRAMEWORK</span></div>
+<pre class="code"><span class="c">// 3 peran (accountability)</span>
+<span class="t">Product Owner</span>   <span class="c">→ maksimalkan nilai produk; satu-satunya yang urutkan backlog</span>
+<span class="t">Scrum Master</span>    <span class="c">→ jaga Scrum-nya jalan; singkirkan hambatan; BUKAN atasan tim</span>
+<span class="t">Developers</span>      <span class="c">→ semua yang membangun increment (dev, QA, dst — satu tim)</span>
+
+<span class="c">// 5 event — semuanya timebox</span>
+<span class="f">Sprint</span>            <span class="c">→ wadahnya semua; 1–4 minggu, panjang konsisten</span>
+<span class="f">Sprint Planning</span>   <span class="c">→ "apa yang bisa & bagaimana" + Sprint Goal</span>
+<span class="f">Daily Scrum</span>       <span class="c">→ ≤15 menit; sinkronisasi TIM, bukan laporan ke bos</span>
+<span class="f">Sprint Review</span>     <span class="c">→ demo increment ke stakeholder → feedback → backlog</span>
+<span class="f">Retrospective</span>     <span class="c">→ inspeksi CARA KERJA; keluar bawa perbaikan konkret</span>
+
+<span class="c">// 3 artefak + komitmennya</span>
+<span class="t">Product Backlog</span>  + <span class="s">Product Goal</span>       <span class="c">→ daftar terurut semua keinginan</span>
+<span class="t">Sprint Backlog</span>   + <span class="s">Sprint Goal</span>        <span class="c">→ rencana sprint milik Developers</span>
+<span class="t">Increment</span>        + <span class="s">Definition of Done</span> <span class="c">→ hasil jadi yang BENERAN done</span></pre>
+      </div>
+
+      <p class="body reveal d2">Dua hal yang paling sering disalahpahami: <strong>Daily Scrum bukan status report</strong> — itu tim menyinkronkan diri untuk mencapai Sprint Goal, bukan setor muka ke manajer. Dan <strong>Definition of Done bukan formalitas</strong> — increment yang "done tapi belum ditest" itu bukan done, itu bohong yang dijadwalkan meledak nanti.</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di tim kita</div>
+          <p>Cara kerja kita berbasis Scrum: sprint dengan tiket <code>ISP-XXX</code> di Jira, sprint planning (lihat <code>docs/sprint-planning-*.html</code>), dan alur cerita → kode di <code>docs/scrum-to-code-workflow.md</code>. Definition of Done kita dibuat eksplisit dan otomatis: unit + integration test hijau, JaCoCo ≥ 87%, Sonar 0 issue, ArchUnit lulus. DoD yang di-enforce mesin nggak bisa dinego pas kepepet deadline — dan itu justru poinnya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 XP ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">08</div>
+        <div class="ctitle">
+          <div class="kicker">Tipe Agile · Extreme Programming</div>
+          <h2>XP: sisi engineering-nya agile</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Kalau Scrum ngatur <em>ritme dan peran</em>, XP (Kent Beck) ngatur <em>cara nulis kodenya</em>. Filosofinya: ambil praktik yang terbukti bagus, lalu <strong>lakukan se-ekstrem mungkin</strong>. Code review bagus? Review terus-menerus → <strong>pair programming</strong>. Testing bagus? Test duluan sebelum kode → <strong>TDD</strong>. Integrasi bagus? Integrasikan berkali-kali sehari → <strong>continuous integration</strong>.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>XP itu kayak latihan atlet profesional: bukan olahraga sekali seminggu yang berat, tapi <em>latihan kecil setiap hari</em> dengan form yang benar. Justru karena tiap gerakan dicek terus (test, pair, CI), atlet XP berani angkat beban yang lebih berat — refactor besar, ganti arah — tanpa cedera.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 24h20M10 18v12M38 18v12M6 21v6M42 21v6"/></svg></div>
+      </div>
+
+      <div class="pills reveal d1">
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-1"><b>TDD</b> · test-first <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-1" role="region" aria-label="TDD">
+            <span class="pop__def">Tulis test yang <b>gagal</b> dulu → tulis kode minimal biar lulus → refactor. Red–Green–Refactor. Test = spesifikasi yang bisa dieksekusi.</span>
+            <span class="pop__ex"><span class="pop__bad">Kode dulu, test nanti (= test nggak pernah)</span><span class="pop__good">Test gagal → implement → hijau → rapikan</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-2"><b>pair programming</b> <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-2" role="region" aria-label="pair programming">
+            <span class="pop__def">Dua orang satu masalah: satu nyetir, satu navigasi. Review kode <b>real-time</b> + transfer ilmu gratis.</span>
+            <span class="pop__ex"><span class="pop__bad">Review 2000 baris setelah semuanya jadi</span><span class="pop__good">Kesalahan ketangkep saat diketik</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-3"><b>continuous integration</b> <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-3" role="region" aria-label="CI">
+            <span class="pop__def">Integrasikan kerjaan ke mainline <b>beberapa kali sehari</b>; build + test otomatis tiap integrasi. Konflik kecil tiap hari &lt; konflik raksasa tiap bulan.</span>
+            <span class="pop__ex"><span class="pop__bad">Branch hidup 3 minggu → merge horor</span><span class="pop__good">Integrasi kecil, sering, selalu hijau</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-4"><b>refactoring</b> kontinu <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-4" role="region" aria-label="refactoring">
+            <span class="pop__def">Perbaiki desain <b>terus-menerus dalam langkah kecil</b>, dilindungi test. Bukan proyek "refactor besar" setahun sekali.</span>
+            <span class="pop__ex"><span class="pop__bad">"Nanti aja rapihinnya" (= tidak pernah)</span><span class="pop__good">Boy Scout Rule tiap kali mampir</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-5"><b>simple design</b> · YAGNI <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-5" role="region" aria-label="simple design">
+            <span class="pop__def">Desain paling sederhana yang <b>lulus semua test hari ini</b>. "You Aren't Gonna Need It" — jangan bangun buat kebutuhan imajiner.</span>
+            <span class="pop__ex"><span class="pop__bad">AbstractFactoryProvider buat 1 implementasi</span><span class="pop__good">Kelas konkret; abstraksi saat konsumen ke-2 datang</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-6"><b>collective ownership</b> <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-6" role="region" aria-label="collective ownership">
+            <span class="pop__def">Semua kode milik <b>tim</b>, bukan individu. Siapa pun boleh memperbaiki bagian mana pun. Nggak ada "itu file-nya si X, jangan disentuh".</span>
+            <span class="pop__ex"><span class="pop__bad">Bus factor = 1 orang per modul</span><span class="pop__good">Semua orang berani menyentuh semua modul</span></span>
+          </span>
+        </span>
+        <span class="pill-wrap">
+          <button class="pill" aria-expanded="false" aria-controls="pop-08-7"><b>small releases</b> + on-site customer <span class="caret" aria-hidden="true">▸</span></button>
+          <span class="pop" id="pop-08-7" role="region" aria-label="small releases">
+            <span class="pop__def">Rilis kecil dan sering ke user nyata, dengan <b>customer selalu terjangkau</b> untuk ditanya. Feedback loop terpendek yang mungkin.</span>
+            <span class="pop__ex"><span class="pop__bad">Rilis raksasa tiap 6 bulan</span><span class="pop__good">Rilis kecil, bisa di-rollback, sering</span></span>
+          </span>
+        </span>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> "Berarti XP nggak punya event kayak Scrum?"</div>
+          <p>Punya, kok — ini salah kaprah yang umum. XP punya <strong>Planning Game</strong> (setara sprint planning: customer pilih story berdasar nilai bisnis, developer yang estimasi), <strong>iterasi 1–3 minggu</strong> (di XP edisi kedua: <em>weekly cycle</em> + <em>quarterly cycle</em>), dan <strong>daily stand-up</strong> — yes, standup bukan monopoli Scrum. Bedanya di status: di Scrum, event itu warga kelas satu (Scrum <em>didefinisikan</em> sebagai 3 peran + 5 event + 3 artefak); di XP, ritme cuma beberapa dari sekian praktik, setara dengan TDD atau pair programming. Makanya di dunia nyata keduanya dikawinkan: <strong>ritme diambil dari Scrum, disiplin engineering dari XP</strong>. Bonus sejarah: retrospective pun awalnya nggak formal di keduanya — dipopulerkan Norm Kerth (<em>Project Retrospectives</em>, 2001), baru diserap Scrum jadi event resmi.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Nilai-nilai XP: <strong>communication, simplicity, feedback, courage, respect</strong>. Yang menarik itu <em>courage</em> — keberanian ngerombak kode, bilang "ini harus ditulis ulang", atau hapus fitur. Tapi keberanian XP bukan nekat: dia <strong>dibeli</strong> pakai test suite yang tebal. Makin bagus jaring pengamanmu, makin tinggi kamu berani akrobat. Warisan XP ada di mana-mana: JUnit, praktik CI/CD, dan budaya refactoring modern semuanya keturunan langsung XP — banyak tim "Scrum" yang sebenarnya hidup dari praktik XP tanpa sadar.</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Di tim kita</div>
+          <p>Repo ini praktis lab XP: <strong>TDD wajib</strong> (CLAUDE.md §14), <strong>CI dengan gate</strong> (JaCoCo ≥ 87%, Sonar 0 issue — gate yang gagal berarti fix test-nya, bukan turunkan threshold), <strong>refactoring kontinu</strong> lewat <code>refactoring-workflow-rules.md</code>, dan <strong>simple design/YAGNI</strong> yang sampai dilarang eksplisit di §9: "jangan ekstrak abstraction untuk 1 occurrence".</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 LEAN & KANBAN ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">09</div>
+        <div class="ctitle">
+          <div class="kicker">Tipe Agile · Lean &amp; Kanban</div>
+          <h2>Lean &amp; Kanban: pinjaman dari pabrik Toyota</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Cabang ini datang bukan dari software, tapi dari lantai pabrik. <strong>Toyota Production System</strong> (Taiichi Ohno, pasca-PD II) mengejar satu musuh: <strong>muda</strong> — pemborosan. <strong>Mary &amp; Tom Poppendieck</strong> menerjemahkannya ke software (<em>Lean Software Development</em>, 2003), dan <strong>David J. Anderson</strong> meraciknya jadi <strong>Kanban Method</strong> (2010).</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Bedanya push vs pull itu kayak warteg vs restoran à la carte. Warteg <em>push</em>: masak banyak di pagi hari, berdoa laku — sisa = basi = rugi. À la carte <em>pull</em>: masak saat dipesan — nggak ada makanan basi, tapi dapurnya harus <em>cepat dan lancar</em>. Lean/Kanban adalah ilmu bikin dapur pull yang lancar: batasi pesanan yang digarap bersamaan, dan makanan sampai lebih cepat.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="10" width="10" height="28" rx="2"/><rect x="19" y="10" width="10" height="28" rx="2"/><rect x="32" y="10" width="10" height="28" rx="2"/><path d="M9 16h4M9 21h4M22 16h4M35 16h4M35 21h4M35 26h4"/></svg></div>
+      </div>
+
+      <p class="body reveal d1">Tujuh prinsip Lean versi Poppendieck: <strong>eliminate waste</strong> (fitur tak terpakai, tunggu-menunggu, handoff, rework — semuanya waste), <strong>amplify learning</strong>, <strong>decide as late as possible</strong> (keputusan di momen paling banyak informasi), <strong>deliver as fast as possible</strong>, <strong>empower the team</strong>, <strong>build integrity in</strong> (kualitas dibangun sejak awal, bukan diinspeksi belakangan), dan <strong>see the whole</strong> (optimasi sistem, bukan bagian — QA super cepat nggak ada gunanya kalau antrian deploy seminggu).</p>
+
+      <div class="editor good solo reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">kanban-board.txt — WIP limit sedang bekerja</span><span class="editor__verdict">PULL SYSTEM</span></div>
+<pre class="code"><span class="t">BACKLOG</span>      <span class="t">IN PROGRESS (max 3)</span>   <span class="t">REVIEW (max 2)</span>   <span class="t">DONE</span>
+────────     ───────────────────    ──────────────   ──────
+ISP-231      ISP-227 ██            ISP-224 ██        ISP-220 ✓
+ISP-232      ISP-228 ██            ISP-225 ██        ISP-221 ✓
+ISP-233      ISP-229 ██                              ISP-222 ✓
+ISP-234      <span class="hl-bad">ISP-230 ✕ DITOLAK — kolom penuh!</span>
+             <span class="c">// mau narik kerjaan baru? SELESAIKAN dulu yang ada.</span>
+             <span class="c">// "Stop starting, start finishing."</span></pre>
+      </div>
+
+      <p class="body reveal d2">Kanban Method-nya Anderson cuma minta tiga hal untuk mulai: <strong>visualisasikan alur kerja</strong> (semua kerjaan jadi kartu di papan — kerjaan gaib jadi kelihatan), <strong>batasi WIP</strong> (work in progress — inilah jantungnya: multitasking itu waste, konteks-switching itu waste), dan <strong>kelola aliran</strong> (ukur lead time, cari bottleneck, perbaiki). Nggak ada sprint, nggak ada peran baru — makanya Kanban populer buat tim ops/support yang kerjaannya datang terus-menerus dan nggak bisa dipotong jadi sprint. Banyak tim memakai hibrida "Scrumban": ritme Scrum + WIP limit Kanban.</p>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Kapan pilih yang mana</div>
+          <p>Kasarnya: kerjaan <strong>bisa direncanakan per-batch</strong> (fitur produk) → Scrum enak, ada ritme dan goal. Kerjaan <strong>mengalir tak terduga</strong> (ops, support, bugfix) → Kanban enak, nggak ada sprint yang "diganggu". Dan Lean adalah <em>kacamata</em> yang berguna di keduanya: di mana pun ada antrian, tunggu-menunggu, dan handoff — di situ ada waste buat dibuang.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 KELUARGA LAIN ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">10</div>
+        <div class="ctitle">
+          <div class="kicker">Tipe Agile · Keluarga Besar</div>
+          <h2>Anggota keluarga lain (dan urusan scaling)</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Scrum, XP, dan Lean/Kanban itu tiga pilar utamanya — tapi keluarganya lebih besar. Masing-masing lahir dari konteks berbeda, dan justru <strong>konteksnya</strong> itu pelajaran pentingnya.</p>
+
+      <div class="smells reveal d1">
+        <div class="smell"><div class="code-id">CRYSTAL · Alistair Cockburn</div><h4>Metode harus seukuran timnya</h4><p>Keluarga metode berkode warna: Crystal Clear (≤8 orang, super ringan) sampai Crystal Red (tim besar, lebih formal). Insight-nya abadi: proses untuk tim 6 orang dan 60 orang TIDAK boleh sama.</p></div>
+        <div class="smell"><div class="code-id">FDD · De Luca &amp; Coad</div><h4>Feature-Driven Development</h4><p>Iterasi pendek berbasis daftar fitur bernilai bisnis, dengan pemodelan objek di depan. Cocok untuk tim besar yang butuh struktur lebih dari XP.</p></div>
+        <div class="smell"><div class="code-id">DSDM · konsorsium UK</div><h4>Timebox + MoSCoW</h4><p>Waktu &amp; budget dikunci, scope yang dinego (kebalikan waterfall!). Prioritas Must/Should/Could/Won't. Nenek moyang agile "enterprise-friendly".</p></div>
+        <div class="smell"><div class="code-id">SCALING · SAFe / LeSS / Nexus</div><h4>Agile banyak tim</h4><p>Framework untuk mengkoordinasikan puluhan tim: SAFe (paling lengkap, paling birokratis — sering dikritik "waterfall berkostum agile"), LeSS (Scrum diperbesar minimalis), Nexus. Pakai seperlunya, jangan diborong.</p></div>
+        <div class="smell"><div class="code-id">"SPOTIFY MODEL"</div><h4>Squad, tribe, chapter, guild</h4><p>Snapshot budaya Spotify ±2012 yang viral. Bahkan Spotify sendiri bilang: itu bukan framework dan mereka sudah tidak kerja persis begitu. Pelajaran sesungguhnya: budaya &gt; struktur.</p></div>
+        <div class="smell"><div class="code-id">TURUNAN MODERN</div><h4>DevOps &amp; Continuous Delivery</h4><p>Perpanjangan logis agile sampai ke produksi: kalau increment harus sampai ke user secepatnya, maka deploy harus otomatis, sering, dan membosankan. CI/CD adalah XP yang menua dengan sukses.</p></div>
+      </div>
+
+      <p class="body reveal d2">Cara milihnya bukan "framework mana yang paling bagus", tapi <strong>"konteks kami seperti apa"</strong>: ukuran tim, jenis aliran kerja (batch vs kontinu), seberapa dekat customer bisa dilibatkan, seberapa berat kebutuhan compliance. Lalu — dan ini kuncinya — <strong>mulai dari yang standar, baru adaptasi lewat retro</strong>. Tim yang memodifikasi Scrum sebelum pernah menjalankannya dengan benar biasanya bukan sedang beradaptasi; mereka sedang menghindari bagian yang nggak nyaman.</p>
+    </div>
+  </section>
+
+  <!-- ============ 11 SALAH KAPRAH ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">11</div>
+        <div class="ctitle">
+          <div class="kicker">Peringatan · Cargo Cult</div>
+          <h2>"Agile" yang bukan agile</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Dua puluh tahun setelah Snowbird, kata "agile" udah jadi industri sendiri — sertifikasi, konsultan, tooling. Dan bersamaan dengan itu muncul <strong>cargo cult agile</strong>: menjalankan ritualnya, kehilangan jiwanya. Bahkan beberapa penandatangan manifesto sendiri (Fowler menyebutnya <em>"Agile Industrial Complex"</em>) udah menyuarakan hal ini.</p>
+
+      <div class="analogy reveal d1">
+        <div class="analogy__body">
+          <span class="tag">Analogi</span>
+          <p>Istilah <em>cargo cult</em> datang dari kisah pasca-PD II: penduduk pulau Pasifik membangun landasan dan menara bambu tiruan, berharap pesawat kargo berisi barang datang lagi — meniru <em>bentuk</em>, tanpa memahami <em>sebab</em>. Tim yang standup tiap pagi tapi feedback user tetap 6 bulan sekali sedang membangun menara bambu itu.</p>
+        </div>
+        <div class="analogy__icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8v6M24 14l-14 24h28zM17 26h14M13 32h22"/></svg></div>
+      </div>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="bad-h">Gejala cargo cult / "Dark Scrum"</h4>
+          <ul class="bad-l">
+            <li>Daily standup = <b>laporan ke manajer</b>, semua orang takut</li>
+            <li>Sprint = alat pecut: commitment dipaksakan, velocity jadi target &amp; senjata</li>
+            <li>"Kita agile, jadi nggak butuh dokumentasi/desain/rencana"</li>
+            <li>Retro ada, tapi hasilnya <b>nggak pernah dieksekusi</b></li>
+            <li>Waterfall diam-diam: "sprint desain" → "sprint koding" → "sprint testing"</li>
+            <li>Adopsi framework scaling raksasa buat masalah yang belum ada</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Tanda agile yang hidup</h4>
+          <ul class="good-l">
+            <li>Increment nyata sampai ke user <b>tiap beberapa minggu</b></li>
+            <li>Rencana berubah saat fakta berubah — dan itu <b>dirayakan</b></li>
+            <li>Tim berani bilang "nggak muat" dan "kami salah"</li>
+            <li>Retro menghasilkan <b>satu perubahan konkret</b> yang beneran jalan</li>
+            <li>Kualitas teknis nggak dinego pas deadline mepet</li>
+            <li>Proses <b>makin sederhana</b> dari waktu ke waktu, bukan makin ritualistik</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Tes lakmus paling sederhana kembali ke prinsip #1 dan #7: <strong>seberapa sering software yang jalan sampai ke tangan user, dan seberapa cepat feedback-nya mengubah apa yang kamu kerjakan?</strong> Kalau jawabannya "jarang dan nggak", maka nggak peduli sebanyak apa ceremony-nya — itu waterfall yang meeting-nya lebih banyak. Kalau jawabannya "sering dan cepat", kamu agile — bahkan seandainya nggak ada satu pun istilah Scrum yang dipakai.</p>
+    </div>
+  </section>
+
+  <!-- ============ 12 PENUTUP ============ -->
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="cnum">12</div>
+        <div class="ctitle">
+          <div class="kicker">Penutup · Kesimpulan</div>
+          <h2>Agile itu kata sifat, bukan kata benda</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Satu kalimat rangkuman seluruh cerita ini: <strong>perpendek jarak antara membangun dan belajar.</strong> Waterfall gagal karena jaraknya dua tahun. Semua metode agile — apa pun namanya — cuma cara berbeda memperpendek jarak itu jadi dua minggu, dua hari, dua jam.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li>Waterfall runtuh karena <b>feedback ditaruh paling akhir</b> — bukan karena orangnya bodoh.</li>
+          <li>Royce (1970) sudah memperingatkan; industri butuh <b>30 tahun</b> buat mendengarkan.</li>
+          <li>Manifesto (2001) = <b>4 nilai + 12 prinsip</b>: kompas, bukan peta. "Over" ≠ "instead of".</li>
+          <li><b>Scrum</b> ngasih rangka &amp; ritme · <b>XP</b> ngasih disiplin engineering · <b>Lean/Kanban</b> ngasih ilmu aliran.</li>
+          <li>Ketiganya <b>saling melengkapi</b>, bukan saling menggantikan — tim terbaik meracik ketiganya.</li>
+          <li>Kelincahan <b>ditopang keunggulan teknis</b> — agile tanpa test &amp; clean code = kekacauan bersertifikat.</li>
+          <li>Ukurannya bukan ceremony, tapi: <b>seberapa cepat user memakai barangnya &amp; feedback mengubah arah.</b></li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Agile → cara kerja tim kita</h3>
+        <p>Materi ini bukan teori jauh — hampir tiap bab punya wujud kongkret di workflow kita sehari-hari:</p>
+        <div class="map">
+          <div><b>Scrum</b><span>Sprint + tiket ISP · scrum-to-code-workflow.md</span></div>
+          <div><b>Backlog → kode</b><span>User story → UC → plan (docs/usecases, docs/plans)</span></div>
+          <div><b>XP: TDD</b><span>Wajib · CLAUDE.md §14 + testing-rules</span></div>
+          <div><b>XP: CI + DoD</b><span>JaCoCo ≥ 87% · Sonar 0 issue · ArchUnit</span></div>
+          <div><b>XP: refactoring</b><span>refactoring-workflow-rules.md</span></div>
+          <div><b>Simple design</b><span>YAGNI &gt; DRY · design-principles-rules.md</span></div>
+          <div><b>Small releases</b><span>release.sh · tag-driven SemVer (Pattern A')</span></div>
+          <div><b>Prinsip #12: retro</b><span>Rules &amp; workflow kita sendiri terus dituning</span></div>
+        </div>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:34px; font-family:var(--mono); color:var(--brass); font-size:15px;">
+        // "Agility is not about doing Agile. It's about being able to change your mind cheaply." — parafrase semangat Snowbird
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Dari Waterfall ke Agile</b> · sejarah &amp; peta metode buat tim wallet-infrastructure · lanjutan yang pas setelah ini: <b>docs/learning/clean-code</b> (disiplin teknisnya) · mau pindah slide? pakai <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  // reveal on scroll
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) e.target.classList.add("in");
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  // active section + progress + counter
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  // keyboard navigation
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+
+  // pill popovers — definisi + contoh inline, tetap satu file
+  var pills = Array.prototype.slice.call(document.querySelectorAll("button.pill"));
+  function closePops(except) {
+    pills.forEach(function (b) {
+      if (b === except) return;
+      b.setAttribute("aria-expanded", "false");
+      var p = document.getElementById(b.getAttribute("aria-controls"));
+      if (p) p.classList.remove("open");
+    });
+  }
+  pills.forEach(function (b) {
+    b.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      var isOpen = b.getAttribute("aria-expanded") === "true";
+      closePops(b);
+      b.setAttribute("aria-expanded", isOpen ? "false" : "true");
+      var p = document.getElementById(b.getAttribute("aria-controls"));
+      if (p) {
+        p.classList.remove("pop--right");
+        p.classList.toggle("open", !isOpen);
+        if (!isOpen) {
+          var r = p.getBoundingClientRect();
+          if (r.right > window.innerWidth - 8) p.classList.add("pop--right");
+        }
+      }
+    });
+  });
+  // klik di dalam popover tidak menutupnya (mis. seleksi teks)
+  document.querySelectorAll(".pop").forEach(function (p) {
+    p.addEventListener("click", function (ev) { ev.stopPropagation(); });
+  });
+  document.addEventListener("click", function () { closePops(null); });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape") closePops(null);
+  });
+})();
+</script>
+</body>
+</html>

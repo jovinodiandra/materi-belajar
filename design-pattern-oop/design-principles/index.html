@@ -1,0 +1,1958 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code in the Wild — A Field Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  :root {
+    --paper:#f2efe4; --paper-2:#fbf9f1; --card:#fbf9f1;
+    --grid: rgba(80,110,70,.05);
+    --ink:#2a2a24; --ink-soft:#56564a; --muted:#8a8a78;
+    --line:#ddd7c6; --line-soft:#e8e3d4;
+    --green:#3f7d5a; --green-dim:#2c5b40; --green-bg:rgba(63,125,90,.09);
+    --amber:#bd6f23; --amber-bg:rgba(189,111,35,.10);
+    --red:#c23b2e; --red-bg:rgba(194,59,46,.09);
+    --violet:#6a52c4; --violet-bg:rgba(106,82,196,.10);
+    --chip-bg:rgba(63,125,90,.10);
+    /* syntax (light) */
+    --k:#cf222e; --t:#0a7ea4; --s:#0a3069; --c:#6e7781; --n:#0550ae; --f:#8250df; --a:#116329;
+    --bar-bg:rgba(251,249,241,.9); --rail-bg:rgba(251,249,241,.55);
+
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --mono: "SF Mono",Consolas,"Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --rail-w: 262px; --maxw: 1180px;
+  }
+
+  /* ---------- dark theme (forest night) ---------- */
+  [data-theme="dark"] {
+    --paper:#141a15; --paper-2:#1a221b; --card:#1a221b;
+    --grid: rgba(120,200,140,.06);
+    --ink:#d9ded2; --ink-soft:#aab0a2; --muted:#7d8478;
+    --line:#2a322a; --line-soft:#222a22;
+    --green:#6fc18d; --green-dim:#4f9d6c; --green-bg:rgba(111,193,141,.12);
+    --amber:#e0a155; --amber-bg:rgba(224,161,85,.13);
+    --red:#f0766a; --red-bg:rgba(240,118,106,.13);
+    --violet:#a99bf0; --violet-bg:rgba(169,155,240,.14);
+    --chip-bg:rgba(111,193,141,.15);
+    --k:#ff7b72; --t:#4ec9b0; --s:#9ecbff; --c:#8b949e; --n:#f0a868; --f:#d2a8ff; --a:#7ee787;
+    --bar-bg:rgba(18,23,18,.9); --rail-bg:rgba(18,23,18,.5);
+  }
+
+  body {
+    background-color: var(--paper);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 30px 30px;
+    color: var(--ink); font-family: var(--sans); line-height: 1.65; font-size: 17px;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar { position: fixed; top:0; left:0; right:0; z-index:50; height:46px; background:var(--bar-bg); backdrop-filter: blur(8px); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; padding:0 16px; font-family:var(--mono); font-size:12.5px; }
+  .topbar__dots { display:flex; gap:7px; }
+  .topbar__dots i { width:11px; height:11px; border-radius:50%; display:block; }
+  .topbar__dots i:nth-child(1){ background:#c23b2e; } .topbar__dots i:nth-child(2){ background:#bd6f23; } .topbar__dots i:nth-child(3){ background:#3f7d5a; }
+  .topbar__file { color:var(--muted); letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .topbar__file b { color:var(--ink); font-weight:700; }
+  .topbar__counter { margin-left:auto; color:var(--green); letter-spacing:.12em; white-space:nowrap; font-weight:600; }
+  .progress { position:fixed; top:46px; left:0; height:3px; width:0%; background:var(--green); z-index:51; transition:width .15s linear; }
+  .theme-btn { margin-left:14px; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--ink-soft); cursor:pointer; transition:color .16s,border-color .16s,background .16s; }
+  .theme-btn:hover { color:var(--green); border-color:var(--green); background:var(--green-bg); }
+  .theme-btn svg { display:block; }
+  .theme-btn .ic-sun { display:none; } .theme-btn .ic-moon { display:inline; }
+  [data-theme="dark"] .theme-btn .ic-sun { display:inline; } [data-theme="dark"] .theme-btn .ic-moon { display:none; }
+
+  /* ---------- rail ---------- */
+  .rail { position:fixed; top:46px; left:0; bottom:0; width:var(--rail-w); border-right:1px solid var(--line); background:var(--rail-bg); padding:22px 0 50px; overflow-y:auto; z-index:40; font-family:var(--mono); }
+  .rail__head { font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); padding:0 22px 8px; }
+  .rail__grp { font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--green); padding:15px 22px 5px; }
+  .rail a { display:flex; align-items:baseline; gap:9px; padding:5px 22px; color:var(--ink-soft); text-decoration:none; font-size:12px; border-left:3px solid transparent; transition:color .16s,background .16s,border-color .16s; }
+  .rail a .nq { color:var(--muted); font-size:11px; min-width:22px; }
+  .rail a:hover { color:var(--ink); background:var(--green-bg); }
+  .rail a.active { color:var(--green-dim); border-left-color:var(--green); background:var(--green-bg); font-weight:600; }
+  .rail a.active .nq { color:var(--green); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left:var(--rail-w); }
+  section.chapter { min-height:100vh; padding:92px clamp(22px,5vw,76px) 84px; border-bottom:1px dashed var(--line); scroll-margin-top:46px; display:flex; flex-direction:column; justify-content:center; }
+  .wrap { width:100%; max-width:var(--maxw); margin:0 auto; }
+
+  .reveal { opacity:0; transform:translateY(20px); transition:opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity:1; transform:none; }
+  .reveal.d1{transition-delay:.07s;} .reveal.d2{transition-delay:.14s;} .reveal.d3{transition-delay:.21s;} .reveal.d4{transition-delay:.28s;}
+
+  /* ---------- hero ---------- */
+  .hero .eyebrow { font-family:var(--mono); color:var(--green); font-size:13px; margin-bottom:22px; }
+  .hero h1 { font-weight:800; font-size:clamp(32px,6vw,66px); line-height:1.06; letter-spacing:-.02em; color:var(--ink); max-width:17ch; }
+  .hero h1 .accent { color:var(--green); }
+  .hero .sub { margin-top:26px; max-width:62ch; font-size:19px; color:var(--ink-soft); }
+  .hero .sub b { color:var(--ink); font-weight:700; }
+  .scrollcue { margin-top:46px; font-family:var(--mono); font-size:12.5px; color:var(--muted); letter-spacing:.12em; display:inline-flex; align-items:center; gap:10px; }
+  .scrollcue .arrow { animation:bob 1.6s ease-in-out infinite; color:var(--green); }
+  @keyframes bob { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom:14px; }
+  .chead .kicker { font-family:var(--mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--green); margin-bottom:10px; display:flex; align-items:center; gap:10px; }
+  .chead .kicker::before { content:""; width:18px; height:3px; background:var(--green); border-radius:2px; }
+  .chead h2 { font-weight:800; font-size:clamp(25px,3.8vw,42px); line-height:1.1; letter-spacing:-.015em; color:var(--ink); max-width:24ch; }
+  .lead { font-size:19px; color:var(--ink-soft); max-width:72ch; margin:8px 0; }
+  .lead strong { color:var(--ink); font-weight:700; }
+  p.body { max-width:72ch; margin:13px 0; color:var(--ink-soft); }
+  p.body code, li code, .lead code, .spec__row code, .rule__say code { font-family:var(--mono); font-size:.85em; color:var(--green-dim); background:var(--chip-bg); padding:1px 6px; border-radius:4px; }
+  [data-theme="dark"] p.body code, [data-theme="dark"] li code, [data-theme="dark"] .lead code, [data-theme="dark"] .spec__row code, [data-theme="dark"] .rule__say code { color:var(--green); }
+
+  /* ---------- FIELD RULE card (principles, the good) ---------- */
+  .rule { border:1px solid var(--line); border-left:4px solid var(--green); border-radius:10px; background:var(--green-bg); padding:16px 20px; margin:20px 0; max-width:80ch; }
+  .rule__head { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+  .rule__tag { font-family:var(--mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--green); }
+  .rule__name { font-weight:800; font-size:18px; color:var(--ink); }
+  .rule__say { color:var(--ink); font-size:16.5px; }
+  .rule__say b { color:var(--green-dim); } [data-theme="dark"] .rule__say b { color:var(--green); }
+
+  /* ---------- SPECIMEN card (smells / anti-patterns, the bad) ---------- */
+  .specimen { border:1px solid var(--line); border-radius:11px; background:var(--card); padding:0; margin:20px 0; max-width:80ch; overflow:hidden; box-shadow:0 12px 30px -24px rgba(40,40,30,.4); }
+  .specimen.s-smell  { border-top:4px solid var(--amber); }
+  .specimen.s-design { border-top:4px solid var(--violet); }
+  .specimen.s-anti   { border-top:4px solid var(--red); }
+  .spec__head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:13px 18px 11px; border-bottom:1px solid var(--line-soft); }
+  .spec__name { font-weight:800; font-size:18px; color:var(--ink); }
+  .taxon { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.1em; padding:2px 8px; border-radius:5px; }
+  .taxon.smell  { color:var(--amber);  background:var(--amber-bg);  border:1px solid var(--amber); }
+  .taxon.design { color:var(--violet); background:var(--violet-bg); border:1px solid var(--violet); }
+  .taxon.anti   { color:var(--red);    background:var(--red-bg);    border:1px solid var(--red); }
+  .danger { margin-left:auto; display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:10px; color:var(--muted); }
+  .danger .bars { display:inline-flex; gap:3px; }
+  .danger .bars b { display:inline-block; width:13px; height:8px; border-radius:2px; background:var(--line); }
+  .danger .bars b.on { background:var(--red); }
+  .spec__body { padding:14px 18px 16px; }
+  .spec__row { display:grid; grid-template-columns:96px 1fr; gap:12px; padding:5px 0; font-size:15px; color:var(--ink-soft); }
+  .spec__lbl { font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding-top:3px; }
+  .spec__row.antidote .spec__lbl { color:var(--green); }
+  .spec__row.antidote span:last-child { color:var(--ink); }
+  .spec__row b { color:var(--ink); }
+
+  /* ---------- field note (analogi) ---------- */
+  .fieldnote { font-family:var(--serif); font-style:italic; font-size:15.5px; color:var(--ink-soft); margin:12px 18px 4px; padding-left:14px; border-left:2px solid var(--green); }
+  .rule .fieldnote, .rule__say + .fieldnote { margin:12px 0 2px; }
+
+  /* ---------- code card ---------- */
+  .codecard { border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--card); margin:14px 0 4px; }
+  .specimen .codecard, .rule .codecard { margin:12px 0 2px; border-radius:8px; }
+  .specimen .codecard { margin:12px 18px; }
+  .codecard__bar { display:flex; align-items:center; gap:10px; padding:8px 13px; border-bottom:1px solid var(--line-soft); background:var(--paper-2); font-family:var(--mono); font-size:11.5px; }
+  .codecard__name { color:var(--muted); }
+  .codecard__verdict { margin-left:auto; font-weight:700; letter-spacing:.04em; font-size:11px; }
+  .codecard__verdict.bad { color:var(--red); } .codecard__verdict.good { color:var(--green); }
+  pre.code { font-family:var(--mono); font-size:12.5px; line-height:1.6; padding:14px 16px; overflow-x:auto; color:var(--ink); tab-size:4; white-space:pre; }
+  pre.code::-webkit-scrollbar { height:9px; } pre.code::-webkit-scrollbar-thumb { background:var(--line); border-radius:6px; }
+  .k{color:var(--k);} .t{color:var(--t);} .s{color:var(--s);} .c{color:var(--c);font-style:italic;} .n{color:var(--n);} .f{color:var(--f);} .a{color:var(--a);}
+  .hl-bad { background:var(--red-bg); border-left:2px solid var(--red); display:inline-block; width:100%; }
+  .hl-good { background:var(--green-bg); border-left:2px solid var(--green); display:inline-block; width:100%; }
+
+  /* ---------- taxonomy grid ---------- */
+  .taxo { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:24px 0; }
+  .taxo__cell { border:1px solid var(--line); border-radius:11px; background:var(--card); padding:16px 18px; }
+  .taxo__cell.smell  { border-top:4px solid var(--amber); }
+  .taxo__cell.design { border-top:4px solid var(--violet); }
+  .taxo__cell.anti   { border-top:4px solid var(--red); }
+  .taxo__cell h4 { font-size:16px; color:var(--ink); margin-bottom:6px; }
+  .taxo__cell .lvl { font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .taxo__cell p { font-size:14.5px; color:var(--ink-soft); }
+  .taxo__cell code { font-family:var(--mono); font-size:.85em; color:var(--green-dim); } [data-theme="dark"] .taxo__cell code { color:var(--green); }
+  @media (max-width:900px){ .taxo { grid-template-columns:1fr; } }
+
+  /* ---------- note ---------- */
+  .note { display:flex; gap:15px; margin:22px 0 4px; max-width:80ch; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--paper-2); }
+  .note__spine { flex:none; width:7px; background:var(--green); }
+  .note.warn .note__spine { background:var(--red); }
+  .note__body { padding:14px 18px 16px; }
+  .note__tag { font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--green); margin-bottom:7px; }
+  .note.warn .note__tag { color:var(--red); }
+  .note p { color:var(--ink-soft); font-size:15.5px; max-width:none; }
+
+  /* ---------- closing creed ---------- */
+  .creed { max-width:66ch; }
+  .creed li { list-style:none; font-family:var(--mono); font-size:clamp(14px,1.8vw,16px); color:var(--ink-soft); padding:10px 0 10px 30px; position:relative; border-bottom:1px solid var(--line-soft); }
+  .creed li::before { content:"\2192"; position:absolute; left:0; color:var(--green); }
+  .creed li b { color:var(--ink); }
+
+  footer { margin-left:var(--rail-w); padding:30px clamp(22px,5vw,76px); font-family:var(--mono); font-size:12.5px; color:var(--muted); border-top:1px solid var(--line); }
+  footer b { color:var(--ink-soft); }
+
+  @media (max-width:940px){ :root{ --rail-w:0px; } .rail{ display:none; } .stage,footer{ margin-left:0; } body{ font-size:16px; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; scroll-behavior:auto !important; } .reveal{ opacity:1; transform:none; transition:none; } }
+  a:focus-visible { outline:2px solid var(--green); outline-offset:3px; border-radius:4px; }
+</style>
+<script>
+  (function(){ try { var t = localStorage.getItem('fg-theme'); if(!t) t=(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'; document.documentElement.setAttribute('data-theme', t); } catch(e){} })();
+</script>
+</head>
+<body>
+<a id="__exitbtn" href="../../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/design-principles/<b>code-in-the-wild.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 24</div>
+  <button id="themeToggle" class="theme-btn" type="button" aria-label="Ganti tema terang/gelap" title="Tema terang / gelap">
+    <svg class="ic-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    <svg class="ic-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar isi">
+  <div class="rail__head">// Panduan lapangan</div>
+  <div class="rail__grp">Panduan</div>
+  <a href="#c00"><span class="nq">00</span> Pembuka</a>
+  <a href="#c01"><span class="nq">01</span> Taksonomi</a>
+
+  <div class="rail__grp">Kode Sehat · Struktural</div>
+  <a href="#c01b"><span class="nq">·</span> Kenapa SOLID?</a>
+  <a href="#c02"><span class="nq">02</span> SRP</a>
+  <a href="#c03"><span class="nq">03</span> OCP</a>
+  <a href="#c04"><span class="nq">04</span> LSP</a>
+  <a href="#c05"><span class="nq">05</span> ISP</a>
+  <a href="#c06"><span class="nq">06</span> DIP</a>
+  <a href="#c07"><span class="nq">07</span> DRY · KISS · YAGNI</a>
+  <a href="#c08"><span class="nq">08</span> Composition · Demeter · Cohesion</a>
+
+  <div class="rail__grp">Kode Sehat · Disiplin</div>
+  <a href="#c09"><span class="nq">09</span> Broken Window · Boy Scout</a>
+  <a href="#c10"><span class="nq">10</span> POLA · Separation of Concerns</a>
+
+  <div class="rail__grp">Bestiary · Code Smells</div>
+  <a href="#c11"><span class="nq">11</span> Long Method · Large Class</a>
+  <a href="#c12"><span class="nq">12</span> Long Params · Data Clumps</a>
+  <a href="#c13"><span class="nq">13</span> Duplicated · Feature Envy</a>
+  <a href="#c14"><span class="nq">14</span> Primitive Obsession · Switch</a>
+  <a href="#c15"><span class="nq">15</span> Shotgun Surgery · Message Chains</a>
+  <a href="#c16"><span class="nq">16</span> Speculative Generality · Comments</a>
+
+  <div class="rail__grp">Bestiary · Design Smells</div>
+  <a href="#c17"><span class="nq">17</span> Rotting design</a>
+
+  <div class="rail__grp">Bestiary · Anti-Pattern</div>
+  <a href="#c18"><span class="nq">18</span> God Object · Spaghetti</a>
+  <a href="#c19"><span class="nq">19</span> Golden Hammer · Cargo Cult</a>
+  <a href="#c20"><span class="nq">20</span> Lava Flow · Boat Anchor</a>
+  <a href="#c21"><span class="nq">21</span> Premature Opt · Magic Number</a>
+  <a href="#c22"><span class="nq">22</span> Copy-Paste · Reinvent Wheel</a>
+  <a href="#c23"><span class="nq">23</span> Big Ball of Mud · Poltergeist</a>
+
+  <div class="rail__grp">Tutup</div>
+  <a href="#c24"><span class="nq">24</span> Penutup</a>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Panduan lapangan untuk kode liar — prinsip, smell &amp; anti-pattern</div>
+      <h1 class="reveal d1">Belajar <span class="accent">mengenali</span> kode sehat — dan satwa buas yang memangsanya.</h1>
+      <p class="sub reveal d2">
+        Kode di alam liar penuh "spesies". Yang <b>sehat</b> ngikutin prinsip desain. Yang <b>buas</b> muncul pas prinsip dilanggar:
+        <b>code smell</b> (gejala), <b>design smell</b> (pembusukan struktur), dan <b>anti-pattern</b> (jebakan yang kelihatan masuk akal).
+        Panduan ini ngajarin kamu <b>mengenali</b> tiap spesies — ciri-ciri, habitat, tingkat bahaya — dan <b>penangkal</b>-nya.
+        Tiap entri dikasih contoh kode (Java) dan, kalau pas, sebuah analogi. Bahasa santai.
+      </p>
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--green)">→</b></div>
+    </div>
+  </section>
+
+  <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px clamp(22px,5vw,76px);border-radius:0 10px 10px 0;max-width:70ch">
+    <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+    <p style="margin:5px 0"><b>Given</b> — class/module dibangun tanpa prinsip desain yang jelas: tanggung jawab campur aduk dalam satu class, dependency mengarah sembarangan, antar bagian saling nempel erat.</p>
+    <p style="margin:5px 0"><b>When</b> — requirement berubah atau fitur baru ditambahkan (hal yang pasti terjadi di kode hidup).</p>
+    <p style="margin:5px 0"><b>Then</b> — perubahan kecil merembet ke banyak tempat yang kelihatannya nggak berhubungan, gampang bikin bug baru, dan kode makin takut disentuh (rigidity &amp; fragility).</p>
+    <p style="margin:8px 0 0">→ makanya kita pakai <b>Design Principles (SOLID, DRY, KISS, YAGNI, dkk)</b> — supaya kode gampang berubah tanpa efek domino.</p>
+  </div>
+
+  <!-- ============ 01 TAKSONOMI ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Cara baca panduan ini</div>
+        <h2>Taksonomi: tiga jenis "kode buruk" (dan kenapa beda)</h2>
+      </div>
+      <p class="lead reveal">Orang sering nyampur semua jadi "kode jelek". Padahal "bad design" itu payung; di bawahnya ada tiga kategori yang beda level. Bedain mereka bikin kamu tahu <strong>obatnya apa</strong>.</p>
+
+      <div class="taxo reveal d1">
+        <div class="taxo__cell smell">
+          <div class="lvl">Lokal · gejala</div>
+          <h4>Code Smell</h4>
+          <p>Tanda permukaan di kode—"ada yang nggak beres", belum tentu salah. Obat: <code>refactor</code>. Cth: Long Method, Duplicated Code.</p>
+        </div>
+        <div class="taxo__cell design">
+          <div class="lvl">Struktural · gejala</div>
+          <h4>Design Smell</h4>
+          <p>Pembusukan level desain. Inilah yang <code>SOLID</code> dirancang buat cegah. Cth: Rigidity, Fragility, Opacity.</p>
+        </div>
+        <div class="taxo__cell anti">
+          <div class="lvl">Pola berulang</div>
+          <h4>Anti-Pattern</h4>
+          <p>Solusi yang sering dipakai, kelihatan masuk akal, tapi hasilnya jelek. Punya nama &amp; jalan keluar. Cth: God Object, Golden Hammer.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d2"><strong>Kunci bedanya:</strong> smell itu <em>gejala</em>; anti-pattern itu <em>praktik</em> yang menghasilkan gejala. <code>Duplicated Code</code> (smell) ← <code>Copy-Paste Programming</code> (anti-pattern). Dan <strong>design principles</strong> (SOLID, DRY, …) = panduan positif; dilanggar → muncul smell &amp; anti-pattern.</p>
+
+      <p class="body reveal d2">Tiap satwa buruk di panduan ini disajikan sebagai <strong>kartu spesimen</strong> — begini cara bacanya:</p>
+
+      <div class="specimen s-anti reveal d3">
+        <div class="spec__head">
+          <span class="spec__name">God Object</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Satu class ngurus <b>segalanya</b>—ribuan baris, semua kelas lain nge-<code>import</code> dia.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap perubahan kecil berisiko ngerusak fitur tak terkait; mustahil dites terisolasi; jadi sarang merge conflict—lama-lama nggak ada yang berani nyentuh.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Legacy, deadline mepet, kebiasaan "taruh sini dulu deh".</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">BankSystem.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">BankSystem</span> {              <span class="c">// 2400 baris, ngurus SEMUA</span>
+    <span class="k">void</span> <span class="f">login</span>() { ... }     <span class="k">void</span> <span class="f">calcInterest</span>() { ... }
+    <span class="k">void</span> <span class="f">sendEmail</span>() { ... }  <span class="k">void</span> <span class="f">renderReport</span>() { ... }
+    <span class="k">void</span> <span class="f">backupDb</span>() { ... }   <span class="c">// ...50 method lagi</span>
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>SRP</strong> → pecah per tanggung jawab (Auth, Interest, Mailer, Report).</span></div>
+          <div class="fieldnote">« Pisau Swiss Army 40 fungsi: kelihatan keren, tapi nggak ada satu pun yang benar-benar tajam. »</div>
+        </div>
+      </div>
+
+      <p class="body reveal d3">Kartu hijau <strong>"Aturan Lapangan"</strong> = prinsip (penangkal). Kartu spesimen = satwa buruk, lengkap dengan tag taksonomi &amp; meter bahaya. Ayo mulai dari yang sehat dulu.</p>
+    </div>
+  </section>
+
+  <!-- ============ 01b WHY SOLID ============ -->
+  <section class="chapter" id="c01b">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Struktural · kenapa repot?</div>
+        <h2>Di balik SOLID: software itu mestinya <em>soft</em></h2>
+      </div>
+      <p class="lead reveal">Sebelum hafalin lima huruf SOLID, satu pertanyaan dulu: <strong>kenapa harus?</strong> SOLID itu bukan hukum, bukan tradisi turun-temurun, bukan jaminan. Dia ada buat <strong>satu tujuan praktis.</strong></p>
+
+      <p class="body reveal d1">Kuncinya di namanya: <strong>soft</strong>ware—mestinya gampang diubah, itu nilai jualnya dibanding hardware. Dan kode <em>pasti</em> berubah: requirement geser, bisnis pivot, bug nongol. Biaya terbesar sebuah sistem bukan pas ditulis pertama kali, tapi <strong>semua perubahan setelahnya</strong>—berbulan, bertahun. Kode lebih sering dibaca &amp; diubah daripada ditulis.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Inti</span><span class="rule__name">Buat apa SOLID</span></div>
+        <p class="rule__say">SOLID = sekumpulan heuristik buat <b>ngatur ketergantungan</b> (dependency) antar bagian, biar perubahan tetap <b>murah &amp; lokal</b>: ubah satu hal → cukup sentuh satu tempat, nggak ngerembet ke mana-mana.</p>
+      </div>
+
+      <p class="body reveal d2">Tanpa ngatur dependency, struktur kode pelan-pelan membusuk: sekali ubah, banyak yang ikut rusak (<strong>fragility</strong>); pengen ubah tapi takut nyenggol (<strong>rigidity</strong>). Itu "design smell" yang kita bahas nanti. SOLID = obat pencegahnya—tiap huruf nyasar ke satu cara dependency bikin susah.</p>
+
+      <div class="note warn reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Jujur: ini heuristik, bukan jaminan</div>
+          <p>Kamu bisa patuh SOLID tapi desain tetap jelek; bisa juga "langgar" SOLID dan baik-baik aja buat skrip sekali pakai atau kode kecil yang stabil. Ini panduan, bukan bukti matematis—dan ngikutin tanpa paham = <b>Cargo Cult</b>. Pertanyaan sebenarnya selalu: <em>"apakah ini bikin kode lebih murah diubah, sesuai cara dia bakal berkembang?"</em> Kalau kodenya sekali-buang, SOLID malah bisa overkill (YAGNI).</p>
+        </div>
+      </div>
+
+      <div class="fieldnote reveal d3">« Aturan tata-kota bukan biar kota cakep di foto—tapi biar pas mau nambah jalan atau gedung, kamu nggak perlu ngebongkar separuh kota dulu. »</div>
+
+      <p class="body reveal d3">Jadi tiap prinsip berikutnya, baca dengan satu lensa: <strong>"ini ngurangin biaya perubahan yang mana?"</strong> Jelas manfaatnya buat kode-mu → pakai. Enggak → jangan dipaksa.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 SRP ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Struktural · SOLID — S</div>
+        <h2>Single Responsibility — satu class, satu alasan untuk berubah</h2>
+      </div>
+      <p class="lead reveal">"Satu tanggung jawab" itu diukur dari <strong>alasan untuk berubah</strong>, bukan jumlah baris. Kalau sebuah class berubah karena aturan bisnis <em>dan</em> format database <em>dan</em> tampilan PDF, dia punya tiga alasan—tiga tuan. Pisahkan.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Single Responsibility Principle</span></div>
+        <p class="rule__say">Sebuah class sebaiknya punya <b>satu, dan hanya satu, alasan untuk berubah.</b></p>
+      </div>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">Invoice.java — sebelum &amp; sesudah</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ satu class, tiga alasan berubah (bisnis + DB + presentasi)</span></span>
+<span class="k">class</span> <span class="t">Invoice</span> {
+    <span class="t">BigDecimal</span> <span class="f">total</span>()       { ... }   <span class="c">// aturan bisnis</span>
+    <span class="k">void</span> <span class="f">saveToDatabase</span>()    { ... }   <span class="c">// persistence</span>
+    <span class="t">String</span> <span class="f">renderAsPdf</span>()    { ... }   <span class="c">// presentasi</span>
+}
+
+<span class="hl-good"><span class="c">// ✓ pisah: tiap class satu alasan berubah</span></span>
+<span class="k">class</span> <span class="t">Invoice</span>        { <span class="t">BigDecimal</span> <span class="f">total</span>() { ... } }
+<span class="k">class</span> <span class="t">InvoiceRepository</span> { <span class="k">void</span> <span class="f">save</span>(<span class="t">Invoice</span> inv) { ... } }
+<span class="k">class</span> <span class="t">InvoicePrinter</span>  { <span class="t">String</span> <span class="f">toPdf</span>(<span class="t">Invoice</span> inv) { ... } }</pre>
+      </div>
+
+      <div class="fieldnote reveal d2">« Pisau dapur, talenan, panci—satu alat satu tugas. Kamu nggak motong bawang pakai panci cuma karena "sama-sama di dapur". »</div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Penangkal untuk</div>
+          <p>SRP yang dilanggar bikin <b>God Object</b> (anti-pattern) dan <b>Divergent Change</b> (smell): satu class diutak-atik dari banyak arah, tiap perubahan berisiko nabrak yang lain.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Struktural · SOLID — O</div>
+        <h2>Open/Closed — terbuka buat nambah, tertutup buat ngutak-atik</h2>
+      </div>
+      <p class="lead reveal">Module yang sehat itu bisa <strong>nambah perilaku</strong> tanpa kamu harus ngedit kode yang udah jalan. Caranya: tambahin lewat <em>extension</em>—class atau implementasi baru—bukan dengan ngebongkar class lama yang udah dites dan dipercaya.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Open/Closed Principle</span></div>
+        <p class="rule__say">Entitas software sebaiknya <b>terbuka buat extension, tertutup buat modifikasi</b>. Nambah kasus baru = nambah kode, <b>bukan</b> ngedit yang lama.</p>
+      </div>
+
+      <p class="body reveal d2">Gampang dilihat di kode yang ber-<code>instanceof</code> berderet. Tiap kali ada bentuk baru, kamu kepaksa buka lagi class kalkulator dan nyolok satu cabang <code>if</code> lagi. Itu tanda OCP-nya bocor.</p>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">AreaCalculator.java — sebelum &amp; sesudah</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ tiap Shape baru → buka kalkulator, tambah cabang lagi</span></span>
+<span class="k">class</span> <span class="t">AreaCalculator</span> {
+    <span class="k">double</span> <span class="f">area</span>(<span class="t">Object</span> shape) {
+        <span class="k">if</span> (shape <span class="k">instanceof</span> <span class="t">Circle</span>) {
+            <span class="t">Circle</span> c = (<span class="t">Circle</span>) shape;
+            <span class="k">return</span> <span class="t">Math</span>.<span class="f">PI</span> * c.<span class="f">r</span> * c.<span class="f">r</span>;
+        } <span class="k">else if</span> (shape <span class="k">instanceof</span> <span class="t">Square</span>) {
+            <span class="t">Square</span> s = (<span class="t">Square</span>) shape;
+            <span class="k">return</span> s.<span class="f">side</span> * s.<span class="f">side</span>;
+        }
+        <span class="c">// + Triangle? + Hexagon? → edit lagi di sini</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="t">IllegalArgumentException</span>(<span class="s">"shape?"</span>);
+    }
+}
+
+<span class="hl-good"><span class="c">// ✓ tiap Shape tahu luasnya sendiri; kalkulator nggak disentuh</span></span>
+<span class="k">interface</span> <span class="t">Shape</span> { <span class="k">double</span> <span class="f">area</span>(); }
+
+<span class="k">class</span> <span class="t">Circle</span> <span class="k">implements</span> <span class="t">Shape</span> {
+    <span class="k">double</span> r;
+    <span class="k">public</span> <span class="k">double</span> <span class="f">area</span>() { <span class="k">return</span> <span class="t">Math</span>.<span class="f">PI</span> * r * r; }
+}
+<span class="k">class</span> <span class="t">Square</span> <span class="k">implements</span> <span class="t">Shape</span> {
+    <span class="k">double</span> side;
+    <span class="k">public</span> <span class="k">double</span> <span class="f">area</span>() { <span class="k">return</span> side * side; }
+}
+
+<span class="k">class</span> <span class="t">AreaCalculator</span> {
+    <span class="k">double</span> <span class="f">area</span>(<span class="t">Shape</span> shape) { <span class="k">return</span> shape.<span class="f">area</span>(); }
+}
+<span class="c">// Triangle baru? Bikin class baru. Kalkulator nggak berubah.</span></pre>
+      </div>
+
+      <div class="fieldnote reveal d2">« Stop-kontak di tembok: mau colok kipas, charger, atau lampu baru—tinggal colok. Kamu nggak perlu bongkar instalasi listrik tiap beli alat. »</div>
+
+      <p class="body reveal d3">Inti triknya: titik yang berpotensi berubah disembunyiin di balik <em>abstraksi</em> (di sini <code>interface Shape</code>). Kode klien cuma kenal abstraksinya, jadi varian baru muncul lewat polymorphism—bukan lewat editan di tempat lama.</p>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Penangkal untuk</div>
+          <p>OCP yang dijaga nangkal <b>Shotgun Surgery</b> (smell): satu perubahan kecil nyebar jadi editan di banyak file. Juga <b>Switch-Statement Smell</b>—rentetan <code>if instanceof</code> / <code>switch (type)</code> yang harus dibuka ulang tiap ada kasus baru. Polymorphism bikin keduanya nggak perlu ada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Struktural · SOLID — L</div>
+        <h2>Liskov Substitution — anak harus bisa gantiin orang tuanya tanpa drama</h2>
+      </div>
+      <p class="lead reveal">Kalau kode kamu nerima sebuah <code>Rectangle</code>, dia harus tetap jalan benar walau yang dikasih ternyata <strong>subtype</strong>-nya. Itu inti LSP: subtype wajib bisa <em>menggantikan</em> base-nya tanpa bikin program ngaco atau ngagetin. Warisan <code>extends</code> itu janji—"aku ini sah jadi kamu"—dan janji itu nggak boleh diam-diam dibatalkan.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Liskov Substitution Principle</span></div>
+        <p class="rule__say">Objek subtype harus bisa <b>menggantikan</b> objek base-nya <b>tanpa mengubah kebenaran</b> program. Kalau substitusi bikin hasil ngaget, warisannya bohong.</p>
+      </div>
+
+      <p class="body reveal d2">Contoh klasik yang bocor: <code>Square extends Rectangle</code>. Terdengar masuk akal—bujur sangkar kan <em>memang</em> persegi panjang? Tapi <code>is-a</code> di matematika nggak otomatis jadi <code>is-a</code> yang sah di kode. Begitu <code>Square</code> maksa <code>width == height</code>, <code>setWidth()</code> diam-diam ikut ngubah height—dan kode yang cuma pegang <code>Rectangle</code> langsung kena tipu.</p>
+
+      <div class="specimen s-design reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Square extends Rectangle</span>
+          <span class="taxon design">Design Smell</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Subclass <b>memperketat</b> kontrak induk: override yang punya efek samping tak terduga, lempar <code>UnsupportedOperationException</code>, atau bikin <code>instanceof</code> bertebaran di pemanggil.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Kode yang nerima tipe induk diam-diam ngaco pas dikasih subclass-nya—bug muncul jauh di pemanggil yang nggak curiga, dan kamu kepaksa nambal pakai <code>instanceof</code> yang justru ngerusak polymorphism.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Hierarki yang dibangun dari "is-a" bahasa sehari-hari—Square/Rectangle, Penguin/Bird, ReadOnlyList/List—bukan dari kesamaan <b>perilaku</b>.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">Square.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">Rectangle</span> {
+    <span class="k">protected</span> <span class="k">int</span> w, h;
+    <span class="k">void</span> <span class="f">setWidth</span>(<span class="k">int</span> w)  { <span class="k">this</span>.w = w; }
+    <span class="k">void</span> <span class="f">setHeight</span>(<span class="k">int</span> h) { <span class="k">this</span>.h = h; }
+    <span class="k">int</span> <span class="f">area</span>() { <span class="k">return</span> w * h; }
+}
+
+<span class="k">class</span> <span class="t">Square</span> <span class="k">extends</span> <span class="t">Rectangle</span> {
+<span class="hl-bad">    <span class="a">@Override</span> <span class="k">void</span> <span class="f">setWidth</span>(<span class="k">int</span> w) {</span>
+<span class="hl-bad">        <span class="k">this</span>.w = w; <span class="k">this</span>.h = w;  <span class="c">// diam2 ubah height!</span></span>
+<span class="hl-bad">    }</span>
+    <span class="a">@Override</span> <span class="k">void</span> <span class="f">setHeight</span>(<span class="k">int</span> h) {
+        <span class="k">this</span>.w = h; <span class="k">this</span>.h = h;  <span class="c">// dan sebaliknya</span>
+    }
+}
+
+<span class="c">// kode yang cuma kenal Rectangle — ngarep aman:</span>
+<span class="k">int</span> <span class="f">areaAfterResize</span>(<span class="t">Rectangle</span> r) {
+    r.<span class="f">setWidth</span>(<span class="n">5</span>);
+    r.<span class="f">setHeight</span>(<span class="n">4</span>);
+<span class="hl-bad">    <span class="k">return</span> r.<span class="f">area</span>();  <span class="c">// ngarep 20. Square balikin 16. KAGET.</span></span>
+}</pre>
+          </div>
+          <div class="spec__row"><span class="spec__lbl">Kenapa bocor</span><span>Pemanggil berpegang pada kontrak <code>Rectangle</code>: <em>"set width, lalu set height, keduanya independen"</em>. <code>Square</code> melanggar invariant itu. Substitusi yang harusnya transparan malah ngubah hasil—warisannya nggak sah.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>LSP</strong>: jangan paksa warisan yang melanggar kontrak. Bikin <code>Shape</code> jadi <b>immutable</b> (set lewat constructor, nggak ada setter yang bisa dibohongin), atau pisahkan jadi tipe sejajar—Square dan Rectangle bukan parent–child, cuma sama-sama <code>Shape</code> yang punya <code>area()</code>.</span></div>
+          <div class="fieldnote">« Resep minta "telur". Telur bebek harus bisa gantiin telur ayam tanpa bikin kue gagal. Kalau "telur" kamu meledak pas dikocok, itu bukan substitusi yang sah—itu bukan telur. »</div>
+        </div>
+      </div>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">Shape.java — perbaikan</span></div>
+<pre class="code"><span class="hl-good"><span class="c">// ✓ immutable + tipe sejajar: tak ada kontrak yang bisa dibohongi</span></span>
+<span class="k">interface</span> <span class="t">Shape</span> { <span class="k">int</span> <span class="f">area</span>(); }
+
+<span class="k">final</span> <span class="k">class</span> <span class="t">Rectangle</span> <span class="k">implements</span> <span class="t">Shape</span> {
+    <span class="k">private</span> <span class="k">final</span> <span class="k">int</span> w, h;
+    <span class="t">Rectangle</span>(<span class="k">int</span> w, <span class="k">int</span> h) { <span class="k">this</span>.w = w; <span class="k">this</span>.h = h; }
+    <span class="k">public</span> <span class="k">int</span> <span class="f">area</span>() { <span class="k">return</span> w * h; }
+}
+
+<span class="k">final</span> <span class="k">class</span> <span class="t">Square</span> <span class="k">implements</span> <span class="t">Shape</span> {
+    <span class="k">private</span> <span class="k">final</span> <span class="k">int</span> side;
+    <span class="t">Square</span>(<span class="k">int</span> side) { <span class="k">this</span>.side = side; }
+    <span class="k">public</span> <span class="k">int</span> <span class="f">area</span>() { <span class="k">return</span> side * side; }
+}
+<span class="c">// Square BUKAN turunan Rectangle. Tak ada setter yang menipu.</span>
+<span class="c">// Pemanggil yang minta Shape selalu dapat area() yang jujur.</span></pre>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Cara cepat ngecek</div>
+          <p>Kalau kamu nemu <code>instanceof</code> atau <code>if (x instanceof Square)</code> di kode pemanggil cuma buat "handle kasus khusus" subtype, itu bau LSP bocor: subtype-nya nggak benar-benar bisa gantiin base. Aturan turunan: override boleh <b>melonggarkan precondition</b> dan <b>memperketat postcondition</b>—jangan kebalik. Dan <b>jangan</b> lempar exception baru yang base-nya nggak janjiin.</p>
+        </div>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Jangan keliru</div>
+          <p>LSP bukan cuma soal "method-nya match". Compiler bahagia walau LSP dilanggar—<code>Square</code> di atas <em>kompile</em> sempurna. Pelanggarannya ada di <b>perilaku &amp; kontrak</b>, bukan di tipe. Inilah kenapa ini Design Smell (busuk struktur), bukan sekadar Code Smell.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Struktural · SOLID — I</div>
+        <h2>Interface Segregation — jangan paksa orang implement yang nggak kepake</h2>
+      </div>
+      <p class="lead reveal">Interface yang gemuk itu jebakan. Pas kamu bikin satu interface besar isinya semua method, tiap class yang implement <strong>kepaksa</strong> nulis semua—termasuk yang nggak relevan buat dia. Ujungnya muncul <code>throw new UnsupportedOperationException()</code> atau method kosong yang bohong. Pecah jadi interface kecil per-peran.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Interface Segregation Principle</span></div>
+        <p class="rule__say">Client <b>nggak boleh dipaksa</b> bergantung ke method yang nggak dia pakai. Banyak interface <b>kecil &amp; spesifik</b> lebih baik daripada satu interface <b>gemuk</b>.</p>
+      </div>
+
+      <p class="body reveal d2">Contoh klasik: interface <code>Worker</code> ngurus <em>kerja</em> dan <em>makan</em> sekaligus. Manusia oke. Tapi pas datang <code>RobotWorker</code>—dia bisa kerja, tapi nggak makan. Kepaksa implement <code>eat()</code> yang nggak masuk akal.</p>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">Worker.java — interface gemuk</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ satu interface gemuk: dua peran dijadiin satu</span></span>
+<span class="k">interface</span> <span class="t">Worker</span> {
+    <span class="k">void</span> <span class="f">work</span>();
+    <span class="k">void</span> <span class="f">eat</span>();
+}
+
+<span class="k">class</span> <span class="t">HumanWorker</span> <span class="k">implements</span> <span class="t">Worker</span> {
+    <span class="k">public</span> <span class="k">void</span> <span class="f">work</span>() { ... }
+    <span class="k">public</span> <span class="k">void</span> <span class="f">eat</span>()  { ... }   <span class="c">// wajar</span>
+}
+
+<span class="k">class</span> <span class="t">RobotWorker</span> <span class="k">implements</span> <span class="t">Worker</span> {
+    <span class="k">public</span> <span class="k">void</span> <span class="f">work</span>() { ... }
+    <span class="hl-bad"><span class="k">public</span> <span class="k">void</span> <span class="f">eat</span>() {            <span class="c">// robot nggak makan!</span></span>
+<span class="hl-bad">        <span class="k">throw</span> <span class="k">new</span> <span class="t">UnsupportedOperationException</span>();</span>
+<span class="hl-bad">    }</span>
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Penangkalnya: pisah per peran. <code>Workable</code> buat yang kerja, <code>Eatable</code> buat yang makan. Tiap class cuma implement yang dia <em>beneran</em> butuh.</p>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">Roles.java — dipecah per peran</span><span class="codecard__verdict good">SEHAT</span></div>
+<pre class="code"><span class="hl-good"><span class="c">// ✓ pecah jadi interface kecil per-peran</span></span>
+<span class="k">interface</span> <span class="t">Workable</span> { <span class="k">void</span> <span class="f">work</span>(); }
+<span class="k">interface</span> <span class="t">Eatable</span>  { <span class="k">void</span> <span class="f">eat</span>();  }
+
+<span class="k">class</span> <span class="t">HumanWorker</span> <span class="k">implements</span> <span class="t">Workable</span>, <span class="t">Eatable</span> {
+    <span class="k">public</span> <span class="k">void</span> <span class="f">work</span>() { ... }
+    <span class="k">public</span> <span class="k">void</span> <span class="f">eat</span>()  { ... }
+}
+
+<span class="hl-good"><span class="k">class</span> <span class="t">RobotWorker</span> <span class="k">implements</span> <span class="t">Workable</span> {</span>
+<span class="hl-good">    <span class="k">public</span> <span class="k">void</span> <span class="f">work</span>() { ... }   <span class="c">// cuma yg dipakai</span></span>
+<span class="hl-good">}</span></pre>
+      </div>
+
+      <div class="fieldnote reveal d2">« Remote TV 60 tombol padahal kamu cuma pencet 5: volume, channel, power, mute, source. 55 sisanya cuma bikin bingung dan ngumpulin debu. »</div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Penangkal untuk</div>
+          <p>ISP yang dilanggar bikin <b>Refused Bequest</b> (smell): class "menolak warisan" lewat method kosong atau <code>throw</code>. Tanda fat interface gampang dikenali—begitu satu implementor nge-<code>throw UnsupportedOperationException</code>, interface-nya kegemukan, waktunya dipecah.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Struktural · SOLID — D</div>
+        <h2>Dependency Inversion — gantung ke abstraksi, jangan ke detail</h2>
+      </div>
+      <p class="lead reveal">Bayangin <code>OrderService</code> yang langsung <code>new MySqlOrderRepo()</code> di dalemnya. Begitu kamu mau ganti ke Postgres atau mau nge-mock buat test, kamu kebuka kode bisnisnya. Modul penting malah <strong>gantung ke detail</strong>—kebalik.</p>
+
+      <p class="body reveal d1">DIP bilang: modul high-level (aturan bisnis) <em>dan</em> modul low-level (detail teknis) sama-sama harus gantung ke <strong>abstraksi</strong>. Dan abstraksinya nggak boleh ikut detail—justru detail yang ikut abstraksi. Arah ketergantungan dibalik, makanya namanya <em>inversion</em>.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Dependency Inversion Principle</span></div>
+        <p class="rule__say">Modul high-level <b>jangan</b> gantung ke modul low-level. Dua-duanya gantung ke <b>abstraksi</b>—dan detail yang ikut abstraksi, bukan sebaliknya.</p>
+      </div>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">OrderService.java — sebelum &amp; sesudah</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ high-level gandeng langsung ke detail low-level</span></span>
+<span class="k">class</span> <span class="t">OrderService</span> {
+    <span class="k">private</span> <span class="t">MySqlOrderRepo</span> repo = <span class="k">new</span> <span class="t">MySqlOrderRepo</span>();
+    <span class="k">void</span> <span class="f">place</span>(<span class="t">Order</span> o) {
+        repo.<span class="f">save</span>(o);   <span class="c">// terkunci ke MySQL, susah di-test</span>
+    }
+}
+
+<span class="hl-good"><span class="c">// ✓ kedua sisi gantung ke abstraksi; repo di-inject</span></span>
+<span class="k">interface</span> <span class="t">OrderRepository</span> { <span class="k">void</span> <span class="f">save</span>(<span class="t">Order</span> o); }
+
+<span class="k">class</span> <span class="t">OrderService</span> {
+    <span class="k">private</span> <span class="k">final</span> <span class="t">OrderRepository</span> repo;
+    <span class="t">OrderService</span>(<span class="t">OrderRepository</span> repo) {
+        <span class="k">this</span>.repo = repo;   <span class="c">// MySQL, Postgres, mock—bebas</span>
+    }
+    <span class="k">void</span> <span class="f">place</span>(<span class="t">Order</span> o) { repo.<span class="f">save</span>(o); }   <span class="c">// lewat abstraksi</span>
+}
+
+<span class="k">class</span> <span class="t">MySqlOrderRepo</span> <span class="k">implements</span> <span class="t">OrderRepository</span> { ... }</pre>
+      </div>
+
+      <div class="fieldnote reveal d2">« Lampu gantung ke stop-kontak standar, bukan disolder ke kabel merek listrik tertentu. Mau ganti merek? Cabut, colok yang lain. »</div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Penangkal untuk</div>
+          <p>DIP yang dilanggar bikin <b>coupling ketat</b>: kode bisnis nempel ke detail teknis (DB, library, vendor). Akibatnya susah di-test, susah diganti, dan satu perubahan low-level merembet ke mana-mana. Inilah pondasi <em>Rigidity</em> &amp; <em>Fragility</em> (design smell).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Struktural · Kesederhanaan</div>
+        <h2>DRY, KISS, YAGNI — tiga aturan kesederhanaan</h2>
+      </div>
+      <p class="lead reveal">SOLID ngatur <strong>struktur</strong>; tiga ini ngatur <strong>kesederhanaan</strong>. Inti semuanya sama: kode yang nggak ada itu nggak bisa rusak, nggak bisa bingungin, nggak perlu dirawat. Tapi hati-hati — ketiganya gampang disalahpahami jadi alasan over-engineering.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">DRY — Don't Repeat Yourself</span></div>
+        <p class="rule__say">Tiap <b>pengetahuan</b> punya <b>satu sumber kebenaran</b>. Aturan bisnis yang sama jangan ditulis di dua tempat — nanti satu diubah, satu lupa, jadi beda diam-diam. <em>Tapi:</em> kode yang cuma <b>kebetulan mirip</b> dengan alasan-berubah beda <b>jangan</b> disatukan — itu false DRY.</p>
+        <div class="codecard">
+          <div class="codecard__bar"><span class="codecard__name">PriceCalculator.java</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ rumus pajak digandakan — ubah satu, lupa satu</span></span>
+<span class="t">BigDecimal</span> <span class="f">cartTotal</span>() {
+    <span class="k">return</span> sub.<span class="f">multiply</span>(<span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"1.11"</span>));
+}
+<span class="t">BigDecimal</span> <span class="f">invoiceTotal</span>() {
+    <span class="k">return</span> sub.<span class="f">multiply</span>(<span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"1.11"</span>));
+}
+
+<span class="hl-good"><span class="c">// ✓ satu sumber kebenaran — ekstrak method</span></span>
+<span class="t">BigDecimal</span> <span class="f">withTax</span>(<span class="t">BigDecimal</span> sub) {
+    <span class="k">return</span> sub.<span class="f">multiply</span>(TAX_RATE);
+}</pre>
+        </div>
+        <div class="fieldnote">« Satu sumber air bersih buat seluruh kampung. Kalau ada dua sumur, suatu hari yang satu keruh dan kamu nggak sadar minum yang mana. »</div>
+      </div>
+
+      <div class="rule reveal d2">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">KISS — Keep It Simple, Stupid</span></div>
+        <p class="rule__say">Pilih <b>solusi paling sederhana yang jalan</b>. Kepintaran yang dipamerin itu <b>beban</b>, bukan prestasi — orang berikutnya (sering kamu sendiri, tiga bulan lagi) harus baca dan paham. Yang gampang dibaca menang dari yang keren tapi bikin pusing.</p>
+        <div class="fieldnote">« Mau buka botol? Pakai pembuka botol. Jangan rakit mesin Rube Goldberg pakai bola, domino, dan ayam — keren di video, mimpi buruk pas rusak. »</div>
+      </div>
+
+      <div class="rule reveal d3">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">YAGNI — You Aren't Gonna Need It</span></div>
+        <p class="rule__say">Jangan bangun buat <b>masa depan khayalan</b>. Fitur, parameter, atau abstraksi "buat jaga-jaga nanti" biasanya nggak kepakai — dan keburu jadi kode mati yang harus dirawat. Tambahin <b>pas beneran perlu</b>, bukan pas kamu <em>nebak</em> bakal perlu.</p>
+        <div class="fieldnote">« Jangan beli sofa, lemari, dan meja makan buat rumah yang fondasinya aja belum dicor. Pas rumahnya jadi, ukuran ruangannya beda dari bayanganmu. »</div>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Awas tarik-menarik</div>
+          <p>DRY ketemu YAGNI: jangan ekstrak abstraksi cuma karena lihat <b>satu</b> kemiripan — itu <b>Speculative Generality</b>. Tunggu konsumen kedua yang sungguh-sungguh. Dan ingat: SRP menang dari DRY — dua kode mirip dengan <b>alasan-berubah beda</b> itu kebetulan, bukan duplikasi.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Struktural · Gandengan &amp; susunan</div>
+        <h2>Composition, Demeter &amp; Cohesion — cara komponen saling nyambung</h2>
+      </div>
+      <p class="lead reveal">SOLID ngurus tiap kelas biar rapi. Tiga prinsip ini ngurus <strong>relasi antar kelas</strong>: gimana kamu nyusun ulang kelakuan, ke siapa boleh ngobrol, dan seberapa erat satu modul nempel ke yang lain. Salah di sini, desainnya kaku walau tiap kelasnya kelihatan bersih.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Favor Composition over Inheritance</span></div>
+        <p class="rule__say">Rakit kelakuan dari objek lain (<b>HAS-A</b>), jangan diwarisi dari induk (<b>IS-A</b>). Warisan ngiket kamu ke <b>implementasi</b> induk; rantai <code>extends</code> yang dalam itu <b>rapuh</b>—ganti induk, semua turunan ikut goyang.</p>
+        <div class="fieldnote">« Mau robot yang bisa terbang? Pasangin jetpack (komposisi), jangan paksa dia lahir dari keluarga burung (warisan). Jetpack bisa dilepas-pasang; silsilah nggak. »</div>
+      </div>
+
+      <p class="body reveal d2">Komposisi itu <em>tulang punggung</em> Design Patterns: Strategy nyolok algoritma sebagai field, Decorator mbungkus objek, Adapter mbalut yang lama. Semua milih HAS-A ketimbang nambah cabang warisan. Inilah kenapa "favor composition" nyambung ke deck OOP &amp; pola desain—begitu kamu mikir komposisi, banyak pola jadi kelihatan natural.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Law of Demeter (Least Knowledge)</span></div>
+        <p class="rule__say">Sebuah method cuma boleh ngobrol ke <b>teman dekat</b>: dirinya sendiri, parameternya, field-nya, dan objek yang dia bikin. <b>Jangan ngajak ngomong kenalan dari kenalan.</b> Rantai <code>a.b().c().d()</code> itu <em>train wreck</em>—kamu jadi tahu terlalu banyak soal isi perut orang lain.</p>
+        <div class="fieldnote">« Bayar kasir, biar dia yang ngurus laci. Kamu nggak nyelonong ke dompet pelanggan lain buat ngambil kembalian. »</div>
+      </div>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">Checkout.java — train wreck vs minta langsung</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ rantai panjang: nyelonong ke kenalan-dari-kenalan</span></span>
+<span class="k">int</span> <span class="f">pos</span> = order.<span class="f">getCustomer</span>()
+             .<span class="f">getAddress</span>()
+             .<span class="f">getCity</span>()
+             .<span class="f">getPostalCode</span>();   <span class="c">// 4 lapis jeroan</span>
+
+<span class="hl-good"><span class="c">// ✓ tanya teman dekat; biar dia yang ngurus dalamnya</span></span>
+<span class="k">int</span> <span class="f">pos</span> = order.<span class="f">shippingPostalCode</span>();</pre>
+      </div>
+
+      <p class="body reveal d2">Bedain dari <em>fluent API</em> (mis. <code>builder.x().y().z()</code>): di builder tiap langkah ngembaliin <strong>objek yang sama</strong>, jadi itu bukan train wreck. Demeter dilanggar pas tiap <code>.get()</code> nyeret kamu ke objek <strong>baru</strong> yang makin dalam.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">High Cohesion &amp; Loose Coupling</span></div>
+        <p class="rule__say"><b>Cohesion</b> = isi satu modul nyambung &amp; fokus ke satu tujuan—naikin setinggi mungkin. <b>Coupling</b> = seberapa erat antar-modul saling gantung—turunin selonggar mungkin. Targetnya: <b>cohesion tinggi, coupling longgar.</b> Ganti satu modul nggak bikin yang lain ikut pecah.</p>
+        <div class="fieldnote">« Tim yang sehat: di dalam satu tim semua sefrekuensi (cohesion tinggi), antar tim cukup ngobrol lewat kontrak jelas (coupling longgar)—bukan saling ngacak meja masing-masing. »</div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Penangkal untuk</div>
+          <p>Langgar ketiganya dan kamu manggil monster: warisan dalam → <b>Fragile Base Class</b>; train wreck → smell <b>Message Chains</b>; cohesion rendah + coupling erat → <b>God Object</b> dan ujungnya <b>Big Ball of Mud</b>. Tiga prinsip ini yang jaga arsitektur tetap bisa diutak-atik.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Disiplin</div>
+        <h2>Jangan biarkan jendela pecah</h2>
+      </div>
+      <p class="lead reveal">Prinsip struktural tadi (SOLID, DRY, KISS) itu <strong>arsitektur</strong>. Tapi kode busuk bukan cuma soal desain awal—busuk itu <em>proses</em>. Pelan-pelan, satu kompromi kecil yang dibiarkan. Dua kartu di bawah ini soal <strong>disiplin harian</strong>: kenapa pembusukan mulai, dan gimana kamu nge-rem-nya tiap kali lewat.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Broken Window Theory</span></div>
+        <p class="rule__say">Satu <b>"jendela pecah"</b>—smell, hack, atau bug—yang dibiarkan ngirim sinyal: <b>"nggak ada yang peduli di sini."</b> Sinyal itu ngundang kompromi berikutnya. Lama-lama tim ngikut standar terendah yang kelihatan, dan entropi naik sampai modul jadi tak tersentuh. Benerin <b>segera</b>, atau setidaknya papan-tutup (TODO + tiket) biar nggak kelihatan ditelantarin.</p>
+        <div class="fieldnote">« Gedung kosong, satu kaca pecah dibiarkan. Seminggu kemudian semua kaca pecah—bukan karena vandal lebih banyak, tapi karena yang pecah pertama bilang "tempat ini nggak ada yang jaga." »</div>
+      </div>
+
+      <div class="rule reveal d2">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Boy Scout Rule</span></div>
+        <p class="rule__say">Penangkal aktifnya: <b>"tinggalin kode lebih bersih daripada pas kamu nemu."</b> Bukan refactor heroik—cukup yang kecil sambil lewat: kasih nama variabel yang jelas, hapus impor mati, pecah satu method gendut. Tiap commit nutup satu jendela. Kebersihan jadi <b>arah default</b>, bukan proyek khusus.</p>
+        <div class="fieldnote">« Aturan pramuka: tinggalin tempat kemah lebih bersih dari pas kamu datang. Nggak usah bersihin seluruh hutan—cukup pungut sampah di sekitar tendamu sendiri tiap pagi. »</div>
+      </div>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">PriceCalculator.java — lewat sini? tutup jendelanya</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ jendela pecah: nama ngasal + magic number dibiarkan</span></span>
+<span class="k">int</span> <span class="f">calc</span>(<span class="k">int</span> x) {
+    <span class="k">return</span> x * <span class="n">11</span> / <span class="n">10</span>;   <span class="c">// ...ini apaan? pajak?</span>
+}
+
+<span class="hl-good"><span class="c">// ✓ Boy Scout: kamu cuma lewat, tapi rapihin dikit</span></span>
+<span class="k">static</span> <span class="k">final</span> <span class="t">BigDecimal</span> <span class="f">TAX_RATE</span> = <span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"0.10"</span>);
+
+<span class="t">BigDecimal</span> <span class="f">withTax</span>(<span class="t">BigDecimal</span> price) {
+    <span class="k">return</span> price.<span class="f">multiply</span>(<span class="t">BigDecimal</span>.<span class="f">ONE</span>.<span class="f">add</span>(<span class="t">TAX_RATE</span>));
+}</pre>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Awas perangkapnya</div>
+          <p>Boy Scout bukan izin <b>refactor liar di luar scope PR</b>. Rapihin yang <em>kamu sentuh</em>, bukan ngubah 30 file yang nggak ada hubungannya—itu bikin review susah dan malah nambah risiko. Bersih sedikit, sering, dan <b>nyambung</b> sama perubahan kamu.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d3">Disiplin ini—nutup jendela tiap lewat—jaga modul tetap sehat dari hari ke hari. Tapi disiplin harian butuh teman: aturan biar kode nggak <em>bikin kaget</em> dan tiap bagian nggak nyampur urusan. Lanjut ke <strong>POLA &amp; Separation of Concerns</strong>.</p>
+    </div>
+  </section>
+
+<section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Kode Sehat · Disiplin</div>
+        <h2>Tidak mengagetkan, dan tahu batas</h2>
+      </div>
+      <p class="lead reveal">Dua disiplin yang gampang diremehin tapi nyelametin tim. Pertama: kode kamu kelakuannya harus sesuai yang orang <strong>duga</strong> dari namanya. Kedua: jangan campur aduk urusan yang beda jadi satu—pisahkan ke lapisan masing-masing.</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Principle of Least Astonishment</span></div>
+        <p class="rule__say">Sebuah komponen sebaiknya berperilaku <b>seperti yang diduga sebagian besar orang</b>. Kalau kelakuannya bikin kaget, dia salah—biarpun "benar" secara teknis.</p>
+      </div>
+
+      <p class="body reveal d2">Nama itu janji. <code>getX()</code> dan <code>isValid()</code> kedengarannya cuma <em>baca</em>—nggak ada yang nyangka dia diam-diam ngubah state atau ngehapus data. Method yang ngelanggar dugaan ini namanya <strong>astonishing</strong>: orang manggil sambil ngira aman, eh malah ada efek samping.</p>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><span class="codecard__name">UserSession.java</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ getter yang diam-diam punya efek samping</span></span>
+<span class="k">public</span> <span class="t">User</span> <span class="f">getCurrentUser</span>() {
+    <span class="t">User</span> u = cache.<span class="f">lookup</span>(token);
+    cache.<span class="f">clear</span>();        <span class="c">// LAH?! manggil getX malah hapus cache</span>
+    <span class="k">return</span> u;
+}
+
+<span class="hl-good"><span class="c">// ✓ getter cuma baca; mutasi dikasih nama jujur</span></span>
+<span class="k">public</span> <span class="t">User</span> <span class="f">getCurrentUser</span>() {
+    <span class="k">return</span> cache.<span class="f">lookup</span>(token);
+}
+<span class="k">public</span> <span class="k">void</span> <span class="f">invalidateSession</span>() {
+    cache.<span class="f">clear</span>();        <span class="c">// niat mutasi → nama yang nunjukin itu</span>
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Pasangin juga sama konvensi yang udah ada: argumen <code>(source, target)</code> jangan dibalik diam-diam, <code>equals()</code> jangan ngelempar exception, unit "milidetik" jangan tiba-tiba "detik". Makin sesuai dugaan, makin sedikit bug yang lahir dari salah paham.</p>
+
+      <div class="fieldnote reveal d2">« Tombol bertuliskan "Off" yang ternyata mem-format harddisk. Secara teknis "berfungsi"—tapi nggak ada yang menduga itu. »</div>
+
+      <div class="rule reveal d2">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Separation of Concerns</span></div>
+        <p class="rule__say">Pisahkan <b>urusan yang beda</b> ke modul/lapisan yang beda. Tiap bagian fokus ke satu perhatian—domain, persistence, presentation—dan nggak bocor ke yang lain.</p>
+      </div>
+
+      <p class="body reveal d3">SoC itu prinsip <strong>arsitektural</strong>: bukan soal satu class (itu SRP), tapi soal nge-<em>petakan</em> sistem jadi area perhatian terpisah. Logika bisnis nggak boleh tahu SQL; HTTP controller nggak boleh ngitung pajak; lapisan presentasi nggak boleh nge-query DB. Persis pola berlapis hexagonal: <code>core</code> (domain) ← <code>adapter</code> (persistence/HTTP), atau MVC—Model, View, Controller masing-masing satu urusan.</p>
+
+      <div class="codecard reveal d3">
+        <div class="codecard__bar"><span class="codecard__name">OrderService.java</span></div>
+<pre class="code"><span class="hl-bad"><span class="c">// ❌ satu method: bisnis + SQL + render HTML campur aduk</span></span>
+<span class="k">public</span> <span class="t">String</span> <span class="f">checkout</span>(<span class="t">Order</span> order) {
+    <span class="t">BigDecimal</span> total = order.<span class="f">subtotal</span>().<span class="f">add</span>(tax);
+    jdbc.<span class="f">execute</span>(<span class="s">"INSERT INTO orders ..."</span>);   <span class="c">// persistence</span>
+    <span class="k">return</span> <span class="s">"&lt;h1&gt;Total: "</span> + total + <span class="s">"&lt;/h1&gt;"</span>;  <span class="c">// presentation</span>
+}
+
+<span class="hl-good"><span class="c">// ✓ tiap urusan di lapisannya sendiri</span></span>
+<span class="k">class</span> <span class="t">OrderService</span> {            <span class="c">// domain: aturan bisnis</span>
+    <span class="t">BigDecimal</span> <span class="f">total</span>(<span class="t">Order</span> o) { ... }
+}
+<span class="k">interface</span> <span class="t">OrderRepository</span> {       <span class="c">// persistence: port</span>
+    <span class="k">void</span> <span class="f">save</span>(<span class="t">Order</span> o);
+}
+<span class="k">class</span> <span class="t">OrderView</span> {               <span class="c">// presentation: render</span>
+    <span class="t">String</span> <span class="f">html</span>(<span class="t">BigDecimal</span> total) { ... }
+}</pre>
+      </div>
+
+      <div class="fieldnote reveal d3">« Rumah yang sehat punya dapur, kamar tidur, dan kamar mandi sebagai ruang terpisah. Kamu nggak masak di kasur cuma karena "sama-sama di dalam rumah". »</div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Sepupu, bukan kembar</div>
+          <p><b>SRP</b> jagain satu <em>class</em> (satu alasan berubah); <b>SoC</b> jagain seluruh <em>sistem</em> (pisahkan area perhatian jadi lapisan). SoC dilanggar → muncul <b>God Object</b>, <b>Big Ball of Mud</b>, dan logika bisnis yang sandera ke detail framework. POLA dilanggar → bug halus yang susah dilacak karena semua orang ngira kodenya "aman".</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Code Smells</div>
+        <h2>Yang kegedean</h2>
+      </div>
+      <p class="lead reveal">Dua satwa pertama gampang dikenali dari ukurannya: method yang kepanjangan dan class yang kegemukan. Keduanya jarang lahir gede—mereka <strong>numpuk pelan-pelan</strong>, satu tambahan kecil tiap kali. Pas kamu sadar, scroll-nya udah nggak ketemu ujung.</p>
+
+      <div class="specimen s-smell reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Long Method</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Satu method puluhan baris, banyak level indentasi (<code>if</code> dalam <code>for</code> dalam <code>try</code>), butuh <b>scroll</b> buat lihat ujungnya. Ngerjain validasi, hitung, simpan, kirim—semua dalam satu napas.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Susah dibaca dan dites (logikanya kelilit jadi satu, nggak bisa dicek per bagian), gampang nyelipin bug pas diutak-atik, dan tiap orang harus paham seluruh method cuma buat ngubah satu langkah kecil.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Logika yang numpuk seiring waktu—mulai 5 baris, tiap fitur baru nambah "satu blok lagi" sampai nggak ada yang berani megang.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">OrderService.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">void</span> <span class="f">checkout</span>(<span class="t">Cart</span> cart) {
+    <span class="c">// validasi</span>
+    <span class="k">if</span> (cart.<span class="f">isEmpty</span>()) { ... }
+    <span class="k">for</span> (<span class="t">Item</span> i : cart.<span class="f">items</span>()) {
+        <span class="k">if</span> (i.<span class="f">stock</span>() &lt; <span class="n">1</span>) { ... }
+        <span class="c">// hitung diskon, pajak, ongkir...</span>
+    }
+    <span class="c">// simpan ke DB</span>
+    <span class="c">// kirim email + SMS + push</span>
+    <span class="c">// ...40 baris lagi di bawah</span>
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Extract Method</strong> → pecah tiap blok jadi method bernama (<code>validate</code>, <code>price</code>, <code>persist</code>, <code>notify</code>). <strong>Satu method satu hal</strong>; nama method jadi dokumentasi.</span></div>
+          <div class="fieldnote">« Esai 3 halaman tanpa satu pun titik. Secara teknis "satu kalimat", tapi kamu kehabisan napas sebelum nangkap maksudnya. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-smell reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Large Class</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Class kebanyakan <b>field</b> dan <b>method</b> yang nggak nyambung satu sama lain. Banyak tanggung jawab dalam satu atap—kamu buka file-nya cuma buat ngubah satu hal, tapi harus scroll lewat 30 hal lain.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Jadi titik tabrakan banyak orang sekaligus (merge conflict langganan), perubahan di satu fitur diam-diam bisa ngerusak fitur lain yang nebeng di class yang sama, dan makin lama makin nggak ada yang ngerti isi penuhnya.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Kelas bernama <code>Manager</code>, <code>Util</code>, atau <code>Helper</code>—nama yang nggak janji apa-apa, jadi apa pun boleh ditaruh di situ.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">UserManager.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">UserManager</span> {           <span class="c">// ngurus apa aja sih?</span>
+    <span class="t">Db</span> db; <span class="t">Mailer</span> mailer;
+    <span class="t">Cache</span> cache; <span class="t">PdfWriter</span> pdf;  <span class="c">// field campur aduk</span>
+
+    <span class="k">void</span> <span class="f">login</span>(...) { ... }
+    <span class="k">void</span> <span class="f">resetPassword</span>(...) { ... }
+    <span class="k">void</span> <span class="f">exportToPdf</span>(...) { ... }
+    <span class="k">void</span> <span class="f">refreshCache</span>(...) { ... }  <span class="c">// ...20 method lagi</span>
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>SRP</strong> + <strong>Extract Class</strong> → kelompokkan field &amp; method yang saling pakai, lalu tarik jadi class sendiri (<code>Authenticator</code>, <code>UserExporter</code>, <code>UserCache</code>). Nama yang spesifik bikin orang ragu naruh barang asal-asalan.</span></div>
+          <div class="fieldnote">« Lemari yang dijejali baju, kabel, dokumen, sama obat sekaligus. Nyari satu benda? Bongkar semua dulu. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Catatan lapangan</div>
+          <p>Ukuran cuma <b>petunjuk</b>, bukan vonis. Method 50 baris yang lurus dan datar masih lebih sehat daripada 12 baris dengan 5 level nesting. Yang kamu kejar bukan "baris pendek", tapi <b>satu tanggung jawab yang jelas</b>—pendeknya datang sendiri sebagai bonus.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Code Smells</div>
+        <h2>Parameter berserakan</h2>
+      </div>
+      <p class="lead reveal">Dua smell yang sering jalan bareng. Satu method nuntut terlalu banyak argumen; dan beberapa data yang <strong>selalu</strong> nongol berkelompok tapi nggak pernah dibungkus jadi satu. Keduanya tanda: ada konsep yang belum kamu kasih nama.</p>
+
+      <div class="specimen s-smell reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Long Parameter List</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Method nuntut <b>4 parameter atau lebih</b>. Ribet dipanggil, dan deretan tipe yang sama (<code>String, String, String</code>) gampang banget ketuker urutannya tanpa ketahuan compiler.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Argumen ketuker urutan lolos kompilasi tapi jebol pas runtime, dan tiap nambah field kamu kebuka signature-nya — semua pemanggil ikut harus disunting.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Constructor &amp; factory yang "tumbuh" tiap ada field baru; method <code>create</code>/<code>register</code> yang terus ditambahin argumen.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">UserService.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">// ❌ 6 argumen — siapa yang inget urutannya?</span>
+<span class="t">User</span> <span class="f">createUser</span>(
+    <span class="t">String</span> name, <span class="t">String</span> email, <span class="t">String</span> phone,
+    <span class="k">int</span> age, <span class="k">boolean</span> active, <span class="t">String</span> role) {
+  ...
+}
+
+<span class="c">// pemanggilan: gampang ketuker email &lt;-&gt; phone</span>
+<span class="f">createUser</span>(<span class="s">"Budi"</span>, <span class="s">"0812.."</span>, <span class="s">"budi@x.id"</span>,
+           <span class="n">30</span>, <span class="k">true</span>, <span class="s">"ADMIN"</span>);</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span>Bungkus argumen jadi satu <strong>Parameter Object / Command Object</strong> (mis. <code>CreateUserCommand</code>). Pemanggilan jadi pakai nama field, urutan nggak relevan lagi, dan field baru = nambah ke objek, bukan ke signature.</span></div>
+          <div class="fieldnote">« Belanja ngafal 9 barang di kepala vs nyodorin secarik daftar belanja — daftar nggak bakal ketuker telur sama tepung. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-smell reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Data Clumps</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 2 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b></b><b></b><b></b></span> bahaya 2/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Sekumpulan data yang <b>selalu muncul bareng</b> ke mana-mana — <code>startX, startY, endX, endY</code> atau <code>street, city, zip</code>. Kalau satu jalan, yang lain pasti ikut. Mereka sebenarnya satu konsep yang dipecah-pecah.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Karena rombongan datanya disebar manual, satu perubahan kecil di kelompok itu maksa kamu ngedit banyak tempat sekaligus, dan validasinya nggak punya rumah jadi di-copy ulang ke mana-mana.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Field di class yang nempel berurutan; daftar parameter yang itu-itu lagi di banyak method (sering jadi sumber Long Parameter List juga).</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">Geometry.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">// ❌ 4 angka yang selalu jalan bareng</span>
+<span class="k">double</span> <span class="f">distance</span>(
+    <span class="k">double</span> startX, <span class="k">double</span> startY,
+    <span class="k">double</span> endX,   <span class="k">double</span> endY) {
+  ...
+}
+
+<span class="c">// ✓ jadiin objek — dua titik, bukan empat angka</span>
+<span class="k">double</span> <span class="f">distance</span>(<span class="t">Point</span> start, <span class="t">Point</span> end) {
+  ...
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span>Jadikan kelompoknya satu objek — <code>Point</code>, <code>Address</code>, <code>DateRange</code>. Ini sering jadi <strong>pintu masuk ke value object</strong>: begitu dibungkus, validasi &amp; perilaku (jarak, format alamat) punya rumah yang jelas.</span></div>
+          <div class="fieldnote">« Garam, merica, pala selalu dipakai barengan — taruh di satu rak bumbu, bukan disebar tiga sudut dapur. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Catatan lapangan</div>
+          <p>Data Clumps sering jadi <b>akar</b> Long Parameter List: begitu kamu bungkus si rombongan data jadi satu objek, daftar parameter ikut mengkerut sendiri. Obatin yang clumps dulu, biasanya yang panjang ikut sembuh.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Code Smells</div>
+        <h2>Logika nyasar — disalin ke mana-mana, atau ngurusin urusan tetangga</h2>
+      </div>
+      <p class="lead reveal">Dua smell ini soal <strong>logika yang ada di tempat yang salah</strong>. Yang satu logika-nya kebanyakan kembar—nempel di banyak titik. Yang satu lagi logika-nya numpang di class yang salah—sibuk ngutak-atik data milik orang lain. Dua-duanya bikin perubahan jadi mahal.</p>
+
+      <div class="specimen s-smell reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Duplicated Code</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Blok kode atau aturan yang <b>sama</b> nongol di banyak tempat. Mau benerin satu bug? Kamu harus benerin di <b>N</b> tempat—dan pasti ada satu yang kelewat.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Satu bug fix gampang ketinggalan di salah satu copy, jadi versi-versinya pelan-pelan beda sendiri—dan kamu bayar ongkos maintenance berlipat tiap kali aturannya berubah.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Hasil copy-paste yang "biar cepat", validasi yang diulang per controller, rumus diskon yang dihitung ulang di tiap layar.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">PriceCalc.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">// rumus pajak yang sama, dua tempat</span>
+<span class="t">BigDecimal</span> <span class="f">cartTotal</span>() {
+    <span class="t">BigDecimal</span> tax = sub.<span class="f">multiply</span>(<span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"0.11"</span>));
+    <span class="k">return</span> sub.<span class="f">add</span>(tax);
+}
+<span class="t">BigDecimal</span> <span class="f">invoiceTotal</span>() {
+    <span class="t">BigDecimal</span> tax = sub.<span class="f">multiply</span>(<span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"0.11"</span>));
+    <span class="k">return</span> sub.<span class="f">add</span>(tax);   <span class="c">// pajak naik? edit DUA-duanya</span>
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Extract Method / Extract Class</strong> jadi satu <code>addTax()</code> bersama; itu <strong>DRY</strong>. Tapi hati-hati <em>false DRY</em>: kalau dua blok kebetulan mirip padahal alasan berubahnya beda, jangan paksa gabung—itu malah bikin kopling palsu.</span></div>
+          <div class="fieldnote">« Satu nomor telepon ditulis di lima buku. Pindah rumah, kamu harus inget update kelimanya—dan satu pasti ketinggalan. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-smell reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Feature Envy</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Sebuah method lebih sibuk ngutak-atik data class <b>lain</b> daripada data class-nya sendiri—penuh <code>other.getX()</code>, <code>other.getY()</code> lalu ngitung sendiri. Method-nya "iri" sama fitur class tetangga.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Logika kepisah dari datanya, jadi tiap kali struktur si tetangga berubah method ini ikut jebol—dan domain-nya keburu jadi kantong data kosong yang susah dilindungi aturannya.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Service yang nyedot getter dari domain object, lalu nyusun logika di luar—domain-nya cuma jadi kantong data (anemic).</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">PriceService.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">PriceService</span> {
+    <span class="t">BigDecimal</span> <span class="f">finalPrice</span>(<span class="t">Order</span> o) {
+        <span class="c">// sibuk ngurus data milik Order, bukan dirinya</span>
+        <span class="t">BigDecimal</span> sub = o.<span class="f">getQty</span>().<span class="f">multiply</span>(o.<span class="f">getUnitPrice</span>());
+        <span class="t">BigDecimal</span> disc = sub.<span class="f">multiply</span>(o.<span class="f">getDiscountRate</span>());
+        <span class="k">return</span> sub.<span class="f">subtract</span>(disc);
+    }
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Move Method</strong> ke class pemilik data: pindahin <code>finalPrice()</code> jadi <code>Order.finalPrice()</code>, biar logika nempel sama data-nya. Prinsip <strong>Tell, Don't Ask</strong>—suruh object yang ngitung, jangan nanya isinya terus kamu yang ngitung.</span></div>
+          <div class="fieldnote">« Kamu bolak-balik ngubek kulkas tetangga buat masak di dapur sendiri. Mendingan masak di dapur dia—isinya kan punya dia. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Benang merah</div>
+          <p>Dua-duanya nyembuhinnya dengan <b>memindahkan logika ke rumahnya</b>: Duplicated Code → satu sumber kebenaran lewat ekstrak; Feature Envy → logika ikut ke class yang punya datanya. Tapi ingat: jangan asal gabung yang cuma <em>kebetulan mirip</em>—itu false DRY.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Code Smells</div>
+        <h2>Tipe yang malas</h2>
+      </div>
+      <p class="lead reveal">Konsep domain itu punya aturan—uang nggak boleh negatif, nomor HP punya format, mata uang cuma boleh "IDR" atau "USD". Tapi sering kita tampung semuanya pakai <code>String</code> dan <code>int</code> telanjang. Tipe-nya betul secara compiler, tapi <strong>malas</strong>: dia nggak nyimpen satu pun aturan domain. Akibatnya validasi kesebar dan keputusan "ini tipe apa" jadi <code>switch</code> di mana-mana.</p>
+
+      <div class="specimen s-smell reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Primitive Obsession</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Konsep domain dipaksa masuk ke tipe primitif telanjang—<code>String currency</code>, <code>long amount</code>, <code>String phone</code>—tanpa value object. Validasi &amp; aturannya kesebar di tiap pemanggil.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Begitu satu pemanggil lupa satu cek, data invalid lolos diam-diam dan jadi bug senyap; mau ubah aturannya pun kamu harus berburu ke semua pemanggil—gampang kelewat.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Parameter method yang panjang, DTO mentah, "ah pakai String dulu deh". Tumbuh subur di kode yang buru-buru.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">Wallet.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">// uang &amp; mata uang jadi primitif telanjang</span>
+<span class="k">void</span> <span class="f">transfer</span>(<span class="k">long</span> amount, <span class="t">String</span> currency,
+              <span class="t">String</span> phone) {
+    <span class="c">// validasi diulang di SETIAP pemanggil</span>
+    <span class="k">if</span> (amount &lt; <span class="n">0</span>) <span class="k">throw</span> <span class="k">new</span> <span class="t">IllegalArgumentException</span>();
+    <span class="k">if</span> (!currency.<span class="f">equals</span>(<span class="s">"IDR"</span>)) <span class="k">throw</span> ...;
+    <span class="k">if</span> (!phone.<span class="f">matches</span>(<span class="s">"\\+62..."</span>)) <span class="k">throw</span> ...;
+    <span class="c">// lupa salah satu cek di pemanggil lain = bug senyap</span>
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Value Object</strong> bertipe: bungkus jadi <code>Money</code>, <code>Currency</code>, <code>PhoneNumber</code>. Aturan &amp; validasi hidup <b>satu kali</b> di dalam tipe-nya, bukan kesebar di pemanggil. Selaras ADR-001 (aggregate ID = VO, bukan <code>String</code>/<code>UUID</code> raw).</span></div>
+          <div class="fieldnote">« Nyimpen obat keras di botol air mineral bekas: "kan sama-sama cairan". Sampai ada yang minum salah. Botol yang benar = label + tutup pengaman. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-smell reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Switch Statements</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Cabang <code>switch</code>/<code>if-else</code> atas "tipe" atau "type-code" yang sama muncul di banyak tempat. Tiap tipe baru maksa kamu nyunting <b>semua</b> switch sekaligus—gampang kelewat satu.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Nambah satu tipe baru jadi operasi berisiko di banyak file sekaligus; satu switch kelewat = perilaku nggak konsisten yang baru ketahuan pas produksi.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Sering nempel di Primitive Obsession: ada <code>String role</code> / <code>int type</code>, lalu di-<code>switch</code> ulang-ulang di service, controller, dan reporting.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">FeeCalculator.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">int</span> <span class="f">fee</span>(<span class="t">String</span> accountType) {
+    <span class="k">switch</span> (accountType) {        <span class="c">// switch yang sama...</span>
+        <span class="k">case</span> <span class="s">"BASIC"</span>:   <span class="k">return</span> <span class="n">2000</span>;
+        <span class="k">case</span> <span class="s">"PREMIUM"</span>: <span class="k">return</span> <span class="n">0</span>;
+        <span class="k">default</span>:        <span class="k">return</span> <span class="n">5000</span>;
+    }
+}
+<span class="c">// ...di-copy lagi di limit(), di label(), di icon()</span>
+<span class="c">// tambah "VIP"? edit SEMUA switch, satu kelewat = bug</span></pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Polymorphism</strong> (OCP): <em>Replace Conditional with Polymorphism</em>. Bikin tipe <code>AccountType</code> dengan method <code>fee()</code>/<code>limit()</code>; tiap subtipe jawab sendiri. Tambah varian = tambah satu kelas, <b>nol switch disentuh</b>.</span></div>
+          <div class="fieldnote">« Daripada satu satpam yang hafal aturan tiap penghuni gedung, kasih tiap penghuni kunci sendiri. Pendatang baru tinggal bawa kuncinya—satpam nggak perlu belajar ulang. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Dua gejala, satu akar</div>
+          <p>Primitive Obsession dan Switch Statements sering jalan berpasangan: tipe yang malas (<code>String type</code>) memaksa keputusan dipindah keluar jadi <b>switch</b>. Obatin akarnya—ganti primitif jadi tipe yang "ngerti dirinya sendiri"—maka switch-nya ikut lenyap.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Code Smells</div>
+        <h2>Perubahan yang merembet</h2>
+      </div>
+      <p class="lead reveal">Dua satwa ini muncul gara-gara tanggung jawab kececer dan klien kepo sama struktur orang lain. Satu perubahan kecil, eh malah ngerembet ke mana-mana.</p>
+      <p class="body reveal d2">Bedanya sama <em>Divergent Change</em>: di sana <strong>satu class</strong> diutak-atik dari banyak arah. Di <strong>Shotgun Surgery</strong> kebalikannya — <strong>satu perubahan</strong> maksa kamu nyentuh banyak class sekaligus. Sama-sama gejala cohesion yang berantakan, beda arah aja.</p>
+
+      <div class="specimen s-smell reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Shotgun Surgery</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Satu perubahan kecil—misal nambah field di <code>User</code>—maksa kamu ngedit <b>banyak class berserakan</b>: DTO, mapper, validator, repo, logger. Lupa satu, langsung bug. Kebalikan dari <em>Divergent Change</em>.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap fitur kecil jadi melelahkan &amp; lambat—kamu keliling banyak file, dan satu titik kelewat langsung jadi bug halus yang lolos ke produksi.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Logika satu konsep nyebar tipis di seluruh codebase; cohesion rendah, coupling tinggi antar modul.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Kumpulin yang berubah bareng</strong> ke satu tempat lewat <em>Move Method / Move Field</em>—naikin <b>high cohesion</b> biar satu perubahan = satu sentuhan.</span></div>
+          <div class="fieldnote">« Ganti satu warna logo, tapi harus keliling ke 12 ruangan buat nimpa stiker satu-satu. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-smell reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Message Chains</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Rantai panggil panjang: <code>a.getB().getC().getD().doIt()</code>. Klien <b>kenal terlalu dalam</b> struktur internal objek lain—langgar <em>Law of Demeter</em> ("cuma ngobrol sama tetangga langsung").</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Klien jadi nempel ketat ke struktur dalam objek lain—begitu salah satu lapisan dirombak, semua kode yang nyusurin rantai itu ikut pecah &amp; harus diperbaiki bareng.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Kode yang nge-<em>navigasi</em> objek buat ngambil data, bukan nyuruh objek ngerjain tugasnya sendiri.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">CheckoutService.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">// ❌ klien nyusurin 4 lapis struktur orang lain</span>
+<span class="t">String</span> kota = order.<span class="f">getCustomer</span>()
+                  .<span class="f">getAddress</span>()
+                  .<span class="f">getCity</span>()
+                  .<span class="f">getName</span>();
+<span class="c">// putus satu getter = seluruh rantai ambruk</span></pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Hide Delegate</strong>—sembunyiin rantai di balik satu method (<code>order.shippingCity()</code>). Atau <em>tell-don't-ask</em>: suruh objek <b>ngerjain</b>, jangan ditanyain isi dalemnya.</span></div>
+          <div class="fieldnote">« Kereta gerbong panjang—makin banyak sambungan, makin gampang putus di tengah jalan. »</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Code Smells</div>
+        <h2>Niat baik yang jadi beban</h2>
+      </div>
+      <p class="lead reveal">Dua smell ini lahir dari maksud baik. Yang satu: "siapa tahu nanti butuh fleksibilitas". Yang satu lagi: "biar gampang dibaca, aku kasih komentar". Masalahnya, keduanya malah <strong>nambah beban</strong> tanpa nambah nilai—dan ngumpetin masalah yang sebenarnya.</p>
+
+      <div class="specimen s-smell reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Speculative Generality</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Abstraksi, hook, atau parameter yang dibikin <b>"buat jaga-jaga nanti"</b>—tapi nggak pernah kepakai. <code>interface</code> dengan satu implementasi, <code>abstract</code> base tanpa subclass kedua, parameter yang selalu dikirim nilai sama. Ini YAGNI yang dilanggar.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap pembaca kepaksa nelusurin lapisan indireksi kosong yang nggak ngapa-ngapain, jadi kode lebih susah dipahami &amp; dites—kamu mikul ongkos fleksibilitas yang nilainya nggak pernah cair.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Dibikin developer yang "mikir ke depan", framework rumahan, kode yang ngarep jadi library padahal cuma dipakai sekali.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">PaymentGateway.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">// satu interface, satu impl, selamanya</span>
+<span class="k">interface</span> <span class="t">PaymentGateway</span> {
+    <span class="k">void</span> <span class="f">pay</span>(<span class="t">Money</span> amount);
+}
+<span class="k">class</span> <span class="t">CreditCardGateway</span> <span class="k">implements</span> <span class="t">PaymentGateway</span> {
+    <span class="k">public</span> <span class="k">void</span> <span class="f">pay</span>(<span class="t">Money</span> amount) { ... }
+}
+<span class="c">// parameter "biar fleksibel" yang nggak pernah dipakai</span>
+<span class="k">void</span> <span class="f">export</span>(<span class="t">Report</span> r, <span class="k">boolean</span> compress,
+            <span class="t">String</span> futureMode) { ... } <span class="c">// compress slalu false</span></pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>YAGNI</strong> → <em>hapus</em> yang nggak dipakai. Inline-kan interface 1-impl, buang parameter mati, abstraksi-kan <b>nanti pas konsumen kedua benar-benar muncul</b>—bukan sebelumnya.</span></div>
+          <div class="fieldnote">« Bangun jembatan ke pulau yang belum ada penghuninya. Pas akhirnya ada yang pindah ke sana, ternyata maunya naik perahu. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-smell reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Comments (deodoran)</span>
+          <span class="taxon smell">Code Smell</span>
+          <span class="danger" title="bahaya 2 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b></b><b></b><b></b></span> bahaya 2/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Komentar dipakai <b>nutupin kode jelek</b>—penjelasan panjang buat blok yang mestinya cukup dikasih <em>nama yang jelas</em>. Atau komentar yang cuma ngulang kode (redundan), atau udah <b>basi</b> nggak nyambung sama kodenya lagi.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Komentar basi bikin pembaca percaya yang salah lalu nulis bug dengan pede, sementara kode jeleknya tetap ngumpet di balik penjelasan—jadi yang busuk nggak pernah kelihatan buat dibenerin.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Method panjang yang dipotong-potong pakai komentar "// validasi", "// hitung", kode warisan yang udah berubah tapi komentarnya ketinggalan.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">OrderService.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">// cek apakah user boleh checkout</span>
+<span class="k">if</span> (u.getAge() &gt;= <span class="n">18</span> &amp;&amp; u.getBalance() &gt; <span class="n">0</span>
+        &amp;&amp; !u.isBanned()) { ... }
+
+<span class="c">// naikkan harga 10%  &lt;- basi, sekarang 20%</span>
+<span class="t">BigDecimal</span> p = base.<span class="f">multiply</span>(<span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"1.20"</span>));
+
+<span class="t">int</span> i = i + <span class="n">1</span>; <span class="c">// tambah i dengan satu</span></pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span>Tulis ulang kode biar <b>ngomong sendiri</b>: ekstrak ke method bernama (<code>canCheckout(u)</code>), konstanta bernama (<code>PRICE_MARKUP</code>). Komentar simpan buat <b>"kenapa"</b>, bukan "apa".</span></div>
+          <div class="fieldnote">« Nyemprot deodoran di atas keringat seharian. Wanginya nutupin sebentar—padahal yang dibutuhin cuma mandi. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Garis tipisnya</div>
+          <p>Komentar nggak selalu jahat—yang jahat itu komentar <b>pengganti nama</b> dan komentar <b>basi</b>. Komentar bagus jawab <b>"kenapa begini"</b> (keputusan, trade-off, workaround bug pihak ketiga) yang nggak bisa dititipkan ke nama. Sama soal Speculative Generality: aturan tiganya—abstraksi-kan pas <em>kejadian kedua</em>, bukan dugaan pertama.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Design Smells (special)</div>
+        <h2>Pembusukan struktur (rotting design)</h2>
+      </div>
+      <p class="lead reveal">Beda dari code smell yang sifatnya <em>lokal</em> (satu method, satu class), design smell itu gejala di <strong>level desain</strong>—penyakit yang nyebar ke struktur sistem. Inilah tujuh "satwa" yang <code>SOLID</code> dirancang khusus buat cegah. Kenali mereka cepat: satu baris ciri, satu prinsip penangkal.</p>
+
+      <div class="specimen s-design reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Rigidity</span>
+          <span class="taxon design">Design Smell</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Susah diubah—satu perubahan kecil ngerembet panjang ke modul-modul lain yang nggak nyangka.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Estimasi tugas kecil meleset jauh—tiap perubahan jadi proyek dadakan, tim takut nyentuh kode, fitur baru makin lama keluar.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>OCP</strong> + <strong>DIP</strong> → tambah fitur lewat ekstensi, bukan ngedit yang stabil; gantung ke abstraksi.</span></div>
+          <div class="fieldnote">« Geser satu meja, eh seluruh ruangan harus ditata ulang. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-design reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Fragility</span>
+          <span class="taxon design">Design Smell</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Ubah satu tempat, malah rusak di bagian yang sama sekali nggak berhubungan secara konsep.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Bug muncul terus dari tempat tak terduga—tiap rilis bikin deg-degan, butuh regression test masif cuma buat berani deploy.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>SRP</strong> + <strong>OCP</strong> → satu alasan berubah per class; isolasi yang volatil dari yang stabil.</span></div>
+          <div class="fieldnote">« Ketuk paku di dinding dapur, lampu kamar mandi mati. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-design reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Immobility</span>
+          <span class="taxon design">Design Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Susah dipakai-ulang—bagian yang berguna keseret <em>baggage</em> dependensi yang nggak kamu butuh.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Orang malah nulis ulang dari nol daripada reuse—jadi duplikasi numpuk, effort kebuang, padahal solusinya udah ada.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>DIP</strong> + <strong>ISP</strong> → bergantung ke interface ramping, bukan ke modul gemuk penuh kabel.</span></div>
+          <div class="fieldnote">« Mau pinjam obeng, tapi dia terbaut mati ke seluruh kotak perkakas. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-design reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Viscosity</span>
+          <span class="taxon design">Design Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Nge-<em>hack</em> jalan pintas lebih gampang daripada benerin dengan cara yang benar—jadi orang milih jalan pintas.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap orang nambah hack kecil, desain makin lama makin amburadul—utang teknis numpuk diam-diam sampai sistem susah diselamatkan.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Jaga lingkungan &amp; desain</strong> → build cepat, test mudah, struktur jelas; bikin "cara benar" jadi cara termudah.</span></div>
+          <div class="fieldnote">« Tempat sampah jauh, tetangga deket—lama-lama semua nimbun di pojok tetangga. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-design reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Needless Complexity</span>
+          <span class="taxon design">Design Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Infrastruktur &amp; abstraksi buat kebutuhan yang belum ada—"siapa tahu nanti perlu".</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap baca kode harus nyusurin lapisan abstraksi yang nggak kepake—onboarding lama, maintenance berat, padahal fiturnya nggak pernah datang.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>YAGNI</strong> → bangun yang dibutuhkan <em>sekarang</em>; ekstensi nanti pas konsumen kedua benar-benar muncul.</span></div>
+          <div class="fieldnote">« Bikin garasi 6 mobil padahal cuma punya sepeda. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-design reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Needless Repetition</span>
+          <span class="taxon design">Design Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Struktur yang sama di-<em>copas</em> berkali-kali—sekali ada bug, kamu mesti betulin di banyak tempat.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Fix di satu salinan, lupa lima lainnya—bug yang sama hidup lagi, perilaku mulai beda-beda diam-diam antar copy-an.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>DRY</strong> → satu sumber kebenaran; ekstrak abstraksi yang <em>memang</em> sama alasan berubahnya.</span></div>
+          <div class="fieldnote">« Resep yang sama ditulis ulang di 12 buku—ganti satu bumbu, harus revisi semuanya. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-design reveal d3">
+        <div class="spec__head">
+          <span class="spec__name">Opacity</span>
+          <span class="taxon design">Design Smell</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Kode susah dipahami—niat penulisnya kabur, butuh waktu lama buat ngerti satu blok.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap sentuhan butuh jam-jaman ngeraba dulu—perubahan jadi lambat, salah paham bikin bug baru, dan pengetahuannya nyangkut di kepala satu orang.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Kejelasan / Clean Code</strong> → nama jujur, fungsi pendek, struktur yang membaca seperti niatnya.</span></div>
+          <div class="fieldnote">« Peta harta karun, tapi petunjuknya ditulis pakai sandi yang penulisnya sendiri lupa. »</div>
+        </div>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Gambaran besarnya</div>
+          <p>Ketujuh smell ini jarang datang sendirian—biasanya satu memicu yang lain. Bedanya dengan code smell: ini soal <b>bentuk sistem</b>, bukan satu potongan kode. Obatnya pun struktural: <code>SOLID</code>, <code>DRY</code>, <code>YAGNI</code>, plus disiplin jaga lingkungan kerja.</p>
+        </div>
+      </div>
+
+      <div class="fieldnote reveal d3">« Rumah yang dibiarkan membusuk—atap mulai bocor, fondasi retak halus, pintu seret. Tiap gejala kelihatan kecil, tapi makin lama dibiarkan, makin mahal (dan kadang mustahil) buat diperbaiki. »</div>
+    </div>
+  </section>
+
+<section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Anti-Pattern</div>
+        <h2>Raksasa &amp; kekusutan</h2>
+      </div>
+      <p class="lead reveal">Dua satwa paling sering ketemu di kode legacy. Yang satu bertubuh raksasa—nelan tanggung jawab seantero sistem. Yang satu lagi nggak gede, tapi alurnya kusut kayak benang tumpah. Keduanya tumbuh dari hal yang sama: kode nambah terus tanpa ada yang nge-desain.</p>
+
+      <p class="body reveal d2">Di taksonomi (seksi <code>01</code>) sempat dipreview, sekarang entri resminya. Catat ciri-cirinya—biar pas ketemu di rimba kamu langsung kenal.</p>
+
+      <div class="specimen s-anti reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">God Object</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Satu class megang &amp; ngendaliin <b>hampir semua</b> hal di sistem—data, alur, aturan. Ribuan baris, puluhan method nggak nyambung, dan tiap class lain nge-<code>import</code> dia. Hapus satu method, separuh app rusak.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap ganti satu hal kecil bisa nyenggol fitur yang nggak ada hubungannya, nggak bisa dites terpisah, dan jadi titik macet—semua orang ngantri ngedit file yang sama, merge conflict di mana-mana, lama-lama nggak ada yang berani nyentuh.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Kode legacy, OOP setengah jadi (objek cuma kantong global), dan tim yang kebiasaan "taruh di <code>Manager</code> dulu deh, nanti rapiin".</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">SystemManager.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">SystemManager</span> {        <span class="c">// 3100 baris, raja segalanya</span>
+    <span class="k">void</span> <span class="f">login</span>() { ... }
+    <span class="k">void</span> <span class="f">chargeCard</span>() { ... }
+    <span class="k">void</span> <span class="f">sendEmail</span>() { ... }
+    <span class="k">void</span> <span class="f">renderHtml</span>() { ... }
+    <span class="k">void</span> <span class="f">writeLog</span>() { ... }  <span class="c">// ...60 method lagi</span>
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>SRP</strong> → pecah per tanggung jawab. Tarik tiap kelompok method jadi class sendiri (<code>Auth</code>, <code>Payment</code>, <code>Mailer</code>, <code>View</code>), terus si raksasa cuma jadi koordinator tipis—atau hilang sama sekali.</span></div>
+          <div class="fieldnote">« Satu raja yang mengurus dapur, tentara, dan pajak sekaligus: begitu dia sakit, seluruh kerajaan lumpuh. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-anti reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Spaghetti Code</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Alur kontrol kusut—<code>if</code> nested dalam-dalam, flag boolean ke mana-mana, lompatan (<code>break</code>/<code>continue</code>/early <code>return</code>) yang bikin pusing. Susah diikuti, susah diubah; ngerti satu cabang butuh nelusurin lima yang lain.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap perubahan jadi lambat &amp; ngeri-ngeri sedap karena kamu nggak bisa nebak cabang mana yang ikut kena, bug ngumpet di nesting yang dalam, dan dev baru butuh berhari-hari cuma buat ngerti satu fungsi.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Kode yang tumbuh tanpa desain, tambal-sulam "fix dikit-dikit", dan fitur baru yang dijejalin pakai <code>if</code> tambahan ketimbang dipikirin strukturnya.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">OrderFlow.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">void</span> <span class="f">process</span>(<span class="t">Order</span> o) {
+    <span class="k">if</span> (o != <span class="k">null</span>) {
+        <span class="k">if</span> (o.<span class="f">isPaid</span>()) {
+            <span class="k">if</span> (!o.<span class="f">shipped</span>()) {
+                <span class="k">boolean</span> ok = <span class="k">true</span>;
+                <span class="k">for</span> (<span class="t">Item</span> it : o.<span class="f">items</span>()) {
+                    <span class="k">if</span> (it.<span class="f">stock</span>() &lt; <span class="n">1</span>) { ok = <span class="k">false</span>; <span class="k">break</span>; }
+                }
+                <span class="k">if</span> (ok) { ship(o); } <span class="k">else</span> { hold(o); }
+            }
+        }
+    }
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Structured programming</strong> + ekstrak fungsi. Pakai guard clause biar <code>null</code>/belum-bayar keluar duluan, ekstrak cek stok jadi method <code>allInStock(o)</code>, kurangi level nesting. Tiap blok jadi satu nama yang kebaca.</span></div>
+          <div class="fieldnote">« Sepiring spageti: tarik satu helai, semuanya ikut goyang—nggak ada awal-akhir yang jelas. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Sering jalan bareng</div>
+          <p>God Object dan Spaghetti suka muncul di tempat yang sama: satu class raksasa yang isinya alur kusut. Obatnya pun nyambung—pecah per tanggung jawab (<b>SRP</b>) bikin tiap potongan kecil, dan begitu kecil, ngeluruskan alurnya jadi gampang.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c19">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Anti-Pattern</div>
+        <h2>Alat &amp; ritual: satu palu buat semua, dan nyalin tanpa ngerti</h2>
+      </div>
+      <p class="lead reveal">Dua satwa ini lahir dari kenyamanan, bukan kemalasan. Satu maksa <strong>satu alat favorit</strong> buat tiap masalah. Satu lagi <strong>niru praktik orang</strong> tanpa paham kenapa praktik itu ada. Dua-duanya kelihatan produktif—sampai masalahnya nggak cocok sama cetakannya.</p>
+
+      <div class="specimen s-anti reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Golden Hammer</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Maksa <b>satu</b> tool/framework/pattern buat <b>segala</b> masalah. "Kalau cuma punya palu, semua keliatan paku." Tiap fitur baru jawabannya selalu sama: <code>pakai X aja</code>—padahal X nggak pas.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Solusi yang dipaksain bikin kode rapuh &amp; bertele-tele—regex buat JSON gampang jebol di edge case, dan tim kebablasan ngehindari alat yang justru lebih pas, jadi tiap masalah baru makin susah dibereskan.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Tim yang baru jago <b>satu</b> hal; orang yang nyaman sama satu solusi dan ogah belajar yang lain.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">ReportService.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">// "Regex bisa apa aja!" — semua diparse pakai regex,</span>
+<span class="c">// termasuk yang harusnya pakai parser beneran</span>
+<span class="t">String</span> sum = <span class="f">extract</span>(json, <span class="s">"\"total\":(\\d+)"</span>);
+<span class="t">String</span> tag = <span class="f">extract</span>(xml,  <span class="s">"&lt;name&gt;(.*?)&lt;/name&gt;"</span>);
+<span class="t">String</span> dt  = <span class="f">extract</span>(csv,  <span class="s">"^[^,]+,([^,]+)"</span>);
+<span class="c">// JSON parser, XML parser, CSV reader? Nggak, palu doang.</span></pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span>Pilih alat <strong>sesuai bentuk masalah</strong>, bukan sebaliknya. Perluas perkakas: tiap solusi punya zona nyamannya—JSON pakai parser JSON, bukan regex. Sadari kapan palu favoritmu udah mentok.</span></div>
+          <div class="fieldnote">« Tukang yang cuma bawa palu akan memukul sekrup, baut, dan engsel—lalu heran kenapa pintunya nggak nutup. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-anti reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Cargo Cult Programming</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Nyalin kode/praktik/pattern tanpa paham <b>kenapa</b>-nya—ritual tanpa pemahaman. Copas dari StackOverflow tanpa ngerti, atau nambahin <code>synchronized</code>, <code>try/catch</code> kosong, anotasi "biar aman" karena katanya gitu.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Kode penuh ritual yang nggak ada gunanya—<code>try/catch</code> kosong yang nelan error diam-diam bikin bug jadi mustahil dilacak, dan nggak ada yang berani benerin karena nggak ada yang ngerti kenapa baris itu ada di situ.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Codebase warisan dengan "begini caranya dari dulu"; dev yang niru senior tanpa nanya alasannya.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">UserLoader.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="t">User</span> <span class="f">load</span>(<span class="k">long</span> id) {
+    <span class="k">try</span> {
+        <span class="k">return</span> <span class="f">findById</span>(id);
+    } <span class="k">catch</span> (<span class="t">Exception</span> e) {
+        <span class="c">// "katanya wajib try/catch di tiap method"</span>
+        <span class="k">return</span> <span class="k">null</span>;   <span class="c">// error ditelan, nggak ngerti kenapa</span>
+    }
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Pahami dulu sebelum pakai.</strong> Tiap baris yang kamu salin harus bisa kamu jelasin alasannya. Kalau nggak tahu kenapa sebuah pattern ada, jangan tiru—cari tahu masalah apa yang dia selesaikan, baru putuskan apakah masalah itu masalahmu.</span></div>
+          <div class="fieldnote">« Suku cargo cult bikin menara kontrol dari bambu dan headphone dari batok kelapa, berharap pesawat pembawa barang datang lagi—niru bentuknya, tanpa paham mesin yang bikin pesawat terbang. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Sepupu dekat</div>
+          <p>Dua-duanya soal <b>relasi kamu sama alat</b>. Golden Hammer terlalu sayang sama satu alat; Cargo Cult pakai alat tanpa ngerti cara kerjanya. Obatnya sama: <b>tahu kenapa</b> sebelum tahu caranya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c20">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Anti-Pattern</div>
+        <h2>Sampah yang dibiarkan</h2>
+      </div>
+      <p class="lead reveal">Nggak semua bahaya itu kode yang aktif berbuat jahat. Kadang yang bikin codebase berat justru yang <strong>diam</strong>—kode mati yang takut disentuh, dan barang yang disimpan "siapa tahu kepakai". Dua spesimen ini sama-sama beban mati, beda cara munculnya.</p>
+
+      <div class="specimen s-anti reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Lava Flow</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Kode mati atau usang yang <b>membeku</b> di codebase—nggak ada yang berani hapus karena "jangan disentuh, nanti rusak". Nggak ada yang tahu fungsinya, jadi dibiarin.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap baca file kamu kebuang waktu nebak "ini kepakai nggak sih?"; orang baru makin lama paham; dan tiap refactor jadi ekstra ribet karena harus mutar-mutar batu beku yang nggak boleh disentuh.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Proyek lama tanpa test, sering ganti orang, dokumentasi nol—jadi takut nyentuh apa pun.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">PaymentService.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">PaymentService</span> {
+    <span class="c">// JANGAN HAPUS — dipakai 2019? entah. takut rusak.</span>
+    <span class="k">private</span> <span class="k">void</span> <span class="f">legacyReconcile</span>(<span class="t">String</span> mode) {
+        <span class="k">if</span> (mode.<span class="f">equals</span>(<span class="s">"OLD"</span>)) { ... }   <span class="c">// gak ada pemanggil</span>
+    }
+    <span class="c">// TODO(2020): cleanup nanti — nggak pernah datang</span>
+    <span class="k">private</span> <span class="t">String</span> <span class="f">oldHash</span>() { <span class="k">return</span> <span class="k">null</span>; }
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span>Tulis <strong>test</strong> dulu buat kunci perilaku yang masih dipakai, lalu <strong>hapus dead code</strong>—Git tetap nyimpen sejarahnya, jadi nggak benar-benar hilang. Biasakan <strong>Boy Scout Rule</strong>: tinggalkan lebih bersih dari pas datang.</span></div>
+          <div class="fieldnote">« Lava yang mengalir lama-lama mengeras jadi batu. Sekali membeku, dia jadi permanen di lanskap—dan semua orang cuma jalan memutarinya. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-anti reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Boat Anchor</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 2 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b></b><b></b><b></b></span> bahaya 2/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Komponen, library, atau kode disimpan "<b>siapa tahu nanti kepakai</b>"—padahal nggak pernah dipanggil. Cuma nambah berat: dependency, build time, dan beban mikir tiap orang baca.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Build makin lama &amp; artifact makin gemuk gara-gara dependency yang nggak dipakai; tiap upgrade atau audit keamanan kamu mesti ngurusin barang yang harusnya nggak ada di sana.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Sisa eksperimen, fitur yang batal, library yang dulu dipertimbangin tapi nggak jadi—masih nempel di <code>pom.xml</code>.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">pom.xml — dependency mati</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="c">&lt;!-- "mungkin dipakai buat reporting nanti" --&gt;</span>
+<span class="c">&lt;!-- (nggak ada satu pun import-nya) --&gt;</span>
+&lt;dependency&gt;
+  &lt;groupId&gt;org.apache.poi&lt;/groupId&gt;
+  &lt;artifactId&gt;poi-ooxml&lt;/artifactId&gt;
+&lt;/dependency&gt;</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>YAGNI</strong>—<em>You Aren't Gonna Need It</em>. Kalau belum dipakai sekarang, <strong>hapus</strong>. Butuh nanti? Tambah lagi nanti; Git inget.</span></div>
+          <div class="fieldnote">« Jangkar kapal itu berat. Diseret terus padahal kapal lagi jalan—bukannya menahan, malah bikin pelan. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Beda tipisnya</div>
+          <p>Keduanya beban mati, tapi bedanya di <b>kenapa ada</b>. <b>Lava Flow</b> lahir dari <em>takut</em>—dulu aktif, sekarang membeku karena nggak berani dihapus. <b>Boat Anchor</b> lahir dari <em>harapan</em>—disimpan buat masa depan yang nggak pernah datang. Obatnya sama: berani hapus, karena Git nggak pernah lupa.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c21">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Anti-Pattern</div>
+        <h2>Buru-buru &amp; misterius</h2>
+      </div>
+      <p class="lead reveal">Dua kebiasaan yang kelihatan "pinter" tapi malah bikin susah. Yang satu ngebut sebelum tahu jalannya; yang satu ninggalin angka misterius di kode buat ngebingungin orang besok—termasuk kamu sendiri.</p>
+
+      <div class="specimen s-anti reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Premature Optimization</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Ngoptimasi sebelum ada bukti—nggak ada <code>profiling</code>, cuma firasat "ini pasti lambat". Kejelasan dikorbanin demi kecepatan yang <b>belum tentu perlu</b>: cache rumit, micro-tweak bit, hindari method call demi "ngirit". Kata Knuth: ini <em>"root of all evil"</em>.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Kode jadi ruwet &amp; susah dibaca demi ngejar kecepatan yang ternyata nggak ngefek—waktu kebuang di tempat salah, sementara bottleneck asli malah kelewat.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Engineer yang baru baca artikel performa, hot-path imajiner, code review yang ribut soal nanodetik di kode yang jalan sekali sehari.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span>Bikin <strong>jelas &amp; benar dulu</strong>. Lalu <strong>profil</strong> buat nemu bottleneck asli. Baru optimasi bagian yang <strong>terbukti</strong> jadi masalah—dengan benchmark sebelum/sesudah.</span></div>
+          <div class="fieldnote">« Ngebut di jalan yang belum tahu arahnya. Bukannya cepet sampai, malah cepet nyasar. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-anti reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Magic Numbers / Strings</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 2 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b></b><b></b><b></b></span> bahaya 2/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Angka atau string telanjang nongol di tengah kode tanpa nama—<code>if (status == 3)</code>, <code>delay(86400)</code>. Yang baca harus nebak: 3 itu apa? 86400 itu detik sehari atau cuma kebetulan?</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Pas nilainya berubah kamu harus berburu tiap copy-nya satu-satu—kelewat satu langsung bug, dan orang baru butuh lama buat ngerti maksud angka itu.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Cek status, timeout, indeks array, kode rate/diskon, validasi panjang field—di mana pun "tau-tau ada angka".</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">Order.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="hl-bad"><span class="k">if</span> (order.<span class="f">status</span>() == <span class="n">3</span>) {        <span class="c">// 3 itu apa???</span></span>
+    scheduler.<span class="f">retry</span>(<span class="n">86400</span>);          <span class="c">// detik? jam?</span>
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span>Kasih <strong>nama</strong>: <code>enum</code> untuk status, <code>static final</code> bernama untuk konstanta. <code>if (order.status() == SHIPPED)</code> &amp; <code>retry(ONE_DAY_SECONDS)</code>—nilainya jadi cerita, bukan teka-teki.</span></div>
+          <div class="fieldnote">« Resep yang nulis "masukkan 220" — 220 apa? Gram? Derajat? Detik? Tanpa nama &amp; satuan, masakannya jadi judi. »</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c22">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Anti-Pattern</div>
+        <h2>Duplikat &amp; bikin ulang</h2>
+      </div>
+      <p class="lead reveal">Dua kebiasaan yang kelihatan produktif tapi mahal di belakang: nyalin kode yang udah jalan biar cepet, dan nulis ulang dari nol sesuatu yang udah ada matang. Satu bikin <strong>duplikasi</strong>, satu bikin <strong>roda yang gak bulat</strong>.</p>
+      <p class="body reveal d2">Keduanya anti-pattern karena <em>kelihatan</em> masuk akal pas dikerjain—"tinggal copas dikit", "ah, gampang kok bikin sendiri"—tapi ninggalin jejak yang nyiksa tim berbulan-bulan kemudian. Kenalin ciri-cirinya.</p>
+
+      <div class="specimen s-anti reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Copy-Paste Programming</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 4 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b></span> bahaya 4/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Nyelesaiin masalah baru dengan nyalin blok kode yang mirip, terus di-<em>tweak</em> dikit. Blok yang sama nyebar di banyak file—logika identik, beda variabel doang.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Deadline mepet, "yang penting jalan dulu", tim yang gak kenal helper/util yang udah ada.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">PriceCalc.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">PriceCalc</span> {
+    <span class="t">BigDecimal</span> <span class="f">withTaxA</span>(<span class="t">BigDecimal</span> p) {
+        <span class="k">return</span> p.<span class="f">multiply</span>(<span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"1.11"</span>));
+    }
+    <span class="c">// copas, ganti 1.11 -&gt; 1.05 doang</span>
+    <span class="t">BigDecimal</span> <span class="f">withTaxB</span>(<span class="t">BigDecimal</span> p) {
+        <span class="k">return</span> p.<span class="f">multiply</span>(<span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"1.05"</span>));
+    }
+}</pre>
+          </div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Menghasilkan <b>Duplicated Code</b> (smell). Pas ada bug atau aturan berubah, kamu harus <b>fix di banyak tempat</b>—lupa satu, sisanya diam-diam salah.</span></div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Extract &amp; reuse</strong> + <strong>DRY</strong>: tarik blok ke satu method/class yang diparameterkan, panggil dari mana-mana. Satu sumber kebenaran, fix sekali.</span></div>
+          <div class="fieldnote">« Fotokopi catatan yang ada typo-nya buat 20 orang. Pas typo ketahuan, kamu harus ngejar 20 lembar—bukan benerin satu master. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-anti reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Reinventing the Wheel</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 3 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b></b><b></b></span> bahaya 3/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Nulis sendiri sesuatu yang udah ada versi matang &amp; teruji: parser tanggal bikinan sendiri, hashing/crypto rakitan sendiri, JSON serializer kustom. Edge case yang udah lama dipikirin orang lain, kamu temuin lagi satu-satu—lewat bug produksi.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Kamu nanggung beban maintenance + edge-case yang sebenernya udah dipecahin orang lain—bug bermunculan di produksi, dan waktu yang harusnya buat fitur kebuang nge-debug roda yang harusnya gak perlu kamu bikin.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Sindrom <em>"not invented here"</em>, gengsi teknis, atau gak tahu librarynya udah ada.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">MyDate.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">MyDate</span> {
+    <span class="c">// parser tanggal sendiri — leap year? timezone? lupa.</span>
+    <span class="k">static</span> <span class="t">int</span>[] <span class="f">parse</span>(<span class="t">String</span> s) {
+        <span class="t">String</span>[] p = s.<span class="f">split</span>(<span class="s">"-"</span>);
+        <span class="k">return</span> <span class="k">new</span> <span class="t">int</span>[] {
+            <span class="t">Integer</span>.<span class="f">parseInt</span>(p[<span class="n">0</span>]),
+            <span class="t">Integer</span>.<span class="f">parseInt</span>(p[<span class="n">1</span>]),
+            <span class="t">Integer</span>.<span class="f">parseInt</span>(p[<span class="n">2</span>])
+        }; <span class="c">// validasi? 31 Feb lolos.</span>
+    }
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span>Pakai <strong>library teruji</strong>: <code>java.time.LocalDate</code>, lib crypto standar, JSON lib mapan. Mereka udah lewat ribuan jam pengujian &amp; edge case.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Tapi awas</span><span>Lawannya juga jebakan: <b>nambah dependency asal-asalan</b> buat hal sepele. Timbang dulu—footprint, maintenance, lisensi, keamanan (lihat <code>dependency-hygiene</code>). Crypto: <em>jangan pernah</em> bikin sendiri. Util 3 baris: gak perlu lib.</span></div>
+          <div class="fieldnote">« Mau nyebrang sungai, mending naik jembatan yang udah berdiri puluhan tahun—daripada nge-las jembatan sendiri pagi ini terus dilewatin truk sore ini. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Garis tipisnya</div>
+          <p>Copy-paste = males <b>reuse</b>. Reinvent = males <b>cari</b>. Obatnya beda arah: yang satu nyatuin kode jadi satu, yang satu mindahin kerjaan ke kode orang yang udah teruji. Sama-sama soal "jangan kerja dua kali", tapi jangan kebablasan jadi tukang tempel dependency.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c23">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Bestiary · Anti-Pattern</div>
+        <h2>Tanpa bentuk &amp; hantu lewat</h2>
+      </div>
+      <p class="lead reveal">Dua satwa yang gampang ketuker sama "biasa aja". Satu gede banget sampai kamu nggak sadar lagi bentuknya kayak apa; satu kecil dan sekilas lewat, numpang lewat doang. Beda ukuran, sama-sama bikin pusing.</p>
+
+      <div class="specimen s-anti reveal d1">
+        <div class="spec__head">
+          <span class="spec__name">Big Ball of Mud</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 5 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b></span> bahaya 5/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Sistem <b>tanpa arsitektur yang jelas</b>: semua nyambung ke semua, batas modul lebur, nggak ada lapisan. Mau utak-atik satu sudut, efeknya ngerembet ke mana-mana yang nggak kamu duga.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Tiap fitur baru makin lama dikerjain dan makin sering meledakin bagian lain yang nggak nyangkut; dev baru butuh berbulan-bulan baru paham, dan akhirnya semua takut nyentuh apa pun sampai sistemnya beku.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Kode yang tumbuh <b>organik tanpa desain</b>, terus-terusan di bawah tekanan deadline. Tambal sana-sini, "yang penting jalan", bertahun-tahun nggak pernah ada yang berani benerin strukturnya.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">OrderModule.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">OrderModule</span> {            <span class="c">// "modul" tapi tau segalanya</span>
+    <span class="t">DbConnection</span> db; <span class="t">HttpClient</span> http; <span class="t">UiPanel</span> ui;
+    <span class="k">void</span> <span class="f">checkout</span>() {
+        <span class="t">String</span> sql = <span class="s">"SELECT ..."</span>;   <span class="c">// SQL mentah di sini</span>
+        ui.<span class="f">render</span>();                <span class="c">// UI dipanggil langsung</span>
+        http.<span class="f">post</span>(<span class="s">"/payment"</span>);     <span class="c">// jaringan nyempil juga</span>
+        <span class="t">InventoryModule</span>.<span class="f">stock</span>--;   <span class="c">// colek modul tetangga</span>
+    }
+}</pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Tetapkan batas &amp; lapisan</strong> (Separation of Concerns): pisahkan domain, persistence, UI, jaringan. Lalu <strong>refactor bertahap</strong>—bungkus modul di balik antarmuka, potong ketergantungan silang satu per satu. Jangan rewrite total sekaligus.</span></div>
+          <div class="fieldnote">« Kayak gumpalan lumpur raksasa: dari jauh kelihatan satu objek, tapi pas dipegang nggak ada pegangan, nggak ada bentuk—tangan kamu cuma masuk ke dalamnya. »</div>
+        </div>
+      </div>
+
+      <div class="specimen s-anti reveal d2">
+        <div class="spec__head">
+          <span class="spec__name">Poltergeist</span>
+          <span class="taxon anti">Anti-Pattern</span>
+          <span class="danger" title="bahaya 2 dari 5"><span class="bars"><b class="on"></b><b class="on"></b><b></b><b></b><b></b></span> bahaya 2/5</span>
+        </div>
+        <div class="spec__body">
+          <div class="spec__row"><span class="spec__lbl">Ciri-ciri</span><span>Class "hantu" berumur pendek: dibuat, dipakai sebentar buat <b>manggil class lain</b>, terus langsung dibuang. Dia <b>nggak nambah nilai</b>—cuma perantara yang numpang lewat, nyimpan state sebentar, lalu hilang.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Akibat</span><span>Baca alur jadi capek karena tiap aksi mesti loncat lewat perantara kosong dulu; class numpuk tanpa guna, dan saat debug kamu buang waktu nelusurin objek yang ternyata cuma nerusin panggilan.</span></div>
+          <div class="spec__row"><span class="spec__lbl">Habitat</span><span>Kode yang dibikin "biar rapi": tiap aksi dikasih class koordinator sendiri, padahal isinya cuma satu baris yang nerusin ke objek lain.</span></div>
+          <div class="codecard">
+            <div class="codecard__bar"><span class="codecard__name">ReportStarter.java</span><span class="codecard__verdict bad">SPESIMEN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">ReportStarter</span> {        <span class="c">// hantu: cuma numpang lewat</span>
+    <span class="k">private</span> <span class="t">ReportEngine</span> engine;
+    <span class="t">ReportStarter</span>(<span class="t">ReportEngine</span> e) { <span class="k">this</span>.engine = e; }
+    <span class="k">void</span> <span class="f">start</span>() {
+        engine.<span class="f">generate</span>();        <span class="c">// itu doang isinya</span>
+    }
+}
+<span class="c">// pemanggil: new ReportStarter(engine).start();</span></pre>
+          </div>
+          <div class="spec__row antidote"><span class="spec__lbl">Penangkal</span><span><strong>Hapus si hantu, panggil langsung.</strong> Kalau dia cuma nerusin ke <code>engine.generate()</code>, ya pemanggil cukup panggil <code>engine.generate()</code> sendiri. Satu objek lebih sedikit, satu loncatan baca lebih sedikit.</span></div>
+          <div class="fieldnote">« Kayak hantu di lorong: muncul sebentar, lewat di depan kamu, terus hilang. Bikin kaget, tapi nggak ngerjain apa-apa. »</div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Skala beda, akar sama</div>
+          <p>Big Ball of Mud itu soal <b>kurang struktur</b> di level sistem; Poltergeist soal <b>kelebihan struktur kosong</b> di level satu class. Obatnya cuma satu pertanyaan: setiap potongan kode ini benar-benar <b>punya tanggung jawab</b>, atau cuma numpang ada?</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c24">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Tutup · Cara pakai panduan ini</div>
+        <h2>Panduan, bukan kitab suci.</h2>
+      </div>
+      <p class="lead reveal">Kamu udah jalan jauh: dari prinsip yang sehat, lewat code smell, design smell, sampai anti-pattern. Sebelum tutup buku, satu hal yang paling penting—<strong>semua ini alat bantu mikir, bukan hukum yang dilanggar bikin kamu masuk neraka</strong>.</p>
+
+      <p class="body reveal d2">Empat tipe "satwa" tadi punya peran beda. Ingat ini aja:</p>
+
+      <div class="rule reveal d1">
+        <div class="rule__head"><span class="rule__tag">◈ Aturan Lapangan</span><span class="rule__name">Empat alat, satu kompas</span></div>
+        <p class="rule__say"><b>Prinsip</b> = kompas (arah ke mana). <b>Code smell</b> = alarm dini (gejala lokal). <b>Design smell</b> = pembusukan struktur (busuk dari dalam). <b>Anti-pattern</b> = jebakan yang kelihatan masuk akal—tapi <b>selalu ada jalan keluarnya</b>.</p>
+      </div>
+
+      <div class="fieldnote reveal d2">« Peta dan kompas nggak nyetir mobilnya buat kamu. Mereka cuma bikin kamu nggak nyasar. Yang megang setir tetap kamu. »</div>
+
+      <p class="body reveal d2">Kompas nunjuk utara, tapi kadang jalannya emang harus belok. Di sinilah orang sering salah: nganggap prinsip itu aturan absolut, terus jadi <em>dogmatis</em>—malah bikin kode lebih jelek demi "kemurnian". Itu bahaya beneran:</p>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Anti-dogma — baca ini</div>
+          <p>Semua di panduan ini <b>HEURISTIK, bukan hukum</b>. <b>Konteks menang.</b> Kadang "melanggar" itu justru tepat: <b>duplikasi sengaja</b> dua kode yang <em>reason-to-change</em>-nya beda (mirip kebetulan, bukan DRY violation), <b>optimasi</b> yang udah kamu profil dan kebukti perlu, abstraction yang kamu tahan sampai konsumen kedua muncul (YAGNI &gt; DRY). Tujuan akhirnya bukan skor SOLID sempurna—tapi <b>kode yang gampang diubah &amp; dipahami</b>. Kalau "memurnikan" malah bikin lebih ribet, kamu lagi nyembah aturan, bukan nyelesain masalah.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d3">Jadi gimana cara pakainya tiap hari? Rekap singkat—tempel di kepala:</p>
+
+      <ul class="creed reveal d3">
+        <li><b>Kenali sebelum benerin</b> — tahu ini smell, design smell, atau anti-pattern dulu, baru pilih obatnya.</li>
+        <li><b>Prinsip dilanggar → smell muncul</b> — gejala itu sinyal, bukan musuh. Lacak balik ke prinsip mana yang kebobol.</li>
+        <li><b>Refactor pas lewat — Boy Scout</b> — tinggalin kode sedikit lebih bersih dari pas kamu datang. Nggak usah nunggu izin.</li>
+        <li><b>Aturan itu heuristik, bukan dogma</b> — konteks &gt; kemurnian. Boleh "melanggar" kalau sadar &amp; ada alasan.</li>
+      </ul>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◈ Panduan pendamping</div>
+          <p>Deck ini fokus ke <b>prinsip, smell &amp; anti-pattern</b>. Buat lebih dalam, ada deck saudara: <b>Clean Code</b> (penamaan, fungsi kecil, komentar yang jujur), <b>OOP</b> (encapsulation, polymorphism, kapan objek bener-bener objek), dan <b>Design Patterns</b> (solusi baku buat masalah berulang). Empat-empatnya saling nyambung—baca berbarengan, jangan satu-satu doang.</p>
+        </div>
+      </div>
+
+      <div class="fieldnote reveal d3">« Naturalis ulung bukan yang hafal semua nama Latin—tapi yang tahu kapan harus diem, ngamatin, dan biarin hutan apa adanya. Begitu juga kode: kadang yang terbaik adalah nggak ngutak-atik. »</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Code in the Wild</b> · Field guide prinsip · smell · anti-pattern, untuk tim · contoh Java · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) { i = Math.max(0, Math.min(total - 1, i)); sections[i].scrollIntoView({ behavior: "smooth", block: "start" }); }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") { ev.preventDefault(); goTo(current + 1); }
+    else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") { ev.preventDefault(); goTo(current - 1); }
+    else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+
+  var tbtn = document.getElementById("themeToggle");
+  if (tbtn) tbtn.addEventListener("click", function () {
+    var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("fg-theme", next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

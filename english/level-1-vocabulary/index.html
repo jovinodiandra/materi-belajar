@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rekap Vocabulary — Level 1</title>
+<meta name="description" content="Rekap seluruh kosakata yang sudah diajarkan di Level 1 Notebook Inggris, digabung dari semua materi.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.08);
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --maxw: 1120px;
+  }
+  body { background: var(--void); color: var(--ink); font-family: var(--sans); line-height: 1.66; font-size: 17px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(18px,5vw,60px); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 40; background: rgba(11,14,26,.88); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar__inner { display: flex; align-items: center; gap: 14px; padding: 12px clamp(18px,5vw,60px); max-width: var(--maxw); margin: 0 auto; font-family: var(--mono); font-size: 12.5px; }
+  .topbar__inner a.home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+  .topbar__inner a.home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .topbar__inner .path { color: var(--muted-2); }
+  .topbar__inner .path b { color: var(--ink-strong); }
+
+  .hero { padding: clamp(40px,6vw,64px) 0 clamp(20px,3vw,32px); }
+  .hero .eyebrow { font-family: var(--mono); color: var(--cyan); font-size: 13px; margin-bottom: 16px; }
+  .hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(28px,5vw,48px); line-height: 1.12; letter-spacing: -.01em; color: var(--ink-strong); max-width: 22ch; }
+  .hero h1 em { color: var(--cyan); font-style: italic; }
+  .hero p.sub { margin-top: 18px; max-width: 72ch; font-size: 17.5px; color: var(--ink); }
+  .hero p.sub b { color: var(--ink-strong); }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px; min-width: 110px; }
+  .stat .n { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--cyan); }
+  .stat .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  main { padding-bottom: 60px; }
+  .group { margin-top: 10px; padding: 30px 0; border-top: 1px solid var(--line-soft); }
+  .group:first-of-type { border-top: none; }
+  .grouphead { margin-bottom: 16px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .grouphead .kicker { font-family: var(--mono); font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--amber); }
+  .grouphead .count { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 11px; padding: 16px 18px; background: var(--panel); transition: border-color .2s, transform .2s; }
+  .card:hover { transform: translateY(-3px); border-color: var(--cyan-dim); }
+  .vocab-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .vocab-word { font-family: var(--serif); font-weight: 600; font-size: 18px; color: var(--ink-strong); }
+  .vocab-ipa { font-family: var(--mono); font-size: 12px; color: var(--muted-2); }
+  .vocab-meaning { color: var(--cyan); font-weight: 600; font-size: 13.5px; margin-left: auto; }
+  .pos { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; }
+  .card p { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .card p i { color: var(--ink); font-style: italic; }
+  .src { display: inline-block; margin-top: 8px; font-family: var(--mono); font-size: 10px; letter-spacing: .04em; color: var(--muted-2); border: 1px dashed var(--line); border-radius: 5px; padding: 2px 7px; }
+
+  .searchbox { margin: 22px 0 28px; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px; max-width: 420px; }
+  .searchbox input { flex: 1; border: none; background: transparent; outline: none; color: var(--ink-strong); font-size: 14.5px; font-family: var(--sans); }
+  .searchbox input::placeholder { color: var(--muted); }
+  .searchbox svg { color: var(--muted); flex: none; }
+  .card[hidden] { display: none; }
+
+  footer { padding: 26px clamp(18px,5vw,60px); font-family: var(--mono); font-size: 12px; color: var(--muted-2); text-align: center; border-top: 1px solid var(--line); }
+  footer a { color: var(--cyan); text-decoration: none; }
+
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__inner">
+    <a class="home" href="../index.html">← Belajar Inggris</a>
+    <span class="path">docs/learning/english/level-1-vocabulary/<b>index.md</b></span>
+  </div>
+</div>
+
+<main>
+  <div class="wrap hero">
+    <div class="eyebrow">// Level 1 · Rekap Vocabulary</div>
+    <h1>Kata-kata untuk bercerita soal <em>kemarin, besok, dan di mana</em>.</h1>
+    <p class="sub">Halaman ini menggabungkan <b>semua kosakata</b> dari empat Materi di Level 1: Simple Past, Simple Future, Question Words, dan Preposisi Dasar. Sama seperti Level 0, daftar ini terus tumbuh setiap kali Materi baru selesai ditulis — jadi kamu punya satu rujukan lengkap, bukan tersebar di banyak halaman.</p>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statTotal">72</div><div class="l">total kata</div></div>
+      <div class="stat"><div class="n">4</div><div class="l">materi tergabung</div></div>
+    </div>
+    <div class="searchbox">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Cari kata… (mis. deadline, whose)" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 1 · Simple Past</span><span class="count">18 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="yesterday"><div class="vocab-head"><span class="vocab-word">yesterday</span><span class="vocab-ipa">/ˈjestərdeɪ/</span><span class="vocab-meaning">kemarin</span></div><p><span class="pos">adverb</span> — Contoh: <i>"I deployed the app yesterday."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="ago"><div class="vocab-head"><span class="vocab-word">ago</span><span class="vocab-ipa">/əˈɡoʊ/</span><span class="vocab-meaning">yang lalu</span></div><p><span class="pos">adverb</span> — Contoh: <i>"We fixed that bug two days ago."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="last"><div class="vocab-head"><span class="vocab-word">last</span><span class="vocab-ipa">/læst/</span><span class="vocab-meaning">lalu/terakhir (mis. last night/week)</span></div><p><span class="pos">adjective</span> — Contoh: <i>"Last night, the server crashed."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="did"><div class="vocab-head"><span class="vocab-word">did</span><span class="vocab-ipa">/dɪd/</span><span class="vocab-meaning">bentuk lampau kata bantu "do"</span></div><p><span class="pos">auxiliary verb</span> — Contoh: <i>"Did you push the code?"</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="didn't"><div class="vocab-head"><span class="vocab-word">didn't</span><span class="vocab-ipa">/ˈdɪdənt/</span><span class="vocab-meaning">tidak (bentuk lampau, negatif)</span></div><p><span class="pos">auxiliary verb</span> — Contoh: <i>"I didn't finish the migration."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="worked"><div class="vocab-head"><span class="vocab-word">worked</span><span class="vocab-ipa">/wɜːrkt/</span><span class="vocab-meaning">bekerja (lampau, regular)</span></div><p><span class="pos">verb</span> — Contoh: <i>"She worked on the frontend all day."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="finished"><div class="vocab-head"><span class="vocab-word">finished</span><span class="vocab-ipa">/ˈfɪnɪʃt/</span><span class="vocab-meaning">selesai (lampau, regular)</span></div><p><span class="pos">verb</span> — Contoh: <i>"We finished the sprint on time."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="fixed"><div class="vocab-head"><span class="vocab-word">fixed</span><span class="vocab-ipa">/fɪkst/</span><span class="vocab-meaning">memperbaiki (lampau, regular)</span></div><p><span class="pos">verb</span> — Contoh: <i>"He fixed the bug before lunch."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="released"><div class="vocab-head"><span class="vocab-word">released</span><span class="vocab-ipa">/rɪˈliːst/</span><span class="vocab-meaning">merilis (lampau, regular)</span></div><p><span class="pos">verb</span> — Contoh: <i>"The team released version 2.0."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="went"><div class="vocab-head"><span class="vocab-word">went</span><span class="vocab-ipa">/went/</span><span class="vocab-meaning">pergi (lampau irregular dari "go")</span></div><p><span class="pos">verb</span> — Contoh: <i>"I went to the office early."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="wrote"><div class="vocab-head"><span class="vocab-word">wrote</span><span class="vocab-ipa">/roʊt/</span><span class="vocab-meaning">menulis (lampau irregular dari "write")</span></div><p><span class="pos">verb</span> — Contoh: <i>"She wrote the documentation."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="found"><div class="vocab-head"><span class="vocab-word">found</span><span class="vocab-ipa">/faʊnd/</span><span class="vocab-meaning">menemukan (lampau irregular dari "find")</span></div><p><span class="pos">verb</span> — Contoh: <i>"We found the root cause."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="broke"><div class="vocab-head"><span class="vocab-word">broke</span><span class="vocab-ipa">/broʊk/</span><span class="vocab-meaning">rusak (lampau irregular dari "break")</span></div><p><span class="pos">verb</span> — Contoh: <i>"The build broke overnight."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="began"><div class="vocab-head"><span class="vocab-word">began</span><span class="vocab-ipa">/bɪˈɡæn/</span><span class="vocab-meaning">memulai (lampau irregular dari "begin")</span></div><p><span class="pos">verb</span> — Contoh: <i>"The meeting began at 9 AM."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="forgot"><div class="vocab-head"><span class="vocab-word">forgot</span><span class="vocab-ipa">/fərˈɡɒt/</span><span class="vocab-meaning">lupa (lampau irregular dari "forget")</span></div><p><span class="pos">verb</span> — Contoh: <i>"I forgot to commit my changes."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="bug"><div class="vocab-head"><span class="vocab-word">bug</span><span class="vocab-ipa">/bʌɡ/</span><span class="vocab-meaning">bug program</span></div><p><span class="pos">noun</span> — Contoh: <i>"There was a bug in production."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="deploy"><div class="vocab-head"><span class="vocab-word">deploy</span><span class="vocab-ipa">/dɪˈplɔɪ/</span><span class="vocab-meaning">menerapkan/deploy (bentuk dasar)</span></div><p><span class="pos">verb</span> — Contoh: <i>"We deploy every Friday."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="meeting"><div class="vocab-head"><span class="vocab-word">meeting</span><span class="vocab-ipa">/ˈmiːtɪŋ/</span><span class="vocab-meaning">rapat</span></div><p><span class="pos">noun</span> — Contoh: <i>"The meeting ended late."</i></p><span class="src">dari Materi 1</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 2 · Simple Future</span><span class="count">18 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="will"><div class="vocab-head"><span class="vocab-word">will</span><span class="vocab-ipa">/wɪl/</span><span class="vocab-meaning">akan (niat spontan/prediksi)</span></div><p><span class="pos">modal verb</span> — Contoh: <i>"I will fix this bug tonight."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="won't"><div class="vocab-head"><span class="vocab-word">won't</span><span class="vocab-ipa">/woʊnt/</span><span class="vocab-meaning">tidak akan (will not)</span></div><p><span class="pos">modal verb</span> — Contoh: <i>"The server won't crash again."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="going to"><div class="vocab-head"><span class="vocab-word">going to</span><span class="vocab-ipa">/ˈɡoʊɪŋ tuː/</span><span class="vocab-meaning">akan (rencana yang sudah ditentukan)</span></div><p><span class="pos">phrase</span> — Contoh: <i>"We are going to launch v2 next week."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="shall"><div class="vocab-head"><span class="vocab-word">shall</span><span class="vocab-ipa">/ʃæl/</span><span class="vocab-meaning">akan (formal, ajakan)</span></div><p><span class="pos">modal verb</span> — Contoh: <i>"Shall we review the pull request?"</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="plan"><div class="vocab-head"><span class="vocab-word">plan</span><span class="vocab-ipa">/plæn/</span><span class="vocab-meaning">rencana; berencana</span></div><p><span class="pos">noun/verb</span> — Contoh: <i>"I plan to refactor this module."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="tomorrow"><div class="vocab-head"><span class="vocab-word">tomorrow</span><span class="vocab-ipa">/təˈmɒroʊ/</span><span class="vocab-meaning">besok</span></div><p><span class="pos">adverb</span> — Contoh: <i>"We will deploy tomorrow."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="tonight"><div class="vocab-head"><span class="vocab-word">tonight</span><span class="vocab-ipa">/təˈnaɪt/</span><span class="vocab-meaning">malam ini</span></div><p><span class="pos">adverb</span> — Contoh: <i>"I'm going to push the fix tonight."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="soon"><div class="vocab-head"><span class="vocab-word">soon</span><span class="vocab-ipa">/suːn/</span><span class="vocab-meaning">segera</span></div><p><span class="pos">adverb</span> — Contoh: <i>"The update will be ready soon."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="later"><div class="vocab-head"><span class="vocab-word">later</span><span class="vocab-ipa">/ˈleɪtər/</span><span class="vocab-meaning">nanti</span></div><p><span class="pos">adverb</span> — Contoh: <i>"I'll review your code later."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="next week"><div class="vocab-head"><span class="vocab-word">next week</span><span class="vocab-ipa">/nekst wiːk/</span><span class="vocab-meaning">minggu depan</span></div><p><span class="pos">phrase</span> — Contoh: <i>"The sprint ends next week."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="upcoming"><div class="vocab-head"><span class="vocab-word">upcoming</span><span class="vocab-ipa">/ˈʌpˌkʌmɪŋ/</span><span class="vocab-meaning">yang akan datang</span></div><p><span class="pos">adjective</span> — Contoh: <i>"There's an upcoming release."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="schedule"><div class="vocab-head"><span class="vocab-word">schedule</span><span class="vocab-ipa">/ˈskedʒuːl/</span><span class="vocab-meaning">jadwal; menjadwalkan</span></div><p><span class="pos">noun/verb</span> — Contoh: <i>"We scheduled the deployment for Friday."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="launch"><div class="vocab-head"><span class="vocab-word">launch</span><span class="vocab-ipa">/lɔːntʃ/</span><span class="vocab-meaning">meluncurkan</span></div><p><span class="pos">verb</span> — Contoh: <i>"They will launch the app in July."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="release"><div class="vocab-head"><span class="vocab-word">release</span><span class="vocab-ipa">/rɪˈliːs/</span><span class="vocab-meaning">rilis; merilis</span></div><p><span class="pos">noun/verb</span> — Contoh: <i>"We are going to release a hotfix."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="predict"><div class="vocab-head"><span class="vocab-word">predict</span><span class="vocab-ipa">/prɪˈdɪkt/</span><span class="vocab-meaning">memprediksi</span></div><p><span class="pos">verb</span> — Contoh: <i>"I predict this feature will take two days."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="intend"><div class="vocab-head"><span class="vocab-word">intend</span><span class="vocab-ipa">/ɪnˈtend/</span><span class="vocab-meaning">berniat</span></div><p><span class="pos">verb</span> — Contoh: <i>"We intend to migrate to the cloud."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="deadline"><div class="vocab-head"><span class="vocab-word">deadline</span><span class="vocab-ipa">/ˈdedlaɪn/</span><span class="vocab-meaning">tenggat waktu</span></div><p><span class="pos">noun</span> — Contoh: <i>"The deadline is next Monday."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="probably"><div class="vocab-head"><span class="vocab-word">probably</span><span class="vocab-ipa">/ˈprɒbəbli/</span><span class="vocab-meaning">kemungkinan besar</span></div><p><span class="pos">adverb</span> — Contoh: <i>"This will probably take longer than expected."</i></p><span class="src">dari Materi 2</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 3 · Question Words</span><span class="count">18 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="what"><div class="vocab-head"><span class="vocab-word">what</span><span class="vocab-ipa">/wɒt/</span><span class="vocab-meaning">apa</span></div><p><span class="pos">question word</span> — Contoh: <i>"What is the bug?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="where"><div class="vocab-head"><span class="vocab-word">where</span><span class="vocab-ipa">/weər/</span><span class="vocab-meaning">di mana</span></div><p><span class="pos">question word</span> — Contoh: <i>"Where is the server hosted?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="when"><div class="vocab-head"><span class="vocab-word">when</span><span class="vocab-ipa">/wen/</span><span class="vocab-meaning">kapan</span></div><p><span class="pos">question word</span> — Contoh: <i>"When did you deploy this?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="who"><div class="vocab-head"><span class="vocab-word">who</span><span class="vocab-ipa">/huː/</span><span class="vocab-meaning">siapa</span></div><p><span class="pos">question word</span> — Contoh: <i>"Who wrote this function?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="whom"><div class="vocab-head"><span class="vocab-word">whom</span><span class="vocab-ipa">/huːm/</span><span class="vocab-meaning">siapa (objek, formal)</span></div><p><span class="pos">question word</span> — Contoh: <i>"To whom should I report this bug?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="whose"><div class="vocab-head"><span class="vocab-word">whose</span><span class="vocab-ipa">/huːz/</span><span class="vocab-meaning">milik siapa</span></div><p><span class="pos">question word</span> — Contoh: <i>"Whose laptop is this?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="why"><div class="vocab-head"><span class="vocab-word">why</span><span class="vocab-ipa">/waɪ/</span><span class="vocab-meaning">kenapa</span></div><p><span class="pos">question word</span> — Contoh: <i>"Why did the build fail?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="which"><div class="vocab-head"><span class="vocab-word">which</span><span class="vocab-ipa">/wɪtʃ/</span><span class="vocab-meaning">yang mana</span></div><p><span class="pos">question word</span> — Contoh: <i>"Which branch should I merge?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="how"><div class="vocab-head"><span class="vocab-word">how</span><span class="vocab-ipa">/haʊ/</span><span class="vocab-meaning">bagaimana</span></div><p><span class="pos">question word</span> — Contoh: <i>"How do I fix this error?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="how much"><div class="vocab-head"><span class="vocab-word">how much</span><span class="vocab-ipa">/haʊ mʌtʃ/</span><span class="vocab-meaning">berapa banyak (uncountable)</span></div><p><span class="pos">phrase</span> — Contoh: <i>"How much memory does it use?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="how many"><div class="vocab-head"><span class="vocab-word">how many</span><span class="vocab-ipa">/haʊ ˈmeni/</span><span class="vocab-meaning">berapa banyak (countable)</span></div><p><span class="pos">phrase</span> — Contoh: <i>"How many tests failed?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="how often"><div class="vocab-head"><span class="vocab-word">how often</span><span class="vocab-ipa">/haʊ ˈɔːfən/</span><span class="vocab-meaning">seberapa sering</span></div><p><span class="pos">phrase</span> — Contoh: <i>"How often do you deploy?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="question"><div class="vocab-head"><span class="vocab-word">question</span><span class="vocab-ipa">/ˈkwestʃən/</span><span class="vocab-meaning">pertanyaan</span></div><p><span class="pos">noun</span> — Contoh: <i>"I have a question about this API."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="answer"><div class="vocab-head"><span class="vocab-word">answer</span><span class="vocab-ipa">/ˈænsər/</span><span class="vocab-meaning">jawaban; menjawab</span></div><p><span class="pos">noun/verb</span> — Contoh: <i>"Can you answer my question?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="ask"><div class="vocab-head"><span class="vocab-word">ask</span><span class="vocab-ipa">/æsk/</span><span class="vocab-meaning">bertanya</span></div><p><span class="pos">verb</span> — Contoh: <i>"Feel free to ask if you're stuck."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="clarify"><div class="vocab-head"><span class="vocab-word">clarify</span><span class="vocab-ipa">/ˈklærɪfaɪ/</span><span class="vocab-meaning">memperjelas</span></div><p><span class="pos">verb</span> — Contoh: <i>"Could you clarify the requirement?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="confirm"><div class="vocab-head"><span class="vocab-word">confirm</span><span class="vocab-ipa">/kənˈfɜːrm/</span><span class="vocab-meaning">mengonfirmasi</span></div><p><span class="pos">verb</span> — Contoh: <i>"Can you confirm the deployment succeeded?"</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="reason"><div class="vocab-head"><span class="vocab-word">reason</span><span class="vocab-ipa">/ˈriːzən/</span><span class="vocab-meaning">alasan</span></div><p><span class="pos">noun</span> — Contoh: <i>"What's the reason for this change?"</i></p><span class="src">dari Materi 3</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 4 · Preposisi Dasar</span><span class="count">18 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="in"><div class="vocab-head"><span class="vocab-word">in</span><span class="vocab-ipa">/ɪn/</span><span class="vocab-meaning">di (dalam — bulan/tahun/ruang besar)</span></div><p><span class="pos">preposition</span> — Contoh: <i>"We started this project in January."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="on"><div class="vocab-head"><span class="vocab-word">on</span><span class="vocab-ipa">/ɒn/</span><span class="vocab-meaning">di (permukaan/hari/tanggal)</span></div><p><span class="pos">preposition</span> — Contoh: <i>"The meeting is on Monday."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="at"><div class="vocab-head"><span class="vocab-word">at</span><span class="vocab-ipa">/æt/</span><span class="vocab-meaning">di (titik waktu/tempat spesifik)</span></div><p><span class="pos">preposition</span> — Contoh: <i>"Let's meet at 9 AM."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="morning"><div class="vocab-head"><span class="vocab-word">morning</span><span class="vocab-ipa">/ˈmɔːrnɪŋ/</span><span class="vocab-meaning">pagi</span></div><p><span class="pos">noun</span> — Contoh: <i>"I check emails in the morning."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="afternoon"><div class="vocab-head"><span class="vocab-word">afternoon</span><span class="vocab-ipa">/ˌæftərˈnuːn/</span><span class="vocab-meaning">siang/sore</span></div><p><span class="pos">noun</span> — Contoh: <i>"We have standup in the afternoon."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="evening"><div class="vocab-head"><span class="vocab-word">evening</span><span class="vocab-ipa">/ˈiːvnɪŋ/</span><span class="vocab-meaning">malam (awal)</span></div><p><span class="pos">noun</span> — Contoh: <i>"The deployment is in the evening."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="night"><div class="vocab-head"><span class="vocab-word">night</span><span class="vocab-ipa">/naɪt/</span><span class="vocab-meaning">malam</span></div><p><span class="pos">noun</span> — Contoh: <i>"The server crashed at night."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="weekend"><div class="vocab-head"><span class="vocab-word">weekend</span><span class="vocab-ipa">/ˈwiːkend/</span><span class="vocab-meaning">akhir pekan</span></div><p><span class="pos">noun</span> — Contoh: <i>"I don't work on weekends."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="date"><div class="vocab-head"><span class="vocab-word">date</span><span class="vocab-ipa">/deɪt/</span><span class="vocab-meaning">tanggal</span></div><p><span class="pos">noun</span> — Contoh: <i>"What's the release date?"</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="address"><div class="vocab-head"><span class="vocab-word">address</span><span class="vocab-ipa">/əˈdres/</span><span class="vocab-meaning">alamat</span></div><p><span class="pos">noun</span> — Contoh: <i>"The office is at this address."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="office"><div class="vocab-head"><span class="vocab-word">office</span><span class="vocab-ipa">/ˈɒfɪs/</span><span class="vocab-meaning">kantor</span></div><p><span class="pos">noun</span> — Contoh: <i>"I work in the office on Tuesdays."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="floor"><div class="vocab-head"><span class="vocab-word">floor</span><span class="vocab-ipa">/flɔːr/</span><span class="vocab-meaning">lantai</span></div><p><span class="pos">noun</span> — Contoh: <i>"Our team is on the third floor."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="room"><div class="vocab-head"><span class="vocab-word">room</span><span class="vocab-ipa">/ruːm/</span><span class="vocab-meaning">ruangan</span></div><p><span class="pos">noun</span> — Contoh: <i>"The meeting is in room 302."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="corner"><div class="vocab-head"><span class="vocab-word">corner</span><span class="vocab-ipa">/ˈkɔːrnər/</span><span class="vocab-meaning">sudut</span></div><p><span class="pos">noun</span> — Contoh: <i>"The cafe is on the corner."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="calendar"><div class="vocab-head"><span class="vocab-word">calendar</span><span class="vocab-ipa">/ˈkælɪndər/</span><span class="vocab-meaning">kalender</span></div><p><span class="pos">noun</span> — Contoh: <i>"Check the deadline on the calendar."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="arrive"><div class="vocab-head"><span class="vocab-word">arrive</span><span class="vocab-ipa">/əˈraɪv/</span><span class="vocab-meaning">tiba</span></div><p><span class="pos">verb</span> — Contoh: <i>"I arrive at the office at 8."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="located"><div class="vocab-head"><span class="vocab-word">located</span><span class="vocab-ipa">/loʊˈkeɪtɪd/</span><span class="vocab-meaning">terletak</span></div><p><span class="pos">verb/adjective</span> — Contoh: <i>"The server is located in Singapore."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="midnight"><div class="vocab-head"><span class="vocab-word">midnight</span><span class="vocab-ipa">/ˈmɪdnaɪt/</span><span class="vocab-meaning">tengah malam</span></div><p><span class="pos">noun</span> — Contoh: <i>"The batch job runs at midnight."</i></p><span class="src">dari Materi 4</span></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <b>Rekap Vocabulary — Level 1</b> · 72 kata dari 4 materi · <a href="../index.html">← kembali ke Belajar Inggris</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var q = document.getElementById("q");
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card[data-word]"));
+  q.addEventListener("input", function () {
+    var term = q.value.trim().toLowerCase();
+    cards.forEach(function (c) {
+      var word = c.getAttribute("data-word");
+      var text = c.textContent.toLowerCase();
+      c.hidden = term !== "" && text.indexOf(term) === -1 && word.indexOf(term) === -1;
+    });
+    document.querySelectorAll(".group").forEach(function (g) {
+      var visible = g.querySelectorAll(".card:not([hidden])").length;
+      g.style.display = visible === 0 ? "none" : "";
+    });
+  });
+})();
+</script>
+</body>
+</html>

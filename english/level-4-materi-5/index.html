@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notebook Inggris — Level 4, Materi 5: Gerund vs Infinitive</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__back" href="../index.html">← Semua Materi</a>
+  <div class="topbar__file">docs/learning/english/level-4-materi-5/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 22</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+    <div class="rail__part">I · Kenapa &amp; Konsep</div>
+    <a href="#c01"><span class="yr">01</span> Tujuan pembelajaran</a>
+    <a href="#c02"><span class="yr">02</span> Penjelasan konsep</a>
+    <a href="#c03"><span class="yr">03</span> Kenapa ini penting</a>
+    <div class="rail__part">II · Contoh dalam Konteks</div>
+    <a href="#c04"><span class="yr">04</span> Contoh sederhana</a>
+    <a href="#c05"><span class="yr">05</span> Contoh sehari-hari</a>
+    <a href="#c06"><span class="yr">06</span> Contoh dunia kerja</a>
+    <a href="#c07"><span class="yr">07</span> Contoh software engineering</a>
+    <div class="rail__part">III · Hindari Salah &amp; Ingat</div>
+    <a href="#c08"><span class="yr">08</span> Kesalahan umum</a>
+    <a href="#c09"><span class="yr">09</span> Tips mengingat</a>
+    <a href="#c10"><span class="yr">10</span> Ringkasan</a>
+    <div class="rail__part">IV · Latihan &amp; Praktik</div>
+    <a href="#c11"><span class="yr">11</span> Latihan</a>
+    <a href="#c12"><span class="yr">12</span> Quiz</a>
+    <a href="#c13"><span class="yr">13</span> Percakapan</a>
+    <a href="#c14"><span class="yr">14</span> Writing exercise</a>
+    <a href="#c15"><span class="yr">15</span> Speaking exercise</a>
+    <div class="rail__part">V · Perkaya Kemampuan</div>
+    <a href="#c16"><span class="yr">16</span> Listening</a>
+    <a href="#c17"><span class="yr">17</span> Reading</a>
+    <a href="#c18"><span class="yr">18</span> Vocabulary</a>
+    <a href="#c19"><span class="yr">19</span> Pronunciation</a>
+    <div class="rail__part">VI · Lanjut</div>
+    <a href="#c20"><span class="yr">20</span> Review</a>
+    <a href="#c21"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c22"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Level 4 · Materi 5</div>
+      <h1 class="reveal d1">Gerund vs Infinitive — <span class="accent">V-ing atau to + V?</span></h1>
+      <p class="sub reveal d2">"I recommend to refactor this" — kedengarannya masuk akal, tapi salah. Yang benar: "I recommend refactoring this." Beberapa kata kerja dalam Bahasa Inggris "memilih" pasangannya sendiri: ada yang cuma mau diikuti gerund (V-ing), ada yang cuma mau infinitive (to + V), dan ada yang maknanya berubah total tergantung mana yang dipakai. Materi ini membongkar pola itu satu per satu.</p>
+      <div class="tl reveal d3">
+        <div class="tl__row"><span class="tl__dot"></span> gerund (V-ing) → berfungsi sebagai noun</div>
+        <div class="tl__row"><span class="tl__dot"></span> infinitive (to + V) → tujuan, rencana, komitmen</div>
+        <div class="tl__row"><span class="tl__dot"></span> beberapa verb ganti makna: stop, remember, try, forget</div>
+        <div class="tl__row"><span class="tl__dot"></span> setelah preposition → selalu gerund</div>
+      </div>
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> scroll untuk mulai</div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Tujuan pembelajaran</h2></div>
+      <p class="lead reveal">Setelah materi ini kamu bisa:</p>
+      <ul class="plain reveal">
+        <li>Membedakan <b>gerund</b> (V-ing sebagai kata benda) dan <b>infinitive</b> (to + kata kerja dasar).</li>
+        <li>Tahu verb mana yang WAJIB diikuti gerund, mana yang WAJIB infinitive, dan mana yang bebas keduanya.</li>
+        <li>Paham verb yang <b>berubah makna</b> tergantung dipasangkan dengan gerund atau infinitive (stop, remember, try, forget).</li>
+        <li>Selalu pakai gerund setelah preposition — pola yang paling sering salah bahkan di level menengah.</li>
+        <li>Menulis code review comment, commit message, dan dokumentasi teknis tanpa pola verb yang canggung.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Penjelasan konsep</h2></div>
+      <p class="lead reveal"><b>Gerund</b> adalah kata kerja + <b>-ing</b> yang berfungsi sebagai kata benda (bisa jadi subjek, objek, atau setelah preposition). <b>Infinitive</b> adalah <b>to + kata kerja dasar</b>, biasanya menyatakan tujuan, rencana, atau komitmen ke depan. Yang bikin topik ini "berbahaya" adalah: pilihan gerund vs infinitive bukan soal grammar tense, tapi soal <b>verb tertentu punya pasangan tetap</b> — dan itu harus dihafal per verb, bukan ditebak dari pola.</p>
+      <div class="ttable-wrap reveal">
+        <table class="ttable">
+          <thead><tr><th>Kategori</th><th>Contoh verb</th><th>Contoh kalimat</th></tr></thead>
+          <tbody>
+            <tr><td><b>+ gerund saja</b></td><td>enjoy, avoid, finish, suggest, mind, consider, keep, admit, deny, risk, postpone, recommend, practice</td><td>"We <b>finished writing</b> the migration script."</td></tr>
+            <tr><td><b>+ infinitive saja</b></td><td>want, need, decide, plan, hope, promise, agree, refuse, offer, manage, afford, fail, tend, seem</td><td>"They <b>decided to rewrite</b> the auth flow."</td></tr>
+            <tr><td><b>+ keduanya, makna sama</b></td><td>start, begin, continue, like, love, hate, prefer</td><td>"I <b>like coding</b>" = "I <b>like to code</b>"</td></tr>
+            <tr><td><b>+ keduanya, makna beda</b></td><td>stop, remember, forget, try, regret, mean</td><td>"He <b>stopped writing</b> tests" ≠ "He <b>stopped to write</b> a note."</td></tr>
+            <tr><td><b>preposition + gerund</b></td><td>interested in, good at, afraid of, instead of, before/after</td><td>"She's <b>good at debugging</b> race conditions."</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note reveal"><span class="note__tag">Catatan</span><p>Setelah <b>preposition apa pun</b> (in, at, of, before, after, instead of, without, dst.), kata kerja yang mengikuti SELALU gerund, tidak pernah infinitive. "Good at <s>to debug</s>" salah, "good at <b>debugging</b>" benar.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Kenapa ini penting</h2></div>
+      <div class="why reveal"><span class="tag">Kenapa</span><p>Salah pasangan gerund/infinitive adalah salah satu penanda paling jelas bahwa seseorang belajar Bahasa Inggris secara "terjemahan langsung" dari bahasa ibunya, karena bahasa Indonesia tidak punya perbedaan ini sama sekali (kita cuma bilang "merekomendasikan me-refactor", tanpa aturan bentuk kata kerja). Bagi developer, ini muncul terus di code review comment ("I suggest to rename this" vs "I suggest renaming this"), commit message, dan dokumentasi — tempat yang sering dibaca kolega non-native maupun native.</p></div>
+      <blockquote class="quote reveal">"We recommend upgrading before Friday, not upgrade — and definitely not to upgrade." — pengingat singkat yang sering diulang reviewer senior ke junior.<cite>— catatan code review tim engineering</cite></blockquote>
+    </div>
+  </section>
+
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh sederhana</h2></div>
+      <p class="lead reveal">Bandingkan pasangan berikut untuk ngerasain bedanya:</p>
+      <ul class="plain reveal">
+        <li><b>Gerund sebagai subjek:</b> "Coding at midnight is a bad habit." (kata kerja jadi subjek kalimat)</li>
+        <li><b>Gerund sebagai objek verb:</b> "I enjoy reading documentation." (enjoy hanya mau gerund)</li>
+        <li><b>Infinitive sebagai objek verb:</b> "I want to finish this today." (want hanya mau infinitive)</li>
+        <li><b>Infinitive menyatakan tujuan:</b> "She opened the terminal to check the logs." (= "in order to check")</li>
+        <li><b>Gerund setelah preposition:</b> "Thanks for helping me debug this."</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh sehari-hari</h2></div>
+      <div class="grid reveal">
+        <div class="card"><div class="ic">🍜</div><h4>Ajak makan</h4><p>"Do you feel like grabbing lunch later?"</p></div>
+        <div class="card"><div class="ic">🎮</div><h4>Ngobrol santai</h4><p>"I hate waiting in traffic every morning."</p></div>
+        <div class="card"><div class="ic">📱</div><h4>Rencana</h4><p>"We're planning to move next month."</p></div>
+        <div class="card"><div class="ic">🛌</div><h4>Kebiasaan</h4><p>"I keep forgetting to charge my phone."</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh dunia kerja</h2></div>
+      <div class="grid reveal">
+        <div class="card up"><div class="ic">📅</div><h4>Rapat</h4><p>"We agreed to postpone the launch by a week."</p></div>
+        <div class="card up"><div class="ic">📧</div><h4>Email</h4><p>"Please consider extending the deadline for QA."</p></div>
+        <div class="card down"><div class="ic">🧾</div><h4>Laporan</h4><p>"The vendor failed to deliver the report on time."</p></div>
+        <div class="card down"><div class="ic">🤝</div><h4>Negosiasi</h4><p>"The client refused to sign without a discount."</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh software engineering</h2></div>
+      <p class="lead reveal">Ini pola yang paling sering muncul di <b>code review comment</b> dan bikin kalimat kedengaran kaku kalau salah dipasangkan:</p>
+      <div class="diptych reveal">
+        <div class="code-card bad">
+          <div class="code-card__bar"><span class="lang">review comment · salah</span></div>
+          <pre class="code"><span class="c">// I suggest to rename this variable.</span>
+<span class="c">// Avoid to use magic numbers here.</span>
+<span class="c">// We need refactor this function.</span>
+<span class="k">const</span> <span class="a">x</span> = <span class="n">86400</span>;</pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><span class="lang">review comment · benar</span></div>
+          <pre class="code"><span class="c">// I suggest <span class="hl-good">renaming</span> this variable.</span>
+<span class="c">// Avoid <span class="hl-good">using</span> magic numbers here.</span>
+<span class="c">// We need <span class="hl-good">to refactor</span> this function.</span>
+<span class="k">const</span> <span class="a">SECONDS_IN_A_DAY</span> = <span class="n">86400</span>;</pre>
+        </div>
+      </div>
+      <p class="body reveal">Contoh lain yang bakal sering kamu tulis:</p>
+      <ul class="plain reveal">
+        <li><b>Commit message:</b> "Stop logging sensitive fields in the auth middleware."</li>
+        <li><b>PR description:</b> "This PR aims to reduce cold-start latency by lazy-loading dependencies."</li>
+        <li><b>Standup update:</b> "I finished writing the tests and I'm planning to deploy this afternoon."</li>
+        <li><b>Incident postmortem:</b> "We recommend adding a circuit breaker before enabling retries again."</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Kesalahan umum</h2></div>
+      <div class="cols reveal">
+        <div class="bad-l">
+          <h4>❌ Salah</h4>
+          <ul>
+            <li>"I recommend to merge this PR." <i>(recommend maunya gerund)</i></li>
+            <li>"She's interested to learn Rust." <i>(preposition "in" harus diikuti gerund)</i></li>
+            <li>"They finished to write the docs." <i>(finish maunya gerund)</i></li>
+            <li>"He avoided to answer the question." <i>(avoid maunya gerund)</i></li>
+          </ul>
+        </div>
+        <div class="good-l">
+          <h4>✅ Benar</h4>
+          <ul>
+            <li>"I recommend merging this PR."</li>
+            <li>"She's interested in learning Rust."</li>
+            <li>"They finished writing the docs."</li>
+            <li>"He avoided answering the question."</li>
+          </ul>
+        </div>
+      </div>
+      <div class="erabox reveal">
+        <p><b>Bukan cuma soal gerund vs infinitive — soal makna berubah:</b> "I remember deploying the hotfix" (ingat SUDAH pernah melakukannya) vs "I remembered to deploy the hotfix" (tidak lupa MELAKUKAN sesuatu yang harus dikerjakan).</p>
+        <p><b>Contoh lain:</b> "He stopped checking Slack" (berhenti kebiasaan cek Slack) vs "He stopped to check Slack" (berhenti sejenak dari aktivitas lain, untuk cek Slack).</p>
+      </div>
+      <div class="caution reveal"><p><b>Bukan dogma:</b> beberapa verb (start, begin, continue, like, love, hate, prefer) memang fleksibel — "start coding" dan "start to code" sama-sama benar dan maknanya sama. Jangan terlalu kaku mengoreksi kalimat yang sebenarnya sudah valid; fokuskan energi ke verb yang memang punya aturan ketat (recommend, avoid, decide, want, dst.) dan verb yang berubah makna (stop, remember, forget, try).</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Tips mengingat</h2></div>
+      <div class="qa reveal">
+        <details><summary>Gimana cara hafal cepat verb mana pakai gerund vs infinitive?</summary><p>Nggak ada rumus 100% pasti — ini memang harus dihafal per verb, sama seperti irregular verb. Tips: verb yang berhubungan dengan <b>menghindari/menyelesaikan/menikmati sesuatu yang sedang/sudah terjadi</b> biasanya gerund (avoid, finish, enjoy, keep, suggest). Verb yang berhubungan dengan <b>rencana/keinginan/komitmen ke depan</b> biasanya infinitive (want, plan, decide, hope, promise).</p></details>
+        <details><summary>Trik cepat untuk stop / remember / forget / try?</summary><p>Tanya: apakah aksi ke-2 terjadi SEBELUM atau SETELAH aksi ke-1? Kalau ceritanya tentang mengingat/melupakan/berhenti sesuatu yang SUDAH terjadi → gerund. Kalau ceritanya tentang tugas/kewajiban yang BELUM dikerjakan → infinitive. "Remember to push" (belum push, jangan lupa!) vs "remember pushing" (sudah push, dan itu masih diingat).</p></details>
+        <details><summary>Kapan pasti gerund tanpa mikir lama?</summary><p>Setelah PREPOSITION, selalu gerund — tanpa pengecualian. "good at", "interested in", "instead of", "before/after", "without", "by" (cara melakukan sesuatu) — semuanya diikuti V-ing.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Ringkasan</h2></div>
+      <ul class="creed reveal">
+        <li>Gerund (V-ing) = kata kerja yang berfungsi sebagai <b>kata benda</b>.</li>
+        <li>Infinitive (to + V) = biasanya untuk <b>tujuan, rencana, komitmen</b>.</li>
+        <li>Sebagian verb punya pasangan TETAP — hafal per verb, jangan ditebak dari pola.</li>
+        <li>stop, remember, forget, try, regret, mean → makna BERUBA tergantung gerund/infinitive.</li>
+        <li>Setelah preposition apa pun → SELALU gerund, tanpa pengecualian.</li>
+        <li>start, begin, continue, like, love, hate, prefer → boleh keduanya, makna sama.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Latihan</h2></div>
+      <p class="lead reveal">Isi titik-titik atau pilih jawaban yang paling tepat.</p>
+      <div class="quizmeta"><span class="quizmeta__count" id="quizCount">0 / 7 benar</span><div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill"></div></div></div>
+      <div id="quizLatihan"></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Quiz</h2></div>
+      <p class="lead reveal">Level lebih menantang — fokus ke verb yang berubah makna (stop, remember, try) dan pola verb+preposition. Tiga soal terakhir adalah <b>soal cerita</b> — baca ceritanya, lalu jawab.</p>
+      <div class="quizmeta"><span class="quizmeta__count" id="quizCount2">0 / 8 benar</span><div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill2"></div></div></div>
+      <div id="quizQuiz"></div>
+
+      <div class="code-card reveal">
+        <div class="code-card__bar"><span class="lang">STORY · Standup Monday</span></div>
+        <pre class="code" style="white-space:pre-wrap;font-family:var(--sans)">During Monday's standup, Rafi mentioned that he forgot to merge his branch on Friday, so he spent the morning fixing merge conflicts. He suggested pushing the retro to Wednesday because the team kept getting interrupted by production alerts. Before ending the meeting, the lead reminded everyone to update their tickets, and Sinta offered to help anyone who was still stuck. She loves mentoring juniors, but she avoids micromanaging their code.</pre>
+      </div>
+      <div id="quizStory"></div>
+
+      <div class="completebanner" id="completeBanner"><h4>🎉 Materi 5 selesai!</h4><p>Semua soal Latihan &amp; Quiz sudah benar. Lanjut ke materi berikutnya.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Percakapan</h2></div>
+      <div class="dialogue reveal">
+        <div class="brow"><div class="bubble"><span class="who">Rafi</span>I keep forgetting to update the changelog before every release.</div></div>
+        <div class="brow you"><div class="bubble"><span class="who">You</span>Same here. Have you considered automating it with a pre-commit hook?</div></div>
+        <div class="brow"><div class="bubble"><span class="who">Rafi</span>I tried setting one up last week, but it kept failing silently.</div></div>
+        <div class="brow you"><div class="bubble"><span class="who">You</span>Try adding a log statement so it stops failing quietly — that usually helps me find the issue.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Writing exercise</h2></div>
+      <p class="lead reveal">Tulis 5 kalimat tentang pekerjaanmu minggu ini, dan pastikan minimal <b>3 kalimat</b> memakai pola gerund atau infinitive yang berbeda-beda (verb+gerund, verb+infinitive, preposition+gerund, atau salah satu dari stop/remember/try dengan makna yang kamu maksud jelas).</p>
+      <ul class="plain reveal">
+        <li>Contoh: "I finished writing the migration script, but I forgot to run the tests before pushing."</li>
+        <li>Contoh: "Our team is planning to release the new dashboard next sprint."</li>
+      </ul>
+      <p class="body reveal">Kirim hasil tulisanmu kapan saja — akan dikoreksi, terutama pasangan verb-nya dan apakah makna yang kamu maksud (terutama untuk stop/remember/try) sudah sesuai dengan bentuk yang kamu pilih.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Speaking exercise</h2></div>
+      <p class="lead reveal">Rekam dirimu mengucapkan 5 kalimat berikut dengan lancar (perhatikan bunyi "-ing" jangan sampai hilang di akhir kata):</p>
+      <ol class="plain reveal">
+        <li>"I recommend reviewing this PR before the demo."</li>
+        <li>"We decided to postpone the release."</li>
+        <li>"She's good at explaining complex bugs simply."</li>
+        <li>"He stopped writing tests after the deadline moved up."</li>
+        <li>"Don't forget to back up the database first."</li>
+      </ol>
+      <p class="body reveal">Fokus: bunyi "-ing" diucapkan penuh /ɪŋ/, bukan dipotong jadi "in'" seperti logat santai — di konteks profesional lebih aman diucapkan jelas.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Listening</h2></div>
+      <p class="lead reveal">Belum ada audio asli di materi ini — sebagai gantinya, baca keras-keras skrip percakapan di bab 13 (Percakapan) sebanyak 3x, lalu rekam dirimu sendiri dan dengarkan ulang. Fokuskan telinga ke verb pertama di tiap kalimat ("keep forgetting", "considered automating", "tried setting", "stops failing") — dengar apakah gerund-nya jelas terucap.</p>
+      <p class="body reveal">Latihan tambahan: cari video conference talk / podcast dev bahasa Inggris apa saja, lalu coba tangkap satu kalimat yang mengandung pola verb+gerund atau verb+infinitive. Tulis ulang kalimatnya persis seperti yang kamu dengar.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Reading</h2></div>
+      <p class="lead reveal">Baca cuplikan PR description berikut. Perhatikan setiap pola gerund/infinitive yang muncul (coba temukan sendiri sebelum lanjut):</p>
+      <p class="body reveal">"This PR aims to fix a memory leak we found while profiling the worker process. I considered rewriting the whole queue handler, but decided to keep the change minimal for now. Instead of allocating a new buffer on every request, we now avoid creating one unless the payload exceeds 1MB. Remember to run the load test before merging — I forgot to do it on my first pass and almost missed a regression."</p>
+      <p class="body reveal">Tantangan: buat daftar semua pasangan verb+gerund dan verb+infinitive yang kamu temukan, lalu tulis kenapa masing-masing verb "memilih" pasangan itu (misalnya "avoid" selalu gerund, "aims" selalu infinitive).</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Vocabulary</h2></div>
+      <p class="lead reveal">Kosakata yang muncul di contoh-contoh materi ini:</p>
+      <div class="grid reveal">
+        <div class="card"><div class="vocab-head"><span class="vocab-word">refactor</span><span class="pos">v.</span></div><div class="vocab-ipa">/ˌriːˈfæktər/</div><div class="vocab-meaning">merestrukturisasi kode tanpa mengubah perilakunya</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">merge conflict</span><span class="pos">n. phr.</span></div><div class="vocab-ipa">/mɜːdʒ ˈkɒnflɪkt/</div><div class="vocab-meaning">bentrok perubahan kode saat digabungkan</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">hotfix</span><span class="pos">n.</span></div><div class="vocab-ipa">/ˈhɒtfɪks/</div><div class="vocab-meaning">perbaikan cepat & mendesak di production</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">standup</span><span class="pos">n.</span></div><div class="vocab-ipa">/ˈstændʌp/</div><div class="vocab-meaning">rapat harian singkat tim, biasanya sambil berdiri</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">retro</span><span class="pos">n.</span></div><div class="vocab-ipa">/ˈrɛtroʊ/</div><div class="vocab-meaning">rapat evaluasi sprint (retrospective)</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">ticket</span><span class="pos">n.</span></div><div class="vocab-ipa">/ˈtɪkɪt/</div><div class="vocab-meaning">catatan tugas/isu di tracker (Jira, Linear, dll.)</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">micromanage</span><span class="pos">v.</span></div><div class="vocab-ipa">/ˌmaɪkroʊˈmænɪdʒ/</div><div class="vocab-meaning">mengontrol pekerjaan orang lain secara berlebihan</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">mentor</span><span class="pos">v./n.</span></div><div class="vocab-ipa">/ˈmɛntɔːr/</div><div class="vocab-meaning">membimbing (atau: pembimbing) orang yang lebih junior</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c19">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Pronunciation</h2></div>
+      <ul class="plain reveal">
+        <li><b>-ing</b> /ɪŋ/ — bunyi "ng" di hidung, BUKAN "in" seperti "writin'" ala logat santai Amerika.</li>
+        <li><b>to</b> /tə/ (unstressed, sebelum kata kerja) — sering diucapkan pendek dan cepat, hampir seperti "tuh", bukan "tuu" penuh.</li>
+        <li><b>suggest</b> /səˈdʒɛst/ — tekanan di suku kedua, bukan di awal.</li>
+        <li><b>avoid</b> /əˈvɔɪd/ — diftong "oi" jelas, bukan "avoyd" dengan "y" konsonan.</li>
+        <li><b>recommend</b> /ˌrɛkəˈmɛnd/ — tekanan di suku terakhir "mend".</li>
+      </ul>
+      <div class="note reveal"><span class="note__tag">Jebakan bunyi</span><p>"stopped to check" dan "stopped checking" bunyinya beda tipis tapi maknanya jauh beda — latih pelan-pelan dulu sebelum bicara cepat, supaya lawan bicaramu nggak salah paham maksudmu berhenti UNTUK apa, atau berhenti DARI apa.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c20">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Review</h2></div>
+      <p class="lead reveal">Cek dirimu sebelum lanjut — kalau semua ini terasa masuk akal, kamu siap:</p>
+      <ul class="plain reveal">
+        <li>☐ Bisa membedakan fungsi gerund (kata benda) dan infinitive (tujuan/rencana).</li>
+        <li>☐ Hafal minimal 5 verb yang wajib gerund dan 5 verb yang wajib infinitive.</li>
+        <li>☐ Paham perbedaan makna stop/remember/try dengan gerund vs infinitive.</li>
+        <li>☐ Selalu pakai gerund setelah preposition tanpa ragu.</li>
+        <li>☐ Semua soal Latihan &amp; Quiz (bab 11-12) sudah benar.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c21">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Tier belajar</h2></div>
+      <div class="tiers reveal">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Minimum sebelum lanjut</span>
+          <h4>Bisa dipakai, belum lancar</h4>
+          <ul class="plain">
+            <li>Paham gerund berfungsi sebagai kata benda dan infinitive sebagai tujuan/rencana.</li>
+            <li>Bisa mengisi pola verb+gerund/infinitive dengan bantuan tabel referensi.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Praktik nyata</span>
+          <h4>Dipakai natural sehari-hari</h4>
+          <ul class="plain">
+            <li>Hafal luar kepala verb-verb umum yang dipakai di code review & standup (recommend, suggest, avoid, plan, decide).</li>
+            <li>Bisa membedakan makna stop/remember/try tanpa perlu mikir lama.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Arah belajar lanjut</span>
+          <h4>Level dokumen & percakapan teknis</h4>
+          <ul class="plain">
+            <li>Menulis PR description dan postmortem panjang dengan pola gerund/infinitive yang konsisten dan natural.</li>
+            <li>Bisa mengoreksi rekan kerja lain (non-native) dengan penjelasan singkat, bukan cuma "itu salah".</li>
+            <li>Siap lanjut ke Materi 6: Phrasal Verbs &amp; Idiom Dasar, yang akan sering dipasangkan dengan gerund (look forward to doing, give up doing) di kalimat sehari-hari maupun teknis.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c22">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Penutup</h2></div>
+      <div class="endcard reveal">
+        <h3>Gerund vs infinitive = pilihan verb yang tepat</h3>
+        <p>Sekarang kamu tahu kenapa "I recommend to merge" terasa aneh di telinga native speaker, dan tahu cara memperbaikinya. Ini detail kecil, tapi detail kecil inilah yang bikin tulisan teknismu terasa lebih matang.</p>
+        <p id="endcardStatus">Memuat status...</p>
+        <a class="card__link" href="../level-4-materi-6/index.html">Lanjut ke Materi 6: Phrasal Verbs &amp; Idiom Dasar →</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <b>Notebook Inggris — Level 4, Materi 5</b> · Gerund vs Infinitive · <a href="../index.html">← kembali ke Belajar Inggris</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+window.LESSON_KEY = "english::level-4-materi-5";
+window.LESSON_DONE_HTML = "✅ Semua soal Latihan &amp; Quiz sudah benar — <b style=\"color:var(--good)\">Materi 6: Phrasal Verbs &amp; Idiom Dasar</b> sudah terbuka. Kirim hasil Writing Exercise-mu kapan saja untuk dikoreksi.";
+window.LESSON_LOCKED_HTML = "Materi 6: Phrasal Verbs &amp; Idiom Dasar terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar ({done}/{total} saat ini). Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.";
+window.LESSON_QUESTIONS = [
+  { id: "l1", type: "fill", prompt: "I recommend <span class=\"blank\">___</span> (refactor) this module before we add new features.", answer: ["refactoring"], explain: "\"recommend\" termasuk verb yang wajib diikuti gerund, bukan infinitive. \"recommend to refactor\" tidak gramatikal." },
+  { id: "l2", type: "fill", prompt: "Please remember <span class=\"blank\">___</span> (push) your changes before you leave today.", answer: ["to push"], explain: "\"remember to do\" dipakai untuk mengingatkan tugas yang BELUM dikerjakan (jangan lupa melakukannya)." },
+  { id: "l3", type: "fill", prompt: "Our team finished <span class=\"blank\">___</span> (migrate) the database last night.", answer: ["migrating"], explain: "\"finish\" termasuk verb yang wajib diikuti gerund — \"finish to migrate\" salah." },
+  { id: "l4", type: "fill", prompt: "We decided <span class=\"blank\">___</span> (rewrite) the entire authentication flow.", answer: ["to rewrite"], explain: "\"decide\" termasuk verb yang wajib diikuti infinitive, karena menyatakan keputusan/rencana ke depan." },
+  { id: "l5", type: "mc", prompt: "Pilih kata kerja yang tepat: 'He stopped ___ unit tests after the deadline moved up.' (maksudnya: dia berhenti dari kebiasaan menulis unit test)", options: ["writing", "to write", "write"], answer: "writing", explain: "\"stop + gerund\" berarti berhenti dari suatu kebiasaan/aktivitas. \"stop + infinitive\" (stop to write) artinya berbeda: berhenti sejenak DARI aktivitas lain UNTUK menulis." },
+  { id: "l6", type: "fill", prompt: "She's really good at <span class=\"blank\">___</span> (debug) tricky race conditions.", answer: ["debugging"], explain: "Setelah preposition (\"at\"), kata kerja yang mengikuti selalu gerund, tanpa pengecualian." },
+  { id: "l7", type: "fill", prompt: "Avoid <span class=\"blank\">___</span> (push) directly to the main branch.", answer: ["pushing"], explain: "\"avoid\" termasuk verb yang wajib diikuti gerund — \"avoid to push\" tidak gramatikal." },
+  { id: "q1", type: "mc", prompt: "Server-nya sering crash dan kamu ingin menyarankan sebuah percobaan (belum tentu berhasil) untuk mengatasinya. Kalimat mana yang tepat?", options: ["Try restarting the server.", "Try to restart the server.", "Try restart the server."], answer: "Try restarting the server.", explain: "\"try + gerund\" dipakai untuk menyarankan eksperimen/percobaan sebagai kemungkinan solusi. \"try + infinitive\" (try to restart) artinya berbeda: berusaha keras melakukan sesuatu yang sulit." },
+  { id: "q2", type: "mc", prompt: "Kalimat mana yang berarti dia MENGHENTIKAN pekerjaan lain sebentar UNTUK melihat log?", options: ["He stopped checking the logs.", "He stopped to check the logs.", "He stopped check the logs."], answer: "He stopped to check the logs.", explain: "\"stop + infinitive\" berarti berhenti sejenak dari aktivitas lain demi tujuan tertentu (di sini: untuk mengecek log). \"stop checking\" artinya berbeda — berhenti dari kebiasaan mengecek log." },
+  { id: "q3", type: "mc", prompt: "Kalimat mana yang berarti dia MENGINGAT (dari memori) bahwa dia pernah melakukan deploy hotfix minggu lalu?", options: ["She remembers to deploy the hotfix last Friday.", "She remembers deploying the hotfix last Friday.", "She remembers deploy the hotfix last Friday."], answer: "She remembers deploying the hotfix last Friday.", explain: "\"remember + gerund\" dipakai untuk mengingat kejadian yang SUDAH terjadi di masa lalu. \"remember to do\" dipakai untuk tugas yang belum dikerjakan, dan itu tidak cocok dengan konteks \"last Friday\" di sini." },
+  { id: "q4", type: "mc", prompt: "Pilih kata kerja yang tepat: 'The linter suggests ___ const instead of let here.'", options: ["using", "to use", "use"], answer: "using", explain: "\"suggest\" termasuk verb yang wajib diikuti gerund, sama seperti recommend." },
+  { id: "q5", type: "mc", prompt: "Pilih kata kerja yang tepat: 'We need ___ this before the demo.'", options: ["to fix", "fixing", "fix"], answer: "to fix", explain: "\"need\" termasuk verb yang wajib diikuti infinitive ketika subjeknya orang yang butuh melakukan sesuatu." },
+  { id: "s1", type: "mc", prompt: "Soal cerita — Berdasarkan cerita 'Standup Monday' di atas, apa yang lupa dilakukan Rafi pada hari Jumat?", options: ["Menulis unit test", "Merge branch-nya", "Deploy ke production"], answer: "Merge branch-nya", explain: "Kalimat pertama cerita: 'Rafi mentioned that he forgot to merge his branch on Friday' — dia lupa melakukan merge." },
+  { id: "s2", type: "mc", prompt: "Soal cerita — Manakah pola verb+gerund yang sesuai dengan kalimat di cerita: 'He suggested ___ the retro to Wednesday'?", options: ["suggested to push", "suggested pushing", "suggested push"], answer: "suggested pushing", explain: "Persis seperti di cerita: 'He suggested pushing the retro to Wednesday.' — suggest selalu diikuti gerund." },
+  { id: "s3", type: "mc", prompt: "Soal cerita — Cerita menyebut 'She loves mentoring juniors, but she avoids micromanaging their code.' Pola apa yang dipakai di kedua kalimat ini?", options: ["Infinitive di keduanya", "Gerund di keduanya", "Gerund lalu infinitive"], answer: "Gerund di keduanya", explain: "\"loves mentoring\" dan \"avoids micromanaging\" sama-sama gerund — love bersifat fleksibel (boleh gerund/infinitive), sedangkan avoid wajib gerund." }
+];
+</script>
+<script src="../assets/lesson.js"></script>
+</body>
+</html>

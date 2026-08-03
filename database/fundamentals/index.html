@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundamentals Database — CAP, PACELC, dan Kenapa Kamu Harus Milih</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home {
+    color: var(--muted); text-decoration: none; font-family: var(--mono); font-size: 12px;
+    padding: 4px 9px; border: 1px solid var(--line); border-radius: 6px; white-space: nowrap;
+    transition: color .18s, border-color .18s;
+  }
+  .topbar__home:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- actionable steps ---------- */
+  .steps { max-width: 74ch; margin: 24px 0 6px; counter-reset: stepnum; }
+  .steps li {
+    list-style: none; counter-increment: stepnum; position: relative;
+    padding: 13px 0 13px 46px; border-bottom: 1px solid var(--line-soft);
+    font-size: 15.5px; color: var(--ink);
+  }
+  .steps li::before {
+    content: counter(stepnum, decimal-leading-zero);
+    position: absolute; left: 0; top: 11px;
+    width: 27px; height: 22px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11.5px; color: var(--cyan);
+    border: 1px solid var(--cyan-dim); border-radius: 6px; background: rgba(69,212,222,.08);
+  }
+  .steps li b { color: var(--ink-strong); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .tiers { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Database</a>
+  <div class="topbar__file">docs/learning/database/fundamentals/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa harus milih</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> CAP theorem</a>
+    <a href="#c03"><span class="yr">03</span> Model konsistensi &amp; PACELC</a>
+
+    <div class="rail__part">III · Praktik &amp; trade-off</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">🌱</span> Tier belajar</a>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+
+    <div class="rail__part">IV · Keputusan &amp; ekosistem</div>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — sebelum belajar jenis database, pahami dulu hukum yang mengikat semuanya</div>
+      <h1 class="reveal d1">Kamu tidak bisa punya <span class="accent">semuanya sekaligus</span>.</h1>
+      <p class="sub reveal d2">
+        Setiap database terdistribusi — SQL atau NoSQL, baru atau lama — tunduk pada batasan fisika yang sama:
+        jaringan itu tidak bisa diandalkan sepenuhnya, dan cepat atau lambat akan <b>terputus</b>. Saat itu terjadi,
+        sistem harus memilih: tetap <b>menjawab</b> permintaan (walau datanya mungkin belum sinkron), atau
+        <b>menolak</b> demi memastikan semua orang melihat data yang sama. Ini bukan bab tentang satu database
+        tertentu — ini <b>fondasi</b> yang menjelaskan kenapa MongoDB, Cassandra, Postgres, dan Spanner
+        masing-masing dibangun dengan "kepribadian" yang berbeda.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Fakta</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Jaringan itu tidak sempurna</b> <span>— partisi &amp; delay pasti terjadi di skala cukup besar</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">2000</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Eric Brewer mengemukakan CAP theorem</b> <span>— saat partisi, pilih Consistency atau Availability</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Lanjutan</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Daniel Abadi memperluas jadi PACELC</b> <span>— bahkan tanpa partisi pun ada trade-off Latency vs Consistency</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Akibat</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Tiap database punya pilihan desain</b> <span>— DynamoDB, Cassandra, Spanner, Postgres beda sikap</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Sikap</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bukan cari yang "terbaik"</b> <span>— cari yang trade-off-nya cocok dengan kebutuhanmu</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="wrap" style="padding-top:34px">
+    <div class="why reveal">
+      <div class="tag">◆ Buat apa ini? Kenapa pakai Database Fundamentals?</div>
+      <p><b>Given</b> — tim sudah pilih database (Postgres, MongoDB, Cassandra, apa pun) berdasarkan kebiasaan atau tren, tanpa pernah baca apa yang terjadi ke sistem itu saat jaringan antar-node gagal.</p>
+      <p><b>When</b> — trafik naik, sistem di-scale jadi multi-node atau multi-region, lalu suatu hari koneksi antar data center putus beberapa detik tepat saat jam sibuk.</p>
+      <p><b>Then</b> — tanpa paham CAP/PACELC, sistem jatuh ke ekstrem yang tidak direncanakan: entah macet total karena menolak semua request (availability anjlok), atau dua request konflik sama-sama diterima dan data jadi tidak konsisten (misal saldo ganda) — dan itu baru ketahuan saat insiden produksi, bukan saat desain.</p>
+      <p>→ makanya kita pakai <b>Database Fundamentals (CAP &amp; PACELC)</b> sebagai peta trade-off sebelum memilih database.</p>
+    </div>
+  </div>
+
+  <!-- ============ 01 KENAPA HARUS MILIH ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Kenapa fundamentals ini penting</div>
+        <h2>Jaringan putus itu bukan "kalau", tapi "kapan"</h2>
+      </div>
+      <p class="lead reveal">Bayangkan sebuah bank punya dua data center — satu di Jakarta, satu di Singapura, saling menyalin data secara real-time. Suatu hari, kabel bawah laut yang menghubungkan keduanya putus selama beberapa detik. Nasabah di kedua kota tetap mencoba menarik uang dari ATM di saat yang sama. Apa yang harus terjadi?</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Dilema — dua data center yang tiba-tiba tidak bisa saling bicara</div>
+        <p>Kalau sistem tetap <em>melayani</em> penarikan di kedua sisi tanpa saling konfirmasi, ada risiko satu nasabah menarik saldo yang sama dua kali (data jadi tidak konsisten). Kalau sistem <em>menolak</em> semua transaksi sampai koneksi pulih, ATM di kedua kota jadi macet total (availability turun). Tidak ada jawaban yang "benar" secara mutlak — hanya jawaban yang <code>sesuai prioritas bisnis</code>. Inilah masalah yang melandasi hampir semua desain database terdistribusi.</p>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>“Reliability, scalability, dan maintainability adalah tiga concern utama dalam kebanyakan sistem perangkat lunak — termasuk sistem data — dan ketiganya sering saling tarik-menarik satu sama lain.”</p>
+        <cite>— parafrase dari Martin Kleppmann, <i>Designing Data-Intensive Applications</i>, Bab 1 “Reliable, Scalable, and Maintainable Applications”</cite>
+      </div>
+
+      <p class="body reveal d2">Kleppmann menunjukkan bahwa tidak ada sistem yang bisa memaksimalkan semua atribut yang kita inginkan sekaligus — dan CAP theorem adalah versi paling tajam dari gagasan itu, khusus untuk apa yang terjadi saat jaringan gagal.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 CAP THEOREM ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · CAP theorem</div>
+        <h2>Consistency, Availability, Partition tolerance — pilih dua</h2>
+      </div>
+      <p class="lead reveal">CAP theorem, dikemukakan Eric Brewer tahun 2000, bilang: saat terjadi <strong>partisi jaringan</strong> (P) di sistem terdistribusi, kamu hanya bisa menjamin salah satu dari <strong>Consistency</strong> (C) atau <strong>Availability</strong> (A) — tidak keduanya sekaligus.</p>
+
+      <div class="quote reveal d1">
+        <p>“Dalam sistem terdistribusi yang mengalami partisi jaringan, kamu harus memilih antara consistency dan availability — kamu tidak bisa mendapat keduanya secara penuh di saat yang sama.”</p>
+        <cite>— parafrase dari Eric Brewer, CAP theorem, keynote PODC (2000)</cite>
+      </div>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Tiga huruf CAP, dijabarkan singkat</div>
+        <div class="erabox__row"><span class="erabox__lang">C</span><code>Consistency  →  semua node melihat data yang SAMA di waktu yang sama</code></div>
+        <div class="erabox__row"><span class="erabox__lang">A</span><code>Availability →  setiap request yang masuk tetap dapat RESPON (bukan error)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">P</span><code>Partition tolerance → sistem tetap jalan walau ada node yang TIDAK bisa saling bicara</code></div>
+        <p class="erabox__note">Karena partisi jaringan di dunia nyata <b>tidak bisa dihindari</b> (kabel putus, switch mati, latency melonjak), P sebenarnya bukan pilihan — P itu <code>kenyataan</code>. Pilihan sesungguhnya cuma ada di antara C dan A <b>saat P sedang terjadi</b>.</p>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">pseudo-config — bagaimana sistem "bersikap" saat partisi jaringan terjadi</span><span class="lang">YAML</span></div>
+<pre class="code"><span class="c"># CP — consistency-first: tetap benar, boleh diam sebentar</span>
+<span class="k">system</span>: <span class="s">"CP"</span>
+<span class="k">saat_partisi_terjadi</span>:
+  <span class="k">strategi</span>: <span class="s">"tolak/timeout node yang tak bisa konfirmasi kuorum"</span>
+  <span class="k">availability</span>: <span class="n">turun</span> <span class="c"># sebagian request gagal demi menjaga kebenaran data</span>
+  <span class="k">contoh</span>: [<span class="s">"Google Spanner"</span>, <span class="s">"HBase"</span>, <span class="s">"Zookeeper"</span>, <span class="s">"MongoDB (default)"</span>]
+
+<span class="hl-bad">---</span>
+
+<span class="c"># AP — availability-first: tetap jawab, boleh sedikit "basi"</span>
+<span class="k">system</span>: <span class="s">"AP"</span>
+<span class="k">saat_partisi_terjadi</span>:
+  <span class="k">strategi</span>: <span class="s">"tetap layani baca/tulis di kedua sisi partisi"</span>
+  <span class="k">consistency</span>: <span class="s">"sementara longgar"</span> <span class="c"># direkonsiliasi setelah partisi pulih</span>
+  <span class="k">contoh</span>: [<span class="s">"Amazon DynamoDB"</span>, <span class="s">"Cassandra"</span>, <span class="s">"CouchDB"</span>, <span class="s">"Riak"</span>]
+</pre>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Salah kaprah yang umum: menganggap CAP berarti "pilih 2 dari 3 selamanya". Padahal CAP <b>hanya berlaku saat partisi sedang terjadi</b> — yang biasanya cuma sebagian kecil waktu operasional. Di luar momen partisi, sistem bisa saja konsisten <em>dan</em> tersedia sekaligus. CAP bukan tentang desain permanen, tapi tentang <b>keputusan darurat</b> saat jaringan sedang bermasalah.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 MODEL KONSISTENSI & PACELC ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep lanjutan</span> · Konsistensi &amp; PACELC</div>
+        <h2>Bahkan tanpa partisi, tetap ada harga yang dibayar</h2>
+      </div>
+      <p class="lead reveal">CAP cuma bicara soal <em>saat ada partisi</em>. Tapi dalam operasional sehari-hari — 99% waktu, saat jaringan baik-baik saja — masih ada trade-off lain: makin ketat konsistensinya, makin tinggi <strong>latency</strong>-nya (karena node harus saling menunggu konfirmasi). Inilah yang ditangkap oleh <strong>PACELC</strong>, perluasan CAP dari Daniel Abadi.</p>
+
+      <div class="quote reveal d1">
+        <p>“Jika terjadi Partition (P), sistem harus memilih antara Availability dan Consistency (A vs C) — tapi Else (E), saat sistem berjalan normal tanpa partisi, tetap ada trade-off antara Latency dan Consistency (L vs C).”</p>
+        <cite>— parafrase dari konsep PACELC, Daniel Abadi</cite>
+      </div>
+
+      <p class="body reveal d1">Tiga model konsistensi yang paling sering kamu temui, dari paling ketat ke paling longgar:</p>
+
+      <div class="diptych reveal d2">
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">strong consistency — tunggu sampai semua node sepakat</span><span class="lang">pseudo</span></div>
+<pre class="code"><span class="f">tulis</span>(<span class="s">"saldo"</span>, <span class="n">100000</span>)
+  <span class="c">// tunggu node A, B, C konfirmasi tulis (kuorum)</span>
+  <span class="k">await</span> quorum.<span class="f">ack</span>()
+
+<span class="f">baca</span>(<span class="s">"saldo"</span>)
+  <span class="hl-good">// dijamin lihat 100000, TIDAK PERNAH nilai lama</span>
+  <span class="c">// harga: latency lebih tinggi, availability lebih rapuh</span></pre>
+        </div>
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">eventual consistency — jawab dulu, sinkron belakangan</span><span class="lang">pseudo</span></div>
+<pre class="code"><span class="f">tulis</span>(<span class="s">"saldo"</span>, <span class="n">100000</span>)
+  <span class="c">// langsung ack ke 1 node terdekat, replikasi async</span>
+  <span class="k">return</span> ok
+
+<span class="f">baca</span>(<span class="s">"saldo"</span>) <span class="c">// dari node lain, sesaat kemudian</span>
+  <span class="hl-bad">// mungkin masih lihat nilai LAMA sampai replikasi selesai</span>
+  <span class="c">// harga: sesaat "tidak akurat", tapi latency rendah & selalu jawab</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d3">Di antara keduanya ada <strong>causal consistency</strong> — kompromi yang menjamin urutan sebab-akibat tetap terjaga (misalnya komentar balasan tidak akan muncul sebelum komentar aslinya), tanpa harus menunggu <em>semua</em> node sepakat penuh seperti strong consistency.</p>
+
+      <div class="why reveal d3">
+        <div class="tag">◆ Kenapa PACELC lebih jujur daripada CAP saja</div>
+        <p>CAP membuat orang berpikir trade-off cuma muncul saat ada masalah jaringan. Kenyataannya, tim yang memilih <em>strong consistency</em> membayar harga <strong>latency lebih tinggi setiap hari</strong> — bukan cuma saat partisi. PACELC mengingatkan: pilihan konsistensi itu trade-off yang kamu jalani terus-menerus, bukan cuma rencana darurat.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Cara berpikir yang benar</div>
+        <h2>Best practice sebelum memilih database</h2>
+      </div>
+      <p class="lead reveal">Fundamentals ini gunanya bukan buat dihafal, tapi buat jadi <strong>checklist mental</strong> setiap kali kamu mengevaluasi database baru atau mendesain sistem terdistribusi.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Petakan dulu bagian mana yang butuh strong consistency.</b> Biasanya cuma sebagian kecil sistemmu (saldo, inventori kritikal) — jangan generalisasi ke seluruh aplikasi.</li>
+        <li><b>Tanyakan: apa yang lebih mahal — data yang sempat "basi" atau sistem yang sempat tidak bisa dipakai?</b> Jawabannya beda-beda tiap fitur, bahkan dalam satu produk yang sama.</li>
+        <li><b>Baca dokumentasi konsistensi database sebelum dipakai, bukan setelah insiden.</b> Cari kata "consistency model", "quorum", atau "read-your-writes" di dokumentasi resminya.</li>
+        <li><b>Uji perilaku saat partisi, jangan cuma uji saat semua sehat.</b> Simulasikan network split di staging — banyak bug konsistensi baru kelihatan saat koneksi antar node terputus.</li>
+        <li><b>Jangan asumsikan satu database bisa menangani semua kebutuhan konsistensi.</b> Wajar kalau satu sistem memakai database berbeda untuk bagian yang butuh strong consistency dan bagian yang cukup eventual.</li>
+        <li><b>Dokumentasikan pilihan trade-off-mu.</b> Tim berikutnya perlu tahu <em>kenapa</em> suatu bagian sistem memilih AP atau CP — bukan cuma menemukan efeknya lewat bug report.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">🌱 Roadmap · Tingkatan belajar</div>
+        <h2>Tier belajar: dari paham istilah sampai bisa mendesain trade-off</h2>
+      </div>
+      <p class="lead reveal">Fundamentals ini bisa didalami bertahap. Kamu tidak perlu langsung paham semuanya — pakai tabel ini untuk tahu kamu ada di tahap mana, dan apa target belajar berikutnya.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Kenal istilahnya</h4>
+          <p>Target: bisa menjelaskan CAP theorem dengan kata-katamu sendiri, dan tahu bedanya strong vs eventual consistency lewat contoh sederhana.</p>
+          <ul>
+            <li>Hafal kepanjangan C, A, P dan artinya masing-masing.</li>
+            <li>Paham kenapa partition tolerance "wajib", bukan pilihan.</li>
+            <li>Bisa kasih 1 contoh kasus nyata: kenapa media sosial pilih eventual consistency untuk jumlah like.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Bisa evaluasi database</h4>
+          <p>Target: waktu memilih database untuk proyek, bisa membaca dokumentasinya dan menentukan apakah database itu condong CP atau AP.</p>
+          <ul>
+            <li>Paham PACELC dan kenapa latency vs consistency relevan sehari-hari, bukan cuma saat partisi.</li>
+            <li>Bisa membedakan strong, eventual, dan causal consistency dalam skenario nyata.</li>
+            <li>Tahu fitur seperti "quorum read/write", "read-your-writes", "tunable consistency" di database populer.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Bisa mendesain sistem hybrid</h4>
+          <p>Target: bisa mendesain arsitektur yang mencampur beberapa database dengan trade-off berbeda, sesuai kebutuhan tiap bagian sistem.</p>
+          <ul>
+            <li>Paham mekanisme konsensus di baliknya (Paxos, Raft) secukupnya untuk debugging masalah produksi.</li>
+            <li>Bisa merancang strategi rekonsiliasi konflik untuk sistem AP (last-write-wins, CRDT, vector clock).</li>
+            <li>Bisa menulis test skenario chaos/Jepsen-style untuk memverifikasi klaim konsistensi vendor database.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: consistency-first vs availability-first</h2>
+      </div>
+      <p class="lead reveal">Tidak ada pilihan yang "menang mutlak". Consistency-first dan availability-first masing-masing menyelesaikan masalah yang berbeda — dan masing-masing punya harga yang harus kamu sadari sebelum memilih.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Consistency-first (CP)</h4>
+          <ul class="good-l">
+            <li>Data selalu benar &amp; sama di semua node saat dibaca.</li>
+            <li>Cocok untuk saldo, inventori, dan data legal/keuangan.</li>
+            <li>Lebih mudah dinalar — tidak ada "konflik" untuk direkonsiliasi.</li>
+          </ul>
+          <ul class="bad-l" style="margin-top:8px;">
+            <li>Latency lebih tinggi (menunggu konfirmasi kuorum).</li>
+            <li>Saat partisi terjadi, sebagian request bisa gagal total.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">// Availability-first (AP)</h4>
+          <ul class="good-l">
+            <li>Selalu merespon — cocok untuk pengalaman pengguna real-time.</li>
+            <li>Skala horizontal lebih mudah, latency rendah.</li>
+            <li>Tetap jalan walau sebagian node/region terputus.</li>
+          </ul>
+          <ul class="bad-l" style="margin-top:8px;">
+            <li>Data bisa "basi" sesaat, butuh strategi rekonsiliasi konflik.</li>
+            <li>Aplikasi harus siap menangani data yang belum tentu terbaru.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Bukan biner, tapi spektrum</div>
+          <p>Banyak database modern menawarkan <code>tunable consistency</code> — kamu bisa atur per-query seberapa banyak node harus konfirmasi sebelum request dianggap sukses (mis. <code>quorum</code>, <code>one</code>, <code>all</code> di Cassandra). Jadi keputusan CP vs AP tidak selalu berlaku untuk seluruh database — bisa berbeda per jenis operasi.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai yang mana</div>
+        <h2>Kapan pilih consistency-first, kapan availability-first</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: tanyakan <strong>apa akibatnya kalau data sempat salah/basi</strong> dibanding <strong>apa akibatnya kalau sistem sempat tidak bisa dipakai</strong>. Mana yang lebih mahal bagi bisnismu, itulah yang menuntun pilihan.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pilih consistency-first saat…</h4>
+          <ul class="good-l">
+            <li>Salah data berarti kerugian finansial/hukum (saldo, pembayaran).</li>
+            <li>Ada aturan bisnis ketat yang tidak boleh dilanggar (stok tidak boleh minus).</li>
+            <li>Konflik data lebih sulit diperbaiki daripada request yang gagal.</li>
+            <li>Volume transaksi cukup kecil sehingga latency ekstra masih wajar.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Pilih availability-first saat…</h4>
+          <ul class="bad-l">
+            <li>Pengalaman pengguna butuh respon instan (feed, like, view count).</li>
+            <li>Data "basi" sesaat masih bisa diterima &amp; mudah dikoreksi nanti.</li>
+            <li>Skala global &amp; banyak region jadi prioritas utama.</li>
+            <li>Sistem harus tetap jalan walau satu region/data center down.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan ke tiap fitur: <strong>"Kalau sistem ini menjawab 'ya' padahal seharusnya 'belum tentu', seberapa besar kerugiannya?"</strong> Kalau kerugiannya besar (uang hilang, stok minus) → consistency-first. Kalau kerugiannya kecil dan gampang dikoreksi (jumlah like telat sedetik) → availability-first.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Bagaimana perusahaan besar membuat pilihan CAP</h2>
+      </div>
+      <p class="lead reveal">Empat contoh nyata dengan kebutuhan bisnis yang sangat berbeda — perhatikan bagaimana kebutuhan bisnis, bukan tren teknologi, yang menentukan posisi mereka di spektrum CAP.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// availability-first</div><h4>Amazon DynamoDB</h4><p><b>Kebutuhan:</b> keranjang belanja Amazon harus selalu bisa menerima "add to cart", bahkan saat ada gangguan jaringan internal — kehilangan penjualan lebih mahal daripada sesekali harus merapikan data ganda. <b>Pilihan:</b> availability-first, eventual consistency sebagai default, warisan dari paper Dynamo (2007).</p></div>
+        <div class="card up"><div class="ic">// consistency-first</div><h4>Google Spanner</h4><p><b>Kebutuhan:</b> sistem iklan &amp; layanan global Google butuh transaksi yang benar-benar konsisten lintas data center di seluruh dunia. <b>Pilihan:</b> consistency-first (external consistency), dimungkinkan lewat <b>TrueTime</b> — API jam atom &amp; GPS yang membuat Spanner bisa memberi urutan transaksi yang bisa diandalkan lintas region.</p></div>
+        <div class="card up"><div class="ic">// consistency-first</div><h4>Sistem perbankan / core banking</h4><p><b>Kebutuhan:</b> transaksi keuangan tidak boleh menghasilkan saldo ganda atau hilang — regulasi &amp; audit menuntut kepastian. <b>Pilihan:</b> consistency-first ketat, biasanya di atas database relasional dengan jaminan ACID penuh, latency lebih tinggi diterima demi kebenaran data.</p></div>
+        <div class="card up"><div class="ic">// availability-first, skala besar</div><h4>Cassandra di Netflix</h4><p><b>Kebutuhan:</b> layanan streaming global harus tetap responsif meski satu region cloud bermasalah — buffering lebih ditoleransi daripada layanan mati total. <b>Pilihan:</b> availability-first dengan Cassandra, konsistensi diatur per-operasi (tunable consistency) sesuai kebutuhan tiap fitur.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Tidak satu pun dari keempatnya memilih posisinya karena "database itu lebih modern" atau "lebih populer". Amazon memilih availability karena kehilangan transaksi belanja itu mahal. Google membangun infrastruktur jam atom mahal (TrueTime) karena butuh konsistensi global yang ketat. Bank memilih ACID ketat karena regulasi tidak memberi ruang toleransi. Pilihan CAP selalu mengikuti <strong>kebutuhan bisnis</strong>, bukan sebaliknya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat bantu berpikir trade-off</div>
+        <h2>Tools untuk menguji &amp; memahami trade-off ini</h2>
+      </div>
+      <p class="lead reveal">Trade-off CAP/PACELC bukan cuma teori di atas kertas — ada tools nyata yang dipakai industri untuk menguji apakah klaim konsistensi sebuah database benar-benar terbukti di kondisi nyata.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// testing konsistensi</div><h4>Jepsen</h4><p>Framework buatan Kyle Kingsbury yang mensimulasikan network partition &amp; kegagalan node untuk menguji apakah database benar-benar menepati klaim konsistensinya. Banyak laporan Jepsen membongkar celah konsistensi di database populer.</p></div>
+        <div class="card up"><div class="ic">// verifikasi formal</div><h4>TLA+</h4><p>Bahasa spesifikasi formal yang dipakai tim seperti AWS untuk memodelkan &amp; membuktikan secara matematis bahwa algoritma terdistribusi mereka (termasuk soal konsistensi) berperilaku benar sebelum diimplementasikan.</p></div>
+        <div class="card up"><div class="ic">// chaos engineering</div><h4>Chaos Monkey &amp; sejenisnya</h4><p>Alat dari Netflix yang sengaja mematikan instance/service secara acak di production untuk memastikan sistem tetap availability-first sesuai desainnya, bukan cuma asumsi di atas kertas.</p></div>
+        <div class="card up"><div class="ic">// konsep konsensus</div><h4>Raft &amp; Paxos</h4><p>Algoritma konsensus yang jadi "mesin di balik layar" banyak database CP (mis. etcd pakai Raft, Spanner terinspirasi Paxos) untuk memastikan node-node sepakat sebelum data dianggap tertulis.</p></div>
+        <div class="card up"><div class="ic">// visual/diagram</div><h4>Diagram PACELC</h4><p>Bukan tool eksekusi, tapi kerangka berpikir: sebelum evaluasi database baru, plot dulu posisinya di sumbu CP/AP dan L/C — banyak vendor mencantumkan ini di dokumentasi arsitektur mereka.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Kamu tidak perlu menjalankan Jepsen sendiri untuk mulai belajar — baca saja laporan-laporan publiknya untuk database yang sedang kamu pertimbangkan. Itu cara tercepat mengetahui trade-off <em>sebenarnya</em>, bukan cuma klaim marketing di halaman depan dokumentasi.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>"Satu database untuk semua" itu mitos</h2>
+      </div>
+      <p class="lead reveal">CAP dan PACELC bukan trivia buat dihafal sebelum wawancara kerja — ini cara berpikir yang akan menemanimu setiap kali mendesain sistem yang datanya tersebar di lebih dari satu mesin.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Partisi jaringan itu pasti terjadi</b> — bukan pertanyaan "kalau", tapi "kapan".</li>
+          <li><b>CAP: saat partisi terjadi</b>, pilih Consistency atau Availability, bukan keduanya.</li>
+          <li><b>PACELC: bahkan tanpa partisi</b>, tetap ada trade-off Latency vs Consistency setiap hari.</li>
+          <li><b>Strong, eventual, causal</b> — konsistensi itu spektrum, bukan status on/off.</li>
+          <li><b>Pilihan CAP mengikuti kebutuhan bisnis</b> — bukan tren teknologi atau popularitas.</li>
+          <li><b>Satu sistem boleh mencampur beberapa database</b> — sesuai trade-off yang dibutuhkan tiap bagian.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah belajar berikutnya</h3>
+        <p>Sekarang kamu punya kerangka untuk mengevaluasi database apa pun. Lanjutkan ke bab-bab jenis database spesifik — <strong>document database</strong>, <strong>wide-column</strong>, <strong>graph</strong>, dan <strong>relational</strong> — dan setiap kali membaca dokumentasinya, coba tempatkan database itu di spektrum CAP/PACELC yang sudah kamu pelajari di sini. Itu akan membuat pembelajaranmu jauh lebih terhubung, bukan sekadar hafalan fitur per database.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Tidak ada database yang menang untuk segalanya — hanya database yang trade-off-nya cocok denganmu."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Fundamentals Database</b> · CAP theorem, PACELC, model konsistensi, &amp; kenapa satu database untuk semua itu mitos · rujukan: DDIA (Kleppmann), CAP theorem (Brewer), PACELC (Abadi) · kembali ke <a href="../index.html">← Database</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

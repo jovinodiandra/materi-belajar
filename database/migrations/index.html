@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Migrations — Ubah Skema Database Tanpa Downtime</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home { color: var(--muted); text-decoration: none; white-space: nowrap; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; transition: color .18s, border-color .18s; }
+  .topbar__home:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  /* ---------- steps ---------- */
+  .steps { list-style: none; max-width: 78ch; margin-top: 22px; counter-reset: stepcount; }
+  .steps li {
+    position: relative; padding: 12px 0 12px 46px; font-size: 15.5px; color: var(--ink);
+    border-bottom: 1px solid var(--line-soft); counter-increment: stepcount;
+  }
+  .steps li::before {
+    content: counter(stepcount, decimal-leading-zero);
+    position: absolute; left: 0; top: 10px; font-family: var(--mono); font-size: 12px;
+    color: var(--cyan); border: 1px solid var(--cyan-dim); border-radius: 5px;
+    padding: 2px 6px; background: rgba(69,212,222,.07);
+  }
+  .steps li b { color: var(--ink-strong); }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Database</a>
+  <div class="topbar__file">docs/learning/database/migrations/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa migration butuh disiplin</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Apa itu migration</a>
+    <a href="#c03"><span class="yr">03</span> Expand-contract</a>
+
+    <div class="rail__part">III · Praktik &amp; tingkatan</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">05</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Keputusan &amp; ekosistem</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan butuh online schema change</a>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — mengubah skema yang sudah hidup di production</div>
+      <h1 class="reveal d1">Ubah skema database <span class="accent">tanpa mematikan lampu</span> untuk pengguna.</h1>
+      <p class="sub reveal d2">
+        Skema database jarang selesai di hari pertama. Kamu akan terus menambah kolom, mengubah tipe, memecah tabel,
+        atau mengganti nama field — sementara aplikasi tetap harus jalan dan data tetap harus aman. <b>Migration</b>
+        adalah cara terkontrol untuk melakukan itu: perubahan skema yang tercatat, bisa diulang, dan (idealnya)
+        bisa dibatalkan. Deck ini membahas <b>kenapa</b> migration butuh disiplin, <b>pola expand-contract</b>
+        untuk perubahan tanpa downtime, sampai <b>tools</b> yang dipakai tim beneran di production.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>ALTER TABLE</b> <span>— sekali jalan langsung mengunci tabel besar</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Migration terkontrol</b> <span>— forward &amp; rollback, tercatat, teruji</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Pola</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Expand-contract</b> <span>— ubah bertahap, tak pernah "big bang"</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Tabel jutaan baris</b> <span>— migration biasa tetap bisa mengunci lama</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Online schema change</b> <span>— gh-ost, pt-osc, dsb untuk skala besar</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why" style="max-width:78ch;margin:32px auto 0;">
+    <div class="tag">◆ Buat apa ini? Kenapa pakai migration?</div>
+    <p><em>Given</em> — tim mengubah skema lewat query manual langsung ke production, tanpa catatan urutan atau versi yang tersimpan di kode.</p>
+    <p><em>When</em> — developer baru clone project lalu setup database lokal, atau tim men-deploy skema yang sama ke staging lalu ke production.</p>
+    <p><em>Then</em> — skema di tiap environment perlahan <em>drift</em> (tidak ada yang tahu pasti versi mana yang jalan di mana), dan perubahan besar seperti <code>ALTER TABLE</code> dijalankan langsung tanpa rencana rollback yang jelas — persis skenario "cerita yang sering terulang" di bawah.</p>
+    <p>→ makanya kita pakai <em>Database Migrations</em>.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA MIGRATION BUTUH DISIPLIN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Skema production itu hidup</div>
+        <h2>Satu ALTER TABLE ceroboh bisa mematikan aplikasi</h2>
+      </div>
+      <p class="lead reveal">Di database yang masih kosong, <code>ALTER TABLE</code> terasa sepele — jalan dalam hitungan detik. Masalahnya muncul begitu tabel itu sudah berisi jutaan baris <strong>dan sedang dipakai user</strong>. Sebagian jenis perubahan skema butuh database menulis ulang seluruh tabel, dan selama itu terjadi, tabel bisa <strong>terkunci</strong> — semua query yang menyentuhnya ikut antre.</p>
+
+      <div class="quote reveal d1">
+        <p>Perubahan skema database semestinya diperlakukan sebagai <span style="font-style:normal">disiplin operasional</span> — bukan sekadar developer menulis <span style="font-style:normal">ALTER TABLE</span> lalu berharap yang terbaik. Tiap migration butuh rencana rollback yang jelas dan pengujian sebelum menyentuh production.</p>
+        <cite>— parafrase dari Laine Campbell &amp; Charity Majors, <i>Database Reliability Engineering</i> (O'Reilly)</cite>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Cerita yang sering terulang</div>
+        <p>Bayangkan sebuah tim menjalankan <code>ALTER TABLE orders ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'pending'</code> di tabel <code>orders</code> yang berisi puluhan juta baris, langsung di jam sibuk. Di banyak mesin database (versi lama, atau kombinasi tipe kolom tertentu), perintah ini <em>menulis ulang seluruh tabel</em> dan menahan lock sepanjang proses. Hasilnya: request checkout mulai timeout, tim baru sadar setelah dashboard error rate merah — padahal niatnya cuma menambah satu kolom kecil.</p>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Ini bukan soal "developer-nya ceroboh". Ini soal <b>perubahan skema diperlakukan sama entengnya dengan commit kode biasa</b>, padahal efeknya menyentuh data yang sedang dipakai ribuan orang secara bersamaan. Begitu kamu sadar bedanya, migration mulai butuh proses sendiri: direview, diuji dengan volume data mirip production, dan punya jalan mundur.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 APA ITU MIGRATION ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Migration file &amp; tool</div>
+        <h2>Migration = perubahan skema yang tercatat &amp; bisa diulang</h2>
+      </div>
+      <p class="lead reveal">Secara sederhana, <strong>migration</strong> adalah file berisi instruksi untuk mengubah skema database — biasanya diberi nomor urut atau timestamp, dan disimpan di repo bersama kode aplikasi. Tool migration (golang-migrate, Flyway, Prisma Migrate, dll) menjalankannya secara berurutan &amp; mencatat migration mana saja yang sudah diterapkan ke database itu.</p>
+
+      <p class="body reveal d1">Tiap migration idealnya punya dua arah:</p>
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Dua arah sebuah migration</div>
+        <div class="erabox__row"><span class="erabox__lang">Forward</span><code>up   — terapkan perubahan (mis. tambah kolom)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Rollback</span><code>down — batalkan perubahan (mis. hapus kolom itu)</code></div>
+        <p class="erabox__note">Kalau <code>up</code> ternyata bermasalah di production, tim bisa jalankan <code>down</code> untuk mengembalikan skema — <b>asal</b> rollback-nya memang ditulis &amp; diuji, bukan cuma formalitas kosong.</p>
+      </div>
+
+      <div class="diptych reveal d2">
+        <div class="code-card">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">000123_add_email_verified.up.sql</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- forward: tambah kolom baru, nullable dulu supaya cepat</span>
+<span class="k">ALTER</span> <span class="k">TABLE</span> <span class="t">users</span>
+  <span class="k">ADD</span> <span class="k">COLUMN</span> email_verified <span class="t">BOOLEAN</span> <span class="k">DEFAULT</span> <span class="n">false</span>;
+
+<span class="c">-- index dibuat CONCURRENTLY biar tidak mengunci tabel saat build</span>
+<span class="k">CREATE</span> <span class="k">INDEX</span> <span class="k">CONCURRENTLY</span> idx_users_email_verified
+  <span class="k">ON</span> <span class="t">users</span>(email_verified);</pre>
+        </div>
+        <div class="code-card">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">000123_add_email_verified.down.sql</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- rollback: balikkan persis apa yang dilakukan up.sql</span>
+<span class="k">DROP</span> <span class="k">INDEX</span> <span class="k">IF</span> <span class="k">EXISTS</span> idx_users_email_verified;
+<span class="k">ALTER</span> <span class="k">TABLE</span> <span class="t">users</span>
+  <span class="k">DROP</span> <span class="k">COLUMN</span> email_verified;</pre>
+        </div>
+      </div>
+
+      <p class="body reveal d3">Nomor <code>000123</code> di depan nama file memastikan urutan eksekusi jelas &amp; tidak ambigu antar developer. Tool migration menyimpan tabel kecil (mis. <code>schema_migrations</code>) untuk melacak migration mana yang sudah dijalankan di database itu, supaya migration yang sama tidak dieksekusi dua kali.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 EXPAND-CONTRACT ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Pola inti</span> · Expand &amp; contract</div>
+        <h2>Jangan ubah skema sekaligus — perluas dulu, baru persempit</h2>
+      </div>
+      <p class="lead reveal">Masalah terbesar migration bukan sintaks SQL-nya, tapi <strong>momen deploy</strong>: kode lama &amp; kode baru sering hidup berdampingan sesaat (rolling deploy, beberapa instance masih versi lama). Kalau migration langsung mengubah/menghapus struktur lama, kode lama itu akan error seketika.</p>
+
+      <div class="quote reveal d1">
+        <p>Daripada mengubah skema dalam satu langkah besar yang berisiko, ubah secara bertahap: tambahkan dulu struktur baru dan jalankan berdampingan dengan yang lama (<span style="font-style:normal">expand</span>), baru setelah semua konsumen pindah, struktur lama barulah dihapus (<span style="font-style:normal">contract</span>) — sehingga tak pernah ada momen "big bang" yang menegangkan.</p>
+        <cite>— konsep expand and contract, dipopulerkan a.l. oleh Martin Fowler &amp; komunitas continuous delivery</cite>
+      </div>
+
+      <div class="diptych reveal d2">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">bad — satu migration, langsung ganti</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- 002_rename_username.sql (satu langkah, satu deploy)</span>
+<span class="k">ALTER</span> <span class="k">TABLE</span> <span class="t">users</span>
+  <span class="k">RENAME</span> <span class="k">COLUMN</span> username <span class="k">TO</span> handle;
+
+<span class="hl-bad">-- kode lama yang masih SELECT/INSERT "username"
+-- ERROR seketika migration ini jalan --</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">good — expand-contract, bertahap</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- Tahap 1 (expand): tambah kolom baru, keduanya hidup</span>
+<span class="k">ALTER</span> <span class="k">TABLE</span> <span class="t">users</span> <span class="k">ADD</span> <span class="k">COLUMN</span> handle <span class="t">VARCHAR</span>(<span class="n">50</span>);
+<span class="c">-- app: dual-write ke username & handle sekaligus</span>
+
+<span class="c">-- Tahap 2: backfill data lama ke kolom baru</span>
+<span class="k">UPDATE</span> <span class="t">users</span> <span class="k">SET</span> handle = username <span class="k">WHERE</span> handle <span class="k">IS</span> <span class="k">NULL</span>;
+
+<span class="c">-- Tahap 3: app baca dari "handle", tulis ke keduanya</span>
+<span class="c">-- Tahap 4 (contract, migration TERPISAH, setelah yakin aman):</span>
+<span class="hl-good">ALTER TABLE users DROP COLUMN username;</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d3">Intinya: <strong>expand</strong> menambah tanpa merusak yang lama (kolom baru, tabel baru, index baru), lalu ada masa transisi di mana kode <em>dual-write</em> atau dual-read ke keduanya, dan baru setelah semua konsumen — semua service, semua instance — dipastikan pindah, <strong>contract</strong> menghapus struktur lama lewat migration terpisah. Tidak ada momen di mana skema &amp; kode yang jalan tiba-tiba tidak sinkron.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Kebiasaan tim yang aman</div>
+        <h2>Enam kebiasaan supaya migration tidak jadi insiden</h2>
+      </div>
+      <p class="lead reveal">Sebagian besar insiden migration bisa dicegah dengan kebiasaan sederhana ini — bukan tool canggih, tapi disiplin proses.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Migration kecil &amp; reversible.</b> Satu migration = satu perubahan logis. Selalu tulis &amp; uji <code>down</code>-nya, jangan biarkan rollback jadi angan-angan.</li>
+        <li><b>Hindari lock lama di tabel besar.</b> Pakai kolom nullable / default ringan dulu, index dengan <code>CONCURRENTLY</code>, dan hindari operasi yang mem-rewrite seluruh tabel di jam sibuk.</li>
+        <li><b>Backward-compatible dulu.</b> Skema baru harus tetap bisa dibaca &amp; ditulis oleh kode versi lama selama masa rolling deploy — itulah kenapa expand-contract penting.</li>
+        <li><b>Uji di staging dengan data realistis.</b> Volume &amp; bentuk data yang mirip production akan membongkar masalah lock/waktu eksekusi yang tak terlihat di database kosong.</li>
+        <li><b>Pisahkan deploy skema dari deploy perilaku.</b> Migration &amp; perubahan kode aplikasi yang bergantung padanya sebaiknya dipisah jadi beberapa deploy, supaya rollback lebih presisi.</li>
+        <li><b>Pantau saat &amp; setelah migration jalan.</b> Perhatikan lock wait, replication lag, dan error rate — migration yang "selesai tanpa error" tidak selalu berarti aman.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Jenjang · Dari basic sampai skala besar</div>
+        <h2>Tier belajar migration</h2>
+      </div>
+      <p class="lead reveal">Kedalaman yang kamu butuhkan soal migration bergantung pada skala datamu. Ini peta jenjangnya.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Jalankan migration tool dasar</h4>
+          <p>Fokus: paham alur <code>up</code>/<code>down</code> &amp; menjalankannya lewat satu tool migration.</p>
+          <ul>
+            <li>Buat migration baru dengan CLI (mis. golang-migrate, Prisma, Rails).</li>
+            <li>Pahami tabel pelacak versi migration.</li>
+            <li>Biasa menulis rollback, bukan cuma forward.</li>
+            <li>Jalankan migration di lokal &amp; staging sebelum production.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Desain migration untuk aplikasi yang live</h4>
+          <p>Fokus: migration yang backward-compatible saat aplikasi sedang dipakai user.</p>
+          <ul>
+            <li>Terapkan pola expand-contract untuk rename/ubah tipe kolom.</li>
+            <li>Pisahkan deploy migration dari deploy kode yang bergantung.</li>
+            <li>Tahu operasi mana yang mengunci tabel &amp; kapan hindari.</li>
+            <li>Uji migration dengan data volume mendekati production.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Migration tanpa downtime di tabel jutaan baris</h4>
+          <p>Fokus: skala besar, traffic 24/7, toleransi lock nyaris nol.</p>
+          <ul>
+            <li>Pakai online schema change tool (gh-ost, pt-osc) untuk tabel raksasa.</li>
+            <li>Kelola dual-write &amp; backfill bertahap di traffic tinggi.</li>
+            <li>Rancang migration lintas-service dengan koordinasi rilis.</li>
+            <li>Punya observability khusus untuk migration (lag, lock, error).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Terkontrol vs ad-hoc</div>
+        <h2>Trade-off: migration lewat tool vs migration manual</h2>
+      </div>
+      <p class="lead reveal">Ada tim yang menjalankan migration lewat tool terkontrol, ada yang masih klik-klik langsung di database production. Bedanya bukan soal gengsi tool — tapi soal jejak &amp; kemampuan mundur.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Migration otomatis &amp; terkontrol (tool)</h4>
+          <ul class="good-l">
+            <li>Riwayat perubahan tercatat &amp; bisa direview lewat PR.</li>
+            <li>Urutan eksekusi konsisten di semua environment.</li>
+            <li>Rollback jelas — tinggal jalankan <code>down</code>.</li>
+            <li>Bisa dijalankan otomatis di pipeline CI/CD.</li>
+            <li>Mudah direplikasi ke staging / environment baru.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Migration manual / ad-hoc</h4>
+          <ul class="bad-l">
+            <li>Perubahan hanya ada di kepala orang yang menjalankannya.</li>
+            <li>Rawan beda skema antara staging &amp; production.</li>
+            <li>Rollback = mengingat-ingat &amp; menulis ulang query mundur.</li>
+            <li>Sulit direview sebelum menyentuh data nyata.</li>
+            <li>Susah diulang persis sama di environment lain.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan jujur</div>
+          <p>Migration lewat tool bukan jaminan aman — tool cuma menjamin <em>tercatat &amp; berurutan</em>. Kamu tetap bisa menulis migration yang mengunci tabel besar lewat tool paling canggih sekalipun. Disiplin desain (expand-contract, migration kecil) tetap yang paling menentukan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN BUTUH ONLINE SCHEMA CHANGE ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Cukup migration biasa atau butuh tool khusus</div>
+        <h2>Kapan migration biasa cukup, kapan butuh online schema change</h2>
+      </div>
+      <p class="lead reveal">Tidak semua migration butuh tool online schema change — itu overhead tambahan yang cuma masuk akal untuk kasus tertentu.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Migration tool biasa cukup saat…</h4>
+          <ul class="good-l">
+            <li>Tabel masih kecil/menengah (ratusan ribu baris ke bawah).</li>
+            <li>Ada maintenance window yang bisa ditoleransi.</li>
+            <li>Operasi ringan: tambah kolom nullable, index baru dengan <code>CONCURRENTLY</code>.</li>
+            <li>Trafik aplikasi rendah/menengah, bukan 24/7 kritikal.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Butuh online schema change tool saat…</h4>
+          <ul class="bad-l">
+            <li>Tabel berisi puluhan/ratusan juta baris.</li>
+            <li>Aplikasi harus tetap up 24/7, nyaris tanpa maintenance window.</li>
+            <li>Operasi berat: ubah tipe kolom, rewrite index besar, rename yang menyentuh storage.</li>
+            <li>Lock sekecil apapun berdampak nyata ke SLA/uptime.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan: <strong>"Kalau migration ini menahan lock 30 detik saja di jam sibuk, apakah itu masalah?"</strong> Kalau jawabannya "ya, jelas masalah" — dan tabelnya besar — saatnya lirik online schema change tool, bukan menjalankan <code>ALTER TABLE</code> polos.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Bagaimana tim besar menangani migration di production</h2>
+      </div>
+      <p class="lead reveal">Beberapa contoh nyata bagaimana tim dengan skala besar &amp; data sensitif menangani perubahan skema — pola yang berulang: disiplin proses &amp; tooling khusus untuk tabel besar.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// MySQL @ scale</div><h4>GitHub &amp; gh-ost</h4><p>GitHub membangun <b>gh-ost</b>, tool open-source untuk menjalankan schema migration di MySQL tanpa mengunci tabel dan tanpa bergantung pada trigger di database — dirancang supaya perubahan skema di tabel besar tetap aman berjalan di belakang layar sambil aplikasi tetap melayani trafik.</p></div>
+        <div class="card up"><div class="ic">// data finansial</div><h4>Stripe &amp; disiplin migration</h4><p>Sebagai perusahaan pembayaran, Stripe dikenal menerapkan disiplin ketat pada perubahan skema data finansial — migration backward-compatible, ditinjau matang, dan dijalankan bertahap, karena kesalahan pada data transaksi punya konsekuensi nyata bagi pengguna &amp; kepatuhan.</p></div>
+        <div class="card up"><div class="ic">// multi-tenant scale</div><h4>Shopify &amp; skema di database besar</h4><p>Shopify mengoperasikan armada database MySQL besar untuk menopang banyak toko sekaligus. Perubahan skema di skala ini butuh koordinasi &amp; tooling migration yang konsisten agar perubahan pada satu bagian sistem tidak mengganggu toko-toko yang sedang aktif berjualan.</p></div>
+        <div class="card up"><div class="ic">// pola umum industri</div><h4>Online schema change jadi standar</h4><p>Di banyak perusahaan dengan tabel besar &amp; uptime kritikal, tool seperti <code>pt-online-schema-change</code> atau gh-ost menjadi bagian standar pipeline deploy — migration berat tidak lagi dijalankan langsung sebagai <code>ALTER TABLE</code> polos.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di semua kasus di atas, polanya sama: begitu skala data &amp; risiko downtime naik, tim berhenti memperlakukan migration sebagai "jalankan SQL lalu selesai". Mereka membangun atau mengadopsi <strong>tooling khusus</strong>, menambah <strong>proses review</strong>, dan menganut <strong>perubahan bertahap</strong> — persis semangat expand-contract.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools migration &amp; online schema change</h2>
+      </div>
+      <p class="lead reveal">Kenali dulu nama-nama populernya. Sebagai pemula, cukup mulai dari satu tool migration yang cocok dengan bahasa/framework-mu (golang-migrate, Prisma, atau ActiveRecord).</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// online schema change</div><h4>gh-ost</h4><p>Buatan GitHub. Menjalankan migration MySQL tanpa lock lama &amp; tanpa trigger di database, dengan mengontrol beban lewat proses eksternal.</p></div>
+        <div class="card up"><div class="ic">// multi-database</div><h4>Flyway</h4><p>Tool migration berbasis SQL file bernomor urut, populer di ekosistem Java tapi bisa dipakai lintas bahasa. Kuat di versioning &amp; audit trail.</p></div>
+        <div class="card up"><div class="ic">// Go ecosystem</div><h4>golang-migrate</h4><p>CLI &amp; library migration ringan untuk Go, mendukung banyak database, format file <code>up</code>/<code>down</code> sederhana seperti contoh di atas.</p></div>
+        <div class="card up"><div class="ic">// Node/TypeScript</div><h4>Prisma Migrate</h4><p>Bagian dari Prisma ORM. Migration di-generate otomatis dari perubahan schema, cocok untuk tim yang mendefinisikan model data secara deklaratif.</p></div>
+        <div class="card up"><div class="ic">// Ruby on Rails</div><h4>ActiveRecord Migrations</h4><p>Sistem migration bawaan Rails yang lahir lama &amp; jadi rujukan banyak tool migration lain — migration ditulis sebagai kelas Ruby dengan method <code>up</code>/<code>down</code> atau <code>change</code>.</p></div>
+        <div class="card up"><div class="ic">// MySQL, Percona</div><h4>pt-online-schema-change</h4><p>Bagian dari Percona Toolkit. Menjalankan perubahan skema MySQL lewat tabel bayangan &amp; trigger, lalu menukarnya — pendahulu pendekatan yang menginspirasi gh-ost.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Jangan buru-buru pakai online schema change tool kalau tabelmu masih kecil — itu menambah kompleksitas operasional yang belum kamu butuhkan. Kuasai dulu migration tool dasar &amp; pola expand-contract; online schema change baru relevan begitu tabelmu benar-benar besar &amp; downtime benar-benar mahal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Migration itu disiplin operasional, bukan sekadar SQL</h2>
+      </div>
+      <p class="lead reveal">Skema database yang sehat bukan yang tidak pernah berubah — tapi yang perubahannya bisa dilacak, diuji, dan dibatalkan kalau perlu. Itulah inti dari migration yang baik.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Migration = perubahan tercatat</b> — punya arah forward &amp; rollback yang jelas.</li>
+          <li><b>Tabel besar &amp; live berbeda</b> — operasi yang aman di tabel kosong bisa mengunci production.</li>
+          <li><b>Expand-contract dulu</b> — tambah struktur baru, transisi, baru hapus yang lama.</li>
+          <li><b>Migration kecil &amp; backward-compatible</b> — lebih mudah direview &amp; dibatalkan.</li>
+          <li><b>Uji dengan data realistis</b> — database kosong menyembunyikan masalah lock &amp; waktu eksekusi.</li>
+          <li><b>Online schema change saat perlu saja</b> — bukan default, tapi jawaban untuk skala besar.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Sebelum menjalankan migration ke production, tanyakan: <strong>"Kalau ini salah, seberapa cepat aku bisa membatalkannya — dan apakah kode lama masih bisa jalan selama transisi?"</strong> Kalau kamu bisa menjawab keduanya dengan yakin, migration-mu sudah di jalur yang aman.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // expand dulu, transisi, baru contract — jangan pernah big bang.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Migrations</b> · Expand-contract, disiplin skema, &amp; tools-nya · untuk pemula · rujukan: Database Reliability Engineering (Campbell &amp; Majors), konsep expand and contract · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../index.html">← kembali ke Database</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

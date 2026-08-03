@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notebook Inggris — Level 5, Materi 2: Advanced Modals</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__back" href="../index.html">← Semua Materi</a>
+  <div class="topbar__file">docs/learning/english/level-5-materi-2/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 22</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+    <div class="rail__part">I · Kenapa &amp; Konsep</div>
+    <a href="#c01"><span class="yr">01</span> Tujuan pembelajaran</a>
+    <a href="#c02"><span class="yr">02</span> Penjelasan konsep</a>
+    <a href="#c03"><span class="yr">03</span> Kenapa ini penting</a>
+    <div class="rail__part">II · Contoh dalam Konteks</div>
+    <a href="#c04"><span class="yr">04</span> Contoh sederhana</a>
+    <a href="#c05"><span class="yr">05</span> Contoh sehari-hari</a>
+    <a href="#c06"><span class="yr">06</span> Contoh dunia kerja</a>
+    <a href="#c07"><span class="yr">07</span> Contoh software engineering</a>
+    <div class="rail__part">III · Hindari Salah &amp; Ingat</div>
+    <a href="#c08"><span class="yr">08</span> Kesalahan umum</a>
+    <a href="#c09"><span class="yr">09</span> Tips mengingat</a>
+    <a href="#c10"><span class="yr">10</span> Ringkasan</a>
+    <div class="rail__part">IV · Latihan &amp; Praktik</div>
+    <a href="#c11"><span class="yr">11</span> Latihan</a>
+    <a href="#c12"><span class="yr">12</span> Quiz</a>
+    <a href="#c13"><span class="yr">13</span> Percakapan</a>
+    <a href="#c14"><span class="yr">14</span> Writing exercise</a>
+    <a href="#c15"><span class="yr">15</span> Speaking exercise</a>
+    <div class="rail__part">V · Perkaya Kemampuan</div>
+    <a href="#c16"><span class="yr">16</span> Listening</a>
+    <a href="#c17"><span class="yr">17</span> Reading</a>
+    <a href="#c18"><span class="yr">18</span> Vocabulary</a>
+    <a href="#c19"><span class="yr">19</span> Pronunciation</a>
+    <div class="rail__part">VI · Lanjut</div>
+    <a href="#c20"><span class="yr">20</span> Review</a>
+    <a href="#c21"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c22"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Level 5 · Materi 2 dari 6 — Advance (C1)</div>
+      <h1 class="reveal d1">Advanced Modals — <span class="accent">menebak masa lalu dengan presisi</span></h1>
+      <p class="sub reveal d2">"The deploy must have triggered it." "It can't have been the cache." "She might have missed the alert." Tiga kalimat, tiga tingkat keyakinan yang berbeda-beda tentang sesuatu yang sudah terjadi tapi tidak kamu saksikan langsung. Ini bukan tenses baru — ini <b>modal + have + V3</b>, cara Bahasa Inggris memberi label seberapa yakin kamu terhadap sebuah dugaan tentang masa lalu, sesuatu yang setiap engineer lakukan tiap kali membaca log insiden jam 3 pagi.</p>
+      <div class="tl reveal d3">
+        <div class="tl__row"><span class="tl__dot"></span> must have — yakin, ini pasti terjadi</div>
+        <div class="tl__row"><span class="tl__dot"></span> can't / couldn't have — yakin, ini pasti TIDAK terjadi</div>
+        <div class="tl__row"><span class="tl__dot"></span> might / may / could have — mungkin terjadi, belum pasti</div>
+        <div class="tl__row"><span class="tl__dot"></span> should / shouldn't have — ekspektasi yang meleset, atau penyesalan</div>
+      </div>
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> scroll untuk mulai</div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Tujuan pembelajaran</h2></div>
+      <p class="lead reveal">Setelah materi ini kamu bisa:</p>
+      <ul class="plain reveal">
+        <li>Memakai <b>must have</b>, <b>can't have / couldn't have</b>, <b>might have / may have / could have</b>, dan <b>should have / shouldn't have</b> dengan tingkat keyakinan yang benar.</li>
+        <li>Membedakan dua fungsi <b>should have</b> — spekulasi ("harusnya sudah terjadi, tapi belum dikonfirmasi") vs penyesalan/kritik ("harusnya dilakukan, tapi tidak dilakukan").</li>
+        <li>Menyusun struktur <code>modal + have + V3</code> dengan benar tanpa salah bentuk verb atau salah menulis "of" alih-alih "have".</li>
+        <li>Menulis postmortem, incident report, dan code review comment dengan level kepastian yang presisi — skill yang membedakan tulisan teknis senior dari tulisan yang terdengar ragu-ragu tanpa alasan.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Penjelasan konsep</h2></div>
+      <p class="lead reveal">Semua modal spekulatif tentang masa lalu memakai struktur yang sama: <code>Subjek + modal + have + V3 (past participle)</code>. Modalnya tidak pernah berubah bentuk apa pun subjeknya, dan "have" di sini BUKAN auxiliary present perfect biasa — ia menempel ke modal, bukan ke subjek.</p>
+      <div class="ttable-wrap reveal">
+        <table class="ttable">
+          <thead><tr><th>Modal</th><th>Tingkat keyakinan</th><th>Contoh</th></tr></thead>
+          <tbody>
+            <tr><td><b>must have</b> + V3</td><td>hampir pasti YA — kesimpulan logis kuat dari bukti</td><td>The deploy <b>must have</b> caused it — the timestamps match exactly.</td></tr>
+            <tr><td><b>can't have / couldn't have</b> + V3</td><td>hampir pasti TIDAK — mustahil secara logika</td><td>He <b>can't have</b> merged it — he was offline all day.</td></tr>
+            <tr><td><b>might have / may have / could have</b> + V3</td><td>mungkin — tidak yakin, salah satu dari beberapa kemungkinan</td><td>The test <b>might have</b> failed due to a flaky network call.</td></tr>
+            <tr><td><b>should have / shouldn't have</b> + V3</td><td>ekspektasi meleset (belum dikonfirmasi) ATAU penyesalan/kritik</td><td>The pipeline <b>should have</b> finished by now.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="why reveal"><span class="tag">Dua wajah "should have"</span><p><b>1) Spekulasi</b> — sesuatu yang menurut perkiraanmu SEHARUSNYA sudah terjadi, tapi kamu belum mengonfirmasinya. <i>"The build should have completed by now — let me check the dashboard."</i> <b>2) Penyesalan/kritik</b> — sesuatu yang seharusnya dilakukan di masa lalu, tapi ternyata TIDAK dilakukan (dan sekarang kamu tahu hasilnya). <i>"We should have written a rollback script before deploying."</i> (artinya: kita tidak menulisnya, dan sekarang menyesal).</p></div>
+      <p class="body reveal">Perhatikan juga bedanya dengan modal spekulasi tentang <b>masa sekarang</b> yang sudah kamu kenal dari Level 2 (must/might/can't tanpa "have"): <i>"She must be busy"</i> (sekarang) vs <i>"She must have been busy"</i> (waktu itu, di masa lalu). Menambahkan <code>have + V3</code> adalah cara memundurkan spekulasi itu ke masa lalu.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">I · Kenapa &amp; Konsep</div><h2>Kenapa ini penting</h2></div>
+      <div class="why reveal"><span class="tag">Kenapa</span><p>Di dunia kerja senior, kamu jarang punya bukti 100% lengkap saat pertama kali menganalisis sebuah insiden atau keputusan masa lalu. Yang kamu punya biasanya cuma petunjuk parsial — log, timestamp, cerita orang lain. Advanced modals memberimu kosakata untuk mengomunikasikan <b>seberapa yakin</b> kamu terhadap sebuah kesimpulan, tanpa harus menulis paragraf panjang berisi "saya tidak yakin, tapi mungkin, atau bisa jadi juga...". Satu modal yang tepat menggantikan semua itu.</p></div>
+      <blockquote class="quote reveal">"It must have been a race condition — the failure only shows up under concurrent load." Satu kalimat, tingkat keyakinan jelas, tidak perlu disclaimer tambahan.<cite>— catatan investigasi insiden yang khas</cite></blockquote>
+    </div>
+  </section>
+
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh sederhana</h2></div>
+      <p class="lead reveal">Delapan kalimat dasar, perhatikan modal mana yang dipakai sesuai tingkat keyakinan si pembicara:</p>
+      <ul class="plain reveal">
+        <li><code>The lights are off — they must have left already.</code> — Lampunya mati, mereka pasti sudah pergi.</li>
+        <li><code>He can't have finished the exam — it started five minutes ago.</code> — Mustahil dia sudah selesai ujian, baru mulai lima menit lalu.</li>
+        <li><code>She might have taken the wrong bus.</code> — Mungkin saja dia naik bus yang salah.</li>
+        <li><code>They could have forgotten about the meeting.</code> — Bisa jadi mereka lupa soal rapat itu.</li>
+        <li><code>You should have called before coming — I wasn't home.</code> — Harusnya kamu telepon dulu sebelum datang.</li>
+        <li><code>The package should have arrived by Tuesday, but it's Thursday now.</code> — Harusnya paket itu sudah sampai Selasa.</li>
+        <li><code>I must have left my keys at the office.</code> — Aku pasti ketinggalan kunci di kantor.</li>
+        <li><code>We couldn't have known the storm would hit that fast.</code> — Kami sungguh tidak mungkin tahu badai itu akan datang secepat itu.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh sehari-hari</h2></div>
+      <div class="grid reveal">
+        <div class="card"><div class="ic">🔑</div><h4>Kehilangan barang</h4><p>"I must have dropped my wallet somewhere between the office and the station."</p></div>
+        <div class="card"><div class="ic">📱</div><h4>Chat tak terbalas</h4><p>"She might have seen the message but forgotten to reply."</p></div>
+        <div class="card"><div class="ic">🍽️</div><h4>Reservasi restoran</h4><p>"They can't have given away our table — we confirmed it this morning."</p></div>
+        <div class="card"><div class="ic">🚗</div><h4>Macet di jalan</h4><p>"He should have left earlier — traffic is always bad on Fridays."</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh dunia kerja</h2></div>
+      <div class="grid reveal">
+        <div class="card up"><div class="ic">📋</div><h4>Rapat mingguan</h4><p>"The client must have missed our email — let's follow up by phone."</p></div>
+        <div class="card up"><div class="ic">📧</div><h4>Klarifikasi vendor</h4><p>"The invoice might have been sent to the wrong department."</p></div>
+        <div class="card down"><div class="ic">🧾</div><h4>Laporan keuangan</h4><p>"That number can't have been finalized yet — Q3 hasn't closed."</p></div>
+        <div class="card down"><div class="ic">🤝</div><h4>Evaluasi proyek</h4><p>"We should have allocated more budget for testing from the start."</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">II · Contoh dalam Konteks</div><h2>Contoh software engineering</h2></div>
+      <p class="lead reveal">Advanced modals adalah bahasa resmi dari <b>incident analysis</b> dan <b>code review</b>. Bandingkan cara menulis analisis root cause yang ragu-ragu tanpa struktur, versus yang presisi memakai modal spekulatif:</p>
+      <div class="diptych reveal">
+        <div class="code-card bad">
+          <div class="code-card__bar"><span class="lang">postmortem · vague</span></div>
+          <pre class="code"><span class="c">## Root cause</span>
+<span class="c">We don't really know what happened.</span>
+<span class="c">Maybe the cache expired. Maybe not.</span>
+<span class="c">It's possible, we're not sure, could be</span>
+<span class="c">something else entirely.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><span class="lang">postmortem · precise modals</span></div>
+          <pre class="code"><span class="c">## Root cause</span>
+<span class="c">The cache <span class="hl-good">must have expired</span> at 02:14 —</span>
+<span class="c">the TTL matches the gap exactly. A cold</span>
+<span class="c">start <span class="hl-good">can't have caused</span> it, since the</span>
+<span class="c">instance had been running for days.</span></pre>
+        </div>
+      </div>
+      <p class="body reveal">Contoh lain yang bakal sering kamu tulis:</p>
+      <ul class="plain reveal">
+        <li><b>Code review comment:</b> "This might have introduced the N+1 query — can you double-check the loop?"</li>
+        <li><b>Incident report:</b> "The on-call engineer couldn't have known about the certificate expiry; there was no alert configured."</li>
+        <li><b>Standup update:</b> "The migration should have finished overnight — I'll check the logs after this."</li>
+        <li><b>Commit message follow-up:</b> "This commit must have broken the build — CI was green right before it."</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Kesalahan umum</h2></div>
+      <div class="cols reveal">
+        <div class="bad-l">
+          <h4>❌ Salah</h4>
+          <ul>
+            <li>"The server must has crashed." <i>(modal tidak boleh diikuti "has" — selalu "have", tanpa konjugasi)</i></li>
+            <li>"She should of told us earlier." <i>(salah tulis — "of" bukan kata kerja, seharusnya "have")</i></li>
+            <li>"He must have crash the app." <i>(harus V3, bukan V1 — "crashed")</i></li>
+            <li>"They mustn't have seen the alert." <i>(untuk menyatakan "mustahil", pakai "can't have", bukan "mustn't have")</i></li>
+          </ul>
+        </div>
+        <div class="good-l">
+          <h4>✅ Benar</h4>
+          <ul>
+            <li>"The server must have crashed."</li>
+            <li>"She should have told us earlier."</li>
+            <li>"He must have crashed the app."</li>
+            <li>"They can't have seen the alert."</li>
+          </ul>
+        </div>
+      </div>
+      <div class="erabox reveal">
+        <p><b>Kesalahan konsep:</b> "mustn't have" TIDAK dipakai untuk deduksi negatif dalam Bahasa Inggris standar — "mustn't" biasa dipakai untuk larangan (prohibition), bukan spekulasi. Untuk bilang "pasti tidak terjadi", pakai <b>can't have</b> atau <b>couldn't have</b>.</p>
+        <p><b>Cara benar:</b> "It can't have been him — he was in a meeting all afternoon."</p>
+      </div>
+      <div class="caution reveal"><p><b>Bukan dogma:</b> dalam percakapan cepat sehari-hari, "must've", "should've", "might've", "could've" sering diucapkan sebagai satu suku kata tambahan (bunyi /əv/) — itu wajar dan natural. Yang perlu dihindari HANYA menulisnya sebagai "of" di tulisan formal seperti PR description, laporan, atau email kerja.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Tips mengingat</h2></div>
+      <div class="qa reveal">
+        <details><summary>Gampangnya, kapan pakai must have vs can't have vs might have?</summary><p>Tanya diri sendiri: seberapa yakin aku terhadap bukti yang ada? <b>Sangat yakin YA</b> → must have. <b>Sangat yakin TIDAK, mustahil</b> → can't have / couldn't have. <b>Tidak yakin, ada beberapa kemungkinan</b> → might have / may have / could have.</p></details>
+        <details><summary>Bagaimana cara membedakan dua makna "should have"?</summary><p>Cek konteks: kalau kamu masih menunggu konfirmasi (belum tahu hasilnya), itu spekulasi — "The report should have arrived by now, let me check." Kalau kamu SUDAH tahu hasilnya dan menyesal/mengkritik, itu penyesalan — "We should have tested this before shipping" (dan ternyata memang tidak diuji, makanya sekarang bermasalah).</p></details>
+        <details><summary>Cara cepat mengecek struktur modal + have + V3?</summary><p>Selalu 3 bagian: <b>modal</b> (tidak berubah bentuk) + <b>have</b> (kata "have" polos, bukan has/had) + <b>V3</b> (past participle, seperti done/gone/crashed/written). Kalau ada salah satu yang hilang atau salah bentuk, kalimatnya salah.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">III · Hindari Salah &amp; Ingat</div><h2>Ringkasan</h2></div>
+      <ul class="creed reveal">
+        <li>Struktur selalu: <b>modal + have + V3</b>, modal tidak pernah berkonjugasi.</li>
+        <li><b>must have</b> = hampir pasti terjadi, kesimpulan logis kuat.</li>
+        <li><b>can't have / couldn't have</b> = hampir pasti TIDAK terjadi, mustahil.</li>
+        <li><b>might have / may have / could have</b> = mungkin terjadi, tidak yakin.</li>
+        <li><b>should have</b> = ekspektasi belum terkonfirmasi ATAU penyesalan/kritik atas hal yang tidak dilakukan.</li>
+        <li>Jangan pernah menulis "of" sebagai pengganti "have" di tulisan formal.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Latihan</h2></div>
+      <p class="lead reveal">Isi titik-titik dengan modal yang paling tepat sesuai tingkat keyakinan pada konteksnya, atau pilih jawaban yang paling sesuai.</p>
+      <div class="quizmeta"><span class="quizmeta__count" id="quizCount">0 / 6 benar</span><div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill"></div></div></div>
+      <div id="quizLatihan"></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Quiz</h2></div>
+      <p class="lead reveal">Level lebih menantang — fokus ke struktur gramatikal, perbedaan nuansa antar modal, dan register formal. Tiga soal terakhir adalah <b>soal cerita</b> — baca ceritanya, lalu jawab.</p>
+      <div class="quizmeta"><span class="quizmeta__count" id="quizCount2">0 / 9 benar</span><div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill2"></div></div></div>
+      <div id="quizQuiz"></div>
+
+      <div class="code-card reveal">
+        <div class="code-card__bar"><span class="lang">STORY · The 2 AM Outage</span></div>
+        <pre class="code" style="white-space:pre-wrap;font-family:var(--sans)">By 2 AM, the on-call engineer noticed the checkout service returning 500 errors. The dashboards showed no deploys that night, so a bad release can't have caused it. Someone must have triggered the outage from an upstream dependency — the payment gateway had also flagged anomalies an hour earlier. Nobody was sure yet; it might have been an expired TLS certificate, though nobody had confirmed it. Looking back, the team should have set up alerting on certificate expiry weeks ago — that oversight turned a preventable failure into a three-hour incident.</pre>
+      </div>
+      <div id="quizStory"></div>
+
+      <div class="completebanner" id="completeBanner"><h4>🎉 Materi 2 selesai!</h4><p>Semua soal Latihan &amp; Quiz sudah benar. Lanjut ke materi berikutnya.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Percakapan</h2></div>
+      <div class="dialogue reveal">
+        <div class="brow"><div class="bubble"><span class="who">Rian</span>The pipeline should have finished twenty minutes ago. Something must have gotten stuck.</div></div>
+        <div class="brow you"><div class="bubble"><span class="who">You</span>Could have been the artifact upload — that step's been flaky all week.</div></div>
+        <div class="brow"><div class="bubble"><span class="who">Rian</span>Maybe, but it can't have been that — I checked, that step already passed.</div></div>
+        <div class="brow you"><div class="bubble"><span class="who">You</span>Then it might have hung on the deploy step. We should have added a timeout alert for this months ago.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Writing exercise</h2></div>
+      <p class="lead reveal">Tulis paragraf pendek (5-6 kalimat) berupa analisis singkat sebuah "insiden" fiktif atau nyata di proyekmu, dan pastikan kamu memakai minimal <b>tiga jenis modal spekulatif</b> yang berbeda (must have, can't have/couldn't have, might have/may have/could have, should have/shouldn't have).</p>
+      <ul class="plain reveal">
+        <li>Contoh pembuka: "At first, we thought the outage might have been caused by a bad deploy."</li>
+        <li>Contoh penutup: "In hindsight, we should have added a canary release step before this happened."</li>
+      </ul>
+      <p class="body reveal">Kirim hasil tulisanmu kapan saja — akan dikoreksi, terutama ketepatan bentuk <code>modal + have + V3</code> dan kesesuaian tingkat keyakinan yang kamu maksud.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">IV · Latihan &amp; Praktik</div><h2>Speaking exercise</h2></div>
+      <p class="lead reveal">Rekam dirimu mengucapkan 5 kalimat berikut, perhatikan kontraksi "have" saat bicara cepat:</p>
+      <ol class="plain reveal">
+        <li>"The deploy must have gone through — the dashboard already shows the new version."</li>
+        <li>"She can't have seen my message, she'd have replied by now."</li>
+        <li>"It might have been a timeout, but I'm not fully sure yet."</li>
+        <li>"We should have caught this bug during code review."</li>
+        <li>"They could have escalated it sooner, honestly."</li>
+      </ol>
+      <p class="body reveal">Fokus: dalam bicara natural, "have" setelah modal sering menyusut jadi bunyi ringan /əv/ (must've, should've) — bukan diucapkan penuh dan bukan pula seperti kata "of".</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Listening</h2></div>
+      <p class="lead reveal">Belum ada audio asli di materi ini — sebagai gantinya, baca keras-keras skrip percakapan di bab 13 (Percakapan) sebanyak 3x, lalu rekam dirimu sendiri dan dengarkan ulang. Fokuskan telinga ke bunyi "have" yang menyusut setelah modal — biasanya nyaris tak terdengar sebagai kata terpisah, menyatu jadi satu unit bunyi dengan modalnya.</p>
+      <p class="body reveal">Latihan tambahan: cari cuplikan podcast atau video tentang post-incident review (banyak tersedia dari tim engineering perusahaan teknologi), lalu coba tangkap satu kalimat yang mengandung modal spekulatif masa lalu. Tulis ulang kalimatnya persis seperti yang kamu dengar.</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Reading</h2></div>
+      <p class="lead reveal">Baca cuplikan incident report berikut. Perhatikan tiap modal spekulatif dan tingkat keyakinan yang dibawanya:</p>
+      <p class="body reveal">"The root cause analysis concluded that a misconfigured retry policy must have amplified the initial failure into a full outage. A simple network blip can't have caused three hours of downtime on its own — something downstream might have compounded it, possibly the connection pool exhaustion flagged in the metrics. The team acknowledged that alerting thresholds should have been tightened after a near-identical incident six months earlier."</p>
+      <p class="body reveal">Tantangan: untuk setiap modal spekulatif yang kamu temukan, tulis satu kalimat menjelaskan kenapa penulis memilih tingkat keyakinan itu (yakin, mustahil, mungkin, atau menyesal/mengkritik).</p>
+    </div>
+  </section>
+
+  <section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Vocabulary</h2></div>
+      <p class="lead reveal">Kosakata register lanjutan yang muncul di contoh-contoh materi ini:</p>
+      <div class="grid reveal">
+        <div class="card"><div class="vocab-head"><span class="vocab-word">speculate</span><span class="pos">v.</span></div><div class="vocab-ipa">/ˈspɛkjʊleɪt/</div><div class="vocab-meaning">berspekulasi, menduga tanpa bukti pasti</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">presumably</span><span class="pos">adv.</span></div><div class="vocab-ipa">/prɪˈzjuːməbli/</div><div class="vocab-meaning">agaknya, kemungkinan besar</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">plausible</span><span class="pos">adj.</span></div><div class="vocab-ipa">/ˈplɔːzɪbl/</div><div class="vocab-meaning">masuk akal, patut dipercaya</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">inconclusive</span><span class="pos">adj.</span></div><div class="vocab-ipa">/ˌɪnkənˈkluːsɪv/</div><div class="vocab-meaning">tidak meyakinkan, belum bisa disimpulkan</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">corroborate</span><span class="pos">v.</span></div><div class="vocab-ipa">/kəˈrɒbəreɪt/</div><div class="vocab-meaning">memperkuat/mengonfirmasi dengan bukti tambahan</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">anomaly</span><span class="pos">n.</span></div><div class="vocab-ipa">/əˈnɒməli/</div><div class="vocab-meaning">keanehan, penyimpangan dari pola normal</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">glitch</span><span class="pos">n.</span></div><div class="vocab-ipa">/glɪtʃ/</div><div class="vocab-meaning">gangguan kecil/sesaat pada sistem</div></div>
+        <div class="card"><div class="vocab-head"><span class="vocab-word">deduce</span><span class="pos">v.</span></div><div class="vocab-ipa">/dɪˈdjuːs/</div><div class="vocab-meaning">menyimpulkan berdasarkan bukti/logika</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c19">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">V · Perkaya Kemampuan</div><h2>Pronunciation</h2></div>
+      <ul class="plain reveal">
+        <li><b>must have</b> → dalam bicara cepat: <i>must've</i> /ˈmʌstəv/ — "have" menyusut jadi bunyi ringan "-əv".</li>
+        <li><b>should have</b> → <i>should've</i> /ˈʃʊdəv/ — sama polanya.</li>
+        <li><b>might have</b> → <i>might've</i> /ˈmaɪtəv/.</li>
+        <li><b>could have</b> → <i>could've</i> /ˈkʊdəv/.</li>
+        <li><b>can't have</b> → biasanya TIDAK disingkat sekuat yang lain karena "can't" perlu terdengar jelas sebagai negasi — /kɑːnt hæv/ (British) atau /kænt hæv/ (American), diucapkan agak penuh.</li>
+      </ul>
+      <div class="note reveal"><span class="note__tag">Jebakan tulisan</span><p>Bunyi "-əv" yang menyusut itulah yang membuat banyak penutur menulis "should of", "must of", "could of" secara keliru — karena bunyinya memang mirip "of". Ini SELALU salah dalam tulisan; yang benar tetap "have", betapapun ringan bunyinya saat diucapkan.</p></div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c20">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Review</h2></div>
+      <p class="lead reveal">Cek dirimu sebelum lanjut — kalau semua ini terasa masuk akal, kamu siap:</p>
+      <ul class="plain reveal">
+        <li>☐ Bisa memilih must have/can't have/might have/should have sesuai tingkat keyakinan yang tepat.</li>
+        <li>☐ Tahu dua makna berbeda dari "should have" (spekulasi vs penyesalan/kritik) dan bisa membedakannya dari konteks.</li>
+        <li>☐ Tahu struktur <code>modal + have + V3</code> tidak pernah berubah bentuk sesuai subjek.</li>
+        <li>☐ Tidak pernah menulis "of" sebagai pengganti "have" di tulisan formal.</li>
+        <li>☐ Semua soal Latihan &amp; Quiz (bab 11-12) sudah benar.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="chapter" id="c21">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Tier belajar</h2></div>
+      <div class="tiers reveal">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Minimum sebelum lanjut</span>
+          <h4>Bisa dipakai, belum lancar</h4>
+          <ul class="plain">
+            <li>Paham must have/can't have/might have di kalimat sederhana dengan bantuan contoh.</li>
+            <li>Bisa membentuk struktur modal + have + V3 tanpa salah bentuk verb.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Praktik nyata</span>
+          <h4>Dipakai natural sehari-hari</h4>
+          <ul class="plain">
+            <li>Membedakan dua makna "should have" secara otomatis dari konteks, tanpa berpikir dulu.</li>
+            <li>Memilih tingkat keyakinan yang tepat secara spontan saat mendiskusikan bug atau insiden dengan tim.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Arah belajar lanjut</span>
+          <h4>Level dokumen formal</h4>
+          <ul class="plain">
+            <li>Menulis postmortem/incident report panjang dengan campuran modal yang presisi, tanpa kalimat yang terdengar ragu tanpa alasan.</li>
+            <li>Menyadari nuansa formalitas: "may have" cenderung lebih umum di tulisan resmi/akademis, "might have" lebih umum di percakapan dan tulisan hipotetis.</li>
+            <li>Siap lanjut ke Materi 3: Inversion &amp; Emphatic Structures, struktur yang sering muncul berdampingan dengan modal spekulatif di tulisan formal tingkat tinggi.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter" id="c22">
+    <div class="wrap">
+      <div class="chead"><div class="kicker">VI · Lanjut</div><h2>Penutup</h2></div>
+      <div class="endcard reveal">
+        <h3>Advanced modals = spekulasi dengan presisi</h3>
+        <p>Sekarang kamu punya alat untuk mengungkapkan seberapa yakin kamu terhadap sesuatu yang sudah terjadi — kemampuan inti dari analisis insiden, code review, dan komunikasi profesional level senior.</p>
+        <p id="endcardStatus">Memuat status...</p>
+        <a class="card__link" href="../level-5-materi-3/index.html">Lanjut ke Materi 3: Inversion &amp; Emphatic Structures →</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <b>Notebook Inggris — Level 5, Materi 2</b> · Advanced Modals · <a href="../index.html">← kembali ke Belajar Inggris</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+window.LESSON_KEY = "english::level-5-materi-2";
+window.LESSON_DONE_HTML = "✅ Semua soal Latihan &amp; Quiz sudah benar — <b style=\"color:var(--good)\">Materi 3: Inversion &amp; Emphatic Structures</b> sudah terbuka. Kirim hasil Writing Exercise-mu kapan saja untuk dikoreksi.";
+window.LESSON_LOCKED_HTML = "Materi 3: Inversion &amp; Emphatic Structures terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar ({done}/{total} saat ini). Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.";
+window.LESSON_QUESTIONS = [
+  { id: "l1", type: "fill", prompt: "The server logs show a spike at 3 AM, so the crash <span class=\"blank\">___</span> have been caused by the scheduled backup job.", answer: ["must"], explain: "Buktinya kuat dan cocok (timestamp sama persis), jadi ini kesimpulan logis yang hampir pasti benar — pakai \"must have\"." },
+  { id: "l2", type: "fill", prompt: "She wasn't even online yesterday, so she <span class=\"blank\">___</span> have merged that PR herself.", answer: ["can't", "cannot", "couldn't"], explain: "Ada bukti kuat yang membuat sesuatu mustahil (dia offline seharian) — pakai \"can't have\" / \"couldn't have\" untuk deduksi negatif yang yakin." },
+  { id: "l3", type: "fill", prompt: "I'm not sure why the test failed — it <span class=\"blank\">___</span> have been a flaky network call, but I'd need to check the retry logs.", answer: ["might", "may", "could"], explain: "Pembicara sendiri bilang \"tidak yakin\" — ini kemungkinan, bukan kepastian, jadi pakai might/may/could have." },
+  { id: "l4", type: "fill", prompt: "The migration <span class=\"blank\">___</span> have finished by now — it's been running for two hours already, way past the usual ETA.", answer: ["should"], explain: "Ini ekspektasi yang belum terkonfirmasi (\"seharusnya sudah selesai\" tapi belum dicek) — makna spekulatif dari \"should have\"." },
+  { id: "l5", type: "fill", prompt: "We <span class=\"blank\">___</span> have written a rollback script before deploying — now we're stuck manually reverting everything.", answer: ["should"], explain: "Sekarang pembicara sudah tahu akibatnya dan menyesal tidak melakukannya sebelumnya — ini makna penyesalan/kritik dari \"should have\"." },
+  { id: "l6", type: "mc", prompt: "Pilih makna paling tepat dari 'The build can't have passed — I see three failing tests in the report.'", options: ["Kemungkinan build itu lolos, tapi belum yakin", "Mustahil / tidak mungkin build itu lolos", "Build seharusnya lolos tapi ternyata tidak"], answer: "Mustahil / tidak mungkin build itu lolos", explain: "\"can't have\" menyatakan deduksi negatif yang kuat — mustahil sesuatu terjadi berdasarkan bukti yang bertentangan (tiga test gagal)." },
+  { id: "q1", type: "mc", prompt: "Pilih struktur gramatikal yang benar:", options: ["The service must have crash overnight.", "The service must have crashed overnight.", "The service must crashed overnight."], answer: "The service must have crashed overnight.", explain: "Struktur wajib: modal + have + V3 (past participle). \"crash\" (V1) dan menghilangkan \"have\" keduanya salah." },
+  { id: "q2", type: "mc", prompt: "Kalimat mana yang benar mengekspresikan 'Mustahil dia lupa soal deploy itu'?", options: ["He mustn't have forgotten the deploy.", "He can't have forgotten the deploy.", "He shouldn't have forgotten the deploy."], answer: "He can't have forgotten the deploy.", explain: "\"mustn't have\" bukan bentuk standar untuk deduksi negatif — \"mustn't\" biasa berarti larangan. Untuk \"mustahil terjadi\", pakai \"can't have\"." },
+  { id: "q3", type: "mc", prompt: "'She might have missed the alert' paling tepat menunjukkan sikap pembicara yang mana?", options: ["Yakin penuh bahwa dia melewatkan alert itu", "Tidak yakin, tapi menganggap itu salah satu kemungkinan", "Menyesal karena dia melewatkan alert itu"], answer: "Tidak yakin, tapi menganggap itu salah satu kemungkinan", explain: "\"might have\" menandakan ketidakpastian — salah satu kemungkinan di antara beberapa, bukan kesimpulan pasti atau penyesalan." },
+  { id: "q4", type: "mc", prompt: "Mana penulisan yang benar dalam email kerja formal?", options: ["They should of tested this before merging.", "They should have tested this before merging.", "They should had tested this before merging."], answer: "They should have tested this before merging.", explain: "\"of\" bukan kata kerja dan tidak pernah benar menggantikan \"have\" dalam tulisan, walau bunyinya mirip saat diucapkan cepat. \"should had\" juga tidak gramatikal." },
+  { id: "q5", type: "mc", prompt: "Konteks: kamu melihat lampu kantor menyala jam 11 malam, padahal semua orang biasanya pulang jam 6. Kalimat paling tepat?", options: ["Someone might have forgotten to turn it off.", "Someone can't have forgotten to turn it off.", "Someone shouldn't have forgotten to turn it off."], answer: "Someone might have forgotten to turn it off.", explain: "Ini dugaan yang masuk akal tapi belum pasti — cocok dengan \"might have\", bukan deduksi mustahil (can't have) atau kritik (shouldn't have)." },
+  { id: "q6", type: "mc", prompt: "Dalam postmortem tertulis yang formal, mana yang secara register lebih umum dipakai untuk menyatakan kemungkinan?", options: ["may have", "might've", "coulda"], answer: "may have", explain: "\"may have\" dalam bentuk penuh (tidak disingkat) lebih umum di tulisan formal/akademis seperti laporan resmi, sementara \"might've\" dan bentuk singkat lain lebih cocok untuk percakapan santai." },
+  { id: "s1", type: "mc", prompt: "Soal cerita — Kenapa penulis yakin 'a bad release can't have caused it'?", options: ["Karena tidak ada deploy malam itu menurut dashboard", "Karena semua developer sedang libur", "Karena timestamp deploy cocok dengan waktu error"], answer: "Karena tidak ada deploy malam itu menurut dashboard", explain: "Cerita menyebutkan 'the dashboards showed no deploys that night' — makanya rilis buruk mustahil jadi penyebab, sesuai makna \"can't have\"." },
+  { id: "s2", type: "mc", prompt: "Soal cerita — Frasa 'someone must have triggered the outage from an upstream dependency' menunjukkan sikap penulis yang seperti apa?", options: ["Ragu-ragu, sekadar salah satu dugaan", "Cukup yakin, berdasarkan bukti anomali di payment gateway", "Menyesali sesuatu yang tidak dilakukan"], answer: "Cukup yakin, berdasarkan bukti anomali di payment gateway", explain: "\"must have\" dipakai karena ada bukti pendukung (payment gateway juga menunjukkan anomali sejam sebelumnya), menghasilkan kesimpulan yang cukup yakin." },
+  { id: "s3", type: "mc", prompt: "Soal cerita — Kalimat 'the team should have set up alerting on certificate expiry weeks ago' mengungkapkan makna \"should have\" yang mana?", options: ["Spekulasi tentang sesuatu yang belum dikonfirmasi", "Penyesalan/kritik atas hal yang tidak dilakukan di masa lalu", "Kepastian penuh bahwa sesuatu terjadi"], answer: "Penyesalan/kritik atas hal yang tidak dilakukan di masa lalu", explain: "Tim sudah tahu akibatnya (insiden tiga jam) dan menyadari mereka seharusnya sudah memasang alerting — ini penyesalan/kritik, bukan spekulasi yang masih menunggu konfirmasi." }
+];
+</script>
+<script src="../assets/lesson.js"></script>
+</body>
+</html>

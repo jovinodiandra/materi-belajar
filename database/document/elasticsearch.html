@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elasticsearch — Document DB untuk Pencarian</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #8b7cf0;   /* Elasticsearch violet accent */
+    --cyan-dim:   #5a4fa0;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #45d4de;   /* secondary -> cyan */
+    --violet-dim: #2b8a90;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #45d4de;
+    --t-type:     #8b7cf0;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#8b7cf0; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .topbar__home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; transition: color .18s, border-color .18s; }
+  .topbar__home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(139,124,240,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(139,124,240,.12), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(69,212,222,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 92px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 13px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(139,124,240,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(139,124,240,.11); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 700px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 80px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(139,124,240,.08);
+  }
+  .lang.js { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  .lang.cyan { color: var(--violet); border-color: var(--violet-dim); background: rgba(69,212,222,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(69,212,222,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- inverted index viz ---------- */
+  .invidx { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 22px 0 6px; max-width: 760px; }
+  .invidx__row { display: grid; grid-template-columns: 130px 1fr; gap: 14px; align-items: center; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); padding: 10px 14px; }
+  .invidx__term { font-family: var(--mono); font-size: 13.5px; color: var(--cyan); font-weight: 600; }
+  .invidx__docs { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+  .invidx__docs b { color: var(--amber); }
+  .invidx__head { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted-2); display:grid; grid-template-columns: 130px 1fr; gap:14px; padding: 0 14px; }
+
+  /* ---------- step list ---------- */
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 9px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700;
+    background: var(--cyan); border-radius: 50%;
+  }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 76px 18px 1fr; gap: 10px; }
+    .invidx__row, .invidx__head { grid-template-columns: 92px 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/document/<b>elasticsearch.md</b></div>
+  <a class="topbar__home" href="index.html">← Document DB</a>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Elasticsearch</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenalan</div>
+    <a href="#c01"><span class="yr">01</span> Apa itu Elasticsearch</a>
+    <a href="#c02"><span class="yr">02</span> Index, document, mapping</a>
+
+    <div class="rail__part">II · Inti pencarian</div>
+    <a href="#c03"><span class="yr">03</span> Inverted index</a>
+    <a href="#c04"><span class="yr">04</span> Analyzer &amp; tokenisasi</a>
+
+    <div class="rail__part">III · Query &amp; index</div>
+    <a href="#c05"><span class="yr">05</span> Query DSL</a>
+    <a href="#c06"><span class="yr">06</span> Mapping &amp; text vs keyword</a>
+    <a href="#c07"><span class="yr">⚙</span> Relevansi &amp; agregasi</a>
+
+    <div class="rail__part">IV · Praktik</div>
+    <a href="#c08"><span class="yr">!</span> Kapan pakai</a>
+    <a href="#c09"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Tool document database #3 — berbasis JSON, fokus pencarian</div>
+      <h1 class="reveal d1">Elasticsearch — dokumen JSON yang <span class="accent">dibuat untuk dicari</span>.</h1>
+      <p class="sub reveal d2">
+        Elasticsearch menyimpan dokumen JSON seperti document DB lain — tapi tujuannya berbeda: <b>pencarian teks</b>
+        &amp; <b>analitik log</b> dalam skala besar &amp; sangat cepat. Rahasianya adalah <b>inverted index</b>:
+        struktur yang membalik "dokumen → kata" menjadi "kata → dokumen". Inilah yang dipakai pada contoh kasus
+        <b>event/telemetri</b> di deck induk, dan sering jadi <b>pendamping</b> MongoDB/Firestore untuk fitur search.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Simpan</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Index berisi document JSON</b> <span>— dengan mapping</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Pecah</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Analyzer → token</b> <span>— teks dipecah jadi kata dasar</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Balik</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Inverted index</b> <span>— kata → daftar dokumen</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Cari</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Query DSL + skor relevansi</b> <span>— hasil paling cocok di atas</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 APA ITU ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kenalan</span> · Apa itu Elasticsearch</div>
+        <h2>Mesin pencari berbasis dokumen JSON</h2>
+      </div>
+      <p class="lead reveal">Elasticsearch adalah <strong>search engine</strong> terdistribusi yang menyimpan data sebagai dokumen JSON dan diakses lewat <strong>REST API</strong>. Ia dibangun di atas pustaka <em>Apache Lucene</em>, dan keahlian utamanya adalah menjawab pertanyaan "dokumen mana yang paling cocok dengan kata-kata ini?" dalam hitungan milidetik.</p>
+
+      <div class="quote reveal d1">
+        <p>“Berbasis dokumen JSON, tapi fokus ke <span style="font-style:normal">pencarian teks</span> &amp; analitik log. Sering jadi pendamping, bukan DB utama.”</p>
+        <cite>— ringkasan dari deck Document Database (bab Tools)</cite>
+      </div>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// search</div><h4>Full-text search</h4><p>Cari kata di tengah teks, toleran typo, peringkat relevansi, sorot kata (highlight), saran (autocomplete).</p></div>
+        <div class="card up"><div class="ic">// logs</div><h4>Log &amp; observability</h4><p>Jantung dari "ELK Stack" (Elasticsearch + Logstash + Kibana) untuk menelan &amp; menganalisis jutaan log/event.</p></div>
+        <div class="card up"><div class="ic">// scale</div><h4>Terdistribusi</h4><p>Index dipecah jadi <b>shard</b> &amp; direplikasi otomatis ke banyak node — skala &amp; keandalan sejak desain.</p></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Posisinya — pendamping, bukan pengganti</div>
+        <p>Elasticsearch jarang jadi <em>satu-satunya</em> database. Pola umum: data resmi hidup di MongoDB/Postgres, lalu <em>disalin/diindeks</em> ke Elasticsearch khusus untuk fitur <strong>pencarian</strong>. Ia dioptimalkan untuk membaca-mencari, bukan untuk jadi sumber kebenaran transaksional.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 ISTILAH ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep</span> · Model data</div>
+        <h2>Index, document, mapping</h2>
+      </div>
+      <p class="lead reveal">Istilahnya mirip document DB lain, dengan satu tambahan penting: <strong>mapping</strong> — definisi tipe tiap field yang menentukan <em>bagaimana</em> field itu di-index &amp; dicari.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Padanan istilah</div>
+        <div class="erabox__row"><span class="erabox__lang">Tabel</span><code>→  Index</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Baris</span><code>→  Document (JSON)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Kolom</span><code>→  Field</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Skema</span><code>→  Mapping (tipe tiap field)</code></div>
+        <p class="erabox__note">Catatan: kata "index" di Elasticsearch berarti <b>kumpulan dokumen</b> (seperti tabel) — beda dari "index" di MongoDB yang berarti struktur percepat-query. Di Elasticsearch, hampir <b>semua</b> field otomatis terindeks untuk dicari.</p>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">simpan dokumen produk — REST API</span><span class="lang cyan">HTTP</span></div>
+<pre class="code"><span class="k">PUT</span> /produk/_doc/1
+{
+  <span class="t">"nama"</span>:      <span class="s">"Kabel USB-C 2 meter braided"</span>,
+  <span class="t">"deskripsi"</span>: <span class="s">"Kabel pengisian cepat tahan lama"</span>,
+  <span class="t">"kategori"</span>:  <span class="s">"aksesoris"</span>,
+  <span class="t">"harga"</span>:     <span class="n">45000</span>
+}
+<span class="c">// dokumen langsung terindeks &amp; siap dicari</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 INVERTED INDEX ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti</span> · Inverted index</div>
+        <h2>Rahasianya: membalik "dokumen → kata"</h2>
+      </div>
+      <p class="lead reveal">Ini konsep terpenting. Alih-alih menyimpan "dokumen 1 berisi kata A, B, C", Elasticsearch menyimpan <strong>kebalikannya</strong>: "kata A ada di dokumen 1, 5, 9". Jadi saat kamu mencari sebuah kata, ia langsung tahu dokumen mana saja yang memuatnya — tanpa memindai semua.</p>
+
+      <div class="invidx reveal d1">
+        <div class="invidx__head"><span>TERM (kata)</span><span>→ DOKUMEN (posting list)</span></div>
+        <div class="invidx__row"><span class="invidx__term">kabel</span><span class="invidx__docs">→ doc <b>1</b>, doc <b>3</b>, doc <b>8</b></span></div>
+        <div class="invidx__row"><span class="invidx__term">usb</span><span class="invidx__docs">→ doc <b>1</b>, doc <b>8</b></span></div>
+        <div class="invidx__row"><span class="invidx__term">cepat</span><span class="invidx__docs">→ doc <b>1</b>, doc <b>5</b></span></div>
+        <div class="invidx__row"><span class="invidx__term">braided</span><span class="invidx__docs">→ doc <b>1</b></span></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — indeks di belakang buku</div>
+        <p>Persis seperti <em>indeks subjek</em> di halaman belakang buku teks: kamu tak membaca seluruh buku untuk menemukan kata "fotosintesis" — kamu buka indeks, ia bilang "halaman 88, 210", selesai. Inverted index adalah versi raksasa &amp; otomatis dari itu, untuk setiap kata di setiap dokumen.</p>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__body" style="padding:15px 20px">
+          <div class="note__tag">◆ Kenapa cepat untuk "cari kata di tengah teks"</div>
+          <p>Cari <code>"kabel usb"</code> = ambil posting list "kabel" (doc 1,3,8) ∩ "usb" (doc 1,8) → hasil doc 1 &amp; 8. Ini operasi himpunan yang sangat cepat — jauh lebih efisien daripada <code>LIKE '%kabel%'</code> di SQL yang memindai tiap baris.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 ANALYZER ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti</span> · Analyzer</div>
+        <h2>Bagaimana teks dipecah jadi token</h2>
+      </div>
+      <p class="lead reveal">Sebelum masuk inverted index, teks diproses oleh <strong>analyzer</strong>: dipecah jadi kata (tokenisasi), dijadikan huruf kecil, dan kadang disederhanakan ke bentuk dasar. Inilah kenapa pencarian bisa "pintar" — mencocokkan meski beda huruf besar/kecil atau bentuk kata.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">satu kalimat → beberapa token</span><span class="lang cyan">FLOW</span></div>
+<pre class="code"><span class="c">// input teks asli</span>
+<span class="s">"Kabel USB-C Tahan Lama"</span>
+
+      <span class="c">↓  analyzer (tokenize + lowercase)</span>
+
+<span class="c">// token yang masuk inverted index</span>
+[ <span class="s">"kabel"</span>, <span class="s">"usb"</span>, <span class="s">"c"</span>, <span class="s">"tahan"</span>, <span class="s">"lama"</span> ]
+
+<span class="c">// → pencarian "usb" atau "tahan" sekarang cocok ✅</span></pre>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// tokenizer</div><h4>Tokenizer</h4><p>Memecah teks jadi kata berdasarkan spasi/tanda baca. <code>"usb-c"</code> → <code>"usb"</code>, <code>"c"</code>.</p></div>
+        <div class="card up"><div class="ic">// filter</div><h4>Token filter</h4><p>Lowercase, buang <em>stop words</em> ("dan","yang"), stemming (bentuk dasar). Bisa dirangkai.</p></div>
+        <div class="card up"><div class="ic">// bahasa</div><h4>Analyzer bahasa</h4><p>Ada analyzer khusus per bahasa (mis. <code>indonesian</code>) yang paham stop words &amp; akar kata lokal.</p></div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Aturan emas: <b>analyzer saat menyimpan harus sepadan dengan saat mencari.</b> Kalau teks disimpan di-lowercase tapi query dicocokkan apa adanya (lihat <code>term</code> di bab Query), hasilnya bisa kosong meski "terlihat" cocok. Ini sumber kebingungan #1 bagi pemula Elasticsearch.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 QUERY DSL ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Operasi · Query DSL</div>
+        <h2>Mencari dengan Query DSL</h2>
+      </div>
+      <p class="lead reveal">Query ditulis sebagai JSON lewat REST API — disebut <strong>Query DSL</strong>. Dua keluarga penting: <code>match</code> (full-text, lewat analyzer, untuk teks) dan <code>term</code> (cocok persis, tanpa analyzer, untuk kategori/ID). Ini jawaban langsung untuk kebutuhan <strong>query</strong>.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">match — pencarian teks penuh</span><span class="lang cyan">HTTP</span></div>
+<pre class="code"><span class="k">GET</span> /produk/_search
+{
+  <span class="t">"query"</span>: {
+    <span class="t">"match"</span>: { <span class="t">"nama"</span>: <span class="s">"kabel cepat"</span> }
+  }
+}
+<span class="c">// cocokkan "kabel" ATAU "cepat"; dokumen dgn keduanya skornya lebih tinggi</span></pre>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">bool — gabungan must / filter (mirip AND + WHERE)</span><span class="lang cyan">HTTP</span></div>
+<pre class="code"><span class="k">GET</span> /produk/_search
+{
+  <span class="t">"query"</span>: {
+    <span class="t">"bool"</span>: {
+      <span class="t">"must"</span>:   [ { <span class="t">"match"</span>: { <span class="t">"nama"</span>: <span class="s">"kabel"</span> } } ],   <span class="c">// pengaruhi skor</span>
+      <span class="t">"filter"</span>: [
+        { <span class="t">"term"</span>:  { <span class="t">"kategori"</span>: <span class="s">"aksesoris"</span> } },        <span class="c">// cocok persis</span>
+        { <span class="t">"range"</span>: { <span class="t">"harga"</span>: { <span class="a">"lte"</span>: <span class="n">50000</span> } } }       <span class="c">// rentang harga</span>
+      ]
+    }
+  }
+}
+<span class="c">// must = relevansi; filter = ya/tidak (lebih cepat, bisa di-cache)</span></pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__body" style="padding:15px 20px">
+          <div class="note__tag">◆ match vs term — jangan tertukar</div>
+          <p><code>match</code> melewati analyzer → untuk <b>field teks</b> (nama, deskripsi). <code>term</code> mencari token persis → untuk <b>field keyword</b> (kategori, status, ID). Memakai <code>term</code> pada teks ber-analyzer sering memberi nol hasil.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 MAPPING ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Indexing</span> · Mapping</div>
+        <h2>text vs keyword: dua cara meng-index field</h2>
+      </div>
+      <p class="lead reveal">Di Elasticsearch, "indexing" berarti <strong>menentukan tipe field di mapping</strong> — itu yang memutuskan apakah sebuah field bisa dicari sebagai teks bebas, dicocokkan persis, atau diurutkan/diagregasi. Ini inti dari <strong>indexing</strong> yang tepat.</p>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">mapping eksplisit — text + keyword sekaligus</span><span class="lang cyan">HTTP</span></div>
+<pre class="code"><span class="k">PUT</span> /produk
+{
+  <span class="t">"mappings"</span>: {
+    <span class="t">"properties"</span>: {
+      <span class="t">"nama"</span>: {
+        <span class="t">"type"</span>: <span class="s">"text"</span>,                <span class="c">// full-text search (pakai analyzer)</span>
+        <span class="t">"fields"</span>: {
+          <span class="t">"raw"</span>: { <span class="t">"type"</span>: <span class="s">"keyword"</span> }  <span class="c">// nama.raw → cocok persis, sort, agregasi</span>
+        }
+      },
+      <span class="t">"kategori"</span>: { <span class="t">"type"</span>: <span class="s">"keyword"</span> },  <span class="c">// hanya cocok persis</span>
+      <span class="t">"harga"</span>:    { <span class="t">"type"</span>: <span class="s">"integer"</span> }   <span class="c">// rentang &amp; agregasi numerik</span>
+    }
+  }
+}</pre>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="good-h">// type: text</h4>
+          <ul class="good-l">
+            <li>Diproses analyzer → token.</li>
+            <li>Untuk pencarian kata di tengah teks.</li>
+            <li>Pakai dengan query <code>match</code>.</li>
+            <li>Tidak ideal untuk sort/agregasi.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">// type: keyword</h4>
+          <ul class="good-l">
+            <li>Disimpan utuh, tanpa dipecah.</li>
+            <li>Untuk kategori, status, tag, ID.</li>
+            <li>Pakai dengan query <code>term</code>.</li>
+            <li>Bisa di-sort &amp; di-agregasi.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Kalau kamu tidak mendefinisikan mapping, Elasticsearch <b>menebak otomatis</b> (dynamic mapping) — biasanya membuat field string jadi <code>text</code> <i>dan</i> sub-field <code>.keyword</code> sekaligus. Praktis untuk eksperimen, tapi untuk production sebaiknya <b>mapping eksplisit</b> agar pencarian &amp; agregasi berperilaku sesuai harapan.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 RELEVANSI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Operasi · Relevansi &amp; agregasi</div>
+        <h2>Skor relevansi &amp; analitik</h2>
+      </div>
+      <p class="lead reveal">Yang membedakan search engine dari database biasa: hasil <strong>diurutkan berdasarkan relevansi</strong> (skor <code>_score</code>), bukan sekadar cocok/tidak. Selain itu, Elasticsearch jago <strong>agregasi</strong> untuk dashboard &amp; analitik log.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Bagaimana skor dihitung (BM25)</div>
+        <p>Secara sederhana: kata yang <em>jarang</em> di seluruh koleksi tapi <em>sering muncul</em> di sebuah dokumen → dokumen itu dianggap sangat relevan &amp; naik ke atas. Itulah kenapa hasil teratas Elasticsearch terasa "pas" — bukan urutan acak atau sekadar terbaru.</p>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">agregasi — berapa produk per kategori (untuk dashboard)</span><span class="lang cyan">HTTP</span></div>
+<pre class="code"><span class="k">GET</span> /produk/_search
+{
+  <span class="t">"size"</span>: <span class="n">0</span>,                          <span class="c">// tak perlu dokumen, hanya ringkasan</span>
+  <span class="t">"aggs"</span>: {
+    <span class="t">"per_kategori"</span>: {
+      <span class="t">"terms"</span>: { <span class="t">"field"</span>: <span class="s">"kategori"</span> }   <span class="c">// kelompokkan per keyword</span>
+    }
+  }
+}
+<span class="c">// pas untuk telemetri: "berapa event per tipe", "rata-rata latensi per jam"</span></pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__body" style="padding:15px 20px">
+          <div class="note__tag">◆ Kibana</div>
+          <p>Untuk kasus log/telemetri, <strong>Kibana</strong> adalah UI visual di atas Elasticsearch: bikin grafik, dashboard, &amp; pencarian log tanpa menulis Query DSL manual. Inilah "K" di ELK Stack.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Praktik</span> · Kapan pakai</div>
+        <h2>Elasticsearch cocok untuk kasus apa</h2>
+      </div>
+      <p class="lead reveal">Polanya: saat <strong>pencarian atau analitik</strong> menjadi fitur inti — bukan saat kamu butuh sumber data transaksional utama.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// search</div><h4>Search produk / konten</h4><p>Kotak pencarian e-commerce/CMS: cari kata di nama &amp; deskripsi, filter kategori, urut relevansi.</p></div>
+        <div class="card up"><div class="ic">// logs</div><h4>Log &amp; telemetri</h4><p>Contoh kasus event/IoT dari deck induk: telan jutaan log, cari &amp; agregasi cepat lewat Kibana.</p></div>
+        <div class="card up"><div class="ic">// observability</div><h4>Monitoring &amp; APM</h4><p>Lacak metrik, error, &amp; trace aplikasi secara terpusat dengan dashboard live.</p></div>
+        <div class="card up"><div class="ic">// autocomplete</div><h4>Saran &amp; autocomplete</h4><p>Ketik-sambil-cari, "did you mean", pencarian toleran typo (fuzzy).</p></div>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="good-h">// Pakai Elasticsearch saat…</h4>
+          <ul class="good-l">
+            <li>Pencarian teks penuh jadi fitur inti.</li>
+            <li>Butuh peringkat relevansi, highlight, fuzzy.</li>
+            <li>Analitik/agregasi log dalam skala besar.</li>
+            <li>Sebagai <em>pendamping</em> DB utama.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan jadikan DB utama saat…</h4>
+          <ul class="bad-l">
+            <li>Butuh transaksi &amp; konsistensi kuat.</li>
+            <li>Data sering di-update field demi field.</li>
+            <li>Sumber kebenaran (system of record).</li>
+            <li>Relasi many-to-many &amp; JOIN kompleks.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TRADE-OFF ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Trade-off</div>
+        <h2>Yang kamu dapat &amp; yang kamu korbankan</h2>
+      </div>
+      <p class="lead reveal">Elasticsearch menukar <strong>jaminan transaksional</strong> demi <strong>kecepatan &amp; kecerdasan pencarian</strong>. Untuk search &amp; analitik, itu pertukaran yang tepat — selama ia bukan satu-satunya tempat datamu hidup.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Full-text search super cepat (inverted index).</li>
+            <li>Peringkat relevansi (BM25), highlight, fuzzy.</li>
+            <li>Agregasi &amp; analitik kuat (Kibana).</li>
+            <li>Terdistribusi: shard + replica otomatis.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Bukan transaksional (eventually consistent).</li>
+            <li>Update berat; cocok untuk tulis-sekali-cari-banyak.</li>
+            <li>Butuh sumber daya (RAM) cukup besar.</li>
+            <li>Salah analyzer/mapping → hasil membingungkan.</li>
+            <li>Sinkronisasi dari DB utama jadi PR tersendiri.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Pola arsitektur umum</div>
+          <p>Data ditulis ke DB utama (mis. MongoDB/Postgres), lalu <b>diindeks ulang</b> ke Elasticsearch lewat pipeline (CDC, message queue, atau job berkala). Pengguna mengetik di kotak pencarian → query ke Elasticsearch → ambil ID hasil → tampilkan detail dari DB utama. Inilah arti "pendamping, bukan pengganti".</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Elasticsearch dalam satu tarikan napas</h2>
+      </div>
+      <p class="lead reveal">Simpan dokumen JSON, biarkan analyzer memecah teks jadi token di inverted index, cari dengan Query DSL (match untuk teks, term untuk keyword), dan dapatkan hasil terurut relevansi. Tetapkan ia sebagai mesin pencari pendamping, bukan sumber kebenaran.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Index → Document → Field + Mapping</b> — JSON yang dibuat untuk dicari.</li>
+          <li><b>Inverted index</b> — kata → daftar dokumen, kunci kecepatan.</li>
+          <li><b>Analyzer</b> — teks dipecah jadi token; samakan saat simpan &amp; cari.</li>
+          <li><b>match vs term</b> — teks (analyzer) vs cocok-persis (keyword).</li>
+          <li><b>_score relevansi (BM25)</b> — hasil paling cocok naik ke atas.</li>
+          <li><b>Pendamping, bukan pengganti</b> — untuk search &amp; analitik, bukan transaksi.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah belajar berikutnya</h3>
+        <p>Jalankan Elasticsearch + Kibana lokal (Docker), buka <strong>Dev Tools</strong> di Kibana, lalu: <code>PUT</code> beberapa dokumen produk → coba <code>match</code> vs <code>term</code> dan lihat bedanya → pakai <code>_analyze</code> untuk melihat bagaimana teksmu dipecah jadi token → buat satu agregasi <code>terms</code>. Itu memperlihatkan inverted index &amp; relevansi secara langsung.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Jangan cari dokumen yang memuat kata — simpan kata yang menunjuk ke dokumen."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Elasticsearch</b> · Inverted index, analyzer, Query DSL, mapping · untuk pemula · rujukan: DDIA (Kleppmann) &amp; Elastic Docs · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

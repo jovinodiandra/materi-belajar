@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Belajar Inggris — Peta Belajar</title>
+<meta name="description" content="Notebook belajar bahasa Inggris untuk pengembang: dari Level 0 fondasi sampai Level 5 Advance, bertahap materi demi materi.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #f5b14c;
+    --cyan-dim:   #9c712a;
+    --amber:      #45d4de;
+    --amber-dim:  #2b8a90;
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.08);
+    --muted-bg:   rgba(255,255,255,.03);
+    --serif:"Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,serif;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono: "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --maxw: 1180px;
+  }
+  body{background:var(--void);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:17px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 clamp(18px,5vw,60px)}
+  header.top{position:sticky;top:0;z-index:40;background:rgba(11,14,26,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px clamp(18px,5vw,60px);max-width:var(--maxw);margin:0 auto;font-family:var(--mono);font-size:12.5px}
+  .topbar a.home{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px}
+  .topbar a.home:hover{color:var(--ink-strong);border-color:var(--cyan-dim)}
+  .topbar .path{color:var(--muted-2)}
+  .topbar .path b{color:var(--ink-strong)}
+  .hero{padding:clamp(44px,7vw,80px) 0 clamp(26px,4vw,40px)}
+  .hero .eyebrow{font-family:var(--mono);color:var(--cyan);font-size:13px;margin-bottom:18px}
+  .hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(30px,5.4vw,58px);line-height:1.1;letter-spacing:-.01em;color:var(--ink-strong);max-width:20ch}
+  .hero h1 em{color:var(--cyan);font-style:italic}
+  .hero p.sub{margin-top:20px;max-width:70ch;font-size:18px;color:var(--ink)}
+  .hero p.sub b{color:var(--ink-strong)}
+  .stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:110px}
+  .stat .n{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--cyan)}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+  main{padding-bottom:60px}
+  .group{margin-top:10px;padding:30px 0;border-top:1px solid var(--line-soft)}
+  .group:first-of-type{border-top:none}
+  .grouphead{margin-bottom:16px}
+  .grouphead .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+  .grouphead h2{font-family:var(--serif);font-weight:600;font-size:clamp(20px,2.8vw,27px);color:var(--ink-strong)}
+  .grouphead p{color:var(--muted);font-size:14.5px;margin-top:6px;max-width:70ch}
+  .topicgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:16px}
+  .topic{position:relative;display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:15px 17px;transition:border-color .18s,transform .18s}
+  .topic.ready:hover{border-color:var(--cyan-dim);transform:translateY(-3px)}
+  .topic.notready,.topic.locked{cursor:default;opacity:.55}
+  .topic.locked:hover{transform:none;border-color:var(--line)}
+  .topic .ttl{font-size:15.5px;font-weight:600;color:var(--ink-strong)}
+  .topic .desc{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .badge{display:inline-block;margin-top:9px;margin-right:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;border-radius:6px;padding:2px 7px}
+  .badge.ready{color:var(--good);background:var(--good-bg)}
+  .badge.soon{color:var(--muted);background:var(--muted-bg)}
+  .badge.done{color:var(--good);background:var(--good-bg)}
+  .badge.locked{color:var(--amber-dim);background:rgba(69,212,222,.08)}
+  footer{border-top:1px solid var(--line);padding:26px clamp(18px,5vw,60px);font-family:var(--mono);font-size:12px;color:var(--muted-2);text-align:center}
+  footer a{color:var(--cyan);text-decoration:none}
+  @media (max-width:640px){ .topicgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))} }
+  a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:4px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="topbar">
+    <a class="home" href="../index.html">← Semua Materi</a>
+    <span class="path">docs/learning/<b>english/</b></span>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div class="eyebrow">// Kategori — Belajar Bahasa Inggris</div>
+    <h1>Notebook Inggris, <em>dari nol sampai advance.</em></h1>
+    <p class="sub">Seri materi belajar Bahasa Inggris untuk pengembang, disusun per level &amp; per materi — mulai dari <b>Level 0: Fondasi Nol</b> sampai <b>Level 5: Advance (C1)</b>. Tiap level baru terbuka setelah Cerita Hari Ini di level sebelumnya selesai &amp; bersih dari kesalahan grammar — dan tiap level punya Cerita Hari Ini &amp; rekap vocabulary sendiri.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">30</div><div class="l">materi tersedia</div></div>
+      <div class="stat"><div class="n">6</div><div class="l">level, Fondasi → Advance</div></div>
+      <div class="stat"><div class="n">Level 5</div><div class="l">level tertinggi (C1)</div></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <section class="group">
+      <div class="grouphead">
+        <div class="kicker">Level 0 · Fondasi Nol (pre-A1)</div>
+        <h2>Titik awal seri belajar Inggris ini.</h2>
+
+      </div>
+      <div class="topicgrid">
+        <a class="topic ready" href="level-0-materi-1/index.html" data-materi="english::level-0-materi-1">
+          <div class="ttl">Materi 1</div>
+          <div class="desc">Kalimat & To Be</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-0-materi-2/index.html" data-materi="english::level-0-materi-2" data-requires="english::level-0-materi-1">
+          <div class="ttl">Materi 2</div>
+          <div class="desc">Kata Benda & Kata Ganti</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-0-materi-3/index.html" data-materi="english::level-0-materi-3" data-requires="english::level-0-materi-2">
+          <div class="ttl">Materi 3</div>
+          <div class="desc">Simple Present</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-0-materi-4/index.html" data-materi="english::level-0-materi-4" data-requires="english::level-0-materi-3">
+          <div class="ttl">Materi 4</div>
+          <div class="desc">Kata Sifat Dasar</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-0-vocabulary/index.html">
+          <div class="ttl">📖 Rekap Vocabulary</div>
+          <div class="desc">Semua kosakata Level 0 digabung, bisa dicari</div>
+          <span class="badge ready">✓ tersedia</span>
+        </a>
+        <a class="topic ready" href="level-0-cerita/index.html" data-materi="english::level-0-cerita" data-requires="english::level-0-materi-4">
+          <div class="ttl">✍️ Cerita Hari Ini</div>
+          <div class="desc">Tulis cerita harianmu, dikoreksi otomatis — gerbang menuju Level 1</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan semua materi dulu</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead">
+        <div class="kicker">Level 1 · Dasar Kokoh (A1)</div>
+        <h2>Past & Future Tense, Question Words.</h2>
+        <p>Terbuka setelah Cerita Hari Ini Level 0 selesai.</p>
+      </div>
+      <div class="topicgrid">
+        <a class="topic ready" href="level-1-materi-1/index.html" data-materi="english::level-1-materi-1" data-requires="english::level-0-cerita">
+          <div class="ttl">Materi 1</div>
+          <div class="desc">Simple Past</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-1-materi-2/index.html" data-materi="english::level-1-materi-2" data-requires="english::level-1-materi-1">
+          <div class="ttl">Materi 2</div>
+          <div class="desc">Simple Future</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-1-materi-3/index.html" data-materi="english::level-1-materi-3" data-requires="english::level-1-materi-2">
+          <div class="ttl">Materi 3</div>
+          <div class="desc">Question Words & Yes/No Questions</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-1-materi-4/index.html" data-materi="english::level-1-materi-4" data-requires="english::level-1-materi-3">
+          <div class="ttl">Materi 4</div>
+          <div class="desc">Preposisi Dasar (in/on/at)</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-1-vocabulary/index.html">
+          <div class="ttl">📖 Rekap Vocabulary</div>
+          <div class="desc">Semua kosakata Level 1 digabung, bisa dicari</div>
+          <span class="badge ready">✓ tersedia</span>
+        </a>
+        <a class="topic ready" href="level-1-cerita/index.html" data-materi="english::level-1-cerita" data-requires="english::level-1-materi-4">
+          <div class="ttl">✍️ Cerita Hari Ini</div>
+          <div class="desc">Tulis cerita harianmu, dikoreksi otomatis — gerbang menuju Level 2</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan semua materi dulu</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead">
+        <div class="kicker">Level 2 · Memperluas Struktur (A2)</div>
+        <h2>Continuous tense, modal verbs, perbandingan.</h2>
+        <p>Terbuka setelah Cerita Hari Ini Level 1 selesai.</p>
+      </div>
+      <div class="topicgrid">
+        <a class="topic ready" href="level-2-materi-1/index.html" data-materi="english::level-2-materi-1" data-requires="english::level-1-cerita">
+          <div class="ttl">Materi 1</div>
+          <div class="desc">Present Continuous vs Simple Present</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-2-materi-2/index.html" data-materi="english::level-2-materi-2" data-requires="english::level-2-materi-1">
+          <div class="ttl">Materi 2</div>
+          <div class="desc">Past Continuous</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-2-materi-3/index.html" data-materi="english::level-2-materi-3" data-requires="english::level-2-materi-2">
+          <div class="ttl">Materi 3</div>
+          <div class="desc">Modal Verbs Dasar</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-2-materi-4/index.html" data-materi="english::level-2-materi-4" data-requires="english::level-2-materi-3">
+          <div class="ttl">Materi 4</div>
+          <div class="desc">Comparative & Superlative</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-2-materi-5/index.html" data-materi="english::level-2-materi-5" data-requires="english::level-2-materi-4">
+          <div class="ttl">Materi 5</div>
+          <div class="desc">Countable/Uncountable & Quantifiers</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-2-vocabulary/index.html">
+          <div class="ttl">📖 Rekap Vocabulary</div>
+          <div class="desc">Semua kosakata Level 2 digabung, bisa dicari</div>
+          <span class="badge ready">✓ tersedia</span>
+        </a>
+        <a class="topic ready" href="level-2-cerita/index.html" data-materi="english::level-2-cerita" data-requires="english::level-2-materi-5">
+          <div class="ttl">✍️ Cerita Hari Ini</div>
+          <div class="desc">Tulis cerita harianmu, dikoreksi otomatis — gerbang menuju Level 3</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan semua materi dulu</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead">
+        <div class="kicker">Level 3 · Menyambung Gagasan (B1)</div>
+        <h2>Present perfect, passive voice, conditional.</h2>
+        <p>Terbuka setelah Cerita Hari Ini Level 2 selesai.</p>
+      </div>
+      <div class="topicgrid">
+        <a class="topic ready" href="level-3-materi-1/index.html" data-materi="english::level-3-materi-1" data-requires="english::level-2-cerita">
+          <div class="ttl">Materi 1</div>
+          <div class="desc">Present Perfect</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-3-materi-2/index.html" data-materi="english::level-3-materi-2" data-requires="english::level-3-materi-1">
+          <div class="ttl">Materi 2</div>
+          <div class="desc">Present Perfect vs Simple Past</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-3-materi-3/index.html" data-materi="english::level-3-materi-3" data-requires="english::level-3-materi-2">
+          <div class="ttl">Materi 3</div>
+          <div class="desc">Passive Voice Dasar</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-3-materi-4/index.html" data-materi="english::level-3-materi-4" data-requires="english::level-3-materi-3">
+          <div class="ttl">Materi 4</div>
+          <div class="desc">First & Second Conditional</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-3-materi-5/index.html" data-materi="english::level-3-materi-5" data-requires="english::level-3-materi-4">
+          <div class="ttl">Materi 5</div>
+          <div class="desc">Linking Words & Connectors</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-3-vocabulary/index.html">
+          <div class="ttl">📖 Rekap Vocabulary</div>
+          <div class="desc">Semua kosakata Level 3 digabung, bisa dicari</div>
+          <span class="badge ready">✓ tersedia</span>
+        </a>
+        <a class="topic ready" href="level-3-cerita/index.html" data-materi="english::level-3-cerita" data-requires="english::level-3-materi-5">
+          <div class="ttl">✍️ Cerita Hari Ini</div>
+          <div class="desc">Tulis cerita harianmu, dikoreksi otomatis — gerbang menuju Level 4</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan semua materi dulu</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead">
+        <div class="kicker">Level 4 · Bicara Seperti Native (B2)</div>
+        <h2>Reported speech, relative clause, phrasal verb.</h2>
+        <p>Terbuka setelah Cerita Hari Ini Level 3 selesai.</p>
+      </div>
+      <div class="topicgrid">
+        <a class="topic ready" href="level-4-materi-1/index.html" data-materi="english::level-4-materi-1" data-requires="english::level-3-cerita">
+          <div class="ttl">Materi 1</div>
+          <div class="desc">Past Perfect & Past Perfect Continuous</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-4-materi-2/index.html" data-materi="english::level-4-materi-2" data-requires="english::level-4-materi-1">
+          <div class="ttl">Materi 2</div>
+          <div class="desc">Reported Speech</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-4-materi-3/index.html" data-materi="english::level-4-materi-3" data-requires="english::level-4-materi-2">
+          <div class="ttl">Materi 3</div>
+          <div class="desc">Third & Mixed Conditionals</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-4-materi-4/index.html" data-materi="english::level-4-materi-4" data-requires="english::level-4-materi-3">
+          <div class="ttl">Materi 4</div>
+          <div class="desc">Relative Clauses</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-4-materi-5/index.html" data-materi="english::level-4-materi-5" data-requires="english::level-4-materi-4">
+          <div class="ttl">Materi 5</div>
+          <div class="desc">Gerund vs Infinitive</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-4-materi-6/index.html" data-materi="english::level-4-materi-6" data-requires="english::level-4-materi-5">
+          <div class="ttl">Materi 6</div>
+          <div class="desc">Phrasal Verbs & Idiom Dasar</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-4-vocabulary/index.html">
+          <div class="ttl">📖 Rekap Vocabulary</div>
+          <div class="desc">Semua kosakata Level 4 digabung, bisa dicari</div>
+          <span class="badge ready">✓ tersedia</span>
+        </a>
+        <a class="topic ready" href="level-4-cerita/index.html" data-materi="english::level-4-cerita" data-requires="english::level-4-materi-6">
+          <div class="ttl">✍️ Cerita Hari Ini</div>
+          <div class="desc">Tulis cerita harianmu, dikoreksi otomatis — gerbang menuju Level 5</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan semua materi dulu</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead">
+        <div class="kicker">Level 5 · Advance — Puncak Perjalanan (C1)</div>
+        <h2>Inversion, subjunctive, academic & professional writing. Level terakhir.</h2>
+        <p>Terbuka setelah Cerita Hari Ini Level 4 selesai.</p>
+      </div>
+      <div class="topicgrid">
+        <a class="topic ready" href="level-5-materi-1/index.html" data-materi="english::level-5-materi-1" data-requires="english::level-4-cerita">
+          <div class="ttl">Materi 1</div>
+          <div class="desc">Future Perfect & Future Continuous</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-5-materi-2/index.html" data-materi="english::level-5-materi-2" data-requires="english::level-5-materi-1">
+          <div class="ttl">Materi 2</div>
+          <div class="desc">Advanced Modals</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-5-materi-3/index.html" data-materi="english::level-5-materi-3" data-requires="english::level-5-materi-2">
+          <div class="ttl">Materi 3</div>
+          <div class="desc">Inversion & Emphatic Structures</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-5-materi-4/index.html" data-materi="english::level-5-materi-4" data-requires="english::level-5-materi-3">
+          <div class="ttl">Materi 4</div>
+          <div class="desc">Advanced Conditionals & Subjunctive</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-5-materi-5/index.html" data-materi="english::level-5-materi-5" data-requires="english::level-5-materi-4">
+          <div class="ttl">Materi 5</div>
+          <div class="desc">Academic & Professional Writing</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-5-materi-6/index.html" data-materi="english::level-5-materi-6" data-requires="english::level-5-materi-5">
+          <div class="ttl">Materi 6</div>
+          <div class="desc">Idiomatic Expressions & Collocations</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan dulu</span>
+        </a>
+        <a class="topic ready" href="level-5-vocabulary/index.html">
+          <div class="ttl">📖 Rekap Vocabulary</div>
+          <div class="desc">Semua kosakata Level 5 digabung, bisa dicari</div>
+          <span class="badge ready">✓ tersedia</span>
+        </a>
+        <a class="topic ready" href="level-5-cerita/index.html" data-materi="english::level-5-cerita" data-requires="english::level-5-materi-6">
+          <div class="ttl">🎓 Ujian Akhir Notebook</div>
+          <div class="desc">Ujian akhir seluruh notebook — tulis cerita, dikoreksi otomatis</div>
+          <span class="badge ready">✓ tersedia</span>
+          <span class="badge done" hidden>✓ selesai</span>
+          <span class="badge locked" hidden>🔒 selesaikan semua materi dulu</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <b>Belajar Inggris</b> · Level 0 → Level 5 (Advance) · <a href="../index.html">← kembali ke semua kategori</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  function isDone(materiKey) {
+    try { return localStorage.getItem("materi-progress::" + materiKey) === "true"; }
+    catch (e) { return false; }
+  }
+
+  document.querySelectorAll("[data-materi]").forEach(function (el) {
+    var key = el.getAttribute("data-materi");
+    if (isDone(key)) {
+      var badge = el.querySelector(".badge.done");
+      if (badge) badge.hidden = false;
+    }
+  });
+
+  document.querySelectorAll("[data-requires]").forEach(function (el) {
+    var req = el.getAttribute("data-requires");
+    if (isDone(req)) return;
+    el.classList.add("locked");
+    var readyBadge = el.querySelector(".badge.ready");
+    var lockedBadge = el.querySelector(".badge.locked");
+    if (readyBadge) readyBadge.hidden = true;
+    if (lockedBadge) lockedBadge.hidden = false;
+    el.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      alert("Selesaikan dulu materi/cerita sebelumnya sebelum membuka ini.");
+    });
+  });
+})();
+</script>
+</body>
+</html>

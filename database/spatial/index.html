@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spatial Database — Cari yang Terdekat Tanpa Hitung Manual</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home { color: var(--muted); text-decoration: none; white-space: nowrap; transition: color .18s; }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- steps list (best practice) ---------- */
+  .steps { max-width: 74ch; counter-reset: stepnum; margin: 26px 0 6px; }
+  .steps li {
+    list-style: none; position: relative; counter-increment: stepnum;
+    padding: 12px 0 12px 44px; border-bottom: 1px solid var(--line-soft);
+    font-size: 15.5px; color: var(--ink);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(stepnum); position: absolute; left: 0; top: 10px;
+    width: 27px; height: 27px; border-radius: 50%;
+    background: rgba(69,212,222,.1); border: 1px solid var(--cyan-dim);
+    color: var(--cyan); font-family: var(--mono); font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--cyan); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a href="../index.html" class="topbar__home">← Database</a>
+  <div class="topbar__file">docs/learning/database/spatial/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa spatial DB dibutuhkan</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Geometri &amp; index spasial</a>
+    <a href="#c03"><span class="yr">03</span> Cara kerja R-tree</a>
+
+    <div class="rail__part">III · Untung &amp; harga</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">05</span> Tier belajar</a>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+
+    <div class="rail__part">IV · Keputusan &amp; praktik</div>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — saat datamu punya lintang &amp; bujur, bukan cuma angka biasa</div>
+      <h1 class="reveal d1">Cari yang <span class="accent">terdekat</span>, tanpa menghitung satu per satu.</h1>
+      <p class="sub reveal d2">
+        "Restoran dalam radius 2 km" atau "titik yang jatuh di dalam area ini" terdengar seperti query biasa —
+        sampai kamu coba jalankan di jutaan baris dengan rumus jarak manual dan tabelnya melambat drastis.
+        Database <b>spatial</b> menyimpan lokasi sebagai tipe data geometri asli &amp; mengindeksnya dengan
+        struktur khusus (<b>R-tree</b>) supaya pencarian berbasis ruang tetap cepat. Deck ini buat pemula:
+        dari <b>kenapa</b> ia dibutuhkan, <b>cara kerja</b> index-nya, <b>trade-off</b>-nya, sampai
+        <b>kapan dipakai di production</b> — diselingi kalimat dari sumber rujukan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Hitung jarak manual</b> <span>— scan semua baris, lambat di skala besar</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Simpan lokasi sebagai geometri</b> <span>— point, polygon, linestring asli</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Kunci</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Index R-tree</b> <span>— bounding box bersarang, singkirkan area tak relevan</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Query radius &amp; polygon jadi cepat</b> <span>— ST_DWithin, ST_Contains dalam milidetik</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Saat query-mu berbasis ruang</b> <span>— peta, ride-hailing, delivery, properti</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div style="padding: 40px clamp(22px, 5vw, 78px) 6px;">
+    <div class="wrap">
+      <div class="why reveal">
+        <div class="tag">◆ Kenapa pakai ini?</div>
+        <p><strong>Given</strong> — lokasi cuma disimpan sebagai dua kolom angka biasa (<code>lat</code>, <code>lng</code>), diindeks pakai B-tree seperti kolom umur atau harga.</p>
+        <p><strong>When</strong> — fitur "SPBU dalam radius 3&nbsp;km" atau "titik yang masuk area pengiriman ini" mulai dipakai user, dan tabelnya tumbuh sampai jutaan baris.</p>
+        <p><strong>Then</strong> — tiap query terpaksa menghitung jarak <code>Haversine</code> ke <em>semua</em> baris satu per satu (full table scan), karena B-tree cuma efisien mengurutkan satu dimensi, bukan menyaring dua dimensi sekaligus — waktu respons meledak dari milidetik jadi detik atau menit begitu data membesar.</p>
+        <p>→ makanya kita pakai <strong>Spatial Database</strong> (geometri asli + index R-tree).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 01 KENAPA SPATIAL DB DIBUTUHKAN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Query berbasis ruang itu beda</div>
+        <h2>"Cari yang terdekat" bukan query biasa</h2>
+      </div>
+      <p class="lead reveal">Bayangkan aplikasi <strong>cari restoran terdekat</strong>. Cara paling naif: simpan lintang &amp; bujur sebagai dua kolom angka biasa, lalu untuk tiap pencarian hitung jarak dari lokasi user ke <em>semua</em> restoran di tabel pakai rumus <code>Haversine</code>, urutkan, ambil yang terdekat. Di 100 baris data, itu instan. Di 5 juta baris, database harus <strong>membaca &amp; menghitung jarak untuk tiap baris</strong> — full table scan yang jelas tidak akan skala.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — mencari alamat tanpa peta</div>
+        <p>Index biasa (B-tree) itu seperti daftar nama di buku telepon — diurutkan satu dimensi, gampang dicari secara alfabetis. Tapi lokasi punya <strong>dua dimensi sekaligus</strong> (lintang <em>dan</em> bujur). Mencari "semua titik dalam radius 2 km" pakai index satu dimensi itu seperti mencari alamat rumah tanpa peta — kamu tetap harus mengecek satu per satu apakah rumah itu dekat atau tidak, karena urutan alfabetis nama jalan tidak berkorelasi dengan jarak fisik.</p>
+      </div>
+
+      <div class="quote reveal d1">
+        <p>Index B-tree biasa dibangun untuk satu dimensi. Begitu kamu punya query dua dimensi sekaligus — lintang dan bujur secara bersamaan — index semacam itu tidak lagi efisien, sehingga dibutuhkan struktur index khusus yang bisa menangani banyak dimensi.</p>
+        <cite>— parafrase dari Martin Kleppmann, <i>Designing Data-Intensive Applications</i>, Bab 3 (pembahasan multi-dimensional index)</cite>
+      </div>
+
+      <p class="body reveal d2">Karena itu lahir <strong>spatial database</strong>: database (atau ekstensi database) yang menyimpan geometri sebagai tipe data asli &amp; punya index khusus supaya query "titik dalam radius X km" atau "titik dalam polygon" bisa dijawab dalam milidetik, bukan dengan memindai seluruh tabel.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP INTI: GEOMETRI & INDEX SPASIAL ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Tipe data &amp; index spasial</div>
+        <h2>Lokasi disimpan sebagai geometri, dicari lewat index spasial</h2>
+      </div>
+      <p class="lead reveal">Spatial database punya tiga tipe data geometri dasar yang jadi fondasi hampir semua query lokasi:</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Tipe geometri dasar</div>
+        <div class="erabox__row"><span class="erabox__lang">Point</span><code>POINT(106.827 -6.175)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">LineString</span><code>LINESTRING(0 0, 1 1, 2 0)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Polygon</span><code>POLYGON((0 0, 4 0, 4 4, 0 4, 0 0))</code></div>
+        <p class="erabox__note"><b>Point</b> = satu titik (lokasi toko, driver, user). <b>LineString</b> = rangkaian titik membentuk garis (rute jalan, jalur pengiriman). <b>Polygon</b> = area tertutup (batas kota, zona pengiriman, radius jangkauan).</p>
+      </div>
+
+      <p class="body reveal d1">Supaya query lokasi cepat, kolom geometri diberi <strong>index spasial</strong> — paling umum berbentuk <strong>R-tree</strong>, yang mengelompokkan objek ke dalam bounding box (kotak pembungkus) yang saling bersarang. Di PostgreSQL, ekstensi <code>PostGIS</code> menyediakan tipe geometri ini lengkap dengan index <code>GIST</code> berbasis R-tree.</p>
+
+      <div class="code-card good reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">cari restoran dalam radius 2 km — PostGIS</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- tabel restoran, kolom lokasi bertipe geography (Point)</span>
+<span class="k">CREATE TABLE</span> <span class="f">restoran</span> (
+  <span class="t">id</span>       <span class="k">serial</span> <span class="k">primary key</span>,
+  <span class="t">nama</span>     <span class="k">text</span>,
+  <span class="t">lokasi</span>   <span class="k">geography</span>(<span class="t">Point</span>, <span class="n">4326</span>)
+);
+
+<span class="c">-- index spasial: R-tree lewat GIST</span>
+<span class="k">CREATE INDEX</span> <span class="f">idx_restoran_lokasi</span> <span class="k">ON</span> <span class="f">restoran</span> <span class="k">USING</span> <span class="t">GIST</span> (<span class="t">lokasi</span>);
+
+<span class="c">-- cari yang dalam radius 2000 meter dari posisi user, urut dari terdekat</span>
+<span class="k">SELECT</span> nama,
+       <span class="f">ST_Distance</span>(lokasi, <span class="f">ST_MakePoint</span>(<span class="n">106.8272</span>, <span class="n">-6.1751</span>)::<span class="t">geography</span>) <span class="k">AS</span> jarak_meter
+<span class="k">FROM</span> restoran
+<span class="hl-good"><span class="k">WHERE</span> <span class="f">ST_DWithin</span>(lokasi, <span class="f">ST_MakePoint</span>(<span class="n">106.8272</span>, <span class="n">-6.1751</span>)::<span class="t">geography</span>, <span class="n">2000</span>)</span>
+<span class="k">ORDER BY</span> jarak_meter
+<span class="k">LIMIT</span> <span class="n">20</span>;</pre>
+      </div>
+
+      <p class="body reveal d2"><code>ST_DWithin</code> memakai index spasial untuk langsung membuang restoran yang jelas jauh, baru menghitung jarak presisi untuk kandidat yang tersisa. Untuk query <strong>titik dalam polygon</strong> (mis. "toko mana saja yang masuk zona pengiriman ini"), pakai <code>ST_Contains</code>:</p>
+
+      <div class="code-card reveal d3">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">titik di dalam polygon — zona pengiriman</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="k">SELECT</span> r.nama
+<span class="k">FROM</span> restoran r, zona_pengiriman z
+<span class="k">WHERE</span> z.nama_zona = <span class="s">'Zona A'</span>
+  <span class="k">AND</span> <span class="f">ST_Contains</span>(z.area, r.lokasi::<span class="t">geometry</span>);</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 CARA KERJA R-TREE ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep penting</span> · Di balik layar</div>
+        <h2>R-tree: bounding box yang bersarang</h2>
+      </div>
+      <p class="lead reveal">Ide R-tree ditemukan oleh Antonin Guttman lewat papernya di SIGMOD 1984, dan gagasan intinya tetap dipakai sampai sekarang di PostGIS, MongoDB, hingga index spasial di banyak database lain.</p>
+
+      <div class="quote reveal d1">
+        <p>Objek-objek spasial dikelompokkan ke dalam bounding box, dan bounding box-bounding box itu sendiri dikelompokkan lagi ke dalam bounding box yang lebih besar secara bersarang — sehingga saat mencari, mesin database bisa langsung menyingkirkan seluruh cabang yang bounding box-nya jelas tidak beririsan dengan area pencarian, tanpa perlu memeriksa objek di dalamnya satu per satu.</p>
+        <cite>— parafrase dari Antonin Guttman, <i>R-Trees: A Dynamic Index Structure for Spatial Searching</i>, SIGMOD 1984</cite>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — kotak di dalam kotak di dalam gudang</div>
+        <p>Bayangkan gudang besar berisi ribuan kotak kecil. Daripada menaruh semua kotak berserakan, kamu kelompokkan kotak-kotak yang berdekatan ke dalam <strong>kotak sedang</strong>, lalu kelompokkan kotak-kotak sedang yang berdekatan ke dalam <strong>kotak besar</strong>, dan seterusnya — persis seperti boneka Matryoshka. Saat mencari barang di area tertentu, kamu cukup buka kotak besar yang <em>beririsan</em> dengan area itu, abaikan sisanya sepenuhnya. Itulah cara R-tree bekerja: bounding box makin ke atas makin besar &amp; makin sedikit, jadi pencarian bisa "loncat" langsung ke cabang yang relevan.</p>
+      </div>
+
+      <p class="body reveal d2">Setiap node di R-tree menyimpan bounding box yang membungkus semua anaknya. Saat query <code>ST_DWithin</code> atau <code>ST_Contains</code> dijalankan, database menelusuri pohon dari akar: kalau bounding box sebuah cabang tidak beririsan dengan area pencarian, <strong>seluruh cabang itu langsung dilewati</strong> — tidak peduli berapa ribu objek di dalamnya. Inilah kenapa query spasial dengan index bisa jauh lebih cepat daripada menghitung jarak untuk tiap baris satu per satu.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Supaya query spasial tetap cepat</div>
+        <h2>Best practice query &amp; index spasial</h2>
+      </div>
+      <p class="lead reveal">Punya PostGIS bukan jaminan query otomatis cepat. Beberapa kebiasaan ini yang membedakan query spasial yang kilat dengan yang tetap lambat walau sudah ada index.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Selalu index kolom geometry/geography</b> dengan <code>CREATE INDEX ... USING GIST (kolom)</code>. Tanpa index ini, query spasial jatuh ke seq scan walau tabelnya kecil sekalipun terasa cepat — begitu data membesar, langsung melambat drastis.</li>
+        <li><b>Pilih SRID yang tepat.</b> <code>4326</code> (WGS84, lintang/bujur global) cocok untuk data dunia nyata &amp; dipakai bareng tipe <code>geography</code>. Untuk perhitungan area/jarak presisi di wilayah kecil (kota, negara), pertimbangkan projected CRS lokal agar hasil metrik lebih akurat.</li>
+        <li><b>Gunakan bounding box dulu, presisi belakangan.</b> Fungsi seperti <code>ST_DWithin</code> &amp; operator <code>&amp;&amp;</code> memakai index untuk membuang kandidat yang jelas jauh sebelum menghitung jarak geometris presisi — jauh lebih murah daripada langsung <code>ST_Distance</code> ke semua baris.</li>
+        <li><b>Pahami beda <code>geometry</code> vs <code>geography</code>.</b> <code>geometry</code> lebih cepat dihitung (asumsi bidang datar), <code>geography</code> lebih akurat untuk jarak permukaan bumi tapi sedikit lebih berat. Pilih sesuai kebutuhan akurasi.</li>
+        <li><b>Cek query plan-nya.</b> Jalankan <code>EXPLAIN ANALYZE</code> untuk memastikan index spasial benar-benar dipakai (index scan), bukan seq scan yang menandakan index tidak terpakai atau query-nya tidak "sargable".</li>
+        <li><b>Batasi radius/area pencarian di query,</b> bukan di aplikasi — biarkan database yang membuang data tak relevan lewat index, jangan tarik semua baris lalu filter di kode.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Jenjang · Dari dasar sampai skala besar</div>
+        <h2>Tier belajar spatial database</h2>
+      </div>
+      <p class="lead reveal">Belajar spatial database bertahap — mulai dari query jarak sederhana, sampai desain index geospasial untuk skala jutaan titik.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Query jarak &amp; radius dasar</h4>
+          <p>Fokus memahami tipe geometri &amp; fungsi query paling sering dipakai.</p>
+          <ul>
+            <li>Bikin kolom <code>geography(Point)</code> &amp; pasang index GIST.</li>
+            <li>Pakai <code>ST_Distance</code> &amp; <code>ST_DWithin</code> untuk cari titik terdekat.</li>
+            <li>Paham beda <code>geometry</code> vs <code>geography</code>.</li>
+            <li>Baca hasil <code>EXPLAIN</code> sederhana.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Fitur "cari di sekitar saya"</h4>
+          <p>Mendesain fitur lokasi nyata untuk aplikasi produksi.</p>
+          <ul>
+            <li>Gabungkan filter lokasi dengan filter lain (kategori, rating).</li>
+            <li>Urutkan &amp; paginasi hasil berdasar jarak.</li>
+            <li>Query titik-dalam-polygon untuk zona layanan.</li>
+            <li>Caching hasil pencarian lokasi yang sering diakses.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Geospatial indexing skala besar</h4>
+          <p>Menangani jutaan titik &amp; query polygon kompleks.</p>
+          <ul>
+            <li>Pakai grid hierarkis seperti <b>H3</b> atau <b>geohash</b>.</li>
+            <li>Sharding/partitioning data berdasar wilayah.</li>
+            <li>Optimasi query polygon kompleks &amp; spatial join.</li>
+            <li>Trade-off presisi vs performa di skala real-time.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: yang kamu dapat &amp; yang kamu korbankan</h2>
+      </div>
+      <p class="lead reveal">Spatial database memberi kecepatan luar biasa untuk query lokasi — tapi kecepatan itu datang dengan kompleksitas setup &amp; kurva belajar sistem koordinat.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Query radius &amp; polygon sangat cepat lewat index R-tree.</li>
+            <li>Hasil akurat secara geometris, bukan perkiraan kasar.</li>
+            <li>Operasi spasial lengkap: jarak, kontainment, intersection, union.</li>
+            <li>Skala baik dengan partitioning berbasis wilayah.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Butuh ekstensi khusus (PostGIS) yang harus dipasang &amp; dikonfigurasi.</li>
+            <li>Kurva belajar sistem koordinat (SRID) cukup curam bagi pemula.</li>
+            <li>Storage index spasial lebih besar dari index biasa.</li>
+            <li>Migrasi/konversi data antar SRID bisa rumit &amp; rawan salah.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan praktis</div>
+          <p>Kesalahan SRID adalah sumber bug paling umum di project spasial pemula — mencampur koordinat <code>4326</code> (lintang/bujur) dengan sistem proyeksi meter tanpa transformasi eksplisit bisa menghasilkan jarak yang salah total tanpa error apa pun. Selalu jelas soal SRID apa yang dipakai di tiap kolom.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI VS TIDAK ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai spatial database</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>kalau query utamamu bertanya soal jarak, radius, atau "apakah titik ini di dalam area itu" — pakai spatial index. Kalau lokasi cuma data pelengkap yang jarang di-query berbasis ruang, kolom lat/long biasa sudah cukup.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai spatial database saat…</h4>
+          <ul class="good-l">
+            <li>Ada fitur "cari terdekat" atau "di sekitar saya".</li>
+            <li>Query titik-dalam-polygon (zona, area layanan).</li>
+            <li>Aplikasi peta, ride-hailing, delivery, properti.</li>
+            <li>Volume data lokasi besar &amp; terus bertambah.</li>
+            <li>Butuh operasi spasial lain (intersection, buffer, union).</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Belum perlu saat…</h4>
+          <ul class="bad-l">
+            <li>Lokasi cuma disimpan untuk ditampilkan, tak pernah di-query.</li>
+            <li>Data lokasinya kecil &amp; jarang bertambah.</li>
+            <li>Cukup filter kasar per kota/wilayah (bukan radius presisi).</li>
+            <li>Tim belum siap dengan kompleksitas SRID &amp; ekstensi baru.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan: <strong>"Apakah aplikasiku pernah bertanya soal jarak atau area secara langsung ke database?"</strong> Kalau ya — walau baru satu fitur "restoran terdekat" — index spasial akan menyelamatkanmu dari full table scan begitu datamu tumbuh. Kalau lokasi sekadar metadata yang ditampilkan di peta tanpa pernah difilter berdasar jarak, kolom biasa sudah cukup untuk saat ini.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Bagaimana produk besar menangani skala lokasi</h2>
+      </div>
+      <p class="lead reveal">Tiga skenario nyata di mana pencarian &amp; indexing berbasis lokasi jadi bagian inti sistem — bukan sekadar fitur tempelan.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// ride-hailing</div><h4>Uber &amp; H3</h4><p><b>Kasus:</b> mencocokkan jutaan driver &amp; penumpang secara real-time butuh cara cepat membagi peta jadi wilayah-wilayah kecil. <b>Pendekatan:</b> Uber membangun &amp; mengembangkan <b>H3</b>, sistem indexing geospasial berbasis grid heksagonal hierarkis, untuk mempercepat matching &amp; agregasi spasial. <b>Tool:</b> H3 (open source).</p></div>
+        <div class="card up"><div class="ic">// ride-hailing &amp; delivery</div><h4>Grab di Asia Tenggara</h4><p><b>Kasus:</b> layanan ride-hailing &amp; pengiriman makanan yang beroperasi lintas banyak kota dengan kepadatan &amp; pola jalan yang beragam. <b>Pendekatan:</b> memanfaatkan geospatial indexing untuk pencarian driver terdekat &amp; estimasi rute di wilayah operasional yang luas.</p></div>
+        <div class="card up"><div class="ic">// marketplace properti</div><h4>Airbnb — pencarian properti di peta</h4><p><b>Kasus:</b> pengguna mencari akomodasi dalam area peta tertentu atau radius dari lokasi favorit. <b>Pendekatan:</b> query berbasis lokasi (titik dalam area/polygon peta) memakai index spasial seperti PostGIS untuk menyaring listing secara cepat sebelum ranking lanjutan.</p></div>
+        <div class="card up"><div class="ic">// on-demand services</div><h4>Gojek — layanan berbasis lokasi</h4><p><b>Kasus:</b> berbagai layanan (ojek, delivery, layanan rumah) yang semuanya butuh pencarian mitra atau lokasi terdekat secara cepat. <b>Pendekatan:</b> PostGIS &amp; index spasial jadi fondasi umum untuk query "siapa/apa yang terdekat" di banyak layanan sekaligus.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di semua kasus di atas, pola query intinya sama: <strong>"apa/siapa yang dekat dengan titik ini"</strong> — dijalankan berulang kali, dalam skala besar, dengan latensi rendah. Begitu volume &amp; frekuensi query lokasi tinggi, index spasial (R-tree lewat PostGIS, atau grid hierarkis seperti H3) bukan lagi opsional, melainkan fondasi arsitektur.</p>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Detail implementasi &amp; angka performa spesifik dari perusahaan-perusahaan di atas bervariasi &amp; berubah seiring waktu — poin di sini adalah <b>polanya</b>: sistem berskala besar dengan query lokasi intensif butuh index spasial khusus, bukan filter jarak manual di aplikasi.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools &amp; ekosistem spatial database</h2>
+      </div>
+      <p class="lead reveal">Sebagai pemula, mulai dari PostGIS kalau kamu sudah pakai PostgreSQL — paling matang &amp; dokumentasinya lengkap.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// paling matang</div><h4>PostGIS</h4><p>Ekstensi spasial untuk PostgreSQL. Tipe geometri lengkap, ratusan fungsi <code>ST_*</code>, index GIST berbasis R-tree. Standar de-facto untuk spatial database open source.</p></div>
+        <div class="card up"><div class="ic">// document DB</div><h4>MongoDB geospatial index</h4><p>Mendukung tipe <code>GeoJSON</code> &amp; index <code>2dsphere</code> untuk query radius (<code>$near</code>) &amp; polygon (<code>$geoWithin</code>) langsung di document database.</p></div>
+        <div class="card up"><div class="ic">// hierarchical grid</div><h4>Uber H3</h4><p>Library indexing geospasial berbasis grid heksagonal hierarkis. Cocok untuk agregasi &amp; matching skala besar, dipakai luas di luar Uber juga.</p></div>
+        <div class="card up"><div class="ic">// search &amp; analytics</div><h4>Elasticsearch geo queries</h4><p>Mendukung tipe <code>geo_point</code> &amp; <code>geo_shape</code> dengan query <code>geo_distance</code> &amp; <code>geo_bounding_box</code> — sering dipasangkan dengan pencarian teks.</p></div>
+        <div class="card up"><div class="ic">// alternatif encoding</div><h4>Geohash</h4><p>Mengubah koordinat jadi string alfanumerik hierarkis — dua titik dengan prefix sama artinya berdekatan. Sederhana &amp; mudah diindeks di database apa pun.</p></div>
+        <div class="card up"><div class="ic">// cloud managed</div><h4>PostgreSQL/PostGIS terkelola</h4><p>Tersedia sebagai layanan terkelola di AWS RDS, Google Cloud SQL, Azure — tinggal aktifkan ekstensi PostGIS tanpa perlu kelola server sendiri.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Kalau kamu sudah pakai PostgreSQL, cukup <code>CREATE EXTENSION postgis;</code> — tak perlu database baru. Baru pertimbangkan H3/geohash saat kebutuhanmu benar-benar skala besar (jutaan titik, agregasi wilayah real-time).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Ruang butuh index-nya sendiri</h2>
+      </div>
+      <p class="lead reveal">Spatial database lahir dari kesadaran bahwa lokasi punya dua dimensi sekaligus, dan index satu dimensi biasa tidak cukup. R-tree menjawabnya dengan mengelompokkan objek ke bounding box bersarang, sehingga query radius &amp; polygon bisa membuang area tak relevan tanpa memeriksa tiap titik satu-satu.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Lokasi = dua dimensi</b> — index B-tree biasa tidak cukup efisien untuknya.</li>
+          <li><b>Geometri asli</b> — point, linestring, polygon sebagai tipe data, bukan sekadar angka.</li>
+          <li><b>R-tree</b> — bounding box bersarang, singkirkan area tak relevan lebih dulu.</li>
+          <li><b>Bounding box dulu, presisi belakangan</b> — itu rahasia query spasial yang cepat.</li>
+          <li><b>SRID itu penting</b> — kesalahan sistem koordinat adalah sumber bug paling umum.</li>
+          <li><b>Skala besar, pikirkan H3/geohash</b> — bukan cuma R-tree tunggal.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya: <strong>"Apakah query-ku bertanya soal jarak atau area, bukan cuma menampilkan koordinat?"</strong> Kalau ya, index spasial (R-tree lewat PostGIS, atau grid hierarkis seperti H3) akan menyelamatkanmu dari full table scan begitu datamu bertumbuh. Ruang butuh cara berpikir &amp; index-nya sendiri — dan sekarang kamu tahu kenapa.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Singkirkan yang jelas tidak relevan, sebelum menghitung yang mungkin relevan."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Spatial Database</b> · Kenapa, konsep, R-tree, trade-off, kapan, &amp; tools-nya · untuk pemula · rujukan: Guttman (SIGMOD 1984), DDIA (Kleppmann) · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../index.html">← kembali ke Database</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

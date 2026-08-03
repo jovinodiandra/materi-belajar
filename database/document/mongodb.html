@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MongoDB — Document DB Paling Populer</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #56d364;   /* MongoDB green accent */
+    --cyan-dim:   #2f8a3c;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #56d364;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#56d364; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .topbar__home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; transition: color .18s, border-color .18s; }
+  .topbar__home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(86,211,100,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(86,211,100,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 92px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 13px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(86,211,100,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(86,211,100,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 78px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(86,211,100,.08);
+  }
+  .lang.js { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  .lang.violet { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- step list ---------- */
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 9px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700;
+    background: var(--cyan); border-radius: 50%;
+  }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 76px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/document/<b>mongodb.md</b></div>
+  <a class="topbar__home" href="index.html">← Document DB</a>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// MongoDB</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenalan</div>
+    <a href="#c01"><span class="yr">01</span> Apa itu MongoDB</a>
+    <a href="#c02"><span class="yr">02</span> Model data &amp; istilah</a>
+
+    <div class="rail__part">II · Operasi dasar</div>
+    <a href="#c03"><span class="yr">03</span> CRUD &amp; query find()</a>
+    <a href="#c04"><span class="yr">04</span> Aggregation pipeline</a>
+
+    <div class="rail__part">III · Indexing</div>
+    <a href="#c05"><span class="yr">05</span> Kenapa butuh index</a>
+    <a href="#c06"><span class="yr">06</span> Jenis-jenis index</a>
+    <a href="#c07"><span class="yr">⚙</span> explain() &amp; aturan</a>
+
+    <div class="rail__part">IV · Praktik</div>
+    <a href="#c08"><span class="yr">!</span> Kapan pakai</a>
+    <a href="#c09"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Tool document database #1 — paling banyak dipakai</div>
+      <h1 class="reveal d1">MongoDB — simpan <span class="accent">dokumen JSON</span>, query &amp; index seperti biasa.</h1>
+      <p class="sub reveal d2">
+        Di deck sebelumnya kita belajar <b>kenapa</b> document database ada. Sekarang kita praktik dengan tool
+        paling populer: <b>MongoDB</b>. Datanya dokumen mirip JSON (<b>BSON</b> di balik layar), tapi kamu tetap
+        bisa <b>mencari</b> (query) dan <b>mempercepat pencarian</b> (index) — bahkan menelusuri field yang
+        bersarang di dalam array. Deck ini pakai contoh kasus yang sama: <b>profil/CV</b> &amp; <b>katalog produk</b>.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Simpan</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Collection &amp; document</b> <span>— 1 profil = 1 dokumen BSON</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Cari</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>find() &amp; aggregation</b> <span>— filter, sort, gabung, hitung</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Cepat</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>createIndex()</b> <span>— tunggal, compound, multikey, text</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Cek</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>explain()</b> <span>— pastikan query benar-benar pakai index</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 APA ITU ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kenalan</span> · Apa itu MongoDB</div>
+        <h2>Database document open-source paling umum</h2>
+      </div>
+      <p class="lead reveal">MongoDB adalah database <strong>document</strong>: ia menyimpan data sebagai dokumen mirip-JSON, bukan baris di tabel. Setiap dokumen bisa bersarang (objek di dalam objek, array di dalam dokumen) — persis seperti objek di kode aplikasimu.</p>
+
+      <div class="quote reveal d1">
+        <p>“Sebuah dokumen biasanya disimpan sebagai satu string menerus, dikodekan dalam JSON, XML, atau varian biner seperti <span style="font-style:normal">BSON</span> milik MongoDB.”</p>
+        <cite>— Martin Kleppmann, <i>Designing Data-Intensive Applications</i> (Bab 2)</cite>
+      </div>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// format</div><h4>BSON di balik layar</h4><p>Kamu menulis seperti JSON, tapi MongoDB menyimpannya sebagai <b>BSON</b> (Binary JSON) — lebih cepat dibaca mesin &amp; punya tipe ekstra seperti <code>Date</code> dan <code>ObjectId</code>.</p></div>
+        <div class="card up"><div class="ic">// _id</div><h4>Setiap dokumen punya _id</h4><p>Field <code>_id</code> otomatis dibuat (<code>ObjectId</code>) sebagai primary key unik. Ia otomatis ter-index.</p></div>
+        <div class="card up"><div class="ic">// skala</div><h4>Dibangun untuk skala</h4><p>Mendukung <b>replikasi</b> (salinan untuk keandalan) &amp; <b>sharding</b> (sebar data ke banyak server) sejak awal.</p></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Posisinya</div>
+        <p>Kalau kamu pemula dan ingin <em>mencoba</em> document database, MongoDB adalah titik awal yang paling masuk akal: dokumentasinya banyak, ada GUI gratis (<code>MongoDB Compass</code>), dan ada layanan cloud gratis untuk belajar (<code>MongoDB Atlas</code>).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 MODEL DATA ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep</span> · Model data &amp; istilah</div>
+        <h2>Collection, document, field</h2>
+      </div>
+      <p class="lead reveal">Kalau kamu datang dari SQL, peta istilahnya sederhana. Yang berubah hanya bentuk datanya: dari baris datar jadi dokumen bersarang.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Padanan istilah SQL ↔ MongoDB</div>
+        <div class="erabox__row"><span class="erabox__lang">Database</span><code>→  Database</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Tabel</span><code>→  Collection</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Baris</span><code>→  Document (objek mirip-JSON)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Kolom</span><code>→  Field</code></div>
+        <div class="erabox__row"><span class="erabox__lang">PK</span><code>→  _id (ObjectId, otomatis)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">JOIN</span><code>→  embedding / $lookup</code></div>
+        <p class="erabox__note">Inti MongoDB: <b>"data yang diakses bersama, disimpan bersama"</b>. Profil + pengalaman + pendidikan cukup jadi <b>satu dokumen</b> dalam collection <code>users</code>.</p>
+      </div>
+
+      <div class="code-card good reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">satu dokumen di collection "users"</span><span class="lang violet">JSON</span></div>
+<pre class="code">{
+  <span class="t">"_id"</span>: <span class="f">ObjectId</span>(<span class="s">"665f1a..."</span>),
+  <span class="t">"nama"</span>: <span class="s">"Budi"</span>,
+  <span class="t">"kota"</span>: <span class="s">"Bandung"</span>,
+  <span class="t">"pengalaman"</span>: [
+    { <span class="t">"jabatan"</span>: <span class="s">"Engineer"</span>, <span class="t">"di"</span>: <span class="s">"Acme"</span>, <span class="t">"tahun"</span>: <span class="n">2019</span> },
+    { <span class="t">"jabatan"</span>: <span class="s">"Lead"</span>,     <span class="t">"di"</span>: <span class="s">"Globex"</span>, <span class="t">"tahun"</span>: <span class="n">2022</span> }
+  ],
+  <span class="t">"skill"</span>: [ <span class="s">"go"</span>, <span class="s">"mongodb"</span>, <span class="s">"docker"</span> ]
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 CRUD & QUERY ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Operasi · CRUD &amp; query</div>
+        <h2>Menyimpan &amp; mencari dengan find()</h2>
+      </div>
+      <p class="lead reveal">Query di MongoDB ditulis sebagai <strong>dokumen filter</strong> — kamu mendeskripsikan "bentuk" yang dicari. Inilah jawaban langsung untuk kebutuhan <strong>query</strong> dari contoh kasus profil &amp; katalog.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">create / read — mongosh</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="c">// CREATE — sisipkan satu dokumen</span>
+<span class="f">db.users</span>.<span class="f">insertOne</span>({
+  nama: <span class="s">"Budi"</span>, kota: <span class="s">"Bandung"</span>,
+  skill: [<span class="s">"go"</span>, <span class="s">"mongodb"</span>],
+  pengalaman: [{ jabatan: <span class="s">"Lead"</span>, di: <span class="s">"Globex"</span>, tahun: <span class="n">2022</span> }]
+})
+
+<span class="c">// READ — semua user di Bandung, tampilkan nama saja</span>
+<span class="f">db.users</span>.<span class="f">find</span>({ kota: <span class="s">"Bandung"</span> }, { nama: <span class="n">1</span>, _id: <span class="n">0</span> })
+
+<span class="c">// READ — operator perbandingan: pengalaman sejak >= 2020</span>
+<span class="f">db.users</span>.<span class="f">find</span>({ <span class="s">"pengalaman.tahun"</span>: { <span class="a">$gte</span>: <span class="n">2020</span> } })
+
+<span class="c">// READ — cari di dalam array: punya skill "mongodb"</span>
+<span class="f">db.users</span>.<span class="f">find</span>({ skill: <span class="s">"mongodb"</span> })   <span class="c">// otomatis cek tiap elemen array</span></pre>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">update / delete + filter gabungan</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="c">// UPDATE — tambah skill baru ke Budi (tanpa duplikat)</span>
+<span class="f">db.users</span>.<span class="f">updateOne</span>(
+  { nama: <span class="s">"Budi"</span> },
+  { <span class="a">$addToSet</span>: { skill: <span class="s">"kubernetes"</span> } }
+)
+
+<span class="c">// DELETE — hapus user tanpa skill sama sekali</span>
+<span class="f">db.users</span>.<span class="f">deleteMany</span>({ skill: { <span class="a">$size</span>: <span class="n">0</span> } })
+
+<span class="c">// FILTER GABUNGAN — (kota Bandung ATAU Jakarta) DAN punya skill go</span>
+<span class="f">db.users</span>.<span class="f">find</span>({
+  <span class="a">$and</span>: [
+    { <span class="a">$or</span>: [ { kota: <span class="s">"Bandung"</span> }, { kota: <span class="s">"Jakarta"</span> } ] },
+    { skill: <span class="s">"go"</span> }
+  ]
+}).<span class="f">sort</span>({ nama: <span class="n">1</span> }).<span class="f">limit</span>(<span class="n">20</span>)</pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__body" style="padding:15px 20px">
+          <div class="note__tag">◆ Operator yang sering dipakai</div>
+          <p><code>$gt $gte $lt $lte</code> (banding), <code>$in $nin</code> (di dalam daftar), <code>$and $or $not</code> (logika), <code>$exists</code> (field ada/tidak — berguna di skema fleksibel), <code>$regex</code> (cocok pola teks), <code>$elemMatch</code> (satu elemen array memenuhi banyak syarat sekaligus).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 AGGREGATION ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Operasi · Aggregation pipeline</div>
+        <h2>Query lanjutan: hitung, kelompokkan, gabung</h2>
+      </div>
+      <p class="lead reveal">Saat <code>find()</code> tak cukup — kamu butuh <strong>menghitung, mengelompokkan, atau menggabungkan</strong> — MongoDB pakai <strong>aggregation pipeline</strong>: data mengalir lewat tahap demi tahap (<code>$match → $group → $sort</code>).</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">berapa user per kota? (mirip GROUP BY di SQL)</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="f">db.users</span>.<span class="f">aggregate</span>([
+  { <span class="a">$match</span>:  { skill: <span class="s">"go"</span> } },              <span class="c">// 1. filter dulu (pakai index)</span>
+  { <span class="a">$group</span>:  { _id: <span class="s">"$kota"</span>, jumlah: { <span class="a">$sum</span>: <span class="n">1</span> } } }, <span class="c">// 2. kelompokkan per kota</span>
+  { <span class="a">$sort</span>:   { jumlah: <span class="n">-1</span> } }              <span class="c">// 3. urutkan terbanyak</span>
+])
+<span class="c">// hasil: [ { _id: "Bandung", jumlah: 12 }, { _id: "Jakarta", jumlah: 7 } ]</span></pre>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">$lookup — "JOIN" antar collection (pesanan ↔ produk)</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="f">db.pesanan</span>.<span class="f">aggregate</span>([
+  { <span class="a">$lookup</span>: {
+      from:         <span class="s">"produk"</span>,        <span class="c">// collection lain</span>
+      localField:   <span class="s">"produk_id"</span>,     <span class="c">// field di pesanan</span>
+      foreignField: <span class="s">"_id"</span>,            <span class="c">// field di produk</span>
+      as:           <span class="s">"detail_produk"</span>  <span class="c">// hasil gabungan ditaruh di sini</span>
+  } }
+])
+<span class="c">// $lookup ADA, tapi inilah sinyal: kalau kamu sering JOIN,</span>
+<span class="c">// mungkin datamu sebenarnya relasional (lihat deck Document DB, bab 03).</span></pre>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Aggregation kuat, tapi <b>tahap pertama sebaiknya <code>$match</code></b> supaya bisa memanfaatkan index dan menyaring data sedini mungkin. Pipeline yang mulai dengan <code>$group</code> di atas jutaan dokumen akan lambat karena harus memindai semuanya.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 KENAPA INDEX ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Indexing</span> · Kenapa butuh index</div>
+        <h2>Tanpa index, query memindai SEMUA dokumen</h2>
+      </div>
+      <p class="lead reveal">Index adalah inti performa. Tanpa index, sebuah query harus membaca <strong>setiap dokumen</strong> satu per satu (<em>collection scan</em>) untuk mencari yang cocok. Dengan index, MongoDB melompat langsung ke datanya.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — daftar isi buku</div>
+        <p>Mencari kata di buku tanpa daftar isi = membalik semua halaman satu per satu (collection scan). Index ibarat <em>indeks di belakang buku</em>: kamu cari kata, ia bilang "halaman 142", kamu loncat ke sana. Cepat — tapi indeks itu sendiri butuh kertas tambahan &amp; harus diperbarui tiap buku berubah.</p>
+      </div>
+
+      <div class="diptych reveal d2">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">tanpa index</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="f">db.users</span>.<span class="f">find</span>({ kota: <span class="s">"Bandung"</span> })
+
+<span class="c">// MongoDB harus memeriksa</span>
+<span class="c">// SEMUA dokumen di koleksi:</span>
+<span class="hl-bad">COLLSCAN — baca 1.000.000 dokumen 🐢</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">dengan index di "kota"</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="f">db.users</span>.<span class="f">createIndex</span>({ kota: <span class="n">1</span> })
+<span class="f">db.users</span>.<span class="f">find</span>({ kota: <span class="s">"Bandung"</span> })
+
+<span class="c">// loncat langsung ke entri "Bandung":</span>
+<span class="hl-good">IXSCAN — baca ~12 dokumen ⚡</span></pre>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__body" style="padding:15px 20px">
+          <div class="note__tag">◆ Di balik layar</div>
+          <p>Index MongoDB adalah struktur <b>B-tree</b> terurut yang menyimpan nilai field + pointer ke dokumen. Karena terurut, ia juga mempercepat <code>sort()</code> dan query rentang (<code>$gte</code>, <code>$lt</code>), bukan hanya pencocokan persis.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 JENIS INDEX ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Indexing</span> · Jenis index</div>
+        <h2>Empat index yang wajib kamu kenal</h2>
+      </div>
+      <p class="lead reveal">Jawaban langsung untuk kebutuhan <strong>indexing</strong> dari contoh kasus: tunggal untuk satu field, compound untuk filter gabungan, multikey untuk array, dan text untuk pencarian kata.</p>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">createIndex — empat jenis utama</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="c">// 1. SINGLE FIELD — satu field, 1 = naik, -1 = turun</span>
+<span class="f">db.users</span>.<span class="f">createIndex</span>({ kota: <span class="n">1</span> })
+
+<span class="c">// 2. COMPOUND — beberapa field; URUTAN PENTING (lihat bab berikut)</span>
+<span class="f">db.users</span>.<span class="f">createIndex</span>({ kota: <span class="n">1</span>, <span class="s">"pengalaman.tahun"</span>: <span class="n">-1</span> })
+<span class="c">// → mempercepat: find({kota}).sort({"pengalaman.tahun": -1})</span>
+
+<span class="c">// 3. MULTIKEY — otomatis saat field-nya array (mis. skill[])</span>
+<span class="f">db.users</span>.<span class="f">createIndex</span>({ skill: <span class="n">1</span> })
+<span class="c">// → mempercepat: find({ skill: "mongodb" })</span>
+
+<span class="c">// 4. TEXT — pencarian kata di dalam teks (mis. deskripsi produk)</span>
+<span class="f">db.produk</span>.<span class="f">createIndex</span>({ nama: <span class="s">"text"</span>, deskripsi: <span class="s">"text"</span> })
+<span class="f">db.produk</span>.<span class="f">find</span>({ <span class="a">$text</span>: { <span class="a">$search</span>: <span class="s">"kabel usb"</span> } })</pre>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// unique</div><h4>Unique index</h4><p><code>createIndex({ email: 1 }, { unique: true })</code> — menolak nilai duplikat. Inilah cara mengembalikan sebagian "integritas" relasional.</p></div>
+        <div class="card up"><div class="ic">// ttl</div><h4>TTL index</h4><p><code>{ expireAfterSeconds: 3600 }</code> — dokumen otomatis terhapus setelah waktu tertentu. Pas untuk sesi login atau cache.</p></div>
+        <div class="card up"><div class="ic">// partial</div><h4>Partial index</h4><p>Hanya meng-index dokumen yang memenuhi syarat (mis. <code>{ aktif: true }</code>). Lebih kecil &amp; hemat.</p></div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Untuk pencarian teks yang <b>serius</b> (relevansi, typo-tolerant, bahasa Indonesia), <code>$text</code> bawaan MongoDB cukup terbatas — di sinilah <b>Elasticsearch</b> biasanya dipasang berdampingan. Lihat <code>elasticsearch.html</code>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 EXPLAIN & ATURAN ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Indexing · Verifikasi</div>
+        <h2>explain(): pastikan index benar-benar dipakai</h2>
+      </div>
+      <p class="lead reveal">Membuat index tidak menjamin query memakainya. Selalu <strong>buktikan</strong> dengan <code>explain()</code> — cari <code>IXSCAN</code> (pakai index), bukan <code>COLLSCAN</code> (memindai semua).</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">explain() — baca rencana eksekusi</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="f">db.users</span>.<span class="f">find</span>({ kota: <span class="s">"Bandung"</span> }).<span class="f">explain</span>(<span class="s">"executionStats"</span>)
+
+<span class="c">// yang dicari di output:</span>
+<span class="c">//   stage: "IXSCAN"      ✅ pakai index</span>
+<span class="c">//   stage: "COLLSCAN"    ❌ memindai semua — perlu index</span>
+<span class="c">//   totalDocsExamined ≈ nReturned  → index efisien</span></pre>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Aturan ESR untuk compound index</div>
+        <p>Urutan field di compound index harus mengikuti pola <em>ESR</em>: <strong>E</strong>quality dulu (field yang dicocokkan persis, mis. <code>kota</code>), lalu <strong>S</strong>ort (field untuk pengurutan), terakhir <strong>R</strong>ange (rentang seperti <code>$gte</code>). Salah urutan = index tidak terpakai penuh.</p>
+      </div>
+
+      <ul class="steps reveal d2">
+        <li><b>Index field yang sering kamu filter &amp; sort</b> — bukan semua field. Index yang tak terpakai hanya membebani tulis.</li>
+        <li><b>Satu compound index sering mengalahkan banyak index tunggal</b> untuk query yang sama.</li>
+        <li><b>Cek index yang ada</b> dengan <code>db.users.getIndexes()</code>; hapus yang sia-sia dengan <code>dropIndex()</code>.</li>
+        <li><b>Ingat trade-off:</b> tiap index mempercepat baca tapi memperlambat tulis &amp; memakan disk.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 08 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Praktik</span> · Kapan pakai</div>
+        <h2>MongoDB cocok untuk kasus apa</h2>
+      </div>
+      <p class="lead reveal">Polanya sama dengan prinsip document DB: data mandiri yang dibaca utuh, skema beragam/berubah, dan butuh skala. Ini contoh nyata dari deck induk.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// e-commerce</div><h4>Katalog produk</h4><p>Tiap kategori beda atribut (buku vs elektronik vs baju). Skema fleksibel — tiap produk bawa field sendiri tanpa kolom kosong.</p></div>
+        <div class="card up"><div class="ic">// CMS</div><h4>Konten &amp; artikel</h4><p>Satu halaman = satu dokumen (blok konten + metadata + komentar), dibaca utuh saat ditampilkan.</p></div>
+        <div class="card up"><div class="ic">// IoT / log</div><h4>Event &amp; telemetri</h4><p>Tulis cepat, skema bebas, skala horizontal lewat sharding. TTL index untuk auto-hapus data lama.</p></div>
+        <div class="card up"><div class="ic">// profil</div><h4>Profil &amp; CV</h4><p>One-to-many (pengalaman, pendidikan, skill) yang hampir selalu diambil bersama si user.</p></div>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="good-h">// Pakai MongoDB saat…</h4>
+          <ul class="good-l">
+            <li>Data = pohon one-to-many yang mandiri.</li>
+            <li>Skema sering berubah / antar item beda bentuk.</li>
+            <li>Butuh skala horizontal &amp; tulis cepat.</li>
+            <li>Ingin objek kode ≈ dokumen DB.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Pikir ulang saat…</h4>
+          <ul class="bad-l">
+            <li>Banyak relasi many-to-many &amp; JOIN.</li>
+            <li>Butuh transaksi rumit lintas banyak entitas.</li>
+            <li>Laporan/analitik lintas-tabel jadi kebutuhan utama.</li>
+            <li>Pencarian teks canggih jadi fitur inti (→ Elasticsearch).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TRADE-OFF ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Trade-off</div>
+        <h2>Yang kamu dapat &amp; yang kamu jaga</h2>
+      </div>
+      <p class="lead reveal">MongoDB modern sudah jauh lebih matang (transaksi multi-dokumen, agregasi kuat), tapi prinsipnya tetap: ia bersinar untuk dokumen mandiri, bukan untuk relasi padat.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Baca dokumen utuh cepat (lokalitas).</li>
+            <li>Skema fleksibel, iterasi kilat.</li>
+            <li>Index kaya: compound, multikey, text, TTL, geo.</li>
+            <li>Skala horizontal mulus (sharding).</li>
+            <li>Aggregation pipeline yang ekspresif.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang harus kamu jaga</h4>
+          <ul class="bad-l">
+            <li>Many-to-many &amp; JOIN bukan kekuatannya.</li>
+            <li>Duplikasi data → risiko update anomaly.</li>
+            <li>Skema tak dipaksa DB → butuh disiplin (atau JSON Schema validation).</li>
+            <li>Index salah/berlebih → tulis lambat &amp; boros disk.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Tips disiplin skema</div>
+          <p>Karena MongoDB <em>schema-on-read</em>, banyak tim menambahkan <b>JSON Schema validation</b> di level collection (<code>db.createCollection(..., { validator: ... })</code>) untuk menolak dokumen berbentuk salah — mengembalikan sebagian keamanan relasional tanpa kehilangan fleksibilitas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>MongoDB dalam satu tarikan napas</h2>
+      </div>
+      <p class="lead reveal">Simpan dokumen apa adanya, cari dengan filter &amp; aggregation, percepat dengan index yang tepat, lalu buktikan dengan explain(). Itu inti yang perlu kamu kuasai.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Collection → Document → Field</b> — tabel jadi koleksi dokumen BSON.</li>
+          <li><b>Query = dokumen filter</b> — <code>find()</code> untuk dasar, <code>aggregate()</code> untuk hitung &amp; gabung.</li>
+          <li><b>Index = kunci performa</b> — single, compound, multikey, text.</li>
+          <li><b>Compound ikut aturan ESR</b> — Equality, Sort, Range.</li>
+          <li><b>Selalu explain()</b> — kejar IXSCAN, hindari COLLSCAN.</li>
+          <li><b>Pilih dari bentuk data</b> — dokumen mandiri, bukan relasi padat.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah belajar berikutnya</h3>
+        <p>Coba gratis di <strong>MongoDB Atlas</strong> (cloud) atau jalankan lokal lewat Docker, lalu pakai <strong>mongosh</strong> / <strong>Compass</strong>. Buat collection <code>users</code>, masukkan beberapa profil, lalu latih: <code>find()</code> dengan filter array → buat <code>createIndex()</code> → bandingkan <code>explain()</code> sebelum &amp; sesudah index. Itu satu putaran belajar yang lengkap.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Data yang diakses bersama, disimpan bersama — lalu di-index sesuai cara kamu mencarinya."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>MongoDB</b> · Model data, query (find &amp; aggregation), indexing · untuk pemula · rujukan: DDIA (Kleppmann) &amp; MongoDB Docs · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

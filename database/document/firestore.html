@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firebase Firestore — Document DB Real-time</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #f5b14c;   /* Firebase amber accent */
+    --cyan-dim:   #9c712a;
+    --amber:      #45d4de;   /* secondary -> cyan */
+    --amber-dim:  #2b8a90;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #f5b14c;
+    --t-str:      #8fd2b0;
+    --t-num:      #45d4de;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .topbar__home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; transition: color .18s, border-color .18s; }
+  .topbar__home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(245,177,76,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(245,177,76,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(69,212,222,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 92px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 13px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(245,177,76,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(245,177,76,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(69,212,222,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(69,212,222,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 700px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 92px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(69,212,222,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(245,177,76,.08);
+  }
+  .lang.js { color: var(--amber); border-color: var(--amber-dim); background: rgba(69,212,222,.08); }
+  .lang.violet { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- step list ---------- */
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 9px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700;
+    background: var(--cyan); border-radius: 50%;
+  }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 76px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/document/<b>firestore.md</b></div>
+  <a class="topbar__home" href="index.html">← Document DB</a>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Firestore</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenalan</div>
+    <a href="#c01"><span class="yr">01</span> Apa itu Firestore</a>
+    <a href="#c02"><span class="yr">02</span> Collection &amp; subcollection</a>
+
+    <div class="rail__part">II · Operasi dasar</div>
+    <a href="#c03"><span class="yr">03</span> Query: where &amp; orderBy</a>
+    <a href="#c04"><span class="yr">04</span> Real-time listener</a>
+
+    <div class="rail__part">III · Indexing</div>
+    <a href="#c05"><span class="yr">05</span> Index otomatis vs composite</a>
+    <a href="#c06"><span class="yr">06</span> Bikin composite index</a>
+    <a href="#c07"><span class="yr">⚙</span> Batas query</a>
+
+    <div class="rail__part">IV · Praktik</div>
+    <a href="#c08"><span class="yr">!</span> Kapan pakai</a>
+    <a href="#c09"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Tool document database #2 — real-time, untuk mobile &amp; web</div>
+      <h1 class="reveal d1">Firestore — dokumen yang <span class="accent">sinkron otomatis</span> ke semua perangkat.</h1>
+      <p class="sub reveal d2">
+        <b>Cloud Firestore</b> dari Firebase (Google) adalah document database yang fokus pada <b>real-time</b> dan
+        <b>offline-first</b>. Begitu satu klien menulis, semua klien lain yang "mendengarkan" langsung dapat update —
+        tanpa kamu menulis server. Ini cocok persis untuk contoh kasus <b>chat &amp; aplikasi mobile</b> dari deck induk.
+        Yang unik: di Firestore <b>indexing nyaris otomatis</b>, tapi query gabungan butuh <b>composite index</b>.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Struktur</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Collection → Document → Subcollection</b> <span>— pohon bersarang</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Query</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>where() &amp; orderBy()</b> <span>— filter &amp; urut</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Real-time</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>onSnapshot()</b> <span>— data ter-push otomatis saat berubah</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Index</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Otomatis + composite</b> <span>— gabungan field butuh index manual</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 APA ITU ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kenalan</span> · Apa itu Firestore</div>
+        <h2>Database dokumen terkelola yang real-time</h2>
+      </div>
+      <p class="lead reveal">Firestore adalah document database <strong>terkelola</strong> (kamu tak mengurus server) dengan tiga sifat khas: <strong>real-time sync</strong>, <strong>offline-first</strong>, dan <strong>diakses langsung dari klien</strong> (browser/HP) dengan keamanan diatur oleh <em>Security Rules</em>.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// realtime</div><h4>Sinkron otomatis</h4><p>Pasang listener satu kali; setiap perubahan data langsung ter-push ke semua klien. Tak perlu polling atau WebSocket manual.</p></div>
+        <div class="card up"><div class="ic">// offline</div><h4>Offline-first</h4><p>SDK menyimpan cache lokal. Aplikasi tetap jalan tanpa internet, lalu menyinkronkan saat online lagi.</p></div>
+        <div class="card up"><div class="ic">// serverless</div><h4>Tanpa server sendiri</h4><p>Klien bicara langsung ke Firestore. Otorisasi diatur lewat <b>Security Rules</b>, bukan kode backend.</p></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Posisinya</div>
+        <p>Kalau MongoDB cocok untuk backend umum, Firestore bersinar saat kamu membangun <em>aplikasi mobile/web yang butuh data hidup</em> — chat, kolaborasi, notifikasi, dashboard live — dan ingin <em>cepat rilis tanpa membangun infrastruktur</em>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 STRUKTUR ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep</span> · Struktur data</div>
+        <h2>Collection, document, subcollection</h2>
+      </div>
+      <p class="lead reveal">Firestore menyusun data sebagai pohon yang berselang-seling: <strong>collection</strong> berisi <strong>document</strong>, dan tiap document bisa punya <strong>subcollection</strong> lagi di dalamnya. Inilah cara Firestore memodelkan one-to-many seperti chat room → pesan.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Jalur (path) data di Firestore</div>
+        <div class="erabox__row"><span class="erabox__lang">Collection</span><code>rooms</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Document</span><code>rooms/room_42</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Subcollection</span><code>rooms/room_42/messages</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Document</span><code>rooms/room_42/messages/msg_001</code></div>
+        <p class="erabox__note">Pola: <b>collection / document / collection / document …</b> selalu bergantian. Pesan ditaruh di <b>subcollection</b> agar room tidak membengkak — beda gaya dari MongoDB yang sering meng-<i>embed</i> array di satu dokumen.</p>
+      </div>
+
+      <div class="code-card good reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">satu document di rooms/room_42/messages</span><span class="lang violet">JSON</span></div>
+<pre class="code">{
+  <span class="t">"teks"</span>:    <span class="s">"Halo, sudah sampai mana?"</span>,
+  <span class="t">"dari"</span>:    <span class="s">"user_budi"</span>,
+  <span class="t">"dibaca"</span>:  <span class="k">false</span>,
+  <span class="t">"waktu"</span>:   <span class="f">Timestamp</span>(<span class="s">"2026-06-28T09:12:00Z"</span>)
+}</pre>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Pilihan desain penting: <b>embed</b> (taruh data di dalam dokumen) vs <b>subcollection</b> (koleksi terpisah). Aturan praktis: kalau jumlah anak <b>besar/tak terbatas</b> (pesan chat, komentar) → subcollection. Kalau <b>kecil &amp; selalu dibaca bersama induk</b> (alamat user) → embed.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 QUERY ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Operasi · Query</div>
+        <h2>Mencari dengan where() &amp; orderBy()</h2>
+      </div>
+      <p class="lead reveal">Query Firestore dirangkai dari <code>where()</code>, <code>orderBy()</code>, dan <code>limit()</code>. Ini jawaban untuk kebutuhan <strong>query</strong> pada kasus chat &amp; katalog.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">tulis &amp; baca — Firebase Web SDK v9</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="k">import</span> { collection, addDoc, query, where, orderBy, limit, getDocs }
+  <span class="k">from</span> <span class="s">"firebase/firestore"</span>;
+
+<span class="c">// CREATE — kirim pesan baru ke subcollection</span>
+<span class="k">await</span> <span class="f">addDoc</span>(<span class="f">collection</span>(db, <span class="s">"rooms/room_42/messages"</span>), {
+  teks: <span class="s">"Halo!"</span>, dari: <span class="s">"user_budi"</span>, dibaca: <span class="k">false</span>, waktu: <span class="f">serverTimestamp</span>()
+});
+
+<span class="c">// READ — pesan belum dibaca, terbaru dulu, maksimal 20</span>
+<span class="k">const</span> q = <span class="f">query</span>(
+  <span class="f">collection</span>(db, <span class="s">"rooms/room_42/messages"</span>),
+  <span class="f">where</span>(<span class="s">"dibaca"</span>, <span class="s">"=="</span>, <span class="k">false</span>),
+  <span class="f">orderBy</span>(<span class="s">"waktu"</span>, <span class="s">"desc"</span>),
+  <span class="f">limit</span>(<span class="n">20</span>)
+);
+<span class="k">const</span> snap = <span class="k">await</span> <span class="f">getDocs</span>(q);
+snap.<span class="f">forEach</span>(d => <span class="f">console</span>.<span class="f">log</span>(d.<span class="f">id</span>, d.<span class="f">data</span>()));</pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__body" style="padding:15px 20px">
+          <div class="note__tag">◆ Operator where() yang tersedia</div>
+          <p><code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>in</code>, <code>not-in</code>, <code>array-contains</code> (cek elemen di field array), <code>array-contains-any</code>. Untuk katalog: <code>where("kategori", "in", ["buku","baju"])</code>.</p>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Firestore <b>tidak punya JOIN</b> dan tidak ada query "cari teks bebas" seperti SQL <code>LIKE '%kata%'</code>. Filter rentang (<code>&lt;</code>, <code>&gt;</code>) juga <b>hanya boleh pada satu field</b> per query. Pencarian teks penuh? Sambungkan ke layanan seperti Algolia/Elasticsearch.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 REALTIME ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Operasi · Real-time</div>
+        <h2>onSnapshot(): data yang mengalir sendiri</h2>
+      </div>
+      <p class="lead reveal">Inilah fitur andalan Firestore. Ganti <code>getDocs()</code> (sekali ambil) dengan <code>onSnapshot()</code> (langganan): callback-mu dipanggil ulang <strong>setiap kali</strong> data yang cocok berubah — inilah yang membuat chat terasa instan.</p>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">listener real-time untuk chat</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="k">import</span> { onSnapshot } <span class="k">from</span> <span class="s">"firebase/firestore"</span>;
+
+<span class="k">const</span> unsub = <span class="f">onSnapshot</span>(q, (snap) => {
+  snap.<span class="f">docChanges</span>().<span class="f">forEach</span>((c) => {
+    <span class="k">if</span> (c.type === <span class="s">"added"</span>)    tampilkanPesan(c.doc.<span class="f">data</span>());
+    <span class="k">if</span> (c.type === <span class="s">"modified"</span>) perbaruiPesan(c.doc.<span class="f">data</span>());
+    <span class="k">if</span> (c.type === <span class="s">"removed"</span>)  hapusPesan(c.doc.<span class="f">id</span>());
+  });
+});
+<span class="c">// pesan baru dari user lain MUNCUL OTOMATIS — tanpa refresh ⚡</span>
+
+unsub(); <span class="c">// panggil saat komponen di-unmount agar hemat kuota</span></pre>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kenapa ini terasa ajaib</div>
+        <p>Tanpa Firestore, fitur "pesan muncul otomatis" butuh server WebSocket, manajemen koneksi, dan logika sinkronisasi. Firestore <em>membungkus semua itu</em> jadi satu fungsi <code>onSnapshot()</code> — termasuk menggabungkan perubahan dari cache offline saat koneksi pulih.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 INDEX OTOMATIS ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Indexing</span> · Cara kerja</div>
+        <h2>Index otomatis vs composite index</h2>
+      </div>
+      <p class="lead reveal">Indexing di Firestore berbeda total dari MongoDB. Di sini <strong>setiap field di-index otomatis</strong> — jadi query satu-field langsung jalan. Tapi query yang <strong>menggabungkan beberapa field</strong> butuh <em>composite index</em> yang kamu buat manual.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">langsung jalan — index otomatis</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="c">// satu field saja → sudah ter-index</span>
+<span class="f">where</span>(<span class="s">"dibaca"</span>, <span class="s">"=="</span>, <span class="k">false</span>)
+
+<span class="c">// satu field + sort field yang sama</span>
+<span class="f">orderBy</span>(<span class="s">"waktu"</span>, <span class="s">"desc"</span>)
+
+<span class="hl-good">✅ tidak perlu setup apa pun</span></pre>
+        </div>
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">butuh composite index</span><span class="lang js">JS</span></div>
+<pre class="code"><span class="c">// filter 1 field + sort field LAIN</span>
+<span class="f">where</span>(<span class="s">"dibaca"</span>, <span class="s">"=="</span>, <span class="k">false</span>)
+<span class="f">orderBy</span>(<span class="s">"waktu"</span>, <span class="s">"desc"</span>)
+
+<span class="hl-bad">❌ error sampai composite index dibuat</span></pre>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Kabar baiknya</div>
+          <p>Saat query butuh composite index, Firestore <strong>menolak query &amp; mencetak pesan error berisi link langsung</strong> ke Firebase Console untuk membuat index itu. Kamu tinggal klik — index dibuat otomatis dengan field yang tepat. Jadi kamu jarang perlu menebak.</p>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — perpustakaan yang rajin</div>
+        <p>Firestore seperti pustakawan yang otomatis membuat katalog untuk <em>setiap</em> atribut buku (judul, penulis, tahun). Pencarian satu atribut: instan. Tapi pencarian gabungan ("buku fiksi terbit setelah 2020, urut judul") butuh <em>katalog silang khusus</em> — itulah composite index yang harus kamu pesan dulu.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 BIKIN COMPOSITE ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Indexing</span> · Praktik</div>
+        <h2>Membuat composite index</h2>
+      </div>
+      <p class="lead reveal">Dua cara: lewat <strong>link error</strong> (paling cepat) atau didefinisikan di file <code>firestore.indexes.json</code> lalu di-deploy (paling rapi untuk tim).</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">firestore.indexes.json — composite index</span><span class="lang violet">JSON</span></div>
+<pre class="code">{
+  <span class="t">"indexes"</span>: [
+    {
+      <span class="t">"collectionGroup"</span>: <span class="s">"messages"</span>,
+      <span class="t">"queryScope"</span>:      <span class="s">"COLLECTION"</span>,
+      <span class="t">"fields"</span>: [
+        { <span class="t">"fieldPath"</span>: <span class="s">"dibaca"</span>, <span class="t">"order"</span>: <span class="s">"ASCENDING"</span> },
+        { <span class="t">"fieldPath"</span>: <span class="s">"waktu"</span>,  <span class="t">"order"</span>: <span class="s">"DESCENDING"</span> }
+      ]
+    }
+  ]
+}</pre>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">deploy via Firebase CLI</span><span class="lang js">SH</span></div>
+<pre class="code"><span class="c"># sekali deploy, index dibangun di sisi server</span>
+firebase deploy --only firestore:indexes</pre>
+      </div>
+
+      <ul class="steps reveal d2">
+        <li><b>Urutan field di composite index harus cocok</b> dengan urutan <code>where()</code> + <code>orderBy()</code> di query-mu.</li>
+        <li><b>Field equality (<code>==</code>) ditaruh sebelum field range/sort</b> — pola yang sama dengan aturan ESR di MongoDB.</li>
+        <li><b>Index butuh waktu dibangun</b> (beberapa menit untuk data besar); query-nya jalan setelah status "Enabled".</li>
+        <li><b>Kurangi index yang tak terpakai</b> lewat <em>index exemptions</em> agar tulis lebih murah pada field yang tak pernah di-query.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 07 BATAS QUERY ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Indexing · Batasan</div>
+        <h2>Batas query yang wajib kamu tahu</h2>
+      </div>
+      <p class="lead reveal">Firestore sengaja membatasi query agar <strong>selalu cepat &amp; murah berapa pun ukuran data</strong> — biaya query bergantung pada jumlah hasil, bukan jumlah total dokumen. Konsekuensinya, beberapa pola SQL tidak tersedia.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="bad-h">// Yang TIDAK bisa</h4>
+          <ul class="bad-l">
+            <li>JOIN antar collection.</li>
+            <li>Filter rentang (<code>&lt;</code>,<code>&gt;</code>) di <em>lebih dari satu</em> field.</li>
+            <li>Pencarian teks bebas (<code>LIKE '%..%'</code>).</li>
+            <li><code>OR</code> rumit lintas banyak field (terbatas).</li>
+            <li>Agregasi berat (hanya <code>count/sum/avg</code> dasar).</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">// Pola pengganti</h4>
+          <ul class="good-l">
+            <li>Denormalisasi: salin field yang dibutuhkan.</li>
+            <li>Simpan field bantu (mis. <code>tahun</code> terpisah).</li>
+            <li>Sambungkan Algolia / Elasticsearch untuk search.</li>
+            <li>Pecah jadi beberapa query lalu gabung di klien.</li>
+            <li>Simpan counter yang dirawat lewat transaksi.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Filosofi Firestore: <b>query yang lambat dilarang sejak desain.</b> Kalau sebuah pola terasa "tidak bisa", itu biasanya sinyal untuk <b>mengubah bentuk data</b> (denormalisasi) — bukan memaksa query yang akan mahal di skala besar.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Praktik</span> · Kapan pakai</div>
+        <h2>Firestore cocok untuk kasus apa</h2>
+      </div>
+      <p class="lead reveal">Polanya: aplikasi klien (mobile/web) yang butuh data hidup &amp; cepat rilis, dengan relasi data yang sederhana.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// chat</div><h4>Chat &amp; pesan</h4><p>Data per-room mandiri, sinkron real-time lewat <code>onSnapshot</code>. Contoh kasus langsung dari deck induk.</p></div>
+        <div class="card up"><div class="ic">// kolaborasi</div><h4>App kolaboratif</h4><p>To-do bersama, papan tim, kursor live — semua peserta lihat perubahan seketika.</p></div>
+        <div class="card up"><div class="ic">// mobile</div><h4>Aplikasi mobile</h4><p>Offline-first: jalan tanpa sinyal, sinkron saat online. Hemat membangun backend.</p></div>
+        <div class="card up"><div class="ic">// MVP</div><h4>Prototipe &amp; startup</h4><p>Auth, storage, hosting, DB dalam satu ekosistem Firebase. Cepat dari nol ke rilis.</p></div>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="good-h">// Pakai Firestore saat…</h4>
+          <ul class="good-l">
+            <li>Butuh real-time / offline-first.</li>
+            <li>Klien (HP/web) akses DB langsung.</li>
+            <li>Ingin minim backend &amp; cepat rilis.</li>
+            <li>Relasi data sederhana (sedikit JOIN).</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Pikir ulang saat…</h4>
+          <ul class="bad-l">
+            <li>Query analitik/agregasi kompleks.</li>
+            <li>Banyak JOIN &amp; relasi many-to-many.</li>
+            <li>Pencarian teks jadi fitur inti.</li>
+            <li>Butuh kontrol penuh / hindari vendor lock-in.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TRADE-OFF ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Trade-off</div>
+        <h2>Yang kamu dapat &amp; yang kamu korbankan</h2>
+      </div>
+      <p class="lead reveal">Firestore menukar <strong>fleksibilitas query</strong> demi <strong>kecepatan, real-time, &amp; kesederhanaan operasional</strong>. Untuk kelas aplikasi yang tepat, itu pertukaran yang sangat menguntungkan.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Real-time &amp; offline gratis dari SDK.</li>
+            <li>Indexing dasar otomatis.</li>
+            <li>Skala otomatis, tanpa kelola server.</li>
+            <li>Security Rules → akses langsung dari klien.</li>
+            <li>Terintegrasi dengan Auth, Storage, Hosting.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Query terbatas (no JOIN, satu range field).</li>
+            <li>Composite index manual untuk query gabungan.</li>
+            <li>Biaya dihitung per operasi baca/tulis/hapus.</li>
+            <li>Vendor lock-in ke ekosistem Google.</li>
+            <li>Denormalisasi → tanggung jawab konsistensi pindah ke kode.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan biaya</div>
+          <p>Tagihan Firestore mengikuti <b>jumlah operasi dokumen</b> (read/write/delete), bukan ukuran query. Pola seperti listener yang lupa di-<code>unsub()</code> atau membaca seluruh collection berulang bisa membengkakkan biaya. Rancang query yang spesifik &amp; pakai <code>limit()</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Firestore dalam satu tarikan napas</h2>
+      </div>
+      <p class="lead reveal">Susun data sebagai pohon collection/document, query dengan where + orderBy, dengarkan perubahan lewat onSnapshot, dan biarkan indexing otomatis — sambil membuat composite index untuk query gabungan.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Collection / Document / Subcollection</b> — pohon bergantian.</li>
+          <li><b>Query = where + orderBy + limit</b> — tanpa JOIN, satu range field.</li>
+          <li><b>onSnapshot = real-time</b> — data ter-push otomatis ke klien.</li>
+          <li><b>Index single otomatis</b> — gabungan butuh composite index.</li>
+          <li><b>Batas query = fitur</b> — memaksa data tetap cepat &amp; murah.</li>
+          <li><b>Pilih untuk app klien real-time</b> — bukan untuk analitik berat.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah belajar berikutnya</h3>
+        <p>Buat proyek gratis di <strong>Firebase Console</strong>, aktifkan Firestore (mode test), lalu dari web app sederhana: <code>addDoc()</code> beberapa pesan → pasang <code>onSnapshot()</code> dan lihat update real-time di dua tab → buat query <code>where + orderBy</code> dan ikuti <strong>link error</strong> untuk membuat composite index pertamamu. Satu putaran itu mengajarkan inti Firestore.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Tulis sekali, semua perangkat tahu seketika."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Firebase Firestore</b> · Struktur, query, real-time, composite index · untuk pemula · rujukan: DDIA (Kleppmann) &amp; Firebase Docs · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

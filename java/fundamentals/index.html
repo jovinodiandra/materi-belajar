@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Java Fundamentals — Satu Bahasa, Jalan di Mana Saja</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    text-decoration: none; white-space: nowrap;
+    padding: 4px 9px; border: 1px solid var(--line); border-radius: 6px;
+    transition: color .18s, border-color .18s, background .18s;
+  }
+  .topbar__home:hover { color: var(--cyan); border-color: var(--cyan-dim); background: rgba(69,212,222,.06); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card p b { color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- numbered steps ---------- */
+  .steps { list-style: none; max-width: 74ch; counter-reset: step; margin-top: 22px; }
+  .steps li {
+    position: relative; padding: 11px 0 11px 46px; border-bottom: 1px solid var(--line-soft);
+    font-size: 15.5px; color: var(--ink); counter-increment: step;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 9px;
+    width: 27px; height: 27px; border-radius: 50%;
+    border: 1px solid var(--cyan-dim); background: rgba(69,212,222,.08); color: var(--cyan);
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .tiers { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Java</a>
+  <div class="topbar__file">docs/learning/java/fundamentals/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 11</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa Java masih relevan</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Tipe data: primitive vs reference</a>
+    <a href="#c03"><span class="yr">03</span> Control flow & method</a>
+    <a href="#c04"><span class="yr">04</span> Array & class/object dasar</a>
+    <a href="#c05"><span class="yr">05</span> JVM & bytecode</a>
+
+    <div class="rail__part">III · Praktik & keputusan</div>
+    <a href="#c06"><span class="yr">◆</span> Best practice</a>
+    <a href="#c07"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c08"><span class="yr">◆</span> Trade-off</a>
+
+    <div class="rail__part">IV · Dunia nyata</div>
+    <a href="#c09"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c10"><span class="yr">⚙</span> Tools & ekosistem</a>
+    <a href="#c11"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Java Fundamentals — dasar bahasa yang jalan di mana saja</div>
+      <h1 class="reveal d1">Satu bahasa, <span class="accent">jalan di mana saja</span>.</h1>
+      <p class="sub reveal d2">
+        Java lahir tahun 1995 dari Sun Microsystems dengan satu janji besar: <b>tulis kode sekali, jalankan di mana
+        saja</b> — lewat lapisan abstraksi bernama <b>JVM</b>. Tiga puluh tahun kemudian, filosofi itu masih jadi
+        alasan Java dipakai di backend perusahaan besar, sistem perbankan, sampai jutaan aplikasi Android. Deck ini
+        untuk pemula: dari <b>syntax dasar</b>, <b>tipe data</b>, <b>control flow</b>, <b>class & object</b>, sampai
+        gambaran ringkas <b>cara JVM bekerja</b> — diselingi kutipan dari sumber rujukan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">1995</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Lahir di Sun Microsystems</b> <span>— James Gosling & tim merilis Java</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Filosofi</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>"Write once, run anywhere"</b> <span>— kode yang sama jalan di banyak OS</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">JVM</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Lapisan abstraksi</b> <span>— bytecode dieksekusi mesin virtual, bukan OS langsung</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Tipe</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Statically typed</b> <span>— banyak kesalahan ketahuan saat compile, bukan saat runtime</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Sekarang</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>30 tahun kemudian</b> <span>— masih salah satu bahasa backend & Android paling dipakai</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why" style="max-width:78ch;margin-left:auto;margin-right:auto">
+    <div class="tag">◆ Buat apa ini? Kenapa pelajari fundamental Java?</div>
+    <p><b>Given</b> — developer langsung loncat ke framework/library (Spring, dsb.) tanpa paham dasar bahasanya.</p>
+    <p><b>When</b> — muncul bug aneh soal tipe data, memory, atau perilaku JVM yang tidak terduga.</p>
+    <p><b>Then</b> — developer itu tidak tahu cara debug karena tidak paham fondasinya, cuma bisa tebak-tebak atau copy-paste solusi tanpa ngerti akar masalahnya.</p>
+    <p>→ makanya kita pelajari <em>fundamental Java</em> dulu, sebelum lanjut ke framework.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA JAVA MASIH RELEVAN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Portabilitas & keamanan tipe</div>
+        <h2>Kenapa Java masih relevan 30 tahun kemudian</h2>
+      </div>
+      <p class="lead reveal">Sebelum Java, kode yang kamu tulis di satu sistem operasi sering harus ditulis ulang atau dikompilasi ulang secara khusus supaya jalan di sistem lain. Java menjawab ini dengan <strong>JVM (Java Virtual Machine)</strong> sebagai lapisan penerjemah — program dikompilasi sekali ke bentuk netral, lalu JVM di tiap platform yang menjalankannya.</p>
+
+      <div class="quote reveal d1">
+        <p>“Java dirancang untuk sederhana, berorientasi objek, dan familiar; kuat dan aman; arsitektur netral dan portabel — dicapai lewat mesin virtual yang membebaskan program dari ketergantungan pada implementasi platform tertentu.”</p>
+        <cite>— James Gosling & tim Sun Microsystems, white paper <i>"The Java Language Environment"</i> (1995)</cite>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — kaset video vs film digital universal</div>
+        <p>Bayangkan dulu ada kaset VHS yang cuma bisa diputar di pemutar tertentu, dan kaset Betamax yang butuh pemutar lain lagi. Java ibarat membuat <strong>format film digital universal</strong>: sekali kamu "burn" filmnya (compile), <em>pemutar apa pun</em> (JVM di Windows, Linux, macOS) bisa memutarnya tanpa perlu versi berbeda-beda. Ditambah lagi, karena Java <strong>mengecek tipe data secara statis</strong> saat compile, banyak kesalahan konyol (salah tipe, salah pemanggilan) ketahuan <em>sebelum</em> program dijalankan — bukan meledak di tangan pengguna.</p>
+      </div>
+
+      <p class="body reveal d2">Kombinasi <strong>portabilitas lintas platform</strong> dan <strong>keamanan tipe statis</strong> inilah yang membuat Java tetap jadi pilihan default untuk sistem yang harus jalan lama, stabil, dan bisa dipelihara tim besar — dari backend enterprise sampai jutaan perangkat Android.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 TIPE DATA ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Tipe data</div>
+        <h2>Primitive vs reference — dua dunia tipe data di Java</h2>
+      </div>
+      <p class="lead reveal">Java adalah bahasa <strong>statically typed</strong>: tiap variabel harus punya tipe yang jelas, dan tipe itu terbagi dua kelompok besar dengan perilaku berbeda.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Primitive vs reference</div>
+        <div class="erabox__row"><span class="erabox__lang">Primitive</span><code>int, double, boolean, char, long, float, byte, short</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Reference</span><code>String, Integer, array, dan semua class/object lain</code></div>
+        <p class="erabox__note">Primitive menyimpan <b>nilai langsung</b> di variabelnya. Reference menyimpan <b>alamat</b> ke objek yang sesungguhnya hidup di memori lain — mirip menyimpan alamat rumah, bukan rumahnya sendiri.</p>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">TipeData.java</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">public</span> <span class="k">class</span> <span class="t">TipeData</span> {
+    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="f">main</span>(<span class="t">String</span>[] args) {
+        <span class="c">// primitive - nilai disimpan langsung</span>
+        <span class="t">int</span> umur = <span class="n">25</span>;
+        <span class="t">double</span> harga = <span class="n">15990.50</span>;
+        <span class="t">boolean</span> isAktif = <span class="k">true</span>;
+        <span class="t">char</span> grade = <span class="s">'A'</span>;
+
+        <span class="c">// reference - variabel menyimpan alamat objek</span>
+        <span class="t">String</span> nama = <span class="s">"Budi Santoso"</span>;
+        <span class="t">Integer</span> umurObjek = <span class="n">25</span>; <span class="c">// autoboxing ke wrapper class</span>
+
+        <span class="c">// operator & konversi tipe</span>
+        <span class="t">int</span> hasil = umur + <span class="n">10</span>;
+        <span class="t">double</span> umurDouble = (<span class="t">double</span>) umur; <span class="c">// casting eksplisit</span>
+        <span class="k">var</span> totalHarga = harga * <span class="n">2</span>; <span class="c">// type inference, tetap statically typed</span>
+
+        <span class="t">System</span>.out.<span class="f">println</span>(nama + <span class="s">" berumur "</span> + hasil);
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Perhatikan <code>var</code> — itu bukan berarti Java jadi <em>dynamically typed</em>. Compiler tetap menyimpulkan tipe pastinya saat compile (di sini <code>double</code>); <code>var</code> cuma menghemat penulisan, bukan mengubah aturan tipe statisnya.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 CONTROL FLOW & METHOD ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Alur program & method</div>
+        <h2>Control flow & method — mengatur jalannya logika</h2>
+      </div>
+      <p class="lead reveal">Java punya perkakas standar untuk mengatur alur: <code>if/else</code>, <code>switch</code>, dan tiga jenis perulangan. Logika yang berulang dikemas jadi <strong>method</strong> — bisa punya banyak versi lewat <em>overloading</em>.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">AlurProgram.java</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">public</span> <span class="k">class</span> <span class="t">AlurProgram</span> {
+
+    <span class="k">static</span> <span class="t">String</span> <span class="f">cekNilai</span>(<span class="t">int</span> skor) {
+        <span class="c">// switch expression modern (arrow syntax)</span>
+        <span class="k">return</span> <span class="k">switch</span> (skor / <span class="n">10</span>) {
+            <span class="k">case</span> <span class="n">10</span>, <span class="n">9</span> -> <span class="s">"A"</span>;
+            <span class="k">case</span> <span class="n">8</span> -> <span class="s">"B"</span>;
+            <span class="k">case</span> <span class="n">7</span> -> <span class="s">"C"</span>;
+            <span class="k">default</span> -> <span class="s">"D"</span>;
+        };
+    }
+
+    <span class="c">// method overloading - nama sama, parameter beda</span>
+    <span class="k">static</span> <span class="t">int</span> <span class="f">tambah</span>(<span class="t">int</span> a, <span class="t">int</span> b) { <span class="k">return</span> a + b; }
+    <span class="k">static</span> <span class="t">double</span> <span class="f">tambah</span>(<span class="t">double</span> a, <span class="t">double</span> b) { <span class="k">return</span> a + b; }
+
+    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="f">main</span>(<span class="t">String</span>[] args) {
+        <span class="t">int</span> skor = <span class="n">87</span>;
+        <span class="k">if</span> (skor >= <span class="n">60</span>) {
+            <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Lulus: "</span> + <span class="f">cekNilai</span>(skor));
+        } <span class="k">else</span> {
+            <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Tidak lulus"</span>);
+        }
+
+        <span class="k">for</span> (<span class="t">int</span> i = <span class="n">0</span>; i < <span class="n">3</span>; i++) {
+            <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Percobaan ke-"</span> + i);
+        }
+
+        <span class="t">int</span> j = <span class="n">0</span>;
+        <span class="k">do</span> {
+            j++;
+        } <span class="k">while</span> (j < <span class="n">3</span>);
+
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="f">tambah</span>(<span class="n">2</span>, <span class="n">3</span>));
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="f">tambah</span>(<span class="n">2.5</span>, <span class="n">1.5</span>));
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Method di atas punya <strong>parameter</strong>, <strong>return type</strong> yang eksplisit (<code>String</code>, <code>int</code>, <code>double</code>), dan dua versi <code>tambah()</code> dengan tipe parameter berbeda — itulah <em>overloading</em>: nama sama, tanda tangan (signature) beda.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 ARRAY & CLASS/OBJECT ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Struktur data & OOP dasar</div>
+        <h2>Array & class/object — membungkus data jadi satu kesatuan</h2>
+      </div>
+      <p class="lead reveal"><strong>Array</strong> menyimpan banyak nilai bertipe sama dalam satu variabel. <strong>Class</strong> membungkus data (<em>field</em>) dan perilaku (<em>method</em>) jadi satu cetak biru; <strong>object</strong> adalah instans nyata dari cetak biru itu, dibuat lewat <em>constructor</em>.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">BankDemo.java</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">BankAccount</span> {
+    <span class="k">private</span> <span class="t">double</span> saldo;
+    <span class="k">private</span> <span class="k">final</span> <span class="t">String</span> pemilik;
+
+    <span class="c">// constructor</span>
+    <span class="f">BankAccount</span>(<span class="t">String</span> pemilik, <span class="t">double</span> saldoAwal) {
+        <span class="k">this</span>.pemilik = pemilik;
+        <span class="k">this</span>.saldo = saldoAwal;
+    }
+
+    <span class="t">void</span> <span class="f">deposit</span>(<span class="t">double</span> jumlah) {
+        <span class="k">if</span> (jumlah > <span class="n">0</span>) saldo += jumlah;
+    }
+
+    <span class="t">boolean</span> <span class="f">withdraw</span>(<span class="t">double</span> jumlah) {
+        <span class="k">if</span> (jumlah <= <span class="n">0</span> || jumlah > saldo) <span class="k">return</span> <span class="k">false</span>;
+        saldo -= jumlah;
+        <span class="k">return</span> <span class="k">true</span>;
+    }
+
+    <span class="t">double</span> <span class="f">getSaldo</span>() { <span class="k">return</span> saldo; }
+}
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">BankDemo</span> {
+    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="f">main</span>(<span class="t">String</span>[] args) {
+        <span class="c">// array berisi object</span>
+        <span class="t">BankAccount</span>[] rekening = <span class="k">new</span> <span class="t">BankAccount</span>[<span class="n">2</span>];
+        rekening[<span class="n">0</span>] = <span class="k">new</span> <span class="f">BankAccount</span>(<span class="s">"Budi"</span>, <span class="n">100000</span>);
+        rekening[<span class="n">1</span>] = <span class="k">new</span> <span class="f">BankAccount</span>(<span class="s">"Sari"</span>, <span class="n">250000</span>);
+
+        rekening[<span class="n">0</span>].<span class="f">deposit</span>(<span class="n">50000</span>);
+        rekening[<span class="n">1</span>].<span class="f">withdraw</span>(<span class="n">30000</span>);
+
+        <span class="k">for</span> (<span class="t">BankAccount</span> akun : rekening) {
+            <span class="t">System</span>.out.<span class="f">println</span>(akun.<span class="f">getSaldo</span>());
+        }
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Field <code>saldo</code> bersifat <code>private</code> — hanya bisa diubah lewat method <code>deposit()</code>/<code>withdraw()</code> yang punya aturan (validasi jumlah). Ini contoh sederhana <strong>encapsulation</strong>, salah satu pilar dasar OOP di Java.</p>
+    </div>
+  </section>
+
+  <!-- ============ 05 JVM & BYTECODE ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Mesin di baliknya</div>
+        <h2>JVM & bytecode — compile-once, run-anywhere</h2>
+      </div>
+      <p class="lead reveal">Kode <code>.java</code> yang kamu tulis tidak langsung dijalankan oleh sistem operasi. Ada satu langkah perantara: compiler <code>javac</code> mengubahnya jadi <strong>bytecode</strong> netral platform (<code>.class</code>), lalu <strong>JVM</strong> di tiap mesin yang benar-benar mengeksekusinya.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Alur compile-once-run-anywhere</div>
+        <div class="erabox__row"><span class="erabox__lang">Tulis</span><code>BankDemo.java  — kode sumber yang kamu tulis</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Compile</span><code>javac BankDemo.java  →  BankDemo.class</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Bytecode</span><code>BankDemo.class  — instruksi netral, bukan kode mesin OS tertentu</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Jalankan</span><code>java BankDemo  →  dieksekusi oleh JVM (Windows/Linux/macOS)</code></div>
+        <p class="erabox__note">JVM di Windows, Linux, dan macOS <b>berbeda-beda implementasinya</b>, tapi semuanya sepakat memahami format bytecode yang sama. Karena itu, satu file <code>.class</code> yang sama bisa jalan di mana pun ada JVM terpasang — kamu tidak perlu compile ulang per platform.</p>
+      </div>
+
+      <p class="body reveal d2">Inilah yang membedakan Java dari bahasa yang dikompilasi langsung ke kode mesin (seperti C): lapisan bytecode + JVM itulah yang menjadi "penerjemah universal" di balik janji <em>write once, run anywhere</em>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 06 BEST PRACTICE ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Kebiasaan yang bikin kode Java rapi</div>
+        <h2>Best practice dasar sebelum lanjut ke OOP</h2>
+      </div>
+      <p class="lead reveal">Syntax yang benar belum tentu kode yang baik. Beberapa kebiasaan berikut layak dibiasakan sejak awal.</p>
+
+      <div class="quote reveal d1">
+        <p>“Kelas yang immutable lebih mudah dirancang, diimplementasikan, dan dipakai; minimalkan mutability sebisa mungkin, dan lebih utamakan komposisi daripada pewarisan.”</p>
+        <cite>— Joshua Bloch, <i>Effective Java</i></cite>
+      </div>
+
+      <ul class="steps reveal d1">
+        <li><b>Ikuti naming convention</b> — <code>PascalCase</code> untuk nama class, <code>camelCase</code> untuk variabel & method, <code>UPPER_SNAKE_CASE</code> untuk konstanta.</li>
+        <li><b>Pakai <code>final</code> untuk field yang tidak seharusnya berubah</b> — mendekatkan kamu pada <em>immutability</em> yang disarankan Bloch, mengurangi bug akibat state berubah tak terduga.</li>
+        <li><b>Hindari <code>null</code> tanpa perlu</b> — pertimbangkan <code>Optional&lt;T&gt;</code> atau nilai default yang jelas, alih-alih membiarkan <code>NullPointerException</code> muncul di runtime.</li>
+        <li><b>Gunakan try-with-resources</b> untuk resource seperti file/stream/koneksi, supaya otomatis ditutup meski terjadi exception.</li>
+        <li><b>Satu class, satu tanggung jawab jelas</b> — hindari class raksasa yang mengurus terlalu banyak hal sekaligus.</li>
+        <li><b>Favor composition over inheritance</b> — gabungkan object lewat komposisi ketimbang membangun hierarki pewarisan yang dalam & rapuh.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 07 TIER BELAJAR ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Peta jalan · Dari nol sampai siap lanjut</div>
+        <h2>Tier belajar Java Fundamentals</h2>
+      </div>
+      <p class="lead reveal">Bukan semua orang perlu paham semuanya sekaligus. Pakai peta ini untuk tahu kamu sedang di mana, dan apa target berikutnya.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Syntax & dasar bahasa</h4>
+          <p>Fokus dulu ke fondasi paling kecil sebelum menyentuh OOP.</p>
+          <ul>
+            <li>Syntax dasar: variabel, statement, blok kode</li>
+            <li>Tipe data primitive vs reference</li>
+            <li>Operator aritmatika, perbandingan, logika</li>
+            <li>Control flow: if/else, switch, for/while</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>OOP dasar</h4>
+          <p>Mulai berpikir dalam class & object, bukan sekadar baris kode berurutan.</p>
+          <ul>
+            <li>Class, field, constructor, method instance</li>
+            <li>Encapsulation dengan access modifier</li>
+            <li>Array & array of objects</li>
+            <li>Method overloading</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Siap lanjut ke topik berikutnya</h4>
+          <p>Fondasi sebelum masuk OOP lanjutan, Collections, dan Streams.</p>
+          <ul>
+            <li>Exception handling (try/catch/finally)</li>
+            <li>Generics dasar</li>
+            <li>Interface & abstract class</li>
+            <li>Siap lanjut ke Collections & Streams API</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 TRADE-OFF ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada bahasa yang sempurna</div>
+        <h2>Trade-off: kekuatan Java vs harganya</h2>
+      </div>
+      <p class="lead reveal">Java bukan bahasa "terbaik" secara mutlak — ia punya kekuatan yang jelas, dan juga harga yang sering dikeluhkan dibanding bahasa yang lebih modern.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Kekuatan Java</h4>
+          <ul class="good-l">
+            <li>Tipe statis — banyak error ketahuan saat compile.</li>
+            <li>Ekosistem matang — library & tooling untuk hampir semua kebutuhan.</li>
+            <li>JVM portable — jalan konsisten lintas platform.</li>
+            <li>Backward compatibility kuat — kode lama tetap jalan di JVM baru.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang dikorbankan</h4>
+          <ul class="bad-l">
+            <li>Verbose — butuh lebih banyak baris untuk hal sederhana.</li>
+            <li>Boilerplate lebih banyak dibanding Kotlin/Python.</li>
+            <li>Startup JVM & konsumsi memori relatif lebih berat.</li>
+            <li>Sebagian syntax terasa kaku untuk pemula.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Verbosity Java bukan cuma "kekurangan tanpa alasan" — eksplisitnya tipe data & struktur membuat kode besar lebih <b>mudah dilacak & dipelihara tim besar</b>, meski menulisnya terasa lebih panjang dibanding bahasa yang lebih ringkas seperti Kotlin.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Java di dunia nyata</div>
+        <h2>Siapa saja yang memakai Java sebagai bahasa utama</h2>
+      </div>
+      <p class="lead reveal">Empat contoh yang menunjukkan Java tetap jadi pilihan serius untuk sistem berskala besar dan butuh stabilitas jangka panjang.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// professional network</div><h4>LinkedIn</h4><p><b>Konteks:</b> LinkedIn dikenal luas membangun sebagian besar sistem backend-nya dengan Java sejak awal, menangani jaringan profesional dalam skala sangat besar. <b>Kenapa Java:</b> kebutuhan sistem yang stabil, bisa dipelihara tim besar dalam jangka panjang.</p></div>
+        <div class="card up"><div class="ic">// e-commerce & cloud</div><h4>Amazon</h4><p><b>Konteks:</b> banyak layanan backend internal Amazon secara luas dikenal ditulis dengan Java, mendukung operasional dalam skala sangat besar. <b>Kenapa Java:</b> ekosistem matang & performa yang dapat diandalkan untuk sistem kritikal.</p></div>
+        <div class="card up"><div class="ic">// mobile</div><h4>Aplikasi Android</h4><p><b>Konteks:</b> Java adalah salah satu bahasa resmi untuk pengembangan Android sejak platform ini ada, mendampingi Kotlin. <b>Kenapa Java:</b> kompatibilitas panjang dengan ekosistem Android & jutaan baris kode legacy yang masih dipakai.</p></div>
+        <div class="card up"><div class="ic">// finance</div><h4>Perbankan & fintech</h4><p><b>Konteks:</b> sistem perbankan/fintech secara luas dikenal banyak memakai Java untuk backend inti mereka. <b>Kenapa Java:</b> stabilitas, tipe statis yang mengurangi bug kritikal, serta ekosistem JVM (mis. Spring) yang matang untuk kebutuhan enterprise.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di semua kasus di atas, Java dipilih bukan karena tren, tapi karena kebutuhan akan <strong>stabilitas jangka panjang</strong>, <strong>tim besar yang harus memelihara kode bersama</strong>, dan <strong>ekosistem tooling enterprise</strong> yang sudah matang selama puluhan tahun.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 TOOLS & EKOSISTEM ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools & ekosistem Java</h2>
+      </div>
+      <p class="lead reveal">Sekadar kenalan dulu dengan nama-nama pentingnya — masing-masing akan dibahas lebih detail di topik terpisah.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// runtime & compiler</div><h4>JDK (OpenJDK)</h4><p>Java Development Kit — berisi compiler <code>javac</code>, JVM, dan library standar. OpenJDK adalah implementasi open-source yang paling umum dipakai.</p></div>
+        <div class="card up"><div class="ic">// IDE</div><h4>IntelliJ IDEA</h4><p>IDE paling populer untuk Java, dengan fitur autocomplete & refactoring yang kuat. Punya edisi Community gratis.</p></div>
+        <div class="card up"><div class="ic">// IDE</div><h4>Eclipse</h4><p>IDE Java open-source lain yang sudah lama eksis, banyak dipakai di lingkungan enterprise & pendidikan.</p></div>
+        <div class="card up"><div class="ic">// build tool</div><h4>Maven</h4><p>Build tool berbasis XML (<code>pom.xml</code>) untuk mengelola dependency & siklus build proyek Java.</p></div>
+        <div class="card up"><div class="ic">// build tool</div><h4>Gradle</h4><p>Build tool modern yang lebih fleksibel dari Maven, populer terutama di proyek Android.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Cukup install JDK terbaru & satu IDE (IntelliJ IDEA Community sudah cukup) untuk mulai belajar. Maven/Gradle baru terasa perlu begitu proyekmu butuh banyak dependency eksternal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 PENUTUP ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Fondasi ini yang akan kamu pakai terus</h2>
+      </div>
+      <p class="lead reveal">Java Fundamentals bukan tujuan akhir — ini fondasi. Tipe data, control flow, class/object, dan pemahaman JVM di atas akan terus kamu pakai begitu masuk ke OOP yang lebih dalam.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Write once, run anywhere</b> — berkat JVM sebagai lapisan abstraksi dari OS.</li>
+          <li><b>Tipe statis</b> — primitive menyimpan nilai, reference menyimpan alamat objek.</li>
+          <li><b>Control flow & method</b> — alat dasar mengatur logika & membungkusnya jadi reusable.</li>
+          <li><b>Class = cetak biru, object = instansnya</b> — fondasi OOP dimulai dari sini.</li>
+          <li><b>Bytecode di tengah</b> — <code>.java</code> → <code>javac</code> → <code>.class</code> → dieksekusi JVM.</li>
+          <li><b>Immutability & komposisi</b> — kebiasaan baik sejak level fundamental.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah berikutnya</h3>
+        <p>Setelah nyaman dengan dasar ini, lanjutkan ke topik <strong>OOP Java</strong> (inheritance, polymorphism, interface & abstract class secara mendalam), lalu <strong>Collections & Streams API</strong> untuk mengolah data secara idiomatis di Java modern.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Write once, run anywhere."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Java Fundamentals</b> · Syntax, tipe data, control flow, class/object, & JVM ringkas · untuk pemula · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../index.html">← kembali ke Java</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

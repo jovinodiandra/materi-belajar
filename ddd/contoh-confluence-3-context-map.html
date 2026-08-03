@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Context Map — Bounded Context &amp; Relasinya · RideGo</title>
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --text:#172b4d; --subtle:#6b778c; --link:#0052cc; --line:#dfe1e6; --bg:#f4f5f7;
+    --panel-info-bg:#deebff; --panel-info-ic:#0747a6;
+    --panel-warn-bg:#fffae6; --panel-warn-ic:#974f0c;
+    --panel-ok-bg:#e3fcef;   --panel-ok-ic:#006644;
+    --panel-note-bg:#eae6ff; --panel-note-ic:#403294;
+    --panel-err-bg:#ffebe6;  --panel-err-ic:#bf2600;
+    --mono:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;
+  }
+  body { background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .page { max-width:960px; margin:24px auto 60px; background:#fff; border:1px solid var(--line);
+    border-radius:6px; padding:32px clamp(20px,5vw,56px) 48px; box-shadow:0 1px 3px rgba(9,30,66,.13); }
+
+  .breadcrumb { font-size:13px; color:var(--subtle); margin-bottom:14px; }
+  .breadcrumb a { color:var(--link); text-decoration:none; }
+  .breadcrumb a:hover { text-decoration:underline; }
+  .breadcrumb span { margin:0 6px; color:#c1c7d0; }
+
+  h1 { font-size:29px; font-weight:600; line-height:1.25; margin-bottom:10px; }
+  h1 .pgicon { margin-right:10px; }
+  .byline { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:6px; color:var(--subtle); font-size:13.5px; }
+  .avatars { display:flex; }
+  .avatar { width:26px; height:26px; border-radius:50%; color:#fff; font-size:11.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
+  .avatar + .avatar { margin-left:-8px; }
+  .av-1 { background:#5243aa; }
+
+  .lozenges { display:flex; gap:8px; margin:10px 0 26px; flex-wrap:wrap; }
+  .lozenge { font-size:11px; font-weight:700; letter-spacing:.04em; padding:3px 8px; border-radius:3px; text-transform:uppercase; white-space:nowrap; }
+  .lz-green { background:var(--panel-ok-bg); color:var(--panel-ok-ic); }
+  .lz-blue  { background:var(--panel-info-bg); color:var(--panel-info-ic); }
+  .lz-yellow{ background:var(--panel-warn-bg); color:var(--panel-warn-ic); }
+  .lz-purple{ background:var(--panel-note-bg); color:var(--panel-note-ic); }
+  .lz-gray  { background:#f4f5f7; color:#42526e; border:1px solid var(--line); }
+
+  h2 { font-size:21px; font-weight:600; margin:38px 0 12px; }
+  h3 { font-size:16.5px; font-weight:600; margin:26px 0 8px; }
+  p { margin:10px 0; max-width:80ch; }
+  strong { font-weight:600; }
+  code { font-family:var(--mono); font-size:.85em; background:var(--bg); border:1px solid var(--line); border-radius:3px; padding:1px 5px; }
+
+  .panel { display:flex; gap:12px; border-radius:4px; padding:14px 16px; margin:16px 0; font-size:14.5px; }
+  .panel .ic { font-size:16px; line-height:1.5; flex:none; }
+  .panel p { margin:4px 0; }
+  .panel ul { margin:6px 0 4px 18px; }
+  .panel li { margin:4px 0; }
+  .panel-info { background:var(--panel-info-bg); }
+  .panel-warn { background:var(--panel-warn-bg); }
+  .panel-err  { background:var(--panel-err-bg); }
+
+  .tbl-wrap { overflow-x:auto; margin:14px 0; }
+  table { border-collapse:collapse; width:100%; min-width:720px; font-size:14px; }
+  th { background:#f4f5f7; text-align:left; font-weight:600; }
+  th, td { border:1px solid var(--line); padding:8px 12px; vertical-align:top; }
+  tr:hover td { background:#fafbfc; }
+
+  pre.diagram { font-family:var(--mono); font-size:12.5px; line-height:1.7; background:#fafbfc; border:1px solid var(--line);
+    border-radius:4px; padding:16px 18px; overflow-x:auto; margin:14px 0; }
+
+  ol.rules { margin:10px 0 10px 20px; }
+  ol.rules li { margin:7px 0; max-width:78ch; }
+
+  footer { max-width:960px; margin:0 auto 40px; text-align:center; color:var(--subtle); font-size:12.5px; }
+  footer a { color:var(--link); }
+  @media (max-width:600px){ .page { margin:0; border-radius:0; border-left:0; border-right:0; } }
+</style>
+</head>
+<body>
+<a id="__exitbtn" href="index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">← Materi DDD</a>
+
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="#">RideGo</a><span>/</span><a href="#">Engineering Wiki</a><span>/</span><a href="#">Domain</a><span>/</span>Context Map
+  </div>
+
+  <h1><span class="pgicon">🔗</span>Context Map — Bounded Context &amp; Relasinya</h1>
+
+  <div class="byline">
+    <div class="avatars"><div class="avatar av-1">DM</div></div>
+    Dimiliki <strong>&nbsp;Dimas (Tech Lead)</strong>&nbsp;· Diperbarui 12 Jul 2026 · perubahan relasi disepakati antar-pemilik context
+  </div>
+  <div class="lozenges">
+    <span class="lozenge lz-green">Living Document</span>
+    <span class="lozenge lz-blue">8 context · 8 relasi · 4 kontrak event</span>
+  </div>
+
+  <div class="panel panel-info">
+    <span class="ic">ℹ️</span>
+    <div><p><strong>Halaman ini menjawab dua hal:</strong> (1) context apa saja yang ada &amp; tanggung jawabnya, (2) bagaimana mereka terhubung — siapa hulu (upstream), siapa hilir (downstream), dan pola integrasinya. Dipakai saat mendesain integrasi, membagi pekerjaan antar-kelompok, dan menilai dampak perubahan.</p></div>
+  </div>
+
+  <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px 0;border-radius:0 10px 10px 0;max-width:70ch">
+    <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+    <p style="margin:5px 0"><b>Given</b> — beberapa tim memiliki bounded context masing-masing (Ordering, Matching, Trip, Billing, dst.) dan saling terintegrasi, tapi tidak ada dokumentasi jelas soal siapa hulu/hilir, pola integrasinya, dan kontrak (skema event/API) di antara mereka.</p>
+    <p style="margin:5px 0"><b>When</b> — salah satu context mengubah skema event atau API-nya (mis. menghapus field, mengganti bentuk payload) tanpa tahu siapa saja yang bergantung padanya.</p>
+    <p style="margin:5px 0"><b>Then</b> — context hilir yang mengonsumsi event/API tersebut rusak diam-diam tanpa peringatan, kopling tersembunyi baru ketahuan saat produksi error, dan tidak jelas tim mana yang harus diajak koordinasi sebelum perubahan breaking diterbitkan.</p>
+    <p style="margin:8px 0 0">→ makanya kita bikin <b>Context Map</b>: dokumentasikan relasi upstream/downstream, pola integrasi, dan kontrak (Published Language) antar context.</p>
+  </div>
+
+  <h2>1 · Daftar Bounded Context</h2>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th style="width:13%">Context</th><th>Tanggung jawab</th><th style="width:26%">Istilah kunci (lihat Glossary)</th><th style="width:12%">Pemilik</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Ordering</strong></td><td>Menerima &amp; memvalidasi permintaan layanan penumpang</td><td>Order, Passenger</td><td>Kelompok A</td></tr>
+      <tr><td><strong>Matching</strong></td><td>Mencari &amp; menetapkan driver untuk order dalam batas waktu</td><td>Matching, Driver (= kandidat penjemput)</td><td>Kelompok A</td></tr>
+      <tr><td><strong>Pricing</strong></td><td>Estimasi tarif &amp; surge factor</td><td>FareEstimate, SurgeFactor</td><td>Kelompok B</td></tr>
+      <tr><td><strong>Trip</strong></td><td>Siklus hidup perjalanan: jemput → jalan → selesai/batal</td><td>Trip, TripStatus</td><td>Kelompok A</td></tr>
+      <tr><td><strong>Billing</strong></td><td>Tagihan final &amp; pembayaran penumpang</td><td>FinalFare, CancellationFee</td><td>Kelompok B</td></tr>
+      <tr><td><strong>Payout</strong></td><td>Dompet driver, komisi, pencairan</td><td>DriverWallet, Commission, Payout</td><td>Kelompok B</td></tr>
+      <tr><td><strong>Rating</strong></td><td>Penilaian trip &amp; skor driver</td><td>Rating</td><td>Kelompok C</td></tr>
+      <tr><td><strong>Loyalty</strong></td><td>Poin &amp; reward penumpang</td><td>Point, Reward</td><td>Kelompok C</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="panel panel-warn">
+    <span class="ic">⚠️</span>
+    <div><p><strong>Aturan penamaan:</strong> di dalam satu context, istilah mengikuti <a href="contoh-confluence-1-glossary.html" style="color:var(--link)">Glossary</a>. Kata yang sama boleh bermakna beda antar context ("Driver" di Matching ≠ "Driver" di Payout) — itu justru alasan batasnya ada.</p></div>
+  </div>
+
+  <h2>2 · Peta relasi</h2>
+  <pre class="diagram">                     [ Vendor Peta (Google Maps) ]          [ Payment Gateway ]
+                                 │ (U)                              │ (U)
+                          CONFORMIST + ACL                         ACL
+                            (MapsPort)                      (PaymentGatewayPort)
+                                 ▼                                  ▼
+[ Ordering ] ─order-created─▶ [ Matching ] ─driver-assigned─▶ [ Trip ] ─trip-completed.v1─┬─▶ [ Billing ] ─payment-settled─▶ [ Payout ]
+     ▲                             ▲                            (U)                       ├─▶ [ Loyalty ]
+     │                             │                                                      └─▶ [ Rating ]
+[ Pricing ] ◀─── estimasi diminta ─┘                        (semua konsumen event = downstream / hilir)
+
+(U) = upstream/hulu pada relasi tersebut · event = Published Language (lihat §4)</pre>
+
+  <h2>3 · Relasi antar-context</h2>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th style="width:16%">Hulu → Hilir</th><th style="width:17%">Pola</th><th style="width:22%">Cara integrasi</th><th>Catatan</th></tr></thead>
+    <tbody>
+      <tr><td>Trip → Billing</td><td><span class="lozenge lz-blue">Customer–Supplier</span></td><td>event <code>trip-completed.v1</code> (outbox)</td><td>Billing boleh minta field baru → masuk backlog tim Trip. Direview tiap kuartal — kalau permintaan hilir berhenti dilayani, relasi diam-diam merosot jadi Conformist (bendera merah §5)</td></tr>
+      <tr><td>Trip → Loyalty, Rating, Analytics</td><td><span class="lozenge lz-purple">Published Language</span></td><td>event <code>trip-completed.v1</code></td><td>Konsumen banyak → skema dijaga ketat (lihat §4)</td></tr>
+      <tr><td>Matching → Trip</td><td><span class="lozenge lz-blue">Customer–Supplier</span></td><td>event <code>driver-assigned</code></td><td></td></tr>
+      <tr><td>Ordering → Matching</td><td><span class="lozenge lz-blue">Customer–Supplier</span></td><td>event <code>order-created</code></td><td></td></tr>
+      <tr><td>Pricing → Ordering</td><td><span class="lozenge lz-green">Open Host Service</span></td><td>API sinkron <code>POST /estimate</code></td><td>Pricing melayani banyak konsumen lewat API terdokumentasi</td></tr>
+      <tr><td>Vendor Peta → Matching, Trip</td><td><span class="lozenge lz-yellow">Conformist + ACL</span></td><td>adapter <code>MapsPort</code></td><td>Model vendor tak bisa kita ubah; ACL menerjemahkan respons mentah ke model domain (<code>Location</code>, <code>Route</code>). Ganti vendor = ganti adapter, domain tak tersentuh</td></tr>
+      <tr><td>Payment Gateway → Billing</td><td><span class="lozenge lz-yellow">ACL</span></td><td>adapter <code>PaymentGatewayPort</code></td><td>Model gateway tidak boleh bocor ke domain</td></tr>
+      <tr><td>Billing → Payout</td><td><span class="lozenge lz-blue">Customer–Supplier</span></td><td>event <code>payment-settled</code></td><td>Dompet driver di-update <em>eventual</em> setelah pembayaran beres</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>4 · Kontrak event (Published Language)</h2>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th style="width:18%">Event</th><th style="width:8%">Versi</th><th style="width:12%">Producer</th><th style="width:28%">Consumers</th><th>Payload inti</th></tr></thead>
+    <tbody>
+      <tr><td><code>trip-completed</code></td><td>v1</td><td>Trip</td><td>Billing, Payout, Loyalty, Rating, Analytics</td><td>tripId, driverId, passengerId, finalFare, completedAt</td></tr>
+      <tr><td><code>driver-assigned</code></td><td>v1</td><td>Matching</td><td>Trip, Notifikasi</td><td>orderId, driverId, etaSeconds</td></tr>
+      <tr><td><code>order-created</code></td><td>v1</td><td>Ordering</td><td>Matching, Analytics</td><td>orderId, passengerId, pickup, destination</td></tr>
+      <tr><td><code>payment-settled</code></td><td>v1</td><td>Billing</td><td>Payout</td><td>tripId, amount, settledAt</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Aturan evolusi skema</h3>
+  <ol class="rules">
+    <li><strong>Menambah field = backward compatible</strong> — boleh di versi yang sama; konsumen wajib mengabaikan field yang tak dikenal.</li>
+    <li><strong>Mengubah / menghapus field = breaking</strong> — wajib versi baru (<code>trip-completed.v2</code>); versi lama tetap diterbitkan selama masa transisi yang disepakati semua konsumen.</li>
+    <li>Producer <strong>tidak boleh tahu</strong> daftar konsumen di kodenya — tabel di atas hanyalah dokumentasi.</li>
+    <li>Nama event = <strong>bentuk lampau</strong> (fakta yang sudah terjadi), bukan perintah.</li>
+  </ol>
+
+  <h2>5 · Aturan mengubah peta ini</h2>
+  <ol class="rules">
+    <li><strong>Context / relasi baru</strong> → diusulkan di forum arsitektur (atau refinement), disepakati pemilik context yang terlibat, baru halaman ini di-update.</li>
+    <li><strong>Perubahan breaking pada event</strong> → semua konsumen di §4 dinotifikasi &amp; menyepakati timeline migrasi <em>sebelum</em> versi baru terbit.</li>
+  </ol>
+
+  <div class="panel panel-err">
+    <span class="ic">🚩</span>
+    <div>
+      <p><strong>Bendera merah — langsung angkat ke Tech Lead bila terlihat:</strong></p>
+      <ul>
+        <li>Ada integrasi antar-context yang <strong>tidak tercatat</strong> di §3 (kopling tersembunyi — biasanya baca tabel milik context lain langsung).</li>
+        <li>Model eksternal (respons mentah vendor) muncul di dalam package domain — <strong>ACL bocor</strong>.</li>
+        <li>Relasi Customer–Supplier yang permintaan hilirnya tak dilayani ≥ 2 sprint — diam-diam sudah jadi <strong>Conformist</strong>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Changelog</h2>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th style="width:14%">Tanggal</th><th>Perubahan</th><th style="width:34%">Alasan</th></tr></thead>
+    <tbody>
+      <tr><td>2026-07-01</td><td>Tambah event <code>payment-settled</code> (Billing → Payout)</td><td>Payout tak lagi membaca tabel Billing langsung (hapus kopling DB)</td></tr>
+      <tr><td>2026-06-01</td><td>Halaman dibuat: 8 context, 8 relasi, 4 kontrak event</td><td>Kick-off pemetaan domain</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<footer>RideGo Engineering Wiki · Domain · terkait: <a href="contoh-confluence-1-glossary.html">Glossary</a> · <a href="contoh-confluence-2-subdomain-map.html">Peta Subdomain</a></footer>
+</body>
+</html>

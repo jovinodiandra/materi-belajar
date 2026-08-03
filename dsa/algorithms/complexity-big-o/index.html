@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Complexity & Big-O — Bahasa Objektif untuk Kecepatan Algoritma</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home { color: var(--muted); text-decoration: none; letter-spacing: .02em; white-space: nowrap; transition: color .18s; }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- steps ---------- */
+  .steps { counter-reset: step; margin: 24px 0 6px; max-width: 78ch; }
+  .steps li {
+    list-style: none; counter-increment: step; position: relative;
+    padding: 12px 0 12px 46px; border-bottom: 1px solid var(--line-soft);
+    font-size: 15.5px; color: var(--ink);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute; left: 0; top: 10px;
+    font-family: var(--mono); font-size: 12px; color: var(--cyan);
+    border: 1px solid var(--cyan-dim); border-radius: 6px;
+    width: 28px; height: 22px; display: flex; align-items: center; justify-content: center;
+    background: rgba(69,212,222,.06);
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../../index.html">← Data Structures &amp; Algorithms</a>
+  <div class="topbar__file">docs/learning/dsa/algorithms/complexity-big-o/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa butuh notasi</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> O, Ω, Θ</a>
+    <a href="#c03"><span class="yr">03</span> Kelas kompleksitas umum</a>
+
+    <div class="rail__part">III · Praktik & jenjang</div>
+    <a href="#c04"><span class="yr">◆</span> Best practice</a>
+    <a href="#c05"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+
+    <div class="rail__part">IV · Keputusan & rujukan</div>
+    <a href="#c07"><span class="yr">◆</span> Kapan cukup Big-O</a>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Data Structures &amp; Algorithms — mengukur "cepat" secara objektif</div>
+      <h1 class="reveal d1">Seberapa <span class="accent">cepat</span> algoritmamu, tanpa nyalakan stopwatch?</h1>
+      <p class="sub reveal d2">
+        Dua orang menulis solusi berbeda untuk soal yang sama. Yang satu "terasa" lebih cepat di laptop kamu —
+        tapi itu bisa jadi karena laptopnya lebih baru, bukan karena algoritmanya lebih pintar. <b>Big-O</b> dan
+        kerabatnya (<b>Big-Omega</b>, <b>Big-Theta</b>) adalah bahasa formal untuk membicarakan pertumbuhan waktu
+        &amp; memori algoritma — independen dari mesin, bahasa, atau mood compiler hari itu. Deck ini fokus ke
+        <b>definisi formalnya</b>: notasi, cara menghitung dari kode baris per baris, sampai kapan analisis ini
+        cukup dan kapan harus turun ke benchmark nyata.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Masalah</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>"Cepat" itu relatif</b> <span>— tergantung mesin, bahasa, beban saat itu</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Hitung langkah, bukan detik</b> <span>— notasi asimptotik O / Ω / Θ</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Alat</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Kelas pertumbuhan</b> <span>— O(1) sampai O(2ⁿ), diurutkan</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Abaikan konstanta</b> <span>— kadang konstanta itu yang menentukan di dunia nyata</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bandingkan algoritma</b> <span>— sebelum data tumbuh dari ribuan ke jutaan</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="wrap why" style="margin:26px auto;">
+    <div class="tag">◆ Buat apa ini? Kenapa pakai ini?</div>
+    <p><b>Given</b> — dua kandidat algoritma dibandingkan dengan menjalankan keduanya lalu menimbang waktunya pakai stopwatch / <code>System.currentTimeMillis()</code> di satu laptop, dengan data uji yang masih kecil (ratusan baris).</p>
+    <p><b>When</b> — kode itu di-deploy dan datanya tumbuh jadi jutaan baris di production, di mesin server yang beda CPU &amp; beban dari laptop developer.</p>
+    <p><b>Then</b> — algoritma yang "menang" di laptop (kebetulan <em>cache</em> warm, CPU kencang) ternyata <code>O(n²)</code> dan melambat eksponensial seiring <code>n</code> membesar, sementara yang "kalah" di benchmark lokal sebenarnya <code>O(n log n)</code> dan jauh lebih skalabel — keputusan desain jadi salah karena membandingkan detik, bukan laju pertumbuhannya.</p>
+    <p>→ makanya kita pakai <b>Big-O (dan kerabatnya Ω, Θ)</b>.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA BUTUH NOTASI ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Kenapa butuh notasi kompleksitas</div>
+        <h2>"Cepat di laptop saya" bukan ukuran yang bisa dipercaya</h2>
+      </div>
+      <p class="lead reveal">Kalau kamu mengukur algoritma A dan B dengan <code>System.currentTimeMillis()</code>, hasilnya dipengaruhi banyak hal yang tidak ada hubungannya dengan algoritmanya sendiri: kecepatan CPU, bahasa pemrograman, JIT compiler yang sedang <em>warm up</em>, bahkan proses lain yang kebetulan jalan di background. Butuh cara membandingkan algoritma yang <strong>independen dari mesin &amp; bahasa</strong> — yang tetap valid entah dijalankan di laptop kentang atau server data center.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — bandingkan resep dari jumlah langkah, bukan waktu masak</div>
+        <p>Membandingkan dua resep dengan menimbang <em>berapa menit</em> masing-masing matang itu curang: dapur A punya kompor gas cepat panas, dapur B pakai kompor listrik tua. Cara yang adil adalah menghitung <strong>jumlah langkah</strong> yang harus dikerjakan — berapa kali mengiris, berapa kali mengaduk, berapa lapis proses — lalu lihat bagaimana jumlah langkah itu <em>bertambah</em> kalau porsi masakannya dilipatgandakan. Notasi kompleksitas melakukan hal yang sama untuk kode: menghitung pertumbuhan jumlah operasi seiring ukuran input <code>n</code> membesar, bukan detik di stopwatch.</p>
+      </div>
+
+      <p class="body reveal d2">Ini juga kenapa dua implementasi algoritma yang sama — satu di Java, satu di Python — bisa dibicarakan dengan notasi Big-O yang <strong>sama persis</strong>. Notasinya bicara soal <em>bentuk pertumbuhan</em>, bukan angka detik absolut. Itulah yang membuatnya jadi bahasa universal lintas bahasa &amp; platform.</p>
+
+      <div class="quote reveal d2">
+        <p>Notasi asimptotik (O, Ω, Θ) memungkinkan kita membandingkan algoritma berdasarkan cara pertumbuhannya seiring ukuran input membesar — tanpa terikat pada detail implementasi atau kecepatan mesin tertentu.</p>
+        <cite>— parafrasa dari Thomas H. Cormen dkk., <i>Introduction to Algorithms</i> (CLRS)</cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP INTI: O, Ω, Θ ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Notasi asimptotik</div>
+        <h2>Big-O, Big-Omega, Big-Theta: tiga sisi dari batas yang sama</h2>
+      </div>
+      <p class="lead reveal">Ketiganya membicarakan <strong>batas pertumbuhan</strong> fungsi waktu/memori terhadap ukuran input <code>n</code>, tapi dari arah berbeda.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Tiga notasi, tiga arah batas</div>
+        <div class="erabox__row"><span class="erabox__lang">O(f(n))</span><code>→  Upper bound — "tidak akan lebih lambat dari ini" (biasanya worst case)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Ω(f(n))</span><code>→  Lower bound — "tidak akan lebih cepat dari ini" (best case)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Θ(f(n))</span><code>→  Tight bound — O dan Ω bertemu, batas atas = batas bawah</code></div>
+        <p class="erabox__note">Dalam obrolan sehari-hari, orang sering bilang "kompleksitasnya <b>O(n)</b>" padahal maksudnya <b>Θ(n)</b> — batas ketat. Itu tidak apa-apa selama kamu paham bedanya saat diperlukan presisi (misalnya di soal ujian atau paper).</p>
+      </div>
+
+      <p class="body reveal d1">Contoh paling gampang dibayangkan: mencari elemen di array yang tidak terurut dengan <em>linear search</em>.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Best case → Ω</h4>
+          <ul class="good-l">
+            <li>Elemen yang dicari ada di <b>posisi pertama</b>.</li>
+            <li>Cuma butuh <code>1</code> perbandingan → <code>Ω(1)</code>.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Worst case → O</h4>
+          <ul class="bad-l">
+            <li>Elemen ada di <b>posisi terakhir</b> (atau tidak ada).</li>
+            <li>Harus cek semua <code>n</code> elemen → <code>O(n)</code>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">analisis kompleksitas per baris</span><span class="lang">JAVA</span></div>
+<pre class="code"><span class="k">public</span> <span class="k">class</span> <span class="t">Matrix</span> {
+
+    <span class="c">// O(1) — akses array by index, sekali eksekusi</span>
+    <span class="k">static</span> <span class="t">int</span> <span class="f">first</span>(<span class="t">int</span>[] arr) {
+        <span class="k">return</span> arr[<span class="n">0</span>];                      <span class="c">// 1 operasi, tidak peduli n</span>
+    }
+
+    <span class="c">// O(n) — satu loop sepanjang n</span>
+    <span class="k">static</span> <span class="t">int</span> <span class="f">sum</span>(<span class="t">int</span>[] arr) {
+        <span class="t">int</span> total = <span class="n">0</span>;
+        <span class="k">for</span> (<span class="t">int</span> i = <span class="n">0</span>; i &lt; arr.length; i++) {  <span class="c">// jalan n kali</span>
+            total += arr[i];                    <span class="c">// O(1) di dalam loop O(n) → total O(n)</span>
+        }
+        <span class="k">return</span> total;
+    }
+
+    <span class="c">// O(n^2) — nested loop, masing-masing sepanjang n</span>
+    <span class="k">static</span> <span class="t">boolean</span> <span class="f">hasDuplicate</span>(<span class="t">int</span>[] arr) {
+        <span class="k">for</span> (<span class="t">int</span> i = <span class="n">0</span>; i &lt; arr.length; i++) {      <span class="c">// n kali</span>
+            <span class="k">for</span> (<span class="t">int</span> j = i + <span class="n">1</span>; j &lt; arr.length; j++) { <span class="hl-bad">// ~n kali lagi → n * n</span>
+                <span class="k">if</span> (arr[i] == arr[j]) <span class="k">return</span> <span class="k">true</span>;
+            }
+        }
+        <span class="k">return</span> <span class="k">false</span>;                        <span class="c">// worst case: O(n^2)</span>
+    }
+
+    <span class="c">// O(log n) — separuh ruang pencarian dibuang tiap iterasi</span>
+    <span class="k">static</span> <span class="t">int</span> <span class="f">binarySearch</span>(<span class="t">int</span>[] arr, <span class="t">int</span> target) {
+        <span class="t">int</span> lo = <span class="n">0</span>, hi = arr.length - <span class="n">1</span>;
+        <span class="k">while</span> (lo &lt;= hi) {                    <span class="hl-good">// tiap putaran, n dibagi 2</span>
+            <span class="t">int</span> mid = (lo + hi) / <span class="n">2</span>;
+            <span class="k">if</span> (arr[mid] == target) <span class="k">return</span> mid;
+            <span class="k">else</span> <span class="k">if</span> (arr[mid] &lt; target) lo = mid + <span class="n">1</span>;
+            <span class="k">else</span> hi = mid - <span class="n">1</span>;
+        }
+        <span class="k">return</span> -<span class="n">1</span>;                          <span class="c">// worst case: O(log n)</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Pola membacanya: <b>satu loop sepanjang n</b> → <code>O(n)</code>. <b>Loop di dalam loop</b>, masing-masing sepanjang n → <code>O(n²)</code>. <b>Ruang pencarian dibelah dua tiap iterasi</b> → <code>O(log n)</code>. <b>Akses langsung tanpa loop</b> → <code>O(1)</code>. Ini bukan hafalan — ini konsekuensi langsung dari menghitung berapa kali tiap baris dieksekusi.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 KELAS KOMPLEKSITAS UMUM ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Peta besar</span> · Kelas kompleksitas umum</div>
+        <h2>Dari konstan sampai eksponensial, diurutkan</h2>
+      </div>
+      <p class="lead reveal">Ada segelintir kelas pertumbuhan yang paling sering muncul. Hafalkan urutannya — ini yang jadi patokan cepat saat membandingkan dua algoritma tanpa harus menghitung ulang dari nol.</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Urutan pertumbuhan (kecil → besar) &amp; ilustrasi n = 10.000</div>
+        <div class="erabox__row"><span class="erabox__lang">O(1)</span><code>→  1 operasi         — akses array by index, push/pop stack</code></div>
+        <div class="erabox__row"><span class="erabox__lang">O(log n)</span><code>→  ~13 operasi       — binary search, cari di balanced BST</code></div>
+        <div class="erabox__row"><span class="erabox__lang">O(n)</span><code>→  10.000 operasi    — linear search, satu kali loop penuh</code></div>
+        <div class="erabox__row"><span class="erabox__lang">O(n log n)</span><code>→  ~130.000 operasi — merge sort, quicksort (rata-rata)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">O(n²)</span><code>→  100 juta operasi  — nested loop, bubble sort, selection sort</code></div>
+        <div class="erabox__row"><span class="erabox__lang">O(2ⁿ)</span><code>→  angka astronomis  — brute force subset, rekursi fibonacci naif</code></div>
+        <p class="erabox__note">Lompatan dari <code>O(n)</code> ke <code>O(n²)</code> saja sudah mengubah 10.000 operasi jadi 100 juta. Ini kenapa "cuma nested loop tambahan" bisa jadi keputusan yang mahal saat data membesar.</p>
+      </div>
+
+      <p class="body reveal d1">Selain <b>time complexity</b>, ada <b>space complexity</b> — seberapa banyak memori ekstra (bukan input aslinya) yang dipakai algoritma seiring <code>n</code> membesar. Linear search hanya butuh satu variabel index → <code>O(1)</code> space. Merge sort butuh array sementara sebesar input → <code>O(n)</code> space. Rekursi juga makan memori lewat call stack: rekursi sedalam <code>n</code> level → <code>O(n)</code> space, meski tidak ada array yang dialokasikan secara eksplisit.</p>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Jangan tertukar: <b>O(n²)</b> berarti waktu tumbuh <em>kuadratik</em> — bukan berarti algoritmanya "jelek" secara mutlak. Untuk <code>n</code> kecil (puluhan elemen), <code>O(n²)</code> yang sederhana kadang lebih cepat di dunia nyata daripada <code>O(n log n)</code> yang overhead-nya lebih besar. Notasi ini bicara soal <em>tren pertumbuhan</em>, bukan angka mutlak di satu titik <code>n</code>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Best practice · Cara menghitung dengan benar</div>
+        <h2>Enam kebiasaan supaya analisismu tidak meleset</h2>
+      </div>
+      <p class="lead reveal">Menghitung kompleksitas itu mekanis begitu kamu tahu aturan mainnya. Berikut kebiasaan yang mencegah kesalahan paling umum.</p>
+
+      <ol class="steps reveal d1">
+        <li><b>Default ke worst case</b> — kecuali soal secara eksplisit minta best/average case, "kompleksitas algoritma ini" berarti <code>O</code> untuk skenario terburuk. Ini konvensi paling aman &amp; paling sering dipakai di industri.</li>
+        <li><b>Buang konstanta</b> — <code>O(2n)</code> ditulis <code>O(n)</code>, <code>O(500)</code> ditulis <code>O(1)</code>. Konstanta tidak mengubah <em>bentuk</em> pertumbuhan seiring <code>n</code> → ∞.</li>
+        <li><b>Buang lower-order term</b> — <code>O(n² + n)</code> ditulis <code>O(n²)</code> karena saat <code>n</code> besar, suku <code>n²</code> mendominasi total operasi jauh di atas suku <code>n</code>.</li>
+        <li><b>Nested loop dihitung hati-hati</b> — dua loop bersarang yang sama-sama sepanjang <code>n</code> → <code>O(n²)</code>. Tapi loop dalam yang panjangnya <b>tetap</b> (misal selalu 5 iterasi) tidak menambah pangkat — tetap <code>O(n)</code>.</li>
+        <li><b>Loop berurutan (bukan bersarang) dijumlah, bukan dikali</b> — satu loop <code>O(n)</code> diikuti loop lain <code>O(n)</code> secara berurutan → <code>O(n) + O(n) = O(n)</code>, bukan <code>O(n²)</code>.</li>
+        <li><b>Rekursi dianalisis lewat jumlah pemanggilan × kerja per pemanggilan</b> — jangan cuma lihat satu baris <code>return f(n-1)</code>; hitung berapa kali fungsi itu total dipanggil sampai base case.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Jenjang · Tier belajar</div>
+        <h2>Dari hitung loop sampai amortized analysis</h2>
+      </div>
+      <p class="lead reveal">Kompleksitas asimptotik punya kedalaman bertingkat — mulai dari yang wajib dikuasai semua orang, sampai analisis yang baru relevan saat kamu mendesain struktur data sendiri.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Beginner</span>
+          <h4>Hitung dari kode langsung</h4>
+          <p>Baca kode baris per baris, kenali pola loop-nya.</p>
+          <ul>
+            <li>Single loop sepanjang <code>n</code> → <code>O(n)</code>.</li>
+            <li>Nested loop dua tingkat → <code>O(n²)</code>.</li>
+            <li>Akses array/hashmap by key → <code>O(1)</code>.</li>
+            <li>Bedakan best case vs worst case pada linear search.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Middle</span>
+          <h4>Rekursi &amp; recursion tree</h4>
+          <p>Fungsi yang memanggil dirinya sendiri butuh cara hitung berbeda.</p>
+          <ul>
+            <li>Gambar recursion tree — tiap level berapa pemanggilan?</li>
+            <li>Master theorem sederhana: <code>T(n) = aT(n/b) + f(n)</code>.</li>
+            <li>Merge sort: <code>T(n) = 2T(n/2) + O(n)</code> → <code>O(n log n)</code>.</li>
+            <li>Fibonacci naif: <code>T(n) = T(n-1) + T(n-2)</code> → <code>O(2ⁿ)</code>.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Advance</span>
+          <h4>Amortized &amp; kasus bercabang</h4>
+          <p>Analisis yang butuh melihat lebih dari satu operasi sekaligus.</p>
+          <ul>
+            <li>Amortized analysis — dynamic array resize: <code>O(1)</code> amortized meski sesekali <code>O(n)</code>.</li>
+            <li>Algoritma dengan banyak cabang kondisional — hitung tiap cabang, ambil yang terburuk.</li>
+            <li>Kompleksitas struktur data self-balancing (mis. red-black tree) lintas operasi.</li>
+            <li>Membedakan worst case per-operasi vs worst case rata-rata sepanjang eksekusi.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: waktu cepat sering berarti memori boros</h2>
+      </div>
+      <p class="lead reveal">Time complexity &amp; space complexity sering tarik-menarik. Mempercepat waktu biasanya berarti menyimpan lebih banyak data bantu di memori — atau sebaliknya.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Menang di waktu</h4>
+          <ul class="good-l">
+            <li>Hashmap untuk lookup <code>O(1)</code> — tapi butuh <code>O(n)</code> memori ekstra di luar array asli.</li>
+            <li>Memoization pada rekursi — cache hasil supaya tak dihitung ulang, tapi cache itu makan memori.</li>
+            <li>Precompute / index tambahan — query jadi cepat, tapi struktur index butuh ruang sendiri.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Menang di memori</h4>
+          <ul class="bad-l">
+            <li>In-place sort (mis. heapsort) — <code>O(1)</code> space, tapi umumnya lebih lambat &amp; kurang stabil dibanding merge sort.</li>
+            <li>Rekursi tanpa memoization — hemat memori cache, tapi mengulang kerja yang sama berkali-kali.</li>
+            <li>Streaming/iteratif tanpa index — hemat RAM, tapi tiap query harus scan ulang.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Contoh konkret</div>
+          <p>Fibonacci rekursif naif itu <code>O(1)</code> space tapi <code>O(2ⁿ)</code> waktu — lambat sekali. Tambahkan memoization (menyimpan hasil tiap <code>n</code> yang sudah dihitung) → waktu turun jadi <code>O(n)</code>, tapi space naik jadi <code>O(n)</code> untuk cache-nya. Kamu membeli kecepatan dengan memori — trade-off yang sadar, bukan kebetulan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN CUKUP BIG-O ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Kapan Big-O cukup, kapan tidak</div>
+        <h2>Big-O adalah peta, bukan GPS dengan angka pasti</h2>
+      </div>
+      <p class="lead reveal">Big-O memberitahu <strong>tren</strong> pertumbuhan, bukan angka detik yang persis. Untuk banyak keputusan itu sudah cukup — tapi ada situasi yang butuh pengukuran nyata.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Big-O cukup saat…</h4>
+          <ul class="good-l">
+            <li>Membandingkan pendekatan yang beda kelas (<code>O(n)</code> vs <code>O(n²)</code>).</li>
+            <li>Input diperkirakan akan tumbuh besar seiring waktu.</li>
+            <li>Tahap desain — memilih struktur data/algoritma sebelum implementasi.</li>
+            <li>Interview / diskusi teknis yang butuh bahasa bersama.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Butuh benchmark nyata saat…</h4>
+          <ul class="bad-l">
+            <li>Dua algoritma punya kelas Big-O yang <b>sama</b> tapi konstanta beda jauh.</li>
+            <li><code>n</code> di production selalu kecil — overhead konstan lebih menentukan.</li>
+            <li>Faktor mesin nyata: cache CPU, I/O, garbage collector, jaringan.</li>
+            <li>Sebelum optimisasi production — profiler dulu, jangan menebak dari teori saja.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>Memahami kompleksitas bukan sekadar latihan matematis, tapi alat praktis untuk memprediksi apakah sebuah program akan tetap berjalan cepat ketika data yang diprosesnya tumbuh dari ribuan menjadi jutaan.</p>
+        <cite>— parafrasa dari Robert Sedgewick &amp; Kevin Wayne, <i>Algorithms</i></cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Saat kompleksitas berpindah dari teori ke insiden</h2>
+      </div>
+      <p class="lead reveal">Tiga skenario nyata di mana pemahaman Big-O langsung berdampak ke keputusan teknis — bukan cuma soal ujian.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// sorting adaptif</div><h4>Timsort: satu algoritma, dua strategi</h4><p><b>Kasus:</b> Java (<code>Arrays.sort</code> untuk objek) &amp; Python (<code>sorted()</code>) memakai Timsort — hybrid antara insertion sort &amp; merge sort. <b>Kenapa penting:</b> untuk potongan data kecil yang hampir terurut, insertion sort (<code>O(n)</code> best case) lebih cepat daripada overhead merge sort penuh; untuk data besar, sifat <code>O(n log n)</code> merge sort yang menang. Timsort mendeteksi run terurut &amp; memilih strategi sesuai ukurannya.</p></div>
+        <div class="card up"><div class="ic">// database</div><h4>Full table scan vs index</h4><p><b>Kasus:</b> query <code>WHERE email = ?</code> tanpa index harus memeriksa tiap baris tabel — <code>O(n)</code>, makin lambat linear seiring tabel tumbuh. Menambah index B-tree pada kolom itu mengubahnya jadi pencarian <code>O(log n)</code>. <b>Dampak:</b> tabel yang tumbuh dari ribuan ke jutaan baris membuat selisih <code>O(n)</code> vs <code>O(log n)</code> makin terasa — lihat topik indexing di situs ini untuk detail struktur B-tree-nya.</p></div>
+        <div class="card up"><div class="ic">// skala pengguna</div><h4>O(n²) yang dulu aman, kini bottleneck</h4><p><b>Kasus:</b> fitur "cari duplikat" atau "bandingkan tiap pasangan user" yang ditulis dengan nested loop lolos review saat <code>n</code> masih kecil — beberapa ribu baris data terasa instan. <b>Yang berubah:</b> seiring basis pengguna tumbuh, jumlah operasi <code>n²</code> ikut meledak kuadratik, dan endpoint yang dulu responsif mulai timeout. Solusinya bukan "server lebih kuat" — tapi turunkan kelas kompleksitasnya (mis. pakai hashmap/set untuk <code>O(n)</code>).</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di ketiga kasus, masalahnya baru kelihatan saat <code>n</code> membesar. Kode yang "cukup cepat" di data kecil bisa menyembunyikan kelas kompleksitas yang buruk — dan Big-O adalah alat untuk melihat itu <strong>sebelum</strong> insiden terjadi, bukan sesudahnya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS/REFERENSI ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Tools &amp; referensi lanjutan</div>
+        <h2>Alat bantu untuk memverifikasi teori dengan kenyataan</h2>
+      </div>
+      <p class="lead reveal">Big-O menjelaskan bentuk pertumbuhan. Untuk memastikan implementasimu benar-benar berperilaku sesuai teori, tiga hal ini yang biasa dipakai.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// referensi cepat</div><h4>Big-O cheat sheet</h4><p>Tabel ringkas kompleksitas waktu &amp; ruang untuk struktur data &amp; algoritma umum (array, linked list, hashmap, tree, sorting) — bagus untuk dicek cepat saat lupa kompleksitas suatu operasi.</p></div>
+        <div class="card up"><div class="ic">// ukur nyata</div><h4>Profiler</h4><p>JFR/VisualVM untuk JVM, <code>cProfile</code>/<code>timeit</code> untuk Python, atau Chrome DevTools Performance untuk JS. Dipakai saat Big-O tidak cukup — melihat waktu eksekusi &amp; alokasi memori sesungguhnya di mesin nyata.</p></div>
+        <div class="card up"><div class="ic">// aplikasi praktis</div><h4>Problem Solving &gt; Complexity Thinking</h4><p>Topik ini fokus ke definisi formal notasi. Untuk intuisi memakai <em>constraint</em> soal (mis. <code>n ≤ 10⁵</code> berarti solusi harus di bawah <code>O(n²)</code>) saat mengerjakan soal, lihat topik terkait di situs ini.</p><a class="card__link" href="../../../problem-solving/complexity-thinking/index.html">Lanjut ke Complexity Thinking <span>→</span></a></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Catatan</div>
+          <p>Cheat sheet &amp; teori memberimu <b>ekspektasi</b>; profiler memberimu <b>bukti</b>. Pakai keduanya — teori untuk memilih pendekatan di awal, profiler untuk memastikan implementasi tidak diam-diam jatuh ke kelas kompleksitas yang lebih buruk dari yang kamu kira.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Hitung langkahnya, bukan detiknya</h2>
+      </div>
+      <p class="lead reveal">Big-O bukan sekadar simbol matematis yang harus dihafal untuk lulus ujian. Ini bahasa objektif untuk memprediksi apakah kodemu masih akan sehat saat datanya tumbuh sepuluh, seratus, seribu kali lipat — jauh sebelum kamu punya kesempatan mengukurnya di production.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>O, Ω, Θ</b> — upper bound, lower bound, tight bound dari pertumbuhan.</li>
+          <li><b>Default worst case</b> — kecuali dinyatakan lain secara eksplisit.</li>
+          <li><b>Buang konstanta &amp; lower-order term</b> — fokus ke suku yang dominan.</li>
+          <li><b>Nested loop = kali, sequential loop = jumlah</b> — jangan tertukar.</li>
+          <li><b>Time vs space</b> — sering trade-off, pilih sesuai kebutuhan nyata.</li>
+          <li><b>Teori + profiler</b> — Big-O untuk desain, benchmark untuk verifikasi.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Lanjut ke bab berikutnya</h3>
+        <p>Setelah paham cara membaca &amp; menghitung kompleksitas, langkah alami berikutnya adalah melihatnya bekerja di algoritma nyata: bagaimana <strong>Sorting</strong> — dari yang <code>O(n²)</code> sederhana sampai yang <code>O(n log n)</code> — dirancang, dan kenapa pilihan algoritma sorting yang tepat bisa jadi perbedaan antara sistem yang responsif &amp; yang tidak.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Hitung langkahnya, bukan detiknya."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Complexity &amp; Big-O</b> · Notasi asimptotik, cara hitung, trade-off, &amp; kapan cukup · rujukan: CLRS (Cormen dkk.), Sedgewick &amp; Wayne · lanjut: <a href="../sorting/index.html">Sorting →</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

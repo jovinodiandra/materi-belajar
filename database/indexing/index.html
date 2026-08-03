@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database Indexing — Loncat, Jangan Baca Semua</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/<b>indexing.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 09</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Masalahnya</div>
+    <a href="#c01"><span class="yr">01</span> Mencari tanpa indeks</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Apa itu index</a>
+    <a href="#c03"><span class="yr">03</span> Cara kerja: B-Tree</a>
+    <a href="#c04"><span class="yr">04</span> Composite &amp; urutan kolom</a>
+
+    <div class="rail__part">III · Harga &amp; bukti</div>
+    <a href="#c05"><span class="yr">◆</span> Trade-off: read vs write</a>
+    <a href="#c06"><span class="yr">!</span> Kasus: baca EXPLAIN</a>
+    <a href="#c07"><span class="yr">◆</span> Jenis-jenis index</a>
+
+    <div class="rail__part">IV · Praktik</div>
+    <a href="#c08"><span class="yr">×</span> Salah kaprah</a>
+    <a href="#c09"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — kenapa query yang sama bisa 1000× lebih cepat</div>
+      <h1 class="reveal d1">Database itu seperti buku. Indeks bikin kamu <span class="accent">loncat</span>, bukan baca semua.</h1>
+      <p class="sub reveal d2">
+        Pernah lihat query yang awalnya kilat, lalu makin lama makin lemot seiring data membesar? Hampir selalu
+        biang keroknya satu: <b>tidak ada indeks</b>. Tanpa indeks, database membaca <b>seluruh tabel</b> baris demi
+        baris hanya untuk menemukan satu data. Dengan indeks yang tepat, dia langsung <b>loncat</b> ke tempatnya.
+        Deck ini buat pemula: dari <b>kenapa</b> indeks dibutuhkan, <b>cara kerjanya</b>, sampai <b>kasus nyata</b>
+        dan jebakannya — diselingi kalimat dari buku-buku rujukan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Masalah</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Full table scan</b> <span>— baca semua baris demi cari satu</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Index = papan petunjuk</b> <span>— struktur terurut untuk loncat cepat</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Mesin</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>B-Tree</b> <span>— pohon seimbang, cari dalam langkah sedikit</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Harga</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Write jadi lebih lambat</b> <span>— tiap index harus ikut diperbarui</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Seni</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Pilih yang tepat</b> <span>— bukan indeks-kan semuanya</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why" style="max-width:78ch;margin-left:auto;margin-right:auto;margin-top:0">
+    <div class="tag">◆ Kenapa pakai index?</div>
+    <p><b>Given</b> — Tabel <code>orders</code> punya puluhan juta baris, dan endpoint checkout rutin menjalankan <code>WHERE user_id = ?</code> untuk menampilkan riwayat transaksi user.</p>
+    <p><b>When</b> — Data terus bertambah tiap hari, tapi query itu tetap harus memeriksa baris satu per satu dari awal tabel karena tidak ada struktur yang bisa langsung "loncat" ke baris yang dicari.</p>
+    <p><b>Then</b> — Waktu respons checkout naik <em>linier</em> mengikuti ukuran tabel: awalnya 5ms, lalu ratusan ms, sampai akhirnya timeout saat tabelnya sudah besar — padahal tidak ada bug baru di kode, cuma jumlah datanya yang bertambah.</p>
+    <p>→ makanya kita pakai <b>index</b>.</p>
+  </div>
+
+  <!-- ============ 01 MENCARI TANPA INDEKS ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Full table scan</div>
+        <h2>Mencari satu baris di antara sejuta</h2>
+      </div>
+      <p class="lead reveal">Bayangkan tabel <code>users</code> dengan <strong>satu juta baris</strong>. Kamu cari satu orang lewat email-nya. Tanpa indeks, database tidak punya pilihan selain <strong>membaca baris satu per satu dari awal sampai ketemu</strong> — ini disebut <em>full table scan</em> (di Postgres: <em>Sequential Scan</em>).</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — mencari kata di buku tanpa indeks</div>
+        <p>Kamu punya buku 1.000 halaman dan ingin tahu di mana kata <em>"fotosintesis"</em> dibahas. Tanpa indeks di belakang buku, kamu harus <strong>membaca halaman 1, 2, 3… sampai ketemu</strong>. Kalau katanya ada di halaman 947, kamu baru menemukannya nyaris di akhir. Itulah yang database lakukan saat tidak ada indeks — dan ia mengulanginya untuk <em>setiap</em> pencarian.</p>
+      </div>
+
+      <div class="code-card bad reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">tanpa index — database baca semua baris</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="k">EXPLAIN</span> <span class="k">SELECT</span> * <span class="k">FROM</span> users <span class="k">WHERE</span> email = <span class="s">'budi@mail.com'</span>;
+
+<span class="c">-- hasilnya:</span>
+<span class="hl-bad">Seq Scan on users  (cost=0.00..18584.00 rows=1)   -- 🐢 baca SEMUA 1.000.000 baris</span>
+  Filter: (email = <span class="s">'budi@mail.com'</span>)</pre>
+      </div>
+
+      <p class="body reveal d2">Selagi datanya ribuan baris, ini masih terasa cepat dan tidak ada yang sadar. Tapi begitu tabel tumbuh ke jutaan baris, waktu pencarian ikut membengkak <strong>linier</strong> — dua kali data, dua kali lambat. Inilah jebakan klasik: kode yang "baik-baik saja saat demo" tapi melambat pelan-pelan di production seiring data nyata menumpuk.</p>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Gejala khasnya: aplikasi cepat saat baru rilis, lalu makin lemot dari bulan ke bulan <b>tanpa ada perubahan kode</b>. Yang berubah cuma satu: <b>jumlah data</b>. Hampir selalu, obatnya adalah indeks.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 APA ITU INDEX ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Index</div>
+        <h2>Indeks: papan petunjuk menuju data</h2>
+      </div>
+      <p class="lead reveal">Sebuah <strong>index</strong> adalah struktur tambahan yang database simpan <em>di samping</em> data aslinya, khusus untuk membuat pencarian jadi cepat. Ia tidak mengubah datamu — ia hanya menambahkan "peta" agar database tahu harus melompat ke mana.</p>
+
+      <div class="quote reveal d1">
+        <p>“Idenya adalah menyimpan metadata tambahan di samping, yang berfungsi sebagai <span style="font-style:normal">papan petunjuk</span> dan membantumu menemukan data yang kamu cari.”</p>
+        <cite>— Martin Kleppmann, <i>Designing Data-Intensive Applications</i> (Bab 3)</cite>
+      </div>
+
+      <p class="body reveal d1">Persis seperti <strong>indeks di belakang buku</strong>: daftar kata yang diurutkan A–Z, masing-masing menunjuk ke nomor halaman. Kamu tidak membaca seluruh buku — kamu buka indeks, temukan katanya, lalu loncat langsung ke halamannya. Membuatnya di database semudah satu baris perintah:</p>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">membuat index pada kolom email</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="k">CREATE INDEX</span> idx_users_email <span class="k">ON</span> users (email);
+
+<span class="c">-- query yang sama, sekarang:</span>
+<span class="hl-good">Index Scan using idx_users_email  (cost=0.42..8.44 rows=1)  -- ⚡ langsung loncat</span></pre>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">// Tanpa index</h4>
+          <ul class="bad-l">
+            <li>Baca 1.000.000 baris untuk cari 1.</li>
+            <li>Waktu naik seiring data membesar.</li>
+            <li>Seq Scan — kerja sia-sia berulang.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">// Dengan index</h4>
+          <ul class="good-l">
+            <li>Cukup beberapa langkah untuk sampai.</li>
+            <li>Tetap cepat walau data jutaan.</li>
+            <li>Index Scan — loncat ke sasaran.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 CARA KERJA B-TREE ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Di balik layar</span> · B-Tree</div>
+        <h2>Kenapa indeks bisa secepat itu?</h2>
+      </div>
+      <p class="lead reveal">Indeks bukan sekadar daftar berurutan — kalau cuma daftar panjang, mencarinya juga lama. Rahasianya: kebanyakan indeks database disimpan sebagai <strong>B-Tree</strong> (pohon seimbang). Strukturnya memungkinkan pencarian dalam <strong>sangat sedikit langkah</strong>, bahkan untuk data raksasa.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — menebak angka 1–100</div>
+        <p>Aku memikirkan angka 1–100, kamu harus menebak. Strategi bodoh: tebak 1, 2, 3… (sampai 100 tebakan). Strategi pintar: tebak 50 → "terlalu kecil" → tebak 75 → "terlalu besar" → tebak 62… Tiap tebakan <strong>membuang separuh kemungkinan</strong>. Hanya butuh ~7 tebakan untuk angka berapa pun. B-Tree bekerja begitu: tiap langkah memangkas ruang pencarian, jadi cari 1 dari 1 juta cukup ~20 langkah.</p>
+      </div>
+
+      <div class="quote reveal d1">
+        <p>“Sebuah indeks membuat query menjadi cepat.”</p>
+        <cite>— Markus Winand, <i>Use The Index, Luke!</i></cite>
+      </div>
+
+      <p class="body reveal d2">Karena data di B-Tree <strong>tersimpan terurut</strong>, indeks tidak cuma jago untuk pencocokan persis (<code>=</code>). Ia juga cepat untuk:</p>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// equality</div><h4>Pencocokan persis</h4><p><code>WHERE email = '...'</code> — loncat langsung ke satu nilai.</p></div>
+        <div class="card up"><div class="ic">// range</div><h4>Rentang nilai</h4><p><code>WHERE umur BETWEEN 20 AND 30</code> — temukan awal, lalu baca berurutan.</p></div>
+        <div class="card up"><div class="ic">// prefix</div><h4>Awalan teks</h4><p><code>WHERE nama LIKE 'Bud%'</code> — bisa pakai index (tapi <code>'%budi'</code> tidak).</p></div>
+        <div class="card up"><div class="ic">// sort</div><h4>Pengurutan</h4><p><code>ORDER BY</code> pada kolom ber-index sering gratis — datanya sudah urut.</p></div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Untuk pemula</div>
+          <p>Kamu tidak perlu hafal cara kerja B-Tree sampai detail. Cukup ingat dua hal: <strong>(1)</strong> indeks itu <em>terurut</em>, makanya cocok untuk <code>=</code>, rentang, awalan, dan <code>ORDER BY</code>; <strong>(2)</strong> karena berbentuk pohon seimbang, mencarinya butuh <em>sangat sedikit</em> langkah berapa pun ukuran datanya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 COMPOSITE & URUTAN KOLOM ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Level berikutnya</span> · Composite index</div>
+        <h2>Satu indeks untuk beberapa kolom — urutannya penting!</h2>
+      </div>
+      <p class="lead reveal">Sering kita menyaring lebih dari satu kolom sekaligus, misalnya <code>WHERE kota = 'Bandung' AND umur = 25</code>. Untuk ini ada <strong>composite index</strong> (indeks gabungan beberapa kolom). Tapi ada satu aturan yang sering bikin pemula bingung: <strong>urutan kolom sangat menentukan</strong>.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — buku telepon (diurutkan nama belakang, lalu nama depan)</div>
+        <p>Buku telepon diurutkan berdasarkan <em>nama belakang</em> dulu, baru <em>nama depan</em>. Cari "Santoso, Budi"? Gampang — buka ke "Santoso", lalu cari "Budi". Tapi cari semua orang bernama depan "Budi" tanpa tahu nama belakangnya? Buku telepon <strong>tidak membantu sama sekali</strong> — kamu harus baca semua halaman. Composite index persis begitu: urut dari kolom pertama, lalu kolom kedua.</p>
+      </div>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">composite index (kota, umur) — aturan "prefix kiri"</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="k">CREATE INDEX</span> idx_kota_umur <span class="k">ON</span> users (kota, umur);
+
+<span class="hl-good">WHERE kota = 'Bandung' AND umur = 25   -- ✅ pakai index penuh</span>
+<span class="hl-good">WHERE kota = 'Bandung'                 -- ✅ pakai index (kolom pertama)</span>
+<span class="hl-bad">WHERE umur = 25                        -- ❌ index TIDAK terpakai (lewati kolom pertama)</span></pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Aturan praktis</div>
+          <p>Index <code>(A, B)</code> berguna untuk query yang menyaring <strong>A</strong>, atau <strong>A dan B</strong> — tapi <em>tidak</em> untuk yang hanya menyaring <strong>B</strong>. Ini disebut aturan <em>leftmost prefix</em>. Maka taruh kolom yang <strong>paling sering &amp; paling selektif</strong> di depan.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Aturan ini juga alasan kenapa kamu tidak perlu bikin indeks terpisah untuk <code>(kota)</code> kalau sudah punya <code>(kota, umur)</code> — yang gabungan sudah mencakup pencarian per <code>kota</code> saja.</p>
+    </div>
+  </section>
+
+  <!-- ============ 05 TRADE-OFF ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Indeks mempercepat baca, tapi memperlambat tulis</h2>
+      </div>
+      <p class="lead reveal">Kalau indeks sehebat itu, kenapa database tidak meng-indeks semua kolom otomatis? Karena indeks <strong>ada harganya</strong>. Tiap kali kamu <code>INSERT</code>, <code>UPDATE</code>, atau <code>DELETE</code>, <strong>semua indeks pada tabel itu juga harus diperbarui</strong> supaya tetap akurat.</p>
+
+      <div class="quote reveal d1">
+        <p>“Indeks yang dipilih dengan baik mempercepat query baca, tetapi setiap indeks memperlambat penulisan.”</p>
+        <cite>— Martin Kleppmann, <i>Designing Data-Intensive Applications</i> (Bab 3)</cite>
+      </div>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — indeks buku yang harus selalu akurat</div>
+        <p>Indeks di belakang buku mempercepat pembaca. Tapi setiap kali penulis menyisipkan paragraf baru di tengah, <strong>semua nomor halaman di indeks bisa bergeser</strong> dan harus diperbaiki. Makin banyak indeks (indeks istilah, indeks nama, indeks gambar…), makin berat pekerjaan tiap kali bukunya diubah. Begitu juga tabel: tiap tulis = perbarui semua indeksnya.</p>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="good-h">// Yang indeks berikan</h4>
+          <ul class="good-l">
+            <li>Query <code>SELECT</code> jauh lebih cepat.</li>
+            <li><code>ORDER BY</code> &amp; <code>JOIN</code> lebih ringan.</li>
+            <li>Bisa menjamin keunikan (<code>UNIQUE</code>).</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang indeks minta</h4>
+          <ul class="bad-l">
+            <li><code>INSERT/UPDATE/DELETE</code> lebih lambat.</li>
+            <li>Memakan ruang disk tambahan.</li>
+            <li>Indeks tak terpakai = beban murni.</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Inilah <strong>trade-off</strong> inti penyimpanan data: kamu menukar kecepatan tulis demi kecepatan baca. Untuk aplikasi yang lebih sering membaca daripada menulis (kebanyakan aplikasi web), pertukaran ini hampir selalu sepadan — <em>asalkan</em> indeksnya memang dipakai.</p>
+    </div>
+  </section>
+
+  <!-- ============ 06 KASUS: EXPLAIN ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kasus nyata</span> · Membaca rencana query</div>
+        <h2>Dari 2 detik jadi 2 milidetik</h2>
+      </div>
+      <p class="lead reveal">Skenario yang sering terjadi: halaman dashboard tiba-tiba lambat. Pelan-pelan kamu temukan satu query yang makan 2 detik. Cara membuktikan penyebab &amp; solusinya bukan menebak — tapi pakai <code>EXPLAIN ANALYZE</code>, perintah yang menunjukkan <strong>bagaimana database menjalankan query-mu</strong>.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">SEBELUM — tanpa index</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="k">EXPLAIN ANALYZE</span>
+<span class="k">SELECT</span> * <span class="k">FROM</span> orders
+<span class="k">WHERE</span> customer_id = <span class="n">42</span>;
+
+<span class="hl-bad">Seq Scan on orders
+  rows=2.000.000
+  actual time=<span class="n">1985</span> ms   🐢</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">SESUDAH — + index</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="k">CREATE INDEX</span> idx_orders_cust
+  <span class="k">ON</span> orders (customer_id);
+
+<span class="hl-good">Index Scan using idx_orders_cust
+  rows=18
+  actual time=<span class="n">0.2</span> ms   ⚡</span></pre>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Yang perlu dilihat di EXPLAIN</div>
+          <p><strong>"Seq Scan"</strong> pada tabel besar = sinyal merah (database baca semua). <strong>"Index Scan"</strong> = indeks dipakai. Bandingkan <strong>rows</strong> yang dibaca vs. yang dikembalikan — kalau baca 2 juta untuk hasilkan 18, ada indeks yang hilang. Dan selalu lihat <strong>actual time</strong>, bukan tebakan.</p>
+        </div>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>“Aturan pertama optimasi: jangan lakukan. Aturan kedua (khusus ahli): jangan lakukan dulu — ukur terlebih dahulu.”</p>
+        <cite>— prinsip umum performa, sejalan dengan Donald Knuth</cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 JENIS INDEX ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Peta · Tidak cuma satu macam</div>
+        <h2>Jenis-jenis index yang berguna diketahui</h2>
+      </div>
+      <p class="lead reveal">B-Tree adalah indeks serba-guna dan yang paling sering kamu pakai. Tapi ada beberapa jenis lain yang berguna untuk kebutuhan khusus. Sebagai pemula, cukup <strong>kenali namanya</strong> dan kapan kira-kira dipakai.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// B-Tree</div><h4>Serba-guna (default)</h4><p>Untuk <code>=</code>, rentang, awalan, <code>ORDER BY</code>. 90% kebutuhan terjawab di sini.</p></div>
+        <div class="card up"><div class="ic">// UNIQUE</div><h4>Unik</h4><p>Mempercepat <em>sekaligus</em> menjamin tak ada nilai kembar (mis. email, username).</p></div>
+        <div class="card up"><div class="ic">// Composite</div><h4>Gabungan kolom</h4><p>Beberapa kolom dalam satu index. Ingat aturan urutan (leftmost prefix).</p></div>
+        <div class="card up"><div class="ic">// Partial</div><h4>Sebagian baris</h4><p>Index hanya untuk baris tertentu, mis. <code>WHERE status = 'aktif'</code>. Lebih kecil &amp; cepat.</p></div>
+        <div class="card up"><div class="ic">// Covering</div><h4>Mencakup kolom hasil</h4><p>Index memuat semua kolom yang dibutuhkan query → DB tak perlu sentuh tabel sama sekali.</p></div>
+        <div class="card up"><div class="ic">// Hash</div><h4>Hash</h4><p>Sangat cepat untuk <code>=</code> persis, tapi <strong>tidak</strong> untuk rentang atau urutan.</p></div>
+        <div class="card up"><div class="ic">// GIN / Full-text</div><h4>Pencarian teks &amp; JSON</h4><p>Untuk cari kata di dalam dokumen teks atau di dalam kolom JSON/array.</p></div>
+        <div class="card up"><div class="ic">// Spatial</div><h4>Geospasial</h4><p>Untuk data lokasi/peta (mis. "restoran dalam radius 2 km"). Contoh: R-Tree / GiST.</p></div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Jangan kewalahan dengan daftar ini. Mulai dari <b>B-Tree</b> dan <b>UNIQUE</b> — itu sudah menyelesaikan mayoritas kasus. Jenis lain dipelajari <b>saat kamu benar-benar menemui masalahnya</b>, bukan dihafal di depan.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 SALAH KAPRAH ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">× Realita · Jebakan umum</div>
+        <h2>Kesalahan indeks yang sering dilakukan pemula</h2>
+      </div>
+      <p class="lead reveal">Indeks ampuh, tapi gampang disalahgunakan. Lebih banyak indeks <strong>bukan</strong> berarti lebih cepat — sering malah sebaliknya. Ini jebakan yang paling sering ditemui.</p>
+
+      <div class="grid reveal d1">
+        <div class="card down"><div class="ic">// over-indexing</div><h4>Indeks-kan semuanya</h4><p>Tiap indeks memperlambat tulis &amp; makan disk. Indeks yang tak pernah dipakai = beban murni tanpa manfaat.</p></div>
+        <div class="card down"><div class="ic">// low selectivity</div><h4>Kolom bernilai sedikit</h4><p>Index pada kolom seperti <code>jenis_kelamin</code> (cuma 2 nilai) hampir percuma — separuh tabel tetap kena. Index berguna saat nilainya <em>beragam</em>.</p></div>
+        <div class="card down"><div class="ic">// function on column</div><h4>Fungsi membungkus kolom</h4><p><code>WHERE LOWER(email) = '...'</code> membuat index biasa pada <code>email</code> <strong>tidak terpakai</strong>. Solusinya index ekspresi, atau simpan datanya sudah ternormalisasi.</p></div>
+        <div class="card down"><div class="ic">// leading wildcard</div><h4>LIKE '%kata'</h4><p>Awalan bebas (<code>'%budi'</code>) tak bisa pakai B-Tree. Hanya <code>'budi%'</code> (awalan tetap) yang bisa.</p></div>
+        <div class="card down"><div class="ic">// duplikat</div><h4>Index tumpang tindih</h4><p>Punya <code>(kota, umur)</code> <em>dan</em> <code>(kota)</code> terpisah = mubazir; yang gabungan sudah mencakup.</p></div>
+        <div class="card down"><div class="ic">// menebak</div><h4>Optimasi tanpa mengukur</h4><p>Menambah index berdasar firasat, bukan data <code>EXPLAIN</code>. Sering salah sasaran &amp; menambah beban sia-sia.</p></div>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>“Optimasi prematur adalah akar dari segala keburukan.”</p>
+        <cite>— Donald Knuth</cite>
+      </div>
+
+      <p class="body reveal d2">Maksudnya bukan "jangan pernah pakai indeks", tapi: <strong>tambahkan indeks karena ada masalah nyata yang terukur</strong> (query lambat yang kamu lihat di <code>EXPLAIN</code>), bukan karena menebak-nebak. Ukur dulu, baru indeks.</p>
+    </div>
+  </section>
+
+  <!-- ============ 09 PENUTUP ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Indeks: loncat, jangan baca semua</h2>
+      </div>
+      <p class="lead reveal">Indeks adalah cara paling ampuh dan paling sering dipakai untuk membuat database cepat. Konsepnya sesederhana indeks di belakang buku — tapi dampaknya bisa mengubah query 2 detik jadi 2 milidetik.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Tanpa index</b> — database baca seluruh tabel (full scan); lambat saat data besar.</li>
+          <li><b>Index = papan petunjuk</b> — struktur terurut untuk loncat ke data.</li>
+          <li><b>B-Tree</b> — pohon seimbang; cari 1 dari sejuta cukup ~20 langkah.</li>
+          <li><b>Composite</b> — urutan kolom penting; pakai aturan leftmost prefix.</li>
+          <li><b>Ada harganya</b> — mempercepat baca, memperlambat tulis &amp; makan disk.</li>
+          <li><b>Ukur dengan <code>EXPLAIN</code></b> — tambah index karena bukti, bukan firasat.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Indeks-kan kolom yang <strong>sering kamu cari</strong> dan yang <strong>nilainya beragam</strong> — terutama kolom di <code>WHERE</code>, <code>JOIN</code>, dan <code>ORDER BY</code>. Jangan indeks-kan semuanya: tiap indeks adalah janji yang harus database tepati di setiap penulisan. Mulai dari B-Tree dan UNIQUE, buktikan dampaknya lewat <code>EXPLAIN</code>, dan biarkan masalah nyata yang memandu indeks berikutnya.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "An index makes the query fast." — Use The Index, Luke!
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Database Indexing</b> · Kenapa &amp; bagaimana, buat pemula · contoh SQL (Postgres) · rujukan: DDIA &amp; Use The Index, Luke! · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

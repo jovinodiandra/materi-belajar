@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OOP — The Lineage of Objects</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<a id="__exitbtn" href="../../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/oop/<b>the-lineage-of-objects.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 14</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Garis waktu</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Sebelum objek</div>
+    <a href="#c01"><span class="yr">1957</span> Era prosedural</a>
+    <a href="#c02"><span class="yr">196x</span> Kode mulai berantakan</a>
+
+    <div class="rail__part">II · Lahirnya OOP</div>
+    <a href="#c03"><span class="yr">1967</span> Simula</a>
+    <a href="#c04"><span class="yr">1972</span> Smalltalk &amp; Alan Kay</a>
+    <a href="#c05"><span class="yr">1985</span> C++ &amp; industri</a>
+
+    <div class="rail__part">III · Konsep inti</div>
+    <a href="#c06"><span class="yr">◆</span> Class &amp; Object</a>
+    <a href="#c07"><span class="yr">◆</span> Encapsulation</a>
+    <a href="#c08"><span class="yr">◆</span> Abstraction</a>
+    <a href="#c09"><span class="yr">◆</span> Inheritance</a>
+    <a href="#c10"><span class="yr">◆</span> Polymorphism</a>
+    <a href="#c11"><span class="yr">◆</span> Composition</a>
+
+    <div class="rail__part">IV · Realita</div>
+    <a href="#c12"><span class="yr">+</span> Keuntungan</a>
+    <a href="#c13"><span class="yr">!</span> Kendala</a>
+    <a href="#c14"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Sejarah &amp; konsep — sebuah evolusi, bukan dogma</div>
+      <h1 class="reveal d1">Objek tidak ditemukan sekali jadi. Mereka <span class="accent">berevolusi</span>.</h1>
+      <p class="sub reveal d2">
+        OOP bukan turun dari langit. Dia jawaban atas rasa sakit yang nyata: kode yang makin lama makin berantakan.
+        Deck ini nelusuri <b>dari mana objek datang</b>, <b>masalah apa yang dia pecahkan</b>, lalu masuk pelan-pelan
+        ke konsep intinya — tiap konsep dijelaskan <b>kenapa dibutuhkan</b> dulu, baru caranya. Ditutup jujur: untung
+        OOP, dan juga di mana dia <b>bikin repot</b>.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">1957</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>FORTRAN</b> <span>— dunia prosedural: data &amp; fungsi terpisah</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">1967</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Simula 67</b> <span>— class &amp; object pertama lahir</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">1972</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Smalltalk</b> <span>— visi Alan Kay terwujud (istilah "object-oriented" dia cetuskan ~1966)</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">1985</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>C++</b> <span>— OOP masuk industri besar-besaran</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">1995</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Java</b> <span>— OOP jadi arus utama</span></div></div>
+        <div class="tl__row"><div class="tl__yr">20xx</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>FP &amp; data-oriented</b> <span>— pendulum berayun balik</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+
+      <div class="why reveal d4">
+        <p class="tag">◆ Buat apa ini? Kenapa pakai OOP?</p>
+        <p><b>Given</b> — program prosedural: data (<code>struct</code>) dan fungsi yang mengolahnya hidup terpisah, dan makin lama codebase-nya makin besar.</p>
+        <p><b>When</b> — banyak bagian kode (validasi, laporan, proses lain-lain) sama-sama bergantung pada struktur data yang sama, lalu struktur itu perlu diubah.</p>
+        <p><b>Then</b> — perubahan pada satu struktur data bikin banyak fungsi lain ikut rusak, karena tidak ada yang menjaga aturan atau menyembunyikan detailnya.</p>
+        <p>→ makanya kita pakai <em>OOP</em> — bungkus data &amp; perilaku jadi satu unit (object) yang terkontrol.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 01 PROCEDURAL ERA ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">1957–1967</span> · Paradigma prosedural</div>
+        <h2>Dulu, program cuma satu daftar instruksi</h2>
+      </div>
+      <p class="lead reveal">Sebelum ada objek, cara kita ngoding itu <strong>prosedural</strong> (alias imperatif): kasih komputer urutan langkah—lakuin ini, terus itu, terus itu. FORTRAN (1957) dan COBOL (1959) bawa kita dari bahasa mesin ke bahasa tingkat tinggi, tapi modelnya tetap sama: <strong>data di satu sisi, fungsi yang ngolah data di sisi lain.</strong></p>
+
+      <p class="body reveal d1">Mereka nggak nyatu — dan ini bagian pentingnya. Sebuah variabel itu cuma <em>tempat naruh nilai</em>; nggak ada aturan yang nempel di situ. Misalnya kamu simpan saldo di variabel <code>balance</code>. Aturan "saldo nggak boleh minus" itu cuma ada di kepala kamu — <strong>bukan</strong> di <code>balance</code>-nya. Jadi baris kode mana pun, di file mana pun, bisa nulis <code>balance = -999</code> dan nggak ada yang protes.</p>
+      <p class="body reveal d1">Itu maksud "telanjang": datanya <strong>nggak punya pelindung</strong>. Nggak ada yang jaga aturannya, nggak ada yang sembunyiin detailnya. Buat program kecil ini masih oke. Buat program gede, di sinilah benih masalahnya — persis kayak di kode bawah ini.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">account.c — gaya prosedural</span><span class="lang c">C</span></div>
+<pre class="code"><span class="c">/* data dan fungsi hidup terpisah */</span>
+<span class="k">struct</span> <span class="t">Account</span> { <span class="k">long</span> balance; };
+
+<span class="k">void</span> <span class="f">deposit</span>(<span class="k">struct</span> <span class="t">Account</span> *a, <span class="k">long</span> amount) {
+    a-&gt;balance += amount;
+}
+
+<span class="c">/* tapi data-nya telanjang — siapa pun bisa: */</span>
+acc.balance = <span class="n">-999999</span>;   <span class="c">/* nggak ada yang melarang. */</span></pre>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Bukan cuma C — variabel di bahasa lain zaman itu sama telanjangnya</div>
+        <div class="erabox__row"><span class="erabox__lang">COBOL</span><code>01 BALANCE PIC S9(9) VALUE 0.</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Pascal</span><code>var balance: integer;</code></div>
+        <div class="erabox__row"><span class="erabox__lang">BASIC</span><code>100 LET BALANCE = 0</code></div>
+        <p class="erabox__note">Bahasa beda, ide sama: deklarasi cuma "pesan tempat buat sebuah nilai". Mau nempelin aturan "nggak boleh minus" ke <code>BALANCE</code>? Di model ini <b>nggak ada slotnya</b> — aturannya selalu hidup di tempat lain (di kepala kamu, atau di <code>IF</code> yang kesebar ke mana-mana).</p>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>“Kualitas programmer berbanding terbalik dengan kerapatan <span style="font-style:normal">goto</span> dalam program yang dia tulis.”</p>
+        <cite>— Edsger W. Dijkstra, "Go To Statement Considered Harmful" (1968)</cite>
+      </div>
+      <p class="body reveal d2">Structured programming (if/loop/fungsi, buang <code>goto</code>) merapikan <em>alur</em>. Dan ngaku aja: masalah "lindungi satu nilai" tadi sebenarnya cukup dibereskan dengan <strong>bikin tipe yang bener</strong>—itu pun bukan ide khusus OOP. Tapi ada satu masalah yang <strong>nggak ketolong cuma dengan tipe</strong>: gimana ngurus banyak <em>jenis</em> yang beda-beda dan terus nambah. Itu yang kita bahas berikutnya.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 THE MESS ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">196x</span> · Krisis kompleksitas</div>
+        <h2>Begitu program membesar, semuanya mulai berantakan</h2>
+      </div>
+      <p class="lead reveal">Software tahun 60-an makin gede dan makin banyak yang ngerjain bareng. Model "data telanjang + fungsi bebas" mulai retak. Orang sampai nyebutnya <strong>"software crisis"</strong>—proyek telat, mahal, penuh bug.</p>
+
+      <p class="body reveal d1">Masalah paling nyebelin—dan yang <strong>nggak ketolong cuma dengan bikin tipe</strong>—muncul pas kamu punya banyak <em>jenis</em> yang beda perilaku. Cara prosedural zaman itu: simpan "tag" jenis di data, lalu <code>switch</code> di mana-mana.</p>
+
+      <div class="code-card bad reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">payment.c — switch yang kesebar</span><span class="lang c">C</span></div>
+<pre class="code"><span class="k">long</span> <span class="f">process</span>(<span class="k">struct</span> <span class="t">Payment</span> *p, <span class="k">long</span> amount) {
+    <span class="k">switch</span> (p-&gt;type) {
+        <span class="k">case</span> GOPAY:  <span class="k">return</span> <span class="f">gopay_charge</span>(p, amount);
+        <span class="k">case</span> CREDIT: <span class="k">return</span> <span class="f">credit_charge</span>(p, amount);
+        <span class="k">case</span> BANK:   <span class="k">return</span> <span class="f">bank_charge</span>(p, amount);
+    }
+}
+<span class="c">/* switch yang SAMA muncul lagi di refund(), report(), validate()... */</span>
+<span class="c">/* nambah "OVO"? edit SEMUA tempat. lupa satu = bug diam-diam. */</span></pre>
+      </div>
+      <p class="body reveal d1">Bikin tipe sebagus apa pun <strong>nggak</strong> ngehapus <code>switch</code> ini. Yang kamu butuh: nambah <em>jenis baru</em> tanpa nyentuh kode lama. Persis inilah yang nanti dibereskan <strong>polymorphism</strong>—pembeda asli OOP, bukan sekadar "tipe yang rapi".</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="bad-h">Yang bikin pusing</h4>
+          <ul class="bad-l">
+            <li><b>Global state</b> — data dipegang rame-rame, susah dilacak siapa yang ngubah</li>
+            <li><b>Spaghetti</b> — logika nyebar, satu perubahan ngerusak tempat tak terduga</li>
+            <li><b>Nggak ada batas</b> — semua fungsi bisa nyentuh semua data</li>
+            <li><b>Aturan kesebar</b> — "saldo nggak boleh minus" ditulis ulang di tiap pemanggil</li>
+            <li>Susah dimodelin ke dunia nyata yang isinya "benda-benda"</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Yang sebenarnya dibutuhkan</h4>
+          <ul class="good-l">
+            <li>Cara <b>membungkus</b> data bareng aturannya jadi satu</li>
+            <li>Batas yang jelas: detail dalam disembunyikan</li>
+            <li>Bagian-bagian mandiri yang bisa <b>dipakai ulang</b></li>
+            <li>Bahasa yang ngomongin <b>"benda"</b>, bukan cuma langkah</li>
+            <li>Nambah fitur tanpa ngebongkar yang sudah jalan</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Inti masalahnya</div>
+          <p>Bukan soal "kurang fitur bahasa". Masalahnya <b>kompleksitas</b>: gimana manusia bisa nalar sistem yang terlalu besar buat dipegang sekaligus di kepala. Jawaban yang muncul: kelompokkan data + perilaku jadi unit-unit kecil yang punya batas. Unit itu nanti namanya <b>objek</b>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 SIMULA ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">1967</span> · Kelahiran objek</div>
+        <h2>Simula 67 — saat "class" dan "object" pertama ada</h2>
+      </div>
+      <p class="lead reveal">Di Norwegian Computing Center, Oslo, dua orang—<strong>Ole-Johan Dahl</strong> dan <strong>Kristen Nygaard</strong>—lagi bikin program <em>simulasi</em> (kapal, antrean, sistem fisik). Buat itu mereka butuh cara natural buat memodelkan "benda" yang punya data sekaligus kelakuan. Lahirlah <strong>Simula 67</strong>.</p>
+
+      <p class="body reveal d1">Simula ngenalin barang-barang yang sekarang kita anggap biasa: <strong>class</strong> (cetakan), <strong>object</strong> (instance), <strong>inheritance</strong> (subclass), dan <strong>virtual method</strong>. Untuk pertama kalinya, data dan fungsi yang ngolahnya tinggal di satu tempat—bukan kebetulan, tapi by design. Ini dianggap bahasa OOP pertama.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Kenapa muncul dari simulasi</div>
+        <p>Mau memodelkan 100 kapal di pelabuhan? Tiap kapal punya posisi, kecepatan, muatan (data) <em>dan</em> bisa berlayar, bongkar muat (perilaku). Maksa itu jadi "array data + fungsi lepas" bikin pusing. Jauh lebih masuk akal kalau tiap kapal jadi <em>satu benda</em> yang nyimpen datanya sendiri dan tahu cara berkelakuan. Dari kebutuhan praktis inilah objek lahir.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 SMALLTALK ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">1972</span> · Visi yang radikal</div>
+        <h2>Smalltalk &amp; Alan Kay — "semua adalah objek"</h2>
+      </div>
+      <p class="lead reveal">Di Xerox PARC, <strong>Alan Kay</strong> dan timnya bikin <strong>Smalltalk</strong>. Istilah <strong>"object-oriented programming"</strong> sendiri sudah dia cetuskan beberapa tahun sebelumnya (~1966–67); di PARC-lah visinya beneran terwujud. Dan visinya beda dari yang sering kita bayangin sekarang: buat Kay, intinya bukan class atau warisan—intinya <strong>objek-objek yang saling kirim pesan</strong>, terinspirasi sel biologis yang ngobrol satu sama lain.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">workspace.st — kirim pesan</span><span class="lang smalltalk">Smalltalk</span></div>
+<pre class="code"><span class="c">"Di Smalltalk, kamu nggak 'memanggil fungsi'."</span>
+<span class="c">"Kamu MENGIRIM PESAN ke sebuah objek."</span>
+| account |
+account := <span class="t">Account</span> new.
+account deposit: <span class="n">100</span>.    <span class="c">"kirim pesan #deposit: berisi 100"</span>
+account balance.         <span class="c">"kirim pesan #balance, objek yang memutuskan respons"</span></pre>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>“Maaf, dulu saya keburu menciptakan istilah ‘objek’ — itu bikin orang fokus ke ide yang kecil. Ide besarnya adalah <span style="font-style:normal">messaging</span>.”</p>
+        <cite>— Alan Kay</cite>
+      </div>
+      <p class="body reveal d2">Pelajaran yang sering kelewat: OOP versi aslinya soal <strong>objek yang mandiri, nyimpen state-nya sendiri, dan ngobrol lewat pesan</strong>—bukan lomba bikin hierarki warisan. Kita balik lagi ke poin ini di bab Kendala.</p>
+    </div>
+  </section>
+
+  <!-- ============ 05 C++ & INDUSTRY ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">1979–1995</span> · Mengapa OOP meledak</div>
+        <h2>C++, lalu Java — OOP menaklukkan industri</h2>
+      </div>
+      <p class="lead reveal"><strong>Bjarne Stroustrup</strong> di Bell Labs mulai "C with Classes" (1979), yang jadi <strong>C++</strong> (rilis 1985). Jeniusnya: dia nempelin OOP ke <strong>C</strong>—bahasa yang udah dipakai jutaan orang. Programmer nggak perlu pindah dunia; mereka tinggal dapat objek sebagai bonus. Sepuluh tahun kemudian <strong>Java</strong> (1995) bikin OOP jadi default buat software enterprise &amp; web.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Apa yang akhirnya di-solve OOP</div>
+        <p>Era ini = ledakan software gede: GUI, sistem perbankan, aplikasi ratusan ribu baris yang dikerjain tim besar. OOP ngasih empat hal yang persis dibutuhin: <em>encapsulation</em> (lindungi data + aturannya), <em>abstraction</em> (program ke kontrak, bukan detail), <em>inheritance</em> (pakai ulang tanpa copas), dan <em>polymorphism</em> (nambah fitur tanpa ngebongkar yang lama). Plus: kode jadi bisa dipetakan langsung ke "benda" di domain bisnis.</p>
+      </div>
+
+      <p class="body reveal d2">Mulai bab berikutnya kita masuk konsep intinya. Aturannya tetap: <strong>tiap konsep dibuka dengan masalah yang dia pecahkan</strong>—biar kamu paham <em>kenapa</em>, bukan sekadar hafal <em>apa</em>. Semua contoh pakai <strong>Java 8</strong>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 06 CLASS & OBJECT ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Konsep · Class &amp; Object</div>
+        <h2>Class itu cetakan. Object itu hasil cetakannya.</h2>
+      </div>
+
+      <div class="why reveal">
+        <div class="tag">◆ Kenapa dibutuhkan</div>
+        <p>Bayangin sistem check-in. Tiap penumpang punya bentuk data yang <em>sama</em>—nama, nomor penerbangan, kursi—tapi isinya beda. Kalau kamu simpan pakai variabel lepas (<code>nama1, flight1, kursi1, nama2, ...</code>), 200 penumpang langsung bikin kode berantakan dan gampang ketuker. Kamu butuh <em>satu definisi bentuk</em>, lalu cetak sebanyak yang perlu.</p>
+      </div>
+
+      <p class="lead reveal d1">Itulah class dan object. <strong>Class</strong> mendefinisikan bentuk + kelakuan sekali. <strong>Object</strong> adalah instance konkretnya—tiap penumpang dapat tiketnya sendiri.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">tickets.c — tanpa class</span><span class="lang c">C</span></div>
+<pre class="code"><span class="c">/* TANPA class: bentuk sama → array sejajar */</span>
+<span class="k">char</span> *passenger[<span class="n">300</span>];
+<span class="k">char</span> *flight[<span class="n">300</span>];
+<span class="k">char</span> *seat[<span class="n">300</span>];
+
+passenger[<span class="n">0</span>] = <span class="s">"Rama"</span>;  flight[<span class="n">0</span>] = <span class="s">"GA-204"</span>;
+seat[<span class="n">0</span>] = <span class="s">"12C"</span>;
+passenger[<span class="n">1</span>] = <span class="s">"Sinta"</span>; flight[<span class="n">1</span>] = <span class="s">"GA-204"</span>;
+seat[<span class="n">1</span>] = <span class="s">"12D"</span>;
+
+<span class="c">/* "tiket" cuma kesepakatan index antar-array. */</span>
+<span class="c">/* lupa update satu? data desync diam-diam. */</span>
+<span class="c">/* summary() pun fungsi lepas, nggak nempel. */</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">BoardingPass.java</span><span class="lang">Java 8</span></div>
+<pre class="code"><span class="c">// CETAKAN: bentuk + kelakuan</span>
+<span class="k">public final class</span> <span class="t">BoardingPass</span> {
+    <span class="k">private final</span> <span class="t">String</span> passenger;
+    <span class="k">private final</span> <span class="t">String</span> flight;
+    <span class="k">private final</span> <span class="t">String</span> seat;
+
+    <span class="k">public</span> <span class="f">BoardingPass</span>(<span class="t">String</span> passenger,
+                        <span class="t">String</span> flight,
+                        <span class="t">String</span> seat) {
+        <span class="k">this</span>.passenger = passenger;
+        <span class="k">this</span>.flight = flight;
+        <span class="k">this</span>.seat = seat;
+    }
+    <span class="k">public</span> <span class="t">String</span> <span class="f">summary</span>() {
+        <span class="k">return</span> passenger + <span class="s">" · "</span> + flight
+             + <span class="s">" · kursi "</span> + seat;
+    }
+}
+
+<span class="c">// OBJEK = hasil cetakan; isi beda-beda</span>
+<span class="t">BoardingPass</span> rama =
+    <span class="k">new</span> <span class="t">BoardingPass</span>(<span class="s">"Rama"</span>, <span class="s">"GA-204"</span>, <span class="s">"12C"</span>);
+<span class="t">BoardingPass</span> sinta =
+    <span class="k">new</span> <span class="t">BoardingPass</span>(<span class="s">"Sinta"</span>, <span class="s">"GA-204"</span>, <span class="s">"12D"</span>);</pre>
+        </div>
+      </div>
+      <p class="body reveal d2">Jujur dulu: C punya <code>struct</code> juga buat ngelompokin field—jadi "ngumpulin data" doang bukan keajaiban OOP. Tapi lihat versi kiri: kelakuan kayak <code>summary()</code> tetap fungsi <em>lepas</em> dari datanya, dan nggak ada yang nyegah field diutak-atik. Class nyatuin <strong>data + kelakuan jadi satu unit</strong>—kamu manggil <code>rama.summary()</code>, bukan <code>summary(&amp;rama)</code>—sekaligus jadi pondasi buat Encapsulation &amp; Polymorphism di bab berikutnya.</p>
+      <p class="body reveal d2">Satu cetakan, dua tiket berbeda. Tambah penumpang ke-300? Tinggal <code>new</code> lagi. Tambah field "gate"? Ubah di <em>satu</em> tempat (class-nya), semua tiket ikut.</p>
+    </div>
+  </section>
+
+  <!-- ============ 07 ENCAPSULATION ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Konsep · Encapsulation</div>
+        <h2>Sembunyikan datanya. Jaga aturannya di satu tempat.</h2>
+      </div>
+
+      <div class="why reveal">
+        <div class="tag">◆ Kenapa dibutuhkan — kasus nyata</div>
+        <p>Bikin termostat pintar. Aturannya: target suhu wajib 16–30°C. Kalau field-nya <code>public</code>, kode mana pun bisa nulis <code>t.targetC = 1000;</code>—kompiler diem aja, perangkat kebakar. Lebih parah: aturan "16–30" itu jadi <em>tanggung jawab tiap pemanggil</em> buat ngecek. Aturannya kesebar ke puluhan tempat, dan suatu hari pasti ada yang lupa.</p>
+      </div>
+
+      <p class="lead reveal d1">Encapsulation = <strong>tutup state-nya (private), buka pintunya lewat method yang menjaga aturan.</strong> Aturan hidup di <em>satu</em> tempat: di dalam objek yang memilikinya.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">thermostat.c — tanpa enkapsulasi</span><span class="lang c">C</span></div>
+<pre class="code"><span class="k">struct</span> <span class="t">Thermostat</span> { <span class="k">int</span> targetC; };
+
+<span class="c">/* ada setter yang validasi... */</span>
+<span class="k">void</span> <span class="f">set_target</span>(<span class="k">struct</span> <span class="t">Thermostat</span> *t, <span class="k">int</span> c) {
+    <span class="k">if</span> (c &lt; <span class="n">16</span> || c &gt; <span class="n">30</span>) <span class="k">return</span>;
+    t-&gt;targetC = c;
+}
+
+<span class="c">/* ...TAPI ini tetap legal, nggak ada yg nyegah: */</span>
+t-&gt;targetC = <span class="n">1000</span>;   <span class="c">/* kebakar. */</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">Thermostat.java</span><span class="lang">Java 8</span></div>
+<pre class="code"><span class="k">public final class</span> <span class="t">Thermostat</span> {
+    <span class="k">private static final</span> <span class="k">int</span> MIN = <span class="n">16</span>, MAX = <span class="n">30</span>;
+    <span class="k">private</span> <span class="k">int</span> targetC;                 <span class="c">// disembunyikan</span>
+
+    <span class="k">public</span> <span class="f">Thermostat</span>(<span class="k">int</span> targetC) {
+        <span class="f">setTarget</span>(targetC);             <span class="c">// validasi</span>
+    }
+    <span class="k">public void</span> <span class="f">setTarget</span>(<span class="k">int</span> targetC) {
+        <span class="k">if</span> (targetC &lt; MIN || targetC &gt; MAX)
+            <span class="k">throw new</span> <span class="t">IllegalArgumentException</span>(
+                <span class="s">"target 16–30°C, bukan "</span> + targetC);
+        <span class="k">this</span>.targetC = targetC;
+    }
+    <span class="k">public</span> <span class="k">int</span> <span class="f">target</span>() { <span class="k">return</span> targetC; }  <span class="c">// baca boleh</span>
+}</pre>
+        </div>
+      </div>
+      <p class="body reveal d2">Sekarang <code>t.targetC = 1000</code> bahkan nggak bisa dikompilasi. Mau ubah suhu? Wajib lewat <code>setTarget</code> yang nolak nilai gila. Aturannya nggak mungkin dilanggar tanpa sengaja.</p>
+
+      <div class="caution reveal d2">
+        <span class="ico">▲</span>
+        <div class="caution__body"><b>Bukan dogma:</b> encapsulation itu soal <b>menjaga invariant</b>, bukan "tempel getter/setter ke semua field". Object yang isinya cuma <code>getX()/setX()</code> tanpa aturan apa pun (anemic) itu cuma struct yang kepanjangan—nggak nyembunyiin apa-apa.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 ABSTRACTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Konsep · Abstraction</div>
+        <h2>Bergantung ke kontrak, bukan ke detail</h2>
+      </div>
+
+      <div class="why reveal">
+        <div class="tag">◆ Kenapa dibutuhkan — kasus nyata</div>
+        <p>Checkout harus narik pembayaran. Hari ini cuma GoPay. Besok kartu kredit, lusa provider baru. Kalau checkout isinya <code>if (tipe == GOPAY) … else if (tipe == CC) …</code>, tiap nambah metode kamu kudu <em>ngedit checkout</em>—rawan rusak, dan ngelanggar prinsip "buka buat extension, tutup buat modifikasi".</p>
+      </div>
+
+      <p class="lead reveal d1">Abstraction = sembunyikan cara kerjanya di balik kontrak soal apa yang dia lakukan. Checkout cukup tahu satu hal: <strong>ada yang bisa <code>pay()</code></strong>. Soal GoPay atau kartu, itu urusan masing-masing implementasi.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">checkout.c — tanpa abstraksi</span><span class="lang c">C</span></div>
+<pre class="code"><span class="c">/* tipe = "tag"; caller bercabang sendiri: */</span>
+<span class="k">long</span> <span class="f">charge</span>(<span class="k">struct</span> <span class="t">Payment</span> *p, <span class="k">long</span> amount) {
+    <span class="k">if</span> (p-&gt;type == GOPAY)  <span class="k">return</span> <span class="f">gopay</span>(p, amount);
+    <span class="k">if</span> (p-&gt;type == CREDIT) <span class="k">return</span> <span class="f">credit</span>(p, amount);
+    <span class="k">return</span> <span class="n">-1</span>;
+}
+<span class="c">/* nambah "OVO"? edit fungsi ini &amp; yang mirip. */</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">PaymentMethod.java</span><span class="lang">Java 8</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">PaymentMethod</span> {
+    <span class="t">PaymentResult</span> <span class="f">pay</span>(<span class="k">long</span> amount);
+
+    <span class="k">default</span> <span class="t">String</span> <span class="f">label</span>() {                 <span class="c">// Java 8</span>
+        <span class="k">return</span> <span class="k">this</span>.<span class="f">getClass</span>().<span class="f">getSimpleName</span>();
+    }
+}
+
+<span class="k">final class</span> <span class="t">GoPay</span> <span class="k">implements</span> <span class="t">PaymentMethod</span> {
+    <span class="a">@Override</span> <span class="k">public</span> <span class="t">PaymentResult</span> <span class="f">pay</span>(<span class="k">long</span> amount) {
+        <span class="c">// ... panggil API GoPay ...</span>
+        <span class="k">return</span> <span class="t">PaymentResult</span>.<span class="f">success</span>();
+    }
+}
+
+<span class="c">// checkout NGGAK peduli yang mana — cukup kontraknya:</span>
+<span class="t">PaymentResult</span> <span class="f">charge</span>(<span class="t">PaymentMethod</span> method, <span class="k">long</span> amount) {
+    <span class="k">return</span> method.<span class="f">pay</span>(amount);
+}</pre>
+        </div>
+      </div>
+      <p class="body reveal d2">Tambah <code>BankTransfer</code>? Bikin satu class baru yang <code>implements PaymentMethod</code>. Checkout <strong>nggak disentuh sama sekali</strong>. Itu kekuatan abstraksi.</p>
+
+      <div class="caution reveal d2">
+        <span class="ico">▲</span>
+        <div class="caution__body"><b>Bukan dogma:</b> jangan bikin interface buat <b>satu</b> implementasi doang. Abstraksi spekulatif ("nanti mungkin perlu") itu beban, bukan kebaikan. Tunggu sampai muncul alasan kedua yang nyata.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 INHERITANCE ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Konsep · Inheritance</div>
+        <h2>Tulis yang sama sekali, khususkan yang beda</h2>
+      </div>
+
+      <div class="why reveal">
+        <div class="tag">◆ Kenapa dibutuhkan — kasus nyata</div>
+        <p>Katalog streaming. Movie, Episode, Documentary sama-sama punya judul, durasi, dan <code>play()</code> yang identik. Copas tiga hal itu ke tiga class = duplikasi. Suatu hari kamu benerin bug di <code>play()</code>—sekarang kamu kudu benerin di <em>tiga</em> tempat, dan pasti ada yang kelewat.</p>
+      </div>
+
+      <p class="lead reveal d1">Inheritance = taruh yang dipakai bareng di <strong>induk</strong>, biar anak-anaknya mewarisi. Yang beda tinggal di-<strong>override</strong>. Satu sumber kebenaran buat perilaku bersama.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">MediaItem.java</span><span class="lang">Java 8</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">MediaItem</span> {
+    <span class="k">private final</span> <span class="t">String</span> title;
+    <span class="k">private final</span> <span class="k">int</span> durationSec;
+
+    <span class="k">protected</span> <span class="f">MediaItem</span>(<span class="t">String</span> title, <span class="k">int</span> durationSec) {
+        <span class="k">this</span>.title = title; <span class="k">this</span>.durationSec = durationSec;
+    }
+    <span class="k">public void</span> <span class="f">play</span>() {                    <span class="c">// dipakai SEMUA anak</span>
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"▶ "</span> + <span class="f">summary</span>());
+    }
+    <span class="k">public abstract</span> <span class="t">String</span> <span class="f">summary</span>();      <span class="c">// tiap anak beda</span>
+    <span class="k">protected</span> <span class="t">String</span> <span class="f">title</span>() { <span class="k">return</span> title; }
+}
+
+<span class="k">public final class</span> <span class="t">Episode</span> <span class="k">extends</span> <span class="t">MediaItem</span> {
+    <span class="k">private final</span> <span class="k">int</span> number;
+    <span class="k">public</span> <span class="f">Episode</span>(<span class="t">String</span> title, <span class="k">int</span> durationSec, <span class="k">int</span> number) {
+        <span class="k">super</span>(title, durationSec);          <span class="c">// pakai konstruktor induk</span>
+        <span class="k">this</span>.number = number;
+    }
+    <span class="a">@Override</span> <span class="k">public</span> <span class="t">String</span> <span class="f">summary</span>() {
+        <span class="k">return</span> <span class="s">"Ep "</span> + number + <span class="s">" — "</span> + <span class="f">title</span>();
+    }
+}</pre>
+      </div>
+      <p class="body reveal d2">Catatan jujur: "numpang kode bareng" kayak gini sebenarnya juga bisa tanpa warisan—cukup fungsi bersama. Nilai asli inheritance baru kerasa pas digabung <strong>polymorphism</strong> (bab berikutnya): <code>play()</code> otomatis jalan di tiap subtipe, dan <code>summary()</code> nyesuaiin diri.</p>
+
+      <div class="caution reveal d2">
+        <span class="ico">▲</span>
+        <div class="caution__body"><b>Bukan dogma:</b> inheritance itu buat hubungan <b>"adalah" (is-a)</b>—Episode <i>adalah</i> MediaItem. Dipaksa cuma buat "numpang kode" bikin hierarki rapuh. Warisan yang kedalaman-nya 5 level itu bau. Sering kali <b>composition</b> (bab berikutnya) lebih sehat.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 POLYMORPHISM ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Konsep · Polymorphism</div>
+        <h2>Satu pemanggilan, banyak perilaku</h2>
+      </div>
+
+      <div class="why reveal">
+        <div class="tag">◆ Kenapa dibutuhkan — kasus nyata</div>
+        <p>Keranjang belanja nerapin daftar promo: diskon persen, beli-1-gratis-1, potongan flat. Tanpa polymorphism, kasir isinya <code>switch</code> raksasa atas jenis promo—dan tiap ada promo baru, kamu ngedit kasir lagi. Tiap edit = risiko ngerusak yang lama.</p>
+      </div>
+
+      <p class="lead reveal d1">Polymorphism = banyak tipe berbagi satu kontrak, tapi <strong>tiap tipe punya cara sendiri</strong>. Kasir cukup bilang <code>applyTo(...)</code>; objek promonya yang memutuskan rumusnya. Saat runtime, Java otomatis milih versi yang benar.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">Discount.java</span><span class="lang">Java 8</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">Discount</span> {
+    <span class="k">long</span> <span class="f">applyTo</span>(<span class="k">long</span> subtotal);             <span class="c">// tiap promo rumusnya beda</span>
+}
+
+<span class="k">class</span> <span class="t">PercentOff</span> <span class="k">implements</span> <span class="t">Discount</span> {
+    <span class="k">private final</span> <span class="k">int</span> pct;
+    <span class="t">PercentOff</span>(<span class="k">int</span> pct) { <span class="k">this</span>.pct = pct; }
+    <span class="k">public</span> <span class="k">long</span> <span class="f">applyTo</span>(<span class="k">long</span> s) { <span class="k">return</span> s - s * pct / <span class="n">100</span>; }
+}
+<span class="k">class</span> <span class="t">FlatOff</span> <span class="k">implements</span> <span class="t">Discount</span> {
+    <span class="k">private final</span> <span class="k">long</span> amount;
+    <span class="t">FlatOff</span>(<span class="k">long</span> amount) { <span class="k">this</span>.amount = amount; }
+    <span class="k">public</span> <span class="k">long</span> <span class="f">applyTo</span>(<span class="k">long</span> s) { <span class="k">return</span> <span class="t">Math</span>.<span class="f">max</span>(<span class="n">0</span>, s - amount); }
+}
+
+<span class="c">// kasir cuma looping — nggak tahu &amp; nggak peduli jenis promonya:</span>
+<span class="k">long</span> total = subtotal;
+<span class="k">for</span> (<span class="t">Discount</span> d : discounts) {
+    total = d.<span class="f">applyTo</span>(total);
+}</pre>
+      </div>
+      <p class="body reveal d2">Promo baru = satu class baru yang <code>implements Discount</code>. Kasir <strong>nol perubahan</strong>. Inilah cara OOP nepatin janji "open buat extension, closed buat modifikasi".</p>
+    </div>
+  </section>
+
+  <!-- ============ 11 COMPOSITION ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Konsep · Composition &gt; Inheritance</div>
+        <h2>Rakit dari bagian kecil, jangan paksakan warisan</h2>
+      </div>
+
+      <div class="why reveal">
+        <div class="tag">◆ Kenapa dibutuhkan — kasus nyata</div>
+        <p>Notifikasi bisa lewat Email / SMS / Push. Bisa Urgent atau biasa. Bisa Encrypted atau nggak. Kalau tiap kombinasi kamu bikin subclass—<code>EmailNotif</code>, <code>UrgentEmailNotif</code>, <code>EncryptedUrgentEmailNotif</code>, <code>SmsNotif</code>, …—jumlahnya meledak (2ⁿ). Hierarki warisan nggak sanggup nampung kombinasi.</p>
+      </div>
+
+      <p class="lead reveal d1">Solusinya: objek <strong>PUNYA</strong> bagian-bagian (has-a), bukan <strong>ADALAH</strong> turunan (is-a). Satu <code>Notification</code> menyusun sebuah channel + daftar perilaku. Kombinasi baru? <strong>Dirakit saat runtime</strong>, bukan bikin class baru.</p>
+
+      <div class="code-card good reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">Notification.java</span><span class="lang">Java 8</span></div>
+<pre class="code"><span class="c">// ❌ Warisan: tiap kombinasi = subclass → meledak 2ⁿ</span>
+<span class="c">// ✅ Komposisi: rakit dari bagian-bagian kecil</span>
+<span class="k">public final class</span> <span class="t">Notification</span> {
+    <span class="k">private final</span> <span class="t">Channel</span> channel;          <span class="c">// Email / SMS / Push</span>
+    <span class="k">private final</span> <span class="t">List</span>&lt;<span class="t">Transform</span>&gt; extras;   <span class="c">// Urgent, Encrypted, …</span>
+
+    <span class="k">public</span> <span class="f">Notification</span>(<span class="t">Channel</span> channel, <span class="t">List</span>&lt;<span class="t">Transform</span>&gt; extras) {
+        <span class="k">this</span>.channel = channel; <span class="k">this</span>.extras = extras;
+    }
+    <span class="k">public void</span> <span class="f">send</span>(<span class="t">String</span> msg) {
+        <span class="t">String</span> out = msg;
+        <span class="k">for</span> (<span class="t">Transform</span> t : extras) out = t.<span class="f">apply</span>(out);
+        channel.<span class="f">deliver</span>(out);
+    }
+}
+
+<span class="c">// rakit kombinasi apa pun (di dalam method) — tanpa class baru:</span>
+<span class="k">new</span> <span class="t">Notification</span>(<span class="k">new</span> <span class="t">Email</span>(), <span class="t">Arrays</span>.<span class="f">asList</span>(<span class="k">new</span> <span class="t">Urgent</span>(), <span class="k">new</span> <span class="t">Encrypted</span>()));</pre>
+      </div>
+      <div class="caution reveal d2">
+        <span class="ico">▲</span>
+        <div class="caution__body"><b>Bukan dogma:</b> "composition &gt; inheritance" itu pedoman, bukan hukum mati. Keduanya alat: warisan menang kalau hubungannya benar-benar "is-a" dan stabil; komposisi menang buat kombinasi yang banyak &amp; berubah-ubah.</div>
+      </div>
+      <p class="body reveal d2">Ini jembatan pas ke bab terakhir: di mana OOP <em>bikin repot</em>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 12 BENEFITS ============ -->
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Realita · Keuntungan</div>
+        <h2>Kenapa OOP bertahan puluhan tahun</h2>
+      </div>
+      <p class="lead reveal">Kalau dipakai pas masalahnya cocok, OOP beneran ngebantu—bukan kebetulan dia mendominasi enterprise sejak 90-an.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// modularity</div><h4>Batas yang jelas</h4><p>Tiap objek punya tanggung jawab &amp; batas sendiri. Kamu bisa ngerti satu bagian tanpa baca semuanya.</p></div>
+        <div class="card up"><div class="ic">// reuse</div><h4>Pakai ulang</h4><p>Interface &amp; komposisi bikin bagian bisa dipasang ulang di konteks lain tanpa copas.</p></div>
+        <div class="card up"><div class="ic">// maintainability</div><h4>Gampang dirawat</h4><p>Aturan hidup di satu tempat (encapsulation). Benerin bug sekali, nggak nyebar.</p></div>
+        <div class="card up"><div class="ic">// modeling</div><h4>Mirip dunia nyata</h4><p>Domain bisnis penuh "benda" (Order, Akun, Tiket). OOP memetakannya langsung.</p></div>
+        <div class="card up"><div class="ic">// extensibility</div><h4>Tambah tanpa bongkar</h4><p>Polymorphism = fitur baru lewat class baru, kode lama nggak disentuh.</p></div>
+        <div class="card up"><div class="ic">// team scale</div><h4>Skala tim</h4><p>Batas antar objek = batas antar orang. Tim besar bisa kerja paralel tanpa nabrak.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 13 DRAWBACKS ============ -->
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Realita · Kendala &amp; kritik</div>
+        <h2>Tapi OOP juga bikin repot — ini jujurnya</h2>
+      </div>
+      <p class="lead reveal">OOP bukan obat segala penyakit. Dipakai membabi buta, dia malah jadi sumber masalah. Ini keluhan yang nyata di lapangan.</p>
+
+      <div class="quote reveal d1">
+        <p>“Kamu pengen pisang, tapi yang kamu dapat malah gorila yang megang pisang—lengkap sama seluruh hutannya.”</p>
+        <cite>— Joe Armstrong (pencipta Erlang), soal coupling tersembunyi di OOP</cite>
+      </div>
+
+      <div class="grid reveal d1">
+        <div class="card down"><div class="ic">// over-engineering</div><h4>Abstraksi berlebihan</h4><p>Pabrik-dari-pabrik, interface buat satu implementasi, pola desain yang dipaksa. Kompleksitas yang kamu tambah sendiri.</p></div>
+        <div class="card down"><div class="ic">// fragile base</div><h4>Warisan rapuh</h4><p>Ubah class induk → diam-diam ngerusak semua anak. Hierarki dalam bikin perubahan menakutkan.</p></div>
+        <div class="card down"><div class="ic">// hidden coupling</div><h4>"Gorila + hutan"</h4><p>Pegang satu objek, kebawa rantai referensi panjang. Susah dites &amp; dipisah.</p></div>
+        <div class="card down"><div class="ic">// performance</div><h4>Overhead</h4><p>Dispatch virtual, alokasi heap, data nyebar di memori—nggak ramah cache. Berasa di game/HPC.</p></div>
+        <div class="card down"><div class="ic">// mutable state</div><h4>State berubah-ubah</h4><p>OOP klasik dorong objek mutable. Banyak thread ngutak-atik state yang sama = neraka concurrency.</p></div>
+        <div class="card down"><div class="ic">// boilerplate</div><h4>Banyak basa-basi</h4><p>Getter/setter, class kecil bertaburan, ceremony. Niat sederhana ketutup seremoni.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--violet),var(--violet-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--violet)">◆ Pendulum berayun</div>
+          <p>Bukan kebetulan FP (immutability, fungsi murni) bangkit lagi lewat Scala, Clojure, Rust, dan—ironisnya—<b>Java 8</b> sendiri (lambda &amp; stream). Di game, <b>data-oriented design</b> &amp; ECS sering ngalahin OOP demi performa. OOP itu <em>satu</em> alat, bukan <em>satu-satunya</em>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 14 CLOSING ============ -->
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Objek itu alat, bukan agama</h2>
+      </div>
+      <p class="lead reveal">OOP lahir buat ngalahin kompleksitas software yang membengkak. Dia jago di situ—tapi cuma kalau kamu pakai tiap pilar karena <strong>masalahnya memang ada</strong>, bukan karena "katanya harus begitu".</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Class &amp; object</b> — satu cetakan, banyak instance.</li>
+          <li><b>Encapsulation</b> — sembunyikan state, jaga aturan di satu tempat (bukan getter/setter buta).</li>
+          <li><b>Abstraction</b> — gantung ke kontrak; jangan abstraksi sebelum ada alasan kedua.</li>
+          <li><b>Inheritance</b> — cuma buat "is-a"; dangkal lebih baik dari dalam.</li>
+          <li><b>Polymorphism</b> — tambah perilaku lewat class baru, kode lama tenang.</li>
+          <li><b>Composition</b> — buat kombinasi yang banyak, rakit &gt; warisi.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Pakai konsep OOP saat dia <strong>memecahkan masalah nyata</strong> yang kamu hadapi—persis seperti kenapa dia ditemukan dulu. Saat dia malah nambah ribet, mundur dan pertimbangkan alat lain (FP, prosedural, data-oriented). Kode terbaik hari ini sering campuran. Java 8 sendiri buktinya: objek <em>dan</em> lambda, berdampingan.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "The big idea is messaging." — Alan Kay
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>The Lineage of Objects</b> · Sejarah &amp; konsep OOP buat tim · contoh Java 8 · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

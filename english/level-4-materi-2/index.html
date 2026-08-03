@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notebook Inggris — Level 4, Materi 2: Reported Speech (Direct → Indirect)</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__back { color: var(--muted); text-decoration: none; padding-right: 12px; border-right: 1px solid var(--line); white-space: nowrap; transition: color .18s; }
+  .topbar__back:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+  ul.plain, ol.plain { max-width: 72ch; padding-left: 22px; margin: 14px 0; }
+  ul.plain li, ol.plain li { margin-bottom: 8px; color: var(--ink); font-size: 15.5px; }
+  ul.plain li i, ol.plain li i { color: var(--ink-strong); font-style: italic; }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- conjugation table ---------- */
+  .ttable-wrap { overflow-x: auto; margin: 20px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); max-width: 820px; }
+  table.ttable { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14.5px; }
+  table.ttable th, table.ttable td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink); }
+  table.ttable th { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); }
+  table.ttable tr:last-child td { border-bottom: none; }
+  table.ttable td b { color: var(--ink-strong); }
+  table.ttable code { font-family: var(--mono); font-size: .9em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- quiz accordion ---------- */
+  .qa { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 4px 18px; margin: 12px 0; max-width: 78ch; }
+  .qa summary { cursor: pointer; list-style: none; padding: 13px 0; font-size: 15.5px; color: var(--ink-strong); display: flex; align-items: baseline; gap: 10px; }
+  .qa summary::-webkit-details-marker { display: none; }
+  .qa summary::before { content: "▸"; color: var(--cyan); flex: none; }
+  .qa[open] summary::before { content: "▾"; }
+  .qa .qa__a { padding: 0 0 16px 20px; border-top: 1px dashed var(--line-soft); margin-top: -2px; padding-top: 12px; color: var(--ink); font-size: 14.5px; }
+  .qa .qa__a b { color: var(--cyan); }
+  .qa .qa__a code { font-family: var(--mono); font-size: .88em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- interactive quiz ---------- */
+  .quizmeta { display:flex; align-items:center; gap:14px; margin:18px 0 22px; flex-wrap:wrap; max-width: 78ch; }
+  .quizmeta__count { font-family:var(--mono); font-size:13px; color:var(--cyan); letter-spacing:.04em; white-space:nowrap; }
+  .quizmeta__bar { flex:1; min-width:140px; height:6px; border-radius:4px; background:var(--panel-2); overflow:hidden; border:1px solid var(--line); }
+  .quizmeta__fill { height:100%; width:0%; background:linear-gradient(90deg,var(--cyan-dim),var(--cyan)); transition:width .3s ease; }
+
+  .qbox { display:flex; gap:14px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:16px 18px; margin:12px 0; max-width:78ch; transition:border-color .25s, background .25s; }
+  .qbox.correct { border-color: var(--good-line); background: linear-gradient(100deg, var(--good-bg), var(--panel) 60%); }
+  .qbox__num { flex:none; width:28px; height:28px; border-radius:50%; background:var(--panel-2); border:1px solid var(--line); color:var(--muted); font-family:var(--mono); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .qbox.correct .qbox__num { background:var(--good); border-color:var(--good); color:var(--void); }
+  .qbox__body { flex:1; min-width:0; }
+  .qbox__prompt { font-size:15.5px; color:var(--ink-strong); margin-bottom:12px; }
+  .qbox__prompt .blank { color:var(--amber); font-family:var(--mono); }
+  .qbox__options { display:flex; flex-wrap:wrap; gap:8px; }
+  .qopt {
+    font-family:var(--mono); font-size:13.5px; color:var(--ink); background:var(--panel-2);
+    border:1px solid var(--line); border-radius:7px; padding:7px 14px; cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .qopt:hover { border-color:var(--cyan-dim); color:var(--ink-strong); }
+  .qopt.is-correct { border-color:var(--good); background:var(--good-bg); color:var(--good); }
+  .qopt.is-wrong { border-color:var(--bad); background:var(--bad-bg); color:var(--bad); animation:qshake .3s; }
+  .qopt:disabled { cursor:default; opacity:.6; }
+  .qbox__input-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .qinput {
+    font-family:var(--mono); font-size:14px; color:var(--ink-strong); background:var(--void-2);
+    border:1px solid var(--line); border-radius:7px; padding:8px 12px; min-width:160px; flex:1;
+  }
+  .qinput:focus { outline:none; border-color:var(--cyan-dim); }
+  .qinput.is-wrong { border-color:var(--bad); animation:qshake .3s; }
+  .qinput.is-correct { border-color:var(--good); color:var(--good); }
+  .qbtn {
+    font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--void); background:var(--cyan);
+    border:none; border-radius:7px; padding:8px 16px; font-weight:700; cursor:pointer; transition:opacity .15s;
+  }
+  .qbtn:hover { opacity:.85; }
+  .qbtn:disabled { opacity:.5; cursor:default; }
+  .qbox__feedback { margin-top:10px; font-size:13.5px; min-height:1px; }
+  .qbox__feedback.ok { color:var(--good); }
+  .qbox__feedback.bad { color:var(--bad); }
+  .qbox__feedback b { color:inherit; }
+  @keyframes qshake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
+
+  .completebanner {
+    margin-top:24px; border:1px solid var(--good-line); border-radius:12px;
+    background:linear-gradient(160deg, var(--good-bg), var(--panel) 70%);
+    padding:20px 24px; max-width:78ch; display:none;
+  }
+  .completebanner.show { display:block; }
+  .completebanner h4 { font-family:var(--serif); color:var(--ink-strong); font-size:19px; margin-bottom:6px; }
+  .completebanner p { color:var(--ink); font-size:14.5px; }
+
+  .progresspill {
+    position:fixed; top:52px; right:14px; z-index:45; font-family:var(--mono); font-size:11.5px;
+    color:var(--muted); background:rgba(20,26,46,.92); border:1px solid var(--line); border-radius:20px;
+    padding:6px 12px; backdrop-filter:blur(6px); display:flex; align-items:center; gap:8px;
+  }
+  .progresspill b { color:var(--cyan); }
+  .progresspill.done { border-color:var(--good-line); color:var(--good); }
+  .progresspill.done b { color:var(--good); }
+  @media (max-width: 640px){ .progresspill { top:auto; bottom:14px; right:14px; } }
+
+  /* ---------- dialogue bubbles ---------- */
+  .dialogue { margin: 22px 0 6px; max-width: 640px; }
+  .brow { display: flex; margin-bottom: 12px; }
+  .brow.you { justify-content: flex-end; }
+  .bubble { max-width: 84%; padding: 11px 16px; border-radius: 14px; font-size: 14.5px; color: var(--ink); border: 1px solid var(--line); background: var(--panel); }
+  .brow.you .bubble { background: rgba(69,212,222,.08); border-color: var(--cyan-dim); border-bottom-right-radius: 4px; }
+  .brow:not(.you) .bubble { border-bottom-left-radius: 4px; }
+  .bubble .who { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .brow.you .bubble .who { color: var(--cyan); }
+  .bubble .id { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); font-style: italic; }
+
+  /* ---------- vocab card bits ---------- */
+  .vocab-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .vocab-word { font-family: var(--serif); font-weight: 600; font-size: 17px; color: var(--ink-strong); }
+  .vocab-ipa { font-family: var(--mono); font-size: 12px; color: var(--muted-2); }
+  .vocab-meaning { color: var(--cyan); font-weight: 600; font-size: 13.5px; margin-left: auto; }
+  .pos { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 9px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700; background: var(--cyan); border-radius: 50%; }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--cyan); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .tiers { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__back" href="../index.html">← Belajar Inggris</a>
+  <div class="topbar__file">docs/learning/english/level-4-materi-2/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 22</div>
+</div>
+<div class="progress" id="progress"></div>
+<div class="progresspill" id="progressPill">Progress materi: <b id="progressPillCount">0/17</b></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa &amp; Konsep</div>
+    <a href="#c01"><span class="yr">01</span> Tujuan pembelajaran</a>
+    <a href="#c02"><span class="yr">02</span> Penjelasan konsep</a>
+    <a href="#c03"><span class="yr">03</span> Kenapa ini penting</a>
+
+    <div class="rail__part">II · Contoh dalam Konteks</div>
+    <a href="#c04"><span class="yr">04</span> Contoh sederhana</a>
+    <a href="#c05"><span class="yr">05</span> Contoh sehari-hari</a>
+    <a href="#c06"><span class="yr">06</span> Contoh dunia kerja</a>
+    <a href="#c07"><span class="yr">07</span> Contoh software engineering</a>
+
+    <div class="rail__part">III · Hindari Salah &amp; Ingat</div>
+    <a href="#c08"><span class="yr">08</span> Kesalahan umum</a>
+    <a href="#c09"><span class="yr">09</span> Tips mengingat</a>
+    <a href="#c10"><span class="yr">10</span> Ringkasan</a>
+
+    <div class="rail__part">IV · Latihan &amp; Praktik</div>
+    <a href="#c11"><span class="yr">11</span> Latihan</a>
+    <a href="#c12"><span class="yr">12</span> Quiz</a>
+    <a href="#c13"><span class="yr">13</span> Percakapan</a>
+    <a href="#c14"><span class="yr">14</span> Writing exercise</a>
+    <a href="#c15"><span class="yr">15</span> Speaking exercise</a>
+
+    <div class="rail__part">V · Perkaya Kemampuan</div>
+    <a href="#c16"><span class="yr">16</span> Listening</a>
+    <a href="#c17"><span class="yr">17</span> Reading</a>
+    <a href="#c18"><span class="yr">18</span> Vocabulary</a>
+    <a href="#c19"><span class="yr">19</span> Pronunciation</a>
+
+    <div class="rail__part">VI · Lanjut</div>
+    <a href="#c20"><span class="yr">20</span> Review</a>
+    <a href="#c21"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c22"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Notebook Inggris — Level 4 · Materi 2 dari 6</div>
+      <h1 class="reveal d1">Reported Speech: dari Langsung jadi <span class="accent">Tidak Langsung</span></h1>
+      <p class="sub reveal d2">
+        Setiap hari kamu menyampaikan ulang apa yang orang lain bilang — <b>"Manager bilang deadline-nya mundur"</b>,
+        <b>"QA bilang bug-nya udah kefix"</b>. Itu semua namanya <b>reported speech</b> (indirect speech). Materi ini
+        membongkar cara mengubah kutipan langsung ("...") jadi kalimat laporan yang natural, plus aturan mundur tense
+        yang jadi jantung dari topik ini — namanya <b>backshift</b>.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row"><div class="tl__yr">Lv 0</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Fondasi Nol</b> <span>— Kalimat &amp; To Be, kata benda, simple present</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 1</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Dasar Kokoh</b> <span>— Simple Past, Simple Future, Question Words</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 2</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Memperluas Struktur</b> <span>— Continuous, Modal Verbs, Comparative</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 3</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Menyambung Gagasan</b> <span>— Present Perfect, Passive Voice, Conditional</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Lv 4</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bicara Seperti Native</b> <span>— Reported Speech (materi ini)</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 5</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Advance</b> <span>— Inversion, Advanced Modals, Academic Writing</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 TUJUAN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">01</span> Tujuan pembelajaran</div>
+        <h2>Apa yang akan kamu kuasai</h2>
+      </div>
+      <p class="lead reveal">Setelah materi ini selesai, kamu akan bisa:</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// backshift</div><h4>Menggeser tense dengan benar</h4><p>Mengubah <code>simple present</code>, <code>present continuous</code>, <code>present perfect</code>, <code>simple past</code>, dan modal verb jadi bentuk "mundur satu langkah" saat dilaporkan.</p></div>
+        <div class="card up"><div class="ic">// pronoun</div><h4>Mengganti kata ganti &amp; possessive</h4><p><code>I</code>/<code>my</code> berubah jadi <code>he/his</code> atau <code>she/her</code> sesuai siapa yang melapor dan siapa yang dilaporkan.</p></div>
+        <div class="card up"><div class="ic">// waktu &amp; tempat</div><h4>Mengubah penanda waktu &amp; tempat</h4><p><code>now→then</code>, <code>today→that day</code>, <code>here→there</code>, dan penanda relatif lainnya.</p></div>
+        <div class="card up"><div class="ic">// pertanyaan &amp; perintah</div><h4>Melaporkan pertanyaan &amp; perintah</h4><p>Mengubah <code>"Are you...?"</code> jadi <code>asked if...</code>, dan <code>"Close the door."</code> jadi <code>told...to close...</code></p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">02</span> Konsep inti</div>
+        <h2>Direct speech, indirect speech, dan backshift</h2>
+      </div>
+      <p class="lead reveal">Ada dua cara menyampaikan ucapan orang lain: mengutip persis (direct), atau menceritakan ulang dengan kata-katamu sendiri (indirect / reported). Keduanya sering ketuker, jadi kita samakan dulu istilahnya.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--ink-strong)">Direct speech</strong> mengutip persis, pakai tanda kutip: <i>Rina said, "I am busy."</i> Di sini kamu mengulang kata-kata Rina apa adanya.</p>
+      <p class="body reveal d1"><strong style="color:var(--ink-strong)">Indirect speech (reported speech)</strong> menceritakan ulang tanpa tanda kutip, dan biasanya digabung dengan kata sambung <code>that</code> (boleh dihilangkan secara lisan): <i>Rina said (that) she was busy.</i> Perhatikan tiga hal yang berubah: tanda kutip hilang, <code>I</code> jadi <code>she</code>, dan <code>am</code> jadi <code>was</code>.</p>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kenapa tense-nya mundur?</div>
+        <p>Karena saat kamu <em>melaporkan</em> ucapan seseorang, itu terjadi <em>setelah</em> ucapan aslinya diucapkan — bahkan cuma beda beberapa detik. Bahasa Inggris "menandai" jarak waktu ini dengan memundurkan tense satu langkah. Ini yang disebut <code>backshift</code>. Kalau reporting verb-nya (<code>said</code>, <code>told</code>, <code>asked</code>) berbentuk <b>past tense</b>, hampir semua tense di dalam kutipan ikut mundur satu langkah.</p>
+      </div>
+
+      <p class="body reveal d2"><strong style="color:var(--ink-strong)">Tabel backshift lengkap:</strong></p>
+      <div class="ttable-wrap reveal d3">
+        <table class="ttable">
+          <tr><th>Saat diucapkan (direct)</th><th>Saat dilaporkan (indirect)</th><th>Contoh</th></tr>
+          <tr><td>Simple Present</td><td>Simple Past</td><td>"I work here." → He said he <b>worked</b> there.</td></tr>
+          <tr><td>Present Continuous</td><td>Past Continuous</td><td>"I am coding." → She said she <b>was coding</b>.</td></tr>
+          <tr><td>Simple Past</td><td>Past Perfect</td><td>"I fixed it." → He said he <b>had fixed</b> it.</td></tr>
+          <tr><td>Present Perfect</td><td>Past Perfect</td><td>"I have deployed it." → She said she <b>had deployed</b> it.</td></tr>
+          <tr><td>Past Continuous</td><td>Past Perfect Continuous</td><td>"I was testing." → He said he <b>had been testing</b>.</td></tr>
+          <tr><td><code>will</code></td><td><code>would</code></td><td>"I will merge it." → She said she <b>would merge</b> it.</td></tr>
+          <tr><td><code>can</code></td><td><code>could</code></td><td>"I can help." → He said he <b>could help</b>.</td></tr>
+          <tr><td><code>may</code></td><td><code>might</code></td><td>"It may fail." → She said it <b>might fail</b>.</td></tr>
+          <tr><td><code>must</code> (kewajiban)</td><td><code>had to</code></td><td>"I must submit it." → He said he <b>had to submit</b> it.</td></tr>
+        </table>
+      </div>
+
+      <div class="caution reveal d3">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          <b>Yang tidak mundur lagi:</b> kalau tense aslinya sudah <code>past perfect</code>, atau modal-nya sudah <code>would</code>/<code>could</code>/<code>might</code>/<code>should</code>/<code>ought to</code>/<code>used to</code> — bentuk itu <b>sudah paling mundur</b>, tidak berubah lagi. Contoh: "I would help if I could" tetap "he said he would help if he could".
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 KENAPA PENTING ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">03</span> Kenapa penting</div>
+        <h2>Kenapa materi ini penting</h2>
+      </div>
+      <p class="lead reveal">Karena hampir tidak mungkin kerja tim tanpa menyampaikan ulang apa yang orang lain bilang. Bug report, notulen meeting, forward email klien, catatan standup — semuanya reported speech:</p>
+
+      <ul class="plain reveal d1">
+        <li>Tiket bug: <i>"The user said the page had frozen after clicking submit."</i></li>
+        <li>Notulen meeting: <i>"The PM said the deadline had moved to next week."</i></li>
+        <li>Forward dari klien: <i>"The client asked if the feature was ready."</i></li>
+      </ul>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kenapa presisi itu penting di sini</div>
+        <p>Salah melaporkan bisa bikin miskomunikasi serius. Bandingkan: <i>"He said the API was ready"</i> vs <i>"He said the API wasn't ready"</i> — cuma beda satu kata "not", tapi dampaknya ke keputusan tim bisa sangat besar. Reported speech yang akurat adalah skill komunikasi profesional, bukan cuma latihan grammar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 CONTOH SEDERHANA ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">04</span> Contoh</div>
+        <h2>Contoh sederhana</h2>
+      </div>
+      <p class="lead reveal">Tujuh pasangan direct → indirect paling dasar — perhatikan pola tense, pronoun, dan kata tunjuknya.</p>
+      <ul class="plain reveal d1">
+        <li><code>"I am hungry," she said.</code> → She said she was hungry.</li>
+        <li><code>"I work remotely," he said.</code> → He said he worked remotely.</li>
+        <li><code>"I have finished," she said.</code> → She said she had finished.</li>
+        <li><code>"I will call you," he said.</code> → He said he would call me.</li>
+        <li><code>"I can help," she said.</code> → She said she could help.</li>
+        <li><code>"This is my laptop," he said.</code> → He said that was his laptop.</li>
+        <li><code>"I am here," she said.</code> → She said she was there.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 SEHARI-HARI ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">05</span> Konteks nyata</div>
+        <h2>Contoh dalam kehidupan sehari-hari</h2>
+      </div>
+      <p class="lead reveal">Bayangkan situasi harian yang biasa kamu alami:</p>
+      <ul class="plain reveal d1">
+        <li>Ibu di telepon: <i>"I am cooking dinner."</i> → My mother said she was cooking dinner. (Ibu bilang dia sedang masak makan malam.)</li>
+        <li>Chat temen: <i>"I'll be there in 10 minutes."</i> → He said he would be there in ten minutes. (Dia bilang dia akan sampai 10 menit lagi.)</li>
+        <li>Tetangga cerita: <i>"We are moving next month."</i> → They said they were moving the following month. (Mereka bilang akan pindah bulan depan.)</li>
+        <li>Pasangan bilang: <i>"I miss you."</i> → She said she missed me. (Dia bilang dia kangen.)</li>
+      </ul>
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Perhatikan</div>
+          <p><code>next month</code> berubah jadi <code>the following month</code> karena itu penanda waktu <i>relatif</i> — relatif terhadap kapan kalimat aslinya diucapkan, bukan terhadap kapan kamu melaporkannya sekarang.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 DUNIA KERJA ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">06</span> Konteks nyata</div>
+        <h2>Contoh dalam dunia kerja</h2>
+      </div>
+      <ul class="plain reveal">
+        <li>Manager di meeting: <i>"The deadline is Friday."</i> → The manager said the deadline was Friday.</li>
+        <li>HR lewat email: <i>"You need to submit the form by tomorrow."</i> → HR told me I needed to submit the form the next day.</li>
+        <li>Klien lewat email: <i>"We are not satisfied with the current UI."</i> → The client said they were not satisfied with the current UI.</li>
+        <li>Rekan kerja: <i>"I sent the file yesterday."</i> → She said she had sent the file the day before.</li>
+      </ul>
+      <p class="body reveal d1">Meneruskan pesan secara akurat — tanpa menambah atau menghilangkan makna — adalah salah satu skill komunikasi paling dibutuhkan di lingkungan kerja profesional, terutama saat kamu jadi "jembatan" antara klien, manager, dan tim.</p>
+    </div>
+  </section>
+
+  <!-- ============ 07 SWE ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">07</span> Konteks nyata</div>
+        <h2>Contoh dalam software engineering</h2>
+      </div>
+      <p class="lead reveal">Reported speech ada di mana-mana dalam dunia kerja teknis — dari bug report sampai catatan standup.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">bug-report-notes.md</span><span class="lang">LOG</span></div>
+<pre class="code"><span class="c">// Ucapan asli di Slack thread</span>
+QA: <span class="s">"The login button is broken."</span>
+Client: <span class="s">"The app crashes when I upload a large file."</span>
+PM: <span class="s">"We will push the release tomorrow."</span>
+
+<span class="c">// Dirangkum jadi tiket, pakai reported speech</span>
+QA said the login button <b style="color:var(--cyan)">was</b> broken.
+The client said the app <b style="color:var(--cyan)">crashed</b> when they <b style="color:var(--cyan)">uploaded</b> a large file.
+The PM said they <b style="color:var(--cyan)">would</b> push the release the next day.</pre>
+      </div>
+
+      <ul class="plain reveal d2">
+        <li>Bug report: <i>"The user said the page had frozen after clicking submit."</i></li>
+        <li>Komentar PR review: <i>"The reviewer mentioned that the function needed a null check."</i></li>
+        <li>Standup: <i>"Yesterday, I said I was blocked on the payment API."</i></li>
+      </ul>
+
+      <div class="why reveal d3">
+        <div class="tag">◆ Di daily standup</div>
+        <p><em>"Yesterday, I told the team I was still debugging the payment flow, and today I'm confirming it's fixed."</em> Perhatikan polanya tetap sama: reporting verb (<code>told</code>) + subjek + tense yang sudah backshift (<code>was still debugging</code>).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 KESALAHAN ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">08</span> Awas salah</div>
+        <h2>Kesalahan yang sering dilakukan</h2>
+      </div>
+      <p class="lead reveal">Empat kesalahan paling umum — kenali polanya supaya tidak terulang.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--bad)">Kesalahan #1 — Lupa backshift tense.</strong> Ini kesalahan paling umum: tense di dalam kutipan dibiarkan sama seperti aslinya.</p>
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">salah — tense tidak mundur</span><span class="lang" style="color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)">✕ SALAH</span></div>
+<pre class="code"><span class="hl-bad">She said she is busy.</span>
+<span class="hl-bad">He said he will call.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">benar — tense mundur satu langkah</span><span class="lang" style="color:var(--good);border-color:var(--good-line);background:var(--good-bg)">✓ BENAR</span></div>
+<pre class="code"><span class="hl-good">She said she <b style="color:var(--good)">was</b> busy.</span>
+<span class="hl-good">He said he <b style="color:var(--good)">would</b> call.</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d2"><strong style="color:var(--bad)">Kesalahan #2 — Lupa ganti pronoun/possessive.</strong></p>
+      <div class="diptych reveal d2">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">salah — pronoun tidak diganti</span><span class="lang" style="color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)">✕ SALAH</span></div>
+<pre class="code"><span class="hl-bad">He said I am tired.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">benar — pronoun ikut sudut pandang pelapor</span><span class="lang" style="color:var(--good);border-color:var(--good-line);background:var(--good-bg)">✓ BENAR</span></div>
+<pre class="code"><span class="hl-good">He said <b style="color:var(--good)">he</b> was tired.</span></pre>
+        </div>
+      </div>
+
+      <div class="caution reveal d3">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          <b>Kesalahan #3 — Menyimpan urutan kata tanya.</b> <code>❌ She asked where did I live.</code> Reported question memakai urutan kalimat <b>berita</b>, bukan kalimat tanya — jadi tidak ada <code>do/does/did</code>, tidak ada inversi. Yang benar: <code>✓ She asked where I lived.</code>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Kesalahan #4 — "say" dipakai seperti "tell"</div>
+          <p><code>tell</code> WAJIB diikuti objek orang langsung, <code>say</code> TIDAK. <code>❌ She said me she was busy.</code> Yang benar: <code>✓ She told me she was busy.</code> atau <code>✓ She said (to me) she was busy.</code></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TIPS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">09</span> Cara mengingat</div>
+        <h2>Tips mengingat materi</h2>
+      </div>
+      <ul class="plain reveal d1">
+        <li><b>Akronim "BPQ"</b> — <b>B</b>ackshift tense, <b>P</b>ronoun/possessive diganti, <b>Q</b>uantifier waktu &amp; tempat berubah. Cek tiga hal ini setiap kali mengubah kalimat.</li>
+        <li>Bayangkan reported speech seperti <i>"menceritakan ulang keesokan harinya"</i> — otomatis waktunya mundur satu langkah, sama seperti kamu cerita ke teman soal kejadian kemarin.</li>
+        <li>Untuk pertanyaan, ingat: <b>"reported question = kalimat berita, bukan kalimat tanya"</b> — tidak ada tanda tanya, tidak ada <code>do/does/did</code>, subjek di depan kata kerja.</li>
+        <li>Untuk perintah/permintaan, ingat pola <code>verb + object + to + infinitive</code>: <code>told/asked someone to do something</code>.</li>
+      </ul>
+
+      <div class="quote reveal d2">
+        <p>Pesan yang diteruskan harus tetap utuh maknanya, walau bentuk kalimatnya berubah total.</p>
+        <cite>— prinsip dasar komunikasi tim yang efektif</cite>
+      </div>
+      <p class="body reveal d2">Artinya: fokus utama reported speech bukan menghafal rumus, tapi memastikan <i>makna</i> ucapan asli tetap sampai dengan benar — walau bentuk kata, tense, dan urutannya berubah drastis.</p>
+    </div>
+  </section>
+
+  <!-- ============ 10 RINGKASAN ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">10</span> Ringkasan</div>
+        <h2>Ringkasan materi</h2>
+      </div>
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Direct speech</b> mengutip persis, <b>indirect/reported speech</b> menceritakan ulang tanpa tanda kutip.</li>
+          <li><b>Backshift</b> — tense &amp; modal mundur satu langkah kalau reporting verb-nya past tense.</li>
+          <li><b>Pronoun &amp; possessive</b> berubah sesuai sudut pandang si pelapor.</li>
+          <li><b>Penanda waktu/tempat</b> relatif berubah: <code>now→then</code>, <code>today→that day</code>, <code>here→there</code>.</li>
+          <li><b>Reported question</b> pakai urutan kalimat berita + <code>if/whether</code> untuk yes/no. <b>Reported command</b> pakai <code>to + infinitive</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 LATIHAN ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">11</span> Latihan</div>
+        <h2>Latihan: isi titik-titik</h2>
+      </div>
+      <p class="lead reveal">Isi titik-titik dengan kata/frasa yang tepat, lalu klik <b>Cek</b>. Jawaban salah boleh dicoba lagi — kamu baru bisa lanjut ke <b>Materi 3: Third Conditional &amp; Mixed Conditionals</b> kalau <b>semua</b> soal di bagian Latihan &amp; Quiz sudah benar.</p>
+
+      <div class="quizmeta reveal d1">
+        <span class="quizmeta__count" id="quizCount">0 / 17 benar</span>
+        <div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill"></div></div>
+      </div>
+
+      <div id="quizLatihan" class="reveal d1"></div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Cara pakai bagian ini</div>
+          <p>Ketik jawabanmu, tekan <b>Enter</b> atau klik <b>Cek</b>. Kalau salah lebih dari 2-3 kali di soal yang sama, ulangi bagian "Penjelasan Konsep" (bab 02) dan "Kesalahan Umum" (bab 08) sebelum lanjut.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 12 QUIZ ============ -->
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">12</span> Uji pemahaman</div>
+        <h2>Quiz</h2>
+      </div>
+      <p class="lead reveal">Lima soal pertama campuran pilihan ganda &amp; isian. Setelah itu ada satu <b>soal cerita</b> (reading comprehension) — baca ceritanya, lalu jawab pertanyaannya. Semuanya menentukan materi ini <b>selesai</b> atau belum.</p>
+
+      <div class="quizmeta reveal d1">
+        <span class="quizmeta__count" id="quizCount2">0 / 17 benar</span>
+        <div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill2"></div></div>
+      </div>
+
+      <div id="quizQuiz" class="reveal d1"></div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">soal cerita — baca dulu, baru jawab di bawah</span><span class="lang">STORY</span></div>
+        <pre class="code" style="white-space:pre-wrap;font-family:var(--sans);font-size:15px;line-height:1.7;color:var(--ink-strong)">Yesterday afternoon, my manager, Pak Broto, called a quick meeting. He said, "The client has changed the requirements again." Then he told the team, "Please review the new spec by Friday." Sarah asked him, "Will the deadline move too?" He replied that he didn't think so, but he would confirm with the client. After the meeting, I told my teammate that Pak Broto had said the client had changed the requirements again, and that he had asked us to review the new spec by Friday.</pre>
+      </div>
+      <p class="body reveal d2" style="font-size:14px;color:var(--muted)"><i>(Terjemahan bebas: Kemarin sore, manajerku, Pak Broto, mengadakan rapat singkat. Dia bilang, "Klien mengubah requirement lagi." Lalu dia bilang ke tim, "Tolong review spec barunya sebelum Jumat." Sarah bertanya padanya, "Apakah deadline-nya juga akan mundur?" Dia menjawab bahwa dia rasa tidak, tapi dia akan konfirmasi ke klien. Setelah rapat, aku bilang ke rekan setimku bahwa Pak Broto sudah bilang klien sudah mengubah requirement lagi, dan dia sudah meminta kami untuk review spec baru sebelum Jumat.)</i></p>
+
+      <div id="quizStory" class="reveal d2"></div>
+
+      <div class="completebanner" id="completeBanner">
+        <h4>🎉 Materi 2 selesai!</h4>
+        <p>Semua soal Latihan &amp; Quiz sudah benar. <b>Materi 3: Third Conditional &amp; Mixed Conditionals</b> sekarang terbuka — cek halaman <a href="../index.html" style="color:var(--good)">Belajar Inggris</a> untuk lanjut.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 13 PERCAKAPAN ============ -->
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">13</span> Praktik</div>
+        <h2>Percakapan — meneruskan hasil meeting klien</h2>
+      </div>
+      <p class="lead reveal">Situasi: kamu baru selesai call dengan klien, lalu menyampaikan hasilnya ke rekan tim yang tidak ikut.</p>
+
+      <div class="dialogue reveal d1">
+        <div class="brow"><div class="bubble"><span class="who">Teammate</span>Hey, how did the client call go? What did they say?<span class="id">Hei, gimana call sama klien tadi? Mereka bilang apa?</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>The client said they were happy with the demo, but they asked if we could add dark mode.<span class="id">Klien bilang mereka senang dengan demonya, tapi mereka nanya apakah kita bisa nambahin dark mode.</span></div></div>
+        <div class="brow"><div class="bubble"><span class="who">Teammate</span>Did they mention a deadline?<span class="id">Mereka nyebutin deadline nggak?</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>Yes, they said they needed it by the end of next month.<span class="id">Iya, mereka bilang mereka butuh itu paling lambat akhir bulan depan.</span></div></div>
+        <div class="brow"><div class="bubble"><span class="who">Teammate</span>Okay, did they ask about the pricing too?<span class="id">Oke, mereka nanya soal harga juga nggak?</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>They didn't ask about pricing, but they mentioned that their budget had increased.<span class="id">Mereka nggak nanya soal harga, tapi mereka nyebutin kalau budget mereka sudah naik.</span></div></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Perhatikan</div>
+          <p>Semua respons "Kamu" pakai reported speech: <code>said they were</code>, <code>asked if we could</code>, <code>said they needed</code>, <code>mentioned that... had increased</code>. Dalam percakapan langsung seperti ini (masih di hari yang sama), penanda waktu kadang tidak diubah total — tapi tense-nya tetap backshift.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 14 WRITING ============ -->
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">14</span> Praktik</div>
+        <h2>Writing exercise</h2>
+      </div>
+      <p class="lead reveal">Ambil 5 kalimat direct speech dari percakapan nyatamu (chat WA, email kerja, komentar code review, obrolan keluarga), lalu ubah semuanya jadi reported speech. Contoh kerangka:</p>
+
+      <ul class="plain reveal d1">
+        <li>Kalimat dari atasan/klien — <i>"He/She said (that) ..."</i></li>
+        <li>Pertanyaan yang kamu terima — <i>"He/She asked if/whether ..."</i></li>
+        <li>Pertanyaan wh-question — <i>"He/She asked where/when/why ..."</i></li>
+        <li>Perintah atau permintaan — <i>"He/She told/asked me to ..."</i></li>
+        <li>Sesuatu yang dijanjikan seseorang — <i>"He/She promised (that) ..."</i></li>
+      </ul>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kirimkan hasilnya</div>
+        <p>Kirimkan hasil tulisanmu di chat kapan saja — akan dikoreksi backshift tense, pronoun, dan kealamian kalimatnya sebelum kamu lanjut ke Materi 3.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 15 SPEAKING ============ -->
+  <section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">15</span> Praktik</div>
+        <h2>Speaking exercise</h2>
+      </div>
+      <p class="lead reveal">Ucapkan keras-keras (boleh rekam suara sendiri untuk didengar ulang):</p>
+
+      <ol class="steps reveal d1">
+        <li>"My manager said the deadline had moved to next week."</li>
+        <li>"I told my teammate I was still fixing the bug."</li>
+        <li>"She asked if the API was ready."</li>
+        <li>"He asked me to review the pull request."</li>
+      </ol>
+
+      <p class="body reveal d2">Fokus pada kejelasan <code>said/told/asked</code> dan bentuk backshift-nya (<code>had moved</code>, <code>was</code>, <code>to review</code>) — jangan tergesa sampai bentuk mundurnya "hilang" saat diucapkan cepat.</p>
+    </div>
+  </section>
+
+  <!-- ============ 16 LISTENING ============ -->
+  <section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">16</span> Perkaya telinga</div>
+        <h2>Listening recommendation</h2>
+      </div>
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">🎧 berita</div><h4>BBC News bulletin / "6 Minute English"</h4><p>Berita formal penuh dengan reported speech: <i>"The minister said that..."</i>, <i>"Officials confirmed that..."</i> Bagus untuk membiasakan telinga dengan backshift natural dalam konteks formal.</p></div>
+        <div class="card up"><div class="ic">🎧 podcast</div><h4>Podcast wawancara (interview-style)</h4><p>Perhatikan bagaimana host sering merangkum ulang jawaban tamu: <i>"So you said earlier that..."</i> — pola ini persis reported speech yang kita pelajari.</p></div>
+      </div>
+      <p class="body reveal d2">Sambil dengar, coba tandai (mental note) setiap kali kamu dengar <code>said that</code>, <code>told</code>, atau <code>asked if</code> — perhatikan tense apa yang mengikutinya.</p>
+    </div>
+  </section>
+
+  <!-- ============ 17 READING ============ -->
+  <section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">17</span> Perkaya bacaan</div>
+        <h2>Reading recommendation</h2>
+      </div>
+      <div class="quote reveal d1">
+        <p>"During the sprint review, the product manager explained that the new feature had been tested successfully. She mentioned that the QA team had found only two minor bugs, and she promised that both would be fixed before the release. When asked if the timeline was still on track, she confirmed that it was."</p>
+        <cite>Paragraf pendek ini sengaja dipadatkan dengan reported speech supaya kamu langsung latihan mengenali polanya dalam teks utuh, bukan cuma kalimat lepas.</cite>
+      </div>
+      <p class="body reveal d2">Kalau sudah lancar, coba baca changelog atau deskripsi pull request di GitHub project besar mana pun — sering ada kalimat seperti <i>"A user reported that the export function was crashing"</i> atau <i>"The maintainer mentioned that this issue had been fixed in v2.3."</i></p>
+    </div>
+  </section>
+
+  <!-- ============ 18 VOCAB ============ -->
+  <section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">18</span> Perkaya kosakata</div>
+        <h2>Vocabulary list — reporting verbs (18 kata)</h2>
+      </div>
+      <p class="lead reveal">Semua kata ini adalah alternatif dari <code>say/tell/ask</code> yang lebih spesifik — makin kamu kuasai, makin natural reported speech-mu terdengar.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">say</span><span class="vocab-ipa">/seɪ/</span><span class="vocab-meaning">bilang / mengatakan</span></div><p><span class="pos">verb</span> — Contoh: <i>"She said she was tired."</i> Tips: tidak diikuti objek orang langsung; kalau perlu, pakai "say to someone".</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">tell</span><span class="vocab-ipa">/tel/</span><span class="vocab-meaning">memberitahu</span></div><p><span class="pos">verb</span> — Contoh: <i>"He told me the build had failed."</i> Tips: WAJIB diikuti objek orang langsung (tell + someone).</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">ask</span><span class="vocab-ipa">/ɑːsk/</span><span class="vocab-meaning">bertanya / meminta</span></div><p><span class="pos">verb</span> — Contoh: <i>"She asked if the API was ready."</i> Dipakai untuk reported question maupun reported request.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">explain</span><span class="vocab-ipa">/ɪkˈspleɪn/</span><span class="vocab-meaning">menjelaskan</span></div><p><span class="pos">verb</span> — Contoh: <i>"He explained that the bug was caused by a race condition."</i> Sinonim: clarify.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">mention</span><span class="vocab-ipa">/ˈmenʃn/</span><span class="vocab-meaning">menyebutkan (sekilas)</span></div><p><span class="pos">verb</span> — Contoh: <i>"She mentioned that the client had approved the design."</i> Tips: lebih ringan/singkat dari "explain".</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">claim</span><span class="vocab-ipa">/kleɪm/</span><span class="vocab-meaning">mengklaim (belum tentu benar)</span></div><p><span class="pos">verb</span> — Contoh: <i>"He claimed that he had fixed the bug."</i> Tips: sering menyiratkan keraguan si pelapor.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">admit</span><span class="vocab-ipa">/ədˈmɪt/</span><span class="vocab-meaning">mengakui</span></div><p><span class="pos">verb</span> — Contoh: <i>"She admitted that she had forgotten to push the code."</i> Antonim: deny.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">deny</span><span class="vocab-ipa">/dɪˈnaɪ/</span><span class="vocab-meaning">menyangkal</span></div><p><span class="pos">verb</span> — Contoh: <i>"He denied that he had broken the build."</i> Antonim: admit.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">warn</span><span class="vocab-ipa">/wɔːrn/</span><span class="vocab-meaning">memperingatkan</span></div><p><span class="pos">verb</span> — Contoh: <i>"The senior warned us not to deploy on Friday."</i> Pola: warn + object + not to + infinitive.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">advise</span><span class="vocab-ipa">/ədˈvaɪz/</span><span class="vocab-meaning">menyarankan</span></div><p><span class="pos">verb</span> — Contoh: <i>"She advised me to write more tests."</i> Pola sama seperti "warn" (+ object + to infinitive).</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">insist</span><span class="vocab-ipa">/ɪnˈsɪst/</span><span class="vocab-meaning">bersikeras</span></div><p><span class="pos">verb</span> — Contoh: <i>"He insisted that the feature was ready."</i> Menunjukkan keteguhan sikap si pembicara.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">suggest</span><span class="vocab-ipa">/səˈdʒest/</span><span class="vocab-meaning">menyarankan (opsi)</span></div><p><span class="pos">verb</span> — Contoh: <i>"She suggested that we refactor the module."</i> Tips: sering diikuti pola khusus (we refactor, bukan we refactored).</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">complain</span><span class="vocab-ipa">/kəmˈpleɪn/</span><span class="vocab-meaning">mengeluh / komplain</span></div><p><span class="pos">verb</span> — Contoh: <i>"The client complained that the app was slow."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">promise</span><span class="vocab-ipa">/ˈprɒmɪs/</span><span class="vocab-meaning">berjanji</span></div><p><span class="pos">verb</span> — Contoh: <i>"He promised he would fix it by Monday."</i> Pola: promise + would + verb.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">remind</span><span class="vocab-ipa">/rɪˈmaɪnd/</span><span class="vocab-meaning">mengingatkan</span></div><p><span class="pos">verb</span> — Contoh: <i>"She reminded me to update the changelog."</i> Pola: remind + object + to infinitive.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">wonder</span><span class="vocab-ipa">/ˈwʌndər/</span><span class="vocab-meaning">bertanya-tanya (dalam hati)</span></div><p><span class="pos">verb</span> — Contoh: <i>"He wondered if the server was down."</i> Tips: lebih lembut dari "ask", sering untuk pertanyaan retoris.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">confirm</span><span class="vocab-ipa">/kənˈfɜːrm/</span><span class="vocab-meaning">mengonfirmasi</span></div><p><span class="pos">verb</span> — Contoh: <i>"She confirmed that the release had been deployed."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">announce</span><span class="vocab-ipa">/əˈnaʊns/</span><span class="vocab-meaning">mengumumkan</span></div><p><span class="pos">verb</span> — Contoh: <i>"The PM announced that the sprint had been extended."</i></p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 19 PRONUNCIATION ============ -->
+  <section class="chapter" id="c19">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">19</span> Perkaya ucapan</div>
+        <h2>Pronunciation tips</h2>
+      </div>
+      <ul class="plain reveal d1">
+        <li><b>said /sed/</b> — banyak pemula salah ucap jadi "seyd" (seperti "say" + d). Ingat: <code>said</code> berima dengan "bed", bukan dengan "made".</li>
+        <li><b>weak "that"</b> — dalam reported speech lisan, <code>that</code> sering diucapkan sangat pendek/lemah, bahkan sering dihilangkan sepenuhnya: <i>"She said (that) she was busy."</i></li>
+        <li><b>kontraksi 'd yang ambigu</b> — <code>'d</code> bisa berarti <code>had</code> ATAU <code>would</code>. Bedakan dari kata kerja setelahnya: <i>"She said she'd finished"</i> (had + V3) vs <i>"She said she'd call"</i> (would + base verb).</li>
+        <li><b>"asked if/whether"</b> — diucapkan menyambung cepat, seperti "ɑːskt ɪf".</li>
+      </ul>
+      <div class="why reveal d2">
+        <div class="tag">◆ Latihan cepat</div>
+        <p>Coba ucapkan berulang: <i>"She said she'd already finished, but he said he'd call later."</i> Perhatikan dua <code>'d</code> yang beda arti tapi bunyinya identik — konteks kata kerja setelahnya yang membedakan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 20 REVIEW ============ -->
+  <section class="chapter" id="c20">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">20</span> Sebelum lanjut</div>
+        <h2>Review materi sebelumnya</h2>
+      </div>
+      <p class="lead reveal">Reported speech sangat bergantung pada <b>Past Perfect</b> yang sudah kamu pelajari di <b>Materi 1: Past Perfect &amp; Past Perfect Continuous</b> — coba ingat lagi pola <code>had + V3</code>, karena itu tujuan backshift paling umum di materi ini.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Checklist sebelum lanjut ke Materi 3</div>
+        <ul class="plain" style="margin:6px 0 0;">
+          <li>Bisa membedakan direct vs indirect speech, dan tahu kapan tanda kutip dihilangkan.</li>
+          <li>Hafal tabel backshift tense (Simple Present→Past, Present Perfect→Past Perfect, dst).</li>
+          <li>Bisa mengubah pronoun &amp; possessive sesuai sudut pandang pelapor.</li>
+          <li>Bisa mengubah penanda waktu/tempat (<code>now→then</code>, <code>today→that day</code>, dst).</li>
+          <li>Bisa melaporkan pertanyaan (<code>if/whether</code> + urutan kalimat berita) dan perintah (<code>to + infinitive</code>).</li>
+          <li>Paham beda <code>say</code> vs <code>tell</code>.</li>
+        </ul>
+      </div>
+
+      <p class="body reveal d2">Kalau salah satu poin di atas masih ragu, tidak apa — kirim saja hasil Latihan/Writing Exercise-mu, dan ulangi bagian yang belum kuat sebelum lanjut ke <b>Materi 3: Third Conditional &amp; Mixed Conditionals</b>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 21 TIER BELAJAR ============ -->
+  <section class="chapter" id="c21">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Arah belajar</div>
+        <h2>Tier belajar: dari materi ini ke depan</h2>
+      </div>
+      <p class="lead reveal">Materi ini adalah <b>Level 4 — Bicara Seperti Native (B2)</b>, jadi targetnya bukan cuma hafal rumus, tapi bisa menyampaikan ulang pesan orang lain dengan natural dan akurat. Tiga tier di bawah membagi: apa yang wajib kamu kuasai dari materi ini, bagaimana mempraktikkannya di dunia nyata, dan ke arah mana kamu belajar setelah ini.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Kuasai dulu materi ini</h4>
+          <p>Target minimum sebelum lanjut ke Materi 3 — semua ada di checklist bab Review.</p>
+          <ul>
+            <li>Hafal tabel backshift tense &amp; modal tanpa contekan.</li>
+            <li>Bisa mengganti pronoun, possessive, dan penanda waktu/tempat dengan benar.</li>
+            <li>Bisa membuat reported question (yes/no &amp; wh-question) dan reported command dari nol.</li>
+            <li>Kenali &amp; hindari 4 kesalahan umum di bab 08.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Praktikkan di kehidupan nyata</h4>
+          <p>Setelah hafal rumus, pindahkan ke situasi asli — bukan cuma soal latihan.</p>
+          <ul>
+            <li>Teruskan pesan meeting/klien ke tim pakai reported speech yang akurat.</li>
+            <li>Tulis bug report atau notulen memakai pola <code>said/told/asked</code> yang benar.</li>
+            <li>Latih dengar lewat rekomendasi di bab Listening (BBC News, podcast interview).</li>
+            <li>Coba kenali reported speech di changelog atau deskripsi PR di GitHub.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Arah belajar lanjut</h4>
+          <p>Setelah checklist Materi 2 tuntas, ini yang menanti di sisa Level 4.</p>
+          <ul>
+            <li><b>Materi 3</b> — Third Conditional &amp; Mixed Conditionals.</li>
+            <li><b>Materi 4</b> — Relative Clauses (who/which/that/whose/where).</li>
+            <li><b>Materi 5</b> — Gerund vs Infinitive, lalu <b>Materi 6</b> — Phrasal Verbs &amp; Idiom Dasar.</li>
+            <li>Setelah Materi 6 selesai, lanjut ke <b>Cerita Hari Ini Level 4</b> sebagai gerbang menuju Level 5.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 22 PENUTUP ============ -->
+  <section class="chapter" id="c22">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Menyampaikan ulang tanpa kehilangan makna</h2>
+      </div>
+      <p class="lead reveal">Materi 2 selesai — reported speech kelihatan rumit di atas kertas karena banyak hal yang berubah sekaligus (tense, pronoun, waktu, urutan kata), tapi begitu terbiasa, ini jadi salah satu skill komunikasi paling sering kamu pakai di kerjaan. Pastikan checklist di bab Review benar-benar tuntas sebelum lanjut.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Direct vs indirect</b> — mengutip persis vs menceritakan ulang.</li>
+          <li><b>Backshift</b> — tense &amp; modal mundur satu langkah saat reporting verb-nya past tense.</li>
+          <li><b>Pronoun, possessive, waktu &amp; tempat</b> — semuanya menyesuaikan sudut pandang pelapor.</li>
+          <li><b>Reported question &amp; command</b> — urutan kalimat berita, dan pola <code>to + infinitive</code>.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Level 4 · Materi 2 dari 6</h3>
+        <p id="endcardStatus">Materi 3 (Third Conditional &amp; Mixed Conditionals) terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar. Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // Backshift, pronoun, waktu &amp; tempat — tiga hal yang selalu kamu cek setiap melaporkan ucapan orang lain.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Notebook Inggris — Level 4, Materi 2</b> · Reported Speech (Direct → Indirect) · untuk yang ingin bicara seperti native · <a href="../index.html">← kembali ke Belajar Inggris</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var MATERI_KEY = "english::level-4-materi-2";
+  var STATE_KEY = "materi-answers::" + MATERI_KEY;
+  var DONE_KEY = "materi-progress::" + MATERI_KEY;
+
+  var QUESTIONS = [
+    { id: "l1", type: "fill", prompt: "Direct: \"I work from home,\" he said. → Reported: He said he <span class=\"blank\">___</span> from home.", answer: ["worked"], explain: "Simple present <b>work</b> mundur satu langkah jadi simple past <b>worked</b> saat dilaporkan." },
+    { id: "l2", type: "fill", prompt: "Direct: \"I am watching a tutorial,\" she said. → Reported: She said she <span class=\"blank\">___</span> a tutorial.", answer: ["was watching"], explain: "Present continuous <b>am watching</b> mundur jadi past continuous <b>was watching</b>." },
+    { id: "l3", type: "fill", prompt: "Direct: \"I have finished the report,\" he said. → Reported: He said he <span class=\"blank\">___</span> the report.", answer: ["had finished"], explain: "Present perfect <b>have finished</b> mundur jadi past perfect <b>had finished</b>." },
+    { id: "l4", type: "fill", prompt: "Direct: \"I will call you tomorrow,\" she said. → Reported: She said she <span class=\"blank\">___</span> call me the next day.", answer: ["would"], explain: "<b>will</b> mundur jadi <b>would</b>." },
+    { id: "l5", type: "fill", prompt: "Direct: \"I can help you,\" he said. → Reported: He said he <span class=\"blank\">___</span> help me.", answer: ["could"], explain: "<b>can</b> mundur jadi <b>could</b>." },
+    { id: "l6", type: "fill", prompt: "Direct: \"This bug is critical,\" the QA said. → Reported: The QA said <span class=\"blank\">___</span> bug was critical.", answer: ["that"], explain: "Kata tunjuk <b>this</b> berubah jadi <b>that</b> karena jaraknya dari waktu/tempat ucapan asli." },
+    { id: "l7", type: "fill", prompt: "Direct: \"I am here now,\" he said. → Reported: He said he was <span class=\"blank\">___</span> then.", answer: ["there"], explain: "Penanda tempat <b>here</b> berubah jadi <b>there</b> saat dilaporkan." },
+    { id: "l8", type: "fill", prompt: "Direct: \"We finished the sprint yesterday,\" they said. → Reported: They said they had finished the sprint <span class=\"blank\">___</span>.", answer: ["the day before", "the previous day"], explain: "Penanda waktu <b>yesterday</b> berubah jadi <b>the day before</b> / <b>the previous day</b>." },
+    { id: "q1", type: "mc", prompt: "\"Are you coming to the standup?\" she asked me. → Reported:", options: ["She asked if I was coming to the standup.", "She asked was I coming to the standup.", "She asked if I am coming to the standup."], answer: "She asked if I was coming to the standup.", explain: "Reported yes/no question pakai <b>if</b> + urutan kalimat berita, dan tense-nya ikut backshift (<b>am</b>→<b>was</b>)." },
+    { id: "q2", type: "mc", prompt: "\"Where do you live?\" he asked. → Reported:", options: ["He asked where I lived.", "He asked where did I live.", "He asked where I live."], answer: "He asked where I lived.", explain: "Reported wh-question tidak pakai <b>do/does/did</b> — langsung subjek + kata kerja yang sudah backshift." },
+    { id: "q3", type: "mc", prompt: "\"Close the door,\" she told him. → Reported:", options: ["She told him to close the door.", "She told him closed the door.", "She told that he close the door."], answer: "She told him to close the door.", explain: "Perintah dilaporkan dengan pola <b>tell/ask + object + to + infinitive</b>." },
+    { id: "q4", type: "fill", prompt: "Pilih yang benar: He <span class=\"blank\">___</span> me that the deployment failed. (say/tell)", answer: ["told"], explain: "<b>tell</b> WAJIB diikuti objek orang langsung (tell + me); <b>say</b> tidak bisa dipakai begitu." },
+    { id: "q5", type: "fill", prompt: "Betulkan: \"She said me she was busy.\" → tulis ulang seluruh kalimat", answer: ["she told me she was busy"], explain: "<b>say</b> tidak diikuti objek orang langsung — harus <b>told me</b> atau <b>said to me</b>." },
+    { id: "s1", type: "mc", prompt: "Soal cerita — Bagaimana Pak Broto melaporkan ucapan klien (bentuk reported)?", options: ["The client had changed the requirements again.", "The client changes the requirements again.", "The client will change the requirements again."], answer: "The client had changed the requirements again.", explain: "Present perfect <b>has changed</b> pada ucapan asli mundur jadi past perfect <b>had changed</b> saat dilaporkan." },
+    { id: "s2", type: "fill", prompt: "Soal cerita — Ubah pertanyaan Sarah: Sarah asked him if the deadline <span class=\"blank\">___</span> too.", answer: ["would move"], explain: "<b>will</b> mundur jadi <b>would</b>, dan pertanyaan yes/no pakai <b>if</b>, bukan bentuk tanya." },
+    { id: "s3", type: "fill", prompt: "Soal cerita — Lengkapi laporan perintah Pak Broto: He asked the team <span class=\"blank\">___</span> the new spec by Friday.", answer: ["to review"], explain: "Permintaan dilaporkan dengan pola <b>asked + object + to + infinitive</b>: asked the team to review..." },
+    { id: "s4", type: "mc", prompt: "Soal cerita — True/False: \"by Friday\" tetap sama saat dilaporkan karena bukan penanda waktu relatif seperti \"tomorrow\".", options: ["Benar", "Salah"], answer: "Benar", explain: "\"Friday\" adalah nama hari spesifik, bukan referensi relatif terhadap waktu bicara seperti today/tomorrow/yesterday, jadi biasanya tidak perlu diubah." }
+  ];
+
+  function normalize(s) {
+    return String(s || "").trim().toLowerCase().replace(/[.!?]+$/, "").replace(/\s+/g, " ");
+  }
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveState(state) {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var state = loadState();
+
+  function countDone() {
+    return QUESTIONS.filter(function (q) { return state[q.id] === true; }).length;
+  }
+
+  function renderProgress() {
+    var done = countDone();
+    var total = QUESTIONS.length;
+    var pct = Math.round((done / total) * 100);
+    ["quizCount", "quizCount2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = done + " / " + total + " benar";
+    });
+    ["quizFill", "quizFill2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.width = pct + "%";
+    });
+    var pill = document.getElementById("progressPill");
+    var pillCount = document.getElementById("progressPillCount");
+    if (pillCount) pillCount.textContent = done + "/" + total;
+    if (pill) pill.classList.toggle("done", done === total);
+
+    var banner = document.getElementById("completeBanner");
+    if (banner) banner.classList.toggle("show", done === total);
+
+    var endcardStatus = document.getElementById("endcardStatus");
+    if (endcardStatus) {
+      endcardStatus.innerHTML = done === total
+        ? "✅ Semua soal Latihan &amp; Quiz sudah benar — <b style=\"color:var(--good)\">Materi 3: Third Conditional &amp; Mixed Conditionals</b> sudah terbuka. Kirim hasil Writing Exercise-mu kapan saja untuk dikoreksi."
+        : "Materi 3 (Third Conditional &amp; Mixed Conditionals) terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar (" + done + "/" + total + " saat ini). Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.";
+    }
+
+    try { localStorage.setItem(DONE_KEY, done === total ? "true" : "false"); } catch (e) {}
+  }
+
+  function markCorrect(id) {
+    state[id] = true;
+    saveState(state);
+    renderProgress();
+  }
+
+  function buildFillBox(q, index) {
+    var box = document.createElement("div");
+    box.className = "qbox";
+    box.setAttribute("data-qid", q.id);
+
+    var num = document.createElement("div");
+    num.className = "qbox__num";
+    num.textContent = String(index);
+    box.appendChild(num);
+
+    var body = document.createElement("div");
+    body.className = "qbox__body";
+
+    var prompt = document.createElement("p");
+    prompt.className = "qbox__prompt";
+    prompt.innerHTML = q.prompt;
+    body.appendChild(prompt);
+
+    var row = document.createElement("div");
+    row.className = "qbox__input-row";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "qinput";
+    input.placeholder = "ketik jawabanmu…";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "qbtn";
+    btn.textContent = "Cek";
+
+    row.appendChild(input);
+    row.appendChild(btn);
+    body.appendChild(row);
+
+    var feedback = document.createElement("div");
+    feedback.className = "qbox__feedback";
+    body.appendChild(feedback);
+
+    box.appendChild(body);
+
+    var isDone = state[q.id] === true;
+    if (isDone) {
+      box.classList.add("correct");
+      input.value = q.answer[0];
+      input.disabled = true;
+      input.classList.add("is-correct");
+      btn.disabled = true;
+      feedback.className = "qbox__feedback ok";
+      feedback.innerHTML = "✓ Benar! " + q.explain;
+    }
+
+    function check() {
+      var val = normalize(input.value);
+      var ok = q.answer.some(function (a) { return normalize(a) === val; });
+      if (!val) return;
+      if (ok) {
+        box.classList.add("correct");
+        input.disabled = true;
+        input.classList.remove("is-wrong");
+        input.classList.add("is-correct");
+        btn.disabled = true;
+        feedback.className = "qbox__feedback ok";
+        feedback.innerHTML = "✓ Benar! " + q.explain;
+        markCorrect(q.id);
+      } else {
+        input.classList.remove("is-wrong");
+        void input.offsetWidth;
+        input.classList.add("is-wrong");
+        feedback.className = "qbox__feedback bad";
+        feedback.innerHTML = "✕ Belum tepat, coba lagi.";
+      }
+    }
+
+    btn.addEventListener("click", check);
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); check(); }
+    });
+
+    return box;
+  }
+
+  function buildMcBox(q, index) {
+    var box = document.createElement("div");
+    box.className = "qbox";
+    box.setAttribute("data-qid", q.id);
+
+    var num = document.createElement("div");
+    num.className = "qbox__num";
+    num.textContent = String(index);
+    box.appendChild(num);
+
+    var body = document.createElement("div");
+    body.className = "qbox__body";
+
+    var prompt = document.createElement("p");
+    prompt.className = "qbox__prompt";
+    prompt.innerHTML = q.prompt;
+    body.appendChild(prompt);
+
+    var opts = document.createElement("div");
+    opts.className = "qbox__options";
+
+    var feedback = document.createElement("div");
+    feedback.className = "qbox__feedback";
+
+    var isDone = state[q.id] === true;
+    var buttons = [];
+
+    q.options.forEach(function (optVal) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "qopt";
+      b.textContent = optVal;
+      b.setAttribute("data-value", optVal);
+      buttons.push(b);
+
+      if (isDone) {
+        b.disabled = true;
+        if (optVal === q.answer) b.classList.add("is-correct");
+      }
+
+      b.addEventListener("click", function () {
+        if (box.classList.contains("correct")) return;
+        if (optVal === q.answer) {
+          b.classList.add("is-correct");
+          buttons.forEach(function (o) { o.disabled = true; });
+          box.classList.add("correct");
+          feedback.className = "qbox__feedback ok";
+          feedback.innerHTML = "✓ Benar! " + q.explain;
+          markCorrect(q.id);
+        } else {
+          b.classList.remove("is-wrong");
+          void b.offsetWidth;
+          b.classList.add("is-wrong");
+          feedback.className = "qbox__feedback bad";
+          feedback.innerHTML = "✕ Belum tepat, coba lagi.";
+          setTimeout(function () { b.classList.remove("is-wrong"); }, 500);
+        }
+      });
+
+      opts.appendChild(b);
+    });
+
+    body.appendChild(opts);
+    body.appendChild(feedback);
+    box.appendChild(body);
+
+    if (isDone) {
+      box.classList.add("correct");
+      feedback.className = "qbox__feedback ok";
+      feedback.innerHTML = "✓ Benar! " + q.explain;
+    }
+
+    return box;
+  }
+
+  var latihanHost = document.getElementById("quizLatihan");
+  var quizHost = document.getElementById("quizQuiz");
+  var storyHost = document.getElementById("quizStory");
+  var qNum = 0;
+
+  QUESTIONS.forEach(function (q) {
+    qNum++;
+    var box = q.type === "mc" ? buildMcBox(q, qNum) : buildFillBox(q, qNum);
+    var host = latihanHost;
+    if (q.id.indexOf("l") === 0) host = latihanHost;
+    else if (q.id.indexOf("s") === 0) host = storyHost;
+    else host = quizHost;
+    if (host) host.appendChild(box);
+  });
+
+  renderProgress();
+})();
+</script>
+</body>
+</html>

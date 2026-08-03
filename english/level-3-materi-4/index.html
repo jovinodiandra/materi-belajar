@@ -1,0 +1,1545 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notebook Inggris — Level 3, Materi 4: First &amp; Second Conditional</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__back { color: var(--muted); text-decoration: none; padding-right: 12px; border-right: 1px solid var(--line); white-space: nowrap; transition: color .18s; }
+  .topbar__back:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+  ul.plain, ol.plain { max-width: 72ch; padding-left: 22px; margin: 14px 0; }
+  ul.plain li, ol.plain li { margin-bottom: 8px; color: var(--ink); font-size: 15.5px; }
+  ul.plain li i, ol.plain li i { color: var(--ink-strong); font-style: italic; }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- conjugation table ---------- */
+  .ttable-wrap { overflow-x: auto; margin: 20px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); max-width: 820px; }
+  table.ttable { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14.5px; }
+  table.ttable th, table.ttable td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink); }
+  table.ttable th { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); }
+  table.ttable tr:last-child td { border-bottom: none; }
+  table.ttable td b { color: var(--ink-strong); }
+  table.ttable code { font-family: var(--mono); font-size: .9em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- quiz accordion ---------- */
+  .qa { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 4px 18px; margin: 12px 0; max-width: 78ch; }
+  .qa summary { cursor: pointer; list-style: none; padding: 13px 0; font-size: 15.5px; color: var(--ink-strong); display: flex; align-items: baseline; gap: 10px; }
+  .qa summary::-webkit-details-marker { display: none; }
+  .qa summary::before { content: "▸"; color: var(--cyan); flex: none; }
+  .qa[open] summary::before { content: "▾"; }
+  .qa .qa__a { padding: 0 0 16px 20px; border-top: 1px dashed var(--line-soft); margin-top: -2px; padding-top: 12px; color: var(--ink); font-size: 14.5px; }
+  .qa .qa__a b { color: var(--cyan); }
+  .qa .qa__a code { font-family: var(--mono); font-size: .88em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- interactive quiz ---------- */
+  .quizmeta { display:flex; align-items:center; gap:14px; margin:18px 0 22px; flex-wrap:wrap; max-width: 78ch; }
+  .quizmeta__count { font-family:var(--mono); font-size:13px; color:var(--cyan); letter-spacing:.04em; white-space:nowrap; }
+  .quizmeta__bar { flex:1; min-width:140px; height:6px; border-radius:4px; background:var(--panel-2); overflow:hidden; border:1px solid var(--line); }
+  .quizmeta__fill { height:100%; width:0%; background:linear-gradient(90deg,var(--cyan-dim),var(--cyan)); transition:width .3s ease; }
+
+  .qbox { display:flex; gap:14px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:16px 18px; margin:12px 0; max-width:78ch; transition:border-color .25s, background .25s; }
+  .qbox.correct { border-color: var(--good-line); background: linear-gradient(100deg, var(--good-bg), var(--panel) 60%); }
+  .qbox__num { flex:none; width:28px; height:28px; border-radius:50%; background:var(--panel-2); border:1px solid var(--line); color:var(--muted); font-family:var(--mono); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .qbox.correct .qbox__num { background:var(--good); border-color:var(--good); color:var(--void); }
+  .qbox__body { flex:1; min-width:0; }
+  .qbox__prompt { font-size:15.5px; color:var(--ink-strong); margin-bottom:12px; }
+  .qbox__prompt .blank { color:var(--amber); font-family:var(--mono); }
+  .qbox__options { display:flex; flex-wrap:wrap; gap:8px; }
+  .qopt {
+    font-family:var(--mono); font-size:13.5px; color:var(--ink); background:var(--panel-2);
+    border:1px solid var(--line); border-radius:7px; padding:7px 14px; cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .qopt:hover { border-color:var(--cyan-dim); color:var(--ink-strong); }
+  .qopt.is-correct { border-color:var(--good); background:var(--good-bg); color:var(--good); }
+  .qopt.is-wrong { border-color:var(--bad); background:var(--bad-bg); color:var(--bad); animation:qshake .3s; }
+  .qopt:disabled { cursor:default; opacity:.6; }
+  .qbox__input-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .qinput {
+    font-family:var(--mono); font-size:14px; color:var(--ink-strong); background:var(--void-2);
+    border:1px solid var(--line); border-radius:7px; padding:8px 12px; min-width:160px; flex:1;
+  }
+  .qinput:focus { outline:none; border-color:var(--cyan-dim); }
+  .qinput.is-wrong { border-color:var(--bad); animation:qshake .3s; }
+  .qinput.is-correct { border-color:var(--good); color:var(--good); }
+  .qbtn {
+    font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--void); background:var(--cyan);
+    border:none; border-radius:7px; padding:8px 16px; font-weight:700; cursor:pointer; transition:opacity .15s;
+  }
+  .qbtn:hover { opacity:.85; }
+  .qbtn:disabled { opacity:.5; cursor:default; }
+  .qbox__feedback { margin-top:10px; font-size:13.5px; min-height:1px; }
+  .qbox__feedback.ok { color:var(--good); }
+  .qbox__feedback.bad { color:var(--bad); }
+  .qbox__feedback b { color:inherit; }
+  @keyframes qshake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
+
+  .completebanner {
+    margin-top:24px; border:1px solid var(--good-line); border-radius:12px;
+    background:linear-gradient(160deg, var(--good-bg), var(--panel) 70%);
+    padding:20px 24px; max-width:78ch; display:none;
+  }
+  .completebanner.show { display:block; }
+  .completebanner h4 { font-family:var(--serif); color:var(--ink-strong); font-size:19px; margin-bottom:6px; }
+  .completebanner p { color:var(--ink); font-size:14.5px; }
+
+  .progresspill {
+    position:fixed; top:52px; right:14px; z-index:45; font-family:var(--mono); font-size:11.5px;
+    color:var(--muted); background:rgba(20,26,46,.92); border:1px solid var(--line); border-radius:20px;
+    padding:6px 12px; backdrop-filter:blur(6px); display:flex; align-items:center; gap:8px;
+  }
+  .progresspill b { color:var(--cyan); }
+  .progresspill.done { border-color:var(--good-line); color:var(--good); }
+  .progresspill.done b { color:var(--good); }
+  @media (max-width: 640px){ .progresspill { top:auto; bottom:14px; right:14px; } }
+
+  /* ---------- dialogue bubbles ---------- */
+  .dialogue { margin: 22px 0 6px; max-width: 640px; }
+  .brow { display: flex; margin-bottom: 12px; }
+  .brow.you { justify-content: flex-end; }
+  .bubble { max-width: 84%; padding: 11px 16px; border-radius: 14px; font-size: 14.5px; color: var(--ink); border: 1px solid var(--line); background: var(--panel); }
+  .brow.you .bubble { background: rgba(69,212,222,.08); border-color: var(--cyan-dim); border-bottom-right-radius: 4px; }
+  .brow:not(.you) .bubble { border-bottom-left-radius: 4px; }
+  .bubble .who { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .brow.you .bubble .who { color: var(--cyan); }
+  .bubble .id { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); font-style: italic; }
+
+  /* ---------- vocab card bits ---------- */
+  .vocab-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .vocab-word { font-family: var(--serif); font-weight: 600; font-size: 17px; color: var(--ink-strong); }
+  .vocab-ipa { font-family: var(--mono); font-size: 12px; color: var(--muted-2); }
+  .vocab-meaning { color: var(--cyan); font-weight: 600; font-size: 13.5px; margin-left: auto; }
+  .pos { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 9px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700; background: var(--cyan); border-radius: 50%; }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--cyan); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .tiers { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__back" href="../index.html">← Belajar Inggris</a>
+  <div class="topbar__file">docs/learning/english/level-3-materi-4/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 22</div>
+</div>
+<div class="progress" id="progress"></div>
+<div class="progresspill" id="progressPill">Progress materi: <b id="progressPillCount">0/17</b></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa &amp; Konsep</div>
+    <a href="#c01"><span class="yr">01</span> Tujuan pembelajaran</a>
+    <a href="#c02"><span class="yr">02</span> Penjelasan konsep</a>
+    <a href="#c03"><span class="yr">03</span> Kenapa ini penting</a>
+
+    <div class="rail__part">II · Contoh dalam Konteks</div>
+    <a href="#c04"><span class="yr">04</span> Contoh sederhana</a>
+    <a href="#c05"><span class="yr">05</span> Contoh sehari-hari</a>
+    <a href="#c06"><span class="yr">06</span> Contoh dunia kerja</a>
+    <a href="#c07"><span class="yr">07</span> Contoh software engineering</a>
+
+    <div class="rail__part">III · Hindari Salah &amp; Ingat</div>
+    <a href="#c08"><span class="yr">08</span> Kesalahan umum</a>
+    <a href="#c09"><span class="yr">09</span> Tips mengingat</a>
+    <a href="#c10"><span class="yr">10</span> Ringkasan</a>
+
+    <div class="rail__part">IV · Latihan &amp; Praktik</div>
+    <a href="#c11"><span class="yr">11</span> Latihan</a>
+    <a href="#c12"><span class="yr">12</span> Quiz</a>
+    <a href="#c13"><span class="yr">13</span> Percakapan</a>
+    <a href="#c14"><span class="yr">14</span> Writing exercise</a>
+    <a href="#c15"><span class="yr">15</span> Speaking exercise</a>
+
+    <div class="rail__part">V · Perkaya Kemampuan</div>
+    <a href="#c16"><span class="yr">16</span> Listening</a>
+    <a href="#c17"><span class="yr">17</span> Reading</a>
+    <a href="#c18"><span class="yr">18</span> Vocabulary</a>
+    <a href="#c19"><span class="yr">19</span> Pronunciation</a>
+
+    <div class="rail__part">VI · Lanjut</div>
+    <a href="#c20"><span class="yr">20</span> Review</a>
+    <a href="#c21"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c22"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Notebook Inggris — Level 3 · Materi 4 dari 5</div>
+      <h1 class="reveal d1">First &amp; Second <span class="accent">Conditional</span></h1>
+      <p class="sub reveal d2">
+        Sekarang kita belajar bicara tentang <b>"kalau"</b> — bukan cuma "kalau" dalam arti kemungkinan nyata di masa
+        depan (<i>"kalau besok hujan, aku bawa payung"</i>), tapi juga "kalau" yang sifatnya <b>andaian</b>, sesuatu
+        yang belum tentu terjadi atau bahkan tidak mungkin sekarang (<i>"kalau aku jadi kamu, aku akan refactor
+        dulu"</i>). Dua bentuk ini terdengar mirip tapi maknanya beda jauh — dan keduanya sering banget dipakai saat
+        planning sprint, code review, dan diskusi teknis "what if".
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row"><div class="tl__yr">Lv 0</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Fondasi Nol</b> <span>— Kalimat &amp; To Be, Nouns, Simple Present, Adjective</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 1</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Dasar Kokoh</b> <span>— Simple Past, Simple Future, Question Words, Preposisi</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 2</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Memperluas Struktur</b> <span>— Present Continuous, Past Continuous, Modal Verbs, Comparative, Quantifiers</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Lv 3</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Menyambung Gagasan</b> <span>— Present Perfect, Passive Voice, First &amp; Second Conditional (materi ini), Linking Words</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 4</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bicara Seperti Native</b> <span>— Past Perfect, Reported Speech, Third Conditional, Relative Clauses, Gerund/Infinitive, Phrasal Verbs</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 5</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Advance</b> <span>— Future Perfect, Advanced Modals, Inversion, Subjunctive, Academic Writing, Idiom</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 TUJUAN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">01</span> Tujuan pembelajaran</div>
+        <h2>Apa yang akan kamu kuasai</h2>
+      </div>
+      <p class="lead reveal">Setelah materi ini selesai, kamu akan bisa:</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// first conditional</div><h4>Menyusun kalimat kemungkinan nyata</h4><p>Menyusun <code>If + Simple Present, ... will + V1</code> untuk membicarakan kemungkinan nyata di masa depan.</p></div>
+        <div class="card up"><div class="ic">// second conditional</div><h4>Menyusun kalimat andaian</h4><p>Menyusun <code>If + Simple Past, ... would + V1</code> untuk membicarakan situasi hipotetis/tidak nyata sekarang.</p></div>
+        <div class="card up"><div class="ic">// makna</div><h4>Membedakan "mungkin terjadi" vs "andai saja"</h4><p>Tahu kapan sesuatu masih realistis (first) dan kapan sesuatu cuma bayangan/tidak mungkin (second).</p></div>
+        <div class="card up"><div class="ic">// dunia kerja</div><h4>Memakainya dalam planning &amp; code review</h4><p>Memakai conditional untuk membahas skenario "bagaimana kalau", memberi saran teknis, dan merencanakan langkah selanjutnya.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">02</span> Konsep inti</div>
+        <h2>Dua jenis "kalau" yang berbeda</h2>
+      </div>
+      <p class="lead reveal">Kalimat conditional (kalimat pengandaian) selalu punya dua bagian: klausa <code>if</code> (syarat) dan klausa hasil (akibat). Yang membedakan first dan second conditional adalah <b>seberapa nyata/mungkin</b> syaratnya itu.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--ink-strong)">First Conditional — kemungkinan nyata di masa depan.</strong> Dipakai kalau syaratnya <b>masih mungkin terjadi</b>, kamu benar-benar membicarakan masa depan yang realistis. Rumusnya:</p>
+
+      <div class="ttable-wrap reveal d2">
+        <table class="ttable">
+          <tr><th>Bagian</th><th>Rumus</th><th>Contoh</th></tr>
+          <tr><td>If-clause (syarat)</td><td><code>If + Simple Present</code></td><td>If it <b>rains</b> tomorrow,</td></tr>
+          <tr><td>Main clause (hasil)</td><td><code>will + V1</code></td><td>I <b>will bring</b> an umbrella.</td></tr>
+        </table>
+      </div>
+
+      <p class="body reveal d2">Lengkapnya: <code>If it rains tomorrow, I will bring an umbrella.</code> — Kalau besok hujan (dan itu memang mungkin terjadi), aku akan bawa payung. Perhatikan: klausa <code>if</code> pakai <b>Simple Present</b> (bukan <code>will</code>), walau maknanya tentang masa depan — ini sering jadi salah kaprah pemula.</p>
+
+      <p class="body reveal d3"><strong style="color:var(--ink-strong)">Second Conditional — situasi hipotetis/tidak nyata sekarang.</strong> Dipakai untuk membayangkan sesuatu yang <b>tidak benar sekarang</b>, atau kecil kemungkinannya terjadi. Rumusnya:</p>
+
+      <div class="ttable-wrap reveal d4">
+        <table class="ttable">
+          <tr><th>Bagian</th><th>Rumus</th><th>Contoh</th></tr>
+          <tr><td>If-clause (syarat)</td><td><code>If + Simple Past</code></td><td>If I <b>had</b> more time,</td></tr>
+          <tr><td>Main clause (hasil)</td><td><code>would + V1</code></td><td>I <b>would learn</b> Rust.</td></tr>
+        </table>
+      </div>
+
+      <p class="body reveal d4">Lengkapnya: <code>If I had more time, I would learn Rust.</code> — Kenyataannya sekarang aku <b>tidak</b> punya cukup waktu (itu andaian, bukan fakta), jadi ini cuma bayangan. Perhatikan lagi: klausa <code>if</code> pakai <b>Simple Past</b> (<code>had</code>), tapi artinya <b>bukan</b> masa lalu — ini "past tense untuk hal yang tidak nyata", bukan penanda waktu.</p>
+
+      <div class="why reveal d4">
+        <div class="tag">◆ Cara paling gampang membedakan keduanya</div>
+        <p>Tanyakan: <em>"apakah ini masih mungkin/realistis terjadi?"</em> Kalau ya → First Conditional (<code>if + present, will + V1</code>). Kalau itu cuma khayalan, tidak nyata sekarang, atau kemungkinannya sangat kecil → Second Conditional (<code>if + past, would + V1</code>). Contoh: <code>If I win the lottery, I will buy a house.</code> (mungkin, walau tipis) vs <code>If I won the lottery, I would buy a house.</code> (dibayangkan sebagai hal yang jauh dari kenyataan).</p>
+      </div>
+
+      <p class="body reveal d4"><strong style="color:var(--ink-strong)">Satu kasus khusus: "if I were".</strong> Dalam Second Conditional, untuk kata kerja <code>to be</code>, bentuk yang secara tradisional dianggap benar untuk <b>semua subjek</b> (termasuk I/he/she/it) adalah <code>were</code>, bukan <code>was</code> — ini disebut <i>subjunctive mood</i>. Contoh paling umum: <code>If I were you, I would refactor this function first.</code> ("Kalau aku jadi kamu...") — ungkapan ini sangat sering dipakai untuk memberi saran secara sopan, termasuk saat code review.</p>
+
+      <div class="note reveal d4">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Unless = if not</div>
+          <p><code>Unless</code> berarti "kecuali" atau "kalau tidak" — bisa dipakai sebagai versi negatif dari <code>if</code>, paling sering di First Conditional. <code>Unless we optimize this query, it will time out.</code> = <code>If we don't optimize this query, it will time out.</code> Dua-duanya benar, tapi <code>unless</code> terdengar lebih ringkas.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d4">Susunan klausa boleh dibalik tanpa mengubah arti — kalau klausa hasil ditaruh duluan, tidak perlu koma: <code>I will bring an umbrella if it rains.</code> = <code>If it rains, I will bring an umbrella.</code></p>
+    </div>
+  </section>
+
+  <!-- ============ 03 KENAPA PENTING ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">03</span> Kenapa penting</div>
+        <h2>Kenapa materi ini penting</h2>
+      </div>
+      <p class="lead reveal">Conditional adalah cara utama untuk membicarakan skenario "bagaimana kalau" — dan dunia software engineering penuh dengan skenario semacam itu:</p>
+
+      <ul class="plain reveal d1">
+        <li>Planning sprint: <i>"If we finish the API today, we will start testing tomorrow."</i></li>
+        <li>Code review yang sopan: <i>"If I were you, I would extract this into a separate function."</i></li>
+        <li>Risk assessment: <i>"If the third-party service goes down, we will need a fallback."</i></li>
+        <li>Retrospective bersyarat: <i>"If we had written more tests, we would have caught this bug earlier."</i> (ini masuk Third Conditional — dibahas di Level 4, tapi kamu akan sering dengar sekilas.)</li>
+      </ul>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kenapa ini "menyambung gagasan"</div>
+        <p>Conditional menghubungkan dua gagasan: syarat dan akibat. Ini kemampuan penting untuk <b>bernalar terbuka</b> dalam Bahasa Inggris — merancang rencana (first conditional) maupun mendiskusikan alternatif yang belum tentu terjadi (second conditional). Tanpa conditional, sulit membahas "apa yang akan terjadi jika..." secara alami.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 CONTOH SEDERHANA ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">04</span> Contoh</div>
+        <h2>Contoh sederhana</h2>
+      </div>
+      <p class="lead reveal">Delapan kalimat dasar, campuran First &amp; Second Conditional — perhatikan bedanya.</p>
+      <ul class="plain reveal d1">
+        <li><code>If it rains, I will bring an umbrella.</code> — First — Kalau hujan, aku akan bawa payung.</li>
+        <li><code>If I had a car, I would drive to work.</code> — Second — Kalau aku punya mobil (tapi sekarang tidak), aku akan naik mobil ke kantor.</li>
+        <li><code>If you study hard, you will pass the exam.</code> — First — Kalau kamu belajar keras, kamu akan lulus ujian.</li>
+        <li><code>If I were rich, I would travel the world.</code> — Second — Andai aku kaya, aku akan keliling dunia.</li>
+        <li><code>Unless we hurry, we will miss the bus.</code> — First — Kalau kita tidak buru-buru, kita akan ketinggalan bus.</li>
+        <li><code>If she asked, I would help her.</code> — Second — Kalau dia minta tolong (belum tentu), aku akan bantu.</li>
+        <li><code>If it is sunny tomorrow, we will go hiking.</code> — First — Kalau besok cerah, kita akan hiking.</li>
+        <li><code>If I knew the answer, I would tell you.</code> — Second — Kalau aku tahu jawabannya (tapi aku tidak tahu), aku akan bilang.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 SEHARI-HARI ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">05</span> Konteks nyata</div>
+        <h2>Contoh dalam kehidupan sehari-hari</h2>
+      </div>
+      <p class="lead reveal">Situasi harian yang biasa kamu alami:</p>
+      <ul class="plain reveal d1">
+        <li>Ngobrol soal cuaca: <i>"If it doesn't rain this weekend, we will have a picnic."</i> (First — masih mungkin.)</li>
+        <li>Membayangkan hidup lain: <i>"If I lived in Japan, I would eat ramen every week."</i> (Second — cuma bayangan, kenyataannya tidak tinggal di Jepang.)</li>
+        <li>Memberi saran ke teman: <i>"If I were you, I would talk to him directly."</i> (Second — nasihat, bukan fakta.)</li>
+        <li>Rencana akhir pekan: <i>"If my friend comes, we will watch a movie together."</i> (First — masih realistis.)</li>
+      </ul>
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Perhatikan</div>
+          <p>Second conditional sering dipakai untuk <b>memberi saran secara sopan</b> — <code>If I were you, ...</code> terdengar jauh lebih halus daripada perintah langsung seperti <code>"You should..."</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 DUNIA KERJA ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">06</span> Konteks nyata</div>
+        <h2>Contoh dalam dunia kerja</h2>
+      </div>
+      <ul class="plain reveal">
+        <li>Rencana proyek: <i>"If the client approves the proposal, we will start development next week."</i></li>
+        <li>Saran ke rekan kerja: <i>"If I were the project manager, I would extend the deadline by a few days."</i></li>
+        <li>Membahas risiko: <i>"If we don't get more resources, we will miss the launch date."</i></li>
+        <li>Negosiasi: <i>"If you could offer a better rate, we would consider signing the contract."</i></li>
+      </ul>
+      <p class="body reveal d1">Perhatikan bagaimana second conditional sering muncul saat orang ingin terdengar <b>lebih sopan atau tidak langsung</b> — cocok dipakai dalam negosiasi atau memberi masukan ke atasan.</p>
+    </div>
+  </section>
+
+  <!-- ============ 07 SWE ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">07</span> Konteks nyata</div>
+        <h2>Contoh dalam software engineering</h2>
+      </div>
+      <p class="lead reveal">Ini bagian intinya — conditional adalah bahasa sehari-hari untuk sprint planning, code review, dan diskusi arsitektur.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">sprint planning</span><span class="lang">PLANNING</span></div>
+<pre class="code"><span class="c">// Diskusi rencana sprint — First Conditional</span>
+If the API integration <b style="color:var(--cyan)">is</b> done today,
+we <b style="color:var(--cyan)">will start</b> testing tomorrow.
+
+If the tests <b style="color:var(--cyan)">pass</b>, we <b style="color:var(--cyan)">will deploy</b> to staging.
+
+Unless something <b style="color:var(--cyan)">changes</b>, we <b style="color:var(--cyan)">will ship</b> by Friday.</pre>
+      </div>
+
+      <p class="body reveal d2">Contoh dari code review (gaya komentar pull request):</p>
+      <ul class="plain reveal d2">
+        <li><i>"If I were you, I <b>would extract</b> this logic into a separate helper function."</i></li>
+        <li><i>"If this endpoint were public, we <b>would need</b> rate limiting."</i> (Second — endpoint-nya sebenarnya <b>tidak</b> public.)</li>
+        <li><i>"If we <b>had</b> more time, we <b>would write</b> more edge-case tests."</i></li>
+      </ul>
+
+      <div class="code-card reveal d3">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">risk assessment</span><span class="lang">RISK</span></div>
+<pre class="code"><span class="c">## Risk Notes</span>
+If the third-party API <b style="color:var(--cyan)">goes</b> down,
+our checkout flow <b style="color:var(--cyan)">will fail</b> completely.
+
+<span class="c">// Skenario hipotetis, bukan rencana nyata:</span>
+If we <b style="color:var(--cyan)">didn't rely</b> on a single provider,
+we <b style="color:var(--cyan)">would be</b> more resilient.</pre>
+      </div>
+
+      <div class="why reveal d4">
+        <div class="tag">◆ Di daily standup</div>
+        <p><em>"If the QA team approves it today, we will merge the PR this afternoon. But if I were leading this sprint, I would prioritize the bug fixes first."</em> Perhatikan bagaimana kalimat pertama membahas kemungkinan nyata (First), sementara kalimat kedua cuma pendapat/andaian (Second) — dua conditional dipakai berdampingan secara natural.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 KESALAHAN ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">08</span> Awas salah</div>
+        <h2>Kesalahan yang sering dilakukan</h2>
+      </div>
+      <p class="lead reveal">Empat kesalahan paling umum — kenali polanya supaya tidak terulang.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--bad)">Kesalahan #1 — Pakai "will" di klausa if pada First Conditional.</strong> Klausa <code>if</code> harus pakai Simple Present, bukan <code>will</code>, walau membicarakan masa depan.</p>
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">salah — will di klausa if</span><span class="lang" style="color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)">✕ SALAH</span></div>
+<pre class="code"><span class="hl-bad">If it will rain, I will bring an umbrella.</span>
+<span class="hl-bad">If the tests will pass, we will deploy.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">benar — Simple Present di klausa if</span><span class="lang" style="color:var(--good);border-color:var(--good-line);background:var(--good-bg)">✓ BENAR</span></div>
+<pre class="code"><span class="hl-good">If it <b style="color:var(--good)">rains</b>, I will bring an umbrella.</span>
+<span class="hl-good">If the tests <b style="color:var(--good)">pass</b>, we will deploy.</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d2"><strong style="color:var(--bad)">Kesalahan #2 — Mencampur First &amp; Second Conditional dalam satu kalimat.</strong></p>
+      <div class="diptych reveal d2">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">salah — rumus tercampur</span><span class="lang" style="color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)">✕ SALAH</span></div>
+<pre class="code"><span class="hl-bad">If I have money, I would buy a laptop.</span>
+<span class="hl-bad">If I had money, I will buy a laptop.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">benar — konsisten satu jenis</span><span class="lang" style="color:var(--good);border-color:var(--good-line);background:var(--good-bg)">✓ BENAR</span></div>
+<pre class="code"><span class="hl-good">If I <b style="color:var(--good)">have</b> money, I <b style="color:var(--good)">will buy</b> a laptop.</span>
+<span class="hl-good">If I <b style="color:var(--good)">had</b> money, I <b style="color:var(--good)">would buy</b> a laptop.</span></pre>
+        </div>
+      </div>
+      <p class="body reveal d2">Pilih satu: kalau memang masih mungkin (First), pakai present+will konsisten. Kalau memang hipotetis (Second), pakai past+would konsisten. Jangan dicampur.</p>
+
+      <div class="caution reveal d3">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          <b>Kesalahan #3 — Lupa "were" untuk ungkapan saran "if I were you".</b> <code>❌ If I was you, I would fix this first.</code> — dalam Bahasa Inggris formal/tertulis, bentuk baku Second Conditional untuk "to be" adalah <code>were</code> untuk semua subjek, termasuk "I". Dalam percakapan santai, <code>"if I was"</code> memang sering terdengar dan tidak akan bikin orang salah paham — tapi untuk tulisan kerja (email, dokumentasi), pakai <code>were</code>.
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Kesalahan #4 — Salah pakai "unless"</div>
+          <p><code>❌ Unless we don't optimize this, it will time out.</code> — <code>unless</code> sudah berarti "kalau tidak", jadi tidak boleh ditambah <code>not</code> lagi (itu jadi negatif ganda). Yang benar: <code>Unless we optimize this, it will time out.</code></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TIPS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">09</span> Cara mengingat</div>
+        <h2>Tips mengingat materi</h2>
+      </div>
+      <ul class="plain reveal d1">
+        <li><b>Uji "masih realistis atau tidak?"</b> Kalau iya → First (present + will). Kalau cuma bayangan/andaian/kecil kemungkinannya → Second (past + would).</li>
+        <li><b>Pasangan yang tidak boleh tertukar:</b> present + will (First), past + would (Second). Jangan pernah campur present + would atau past + will dalam satu kalimat conditional biasa.</li>
+        <li><b>"If I were you" = jembatan saran sopan.</b> Setiap kali mau kasih saran halus ke rekan kerja, coba pakai frasa ini sebagai pembuka.</li>
+        <li><b>Unless = "kalau tidak", jangan tambah "not" lagi</b> — anggap <code>unless</code> sudah membawa arti negatif di dalamnya sendiri.</li>
+      </ul>
+
+      <div class="quote reveal d2">
+        <p>Conditional bukan sekadar rumus tata bahasa — dia cara kita menimbang kemungkinan sebelum mengambil keputusan.</p>
+        <cite>— prinsip umum penggunaan "if clauses" dalam Bahasa Inggris</cite>
+      </div>
+      <p class="body reveal d2">Artinya: setiap kali kamu ragu pakai First atau Second, tanyakan pada dirimu sendiri "seberapa yakin aku ini bisa/akan terjadi?" Kalau cukup yakin — First. Kalau ragu, tidak nyata, atau cuma perumpamaan — Second.</p>
+    </div>
+  </section>
+
+  <!-- ============ 10 RINGKASAN ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">10</span> Ringkasan</div>
+        <h2>Ringkasan materi</h2>
+      </div>
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>First Conditional</b> — <code>If + Simple Present, ... will + V1</code> — kemungkinan nyata di masa depan.</li>
+          <li><b>Second Conditional</b> — <code>If + Simple Past, ... would + V1</code> — situasi hipotetis/tidak nyata sekarang.</li>
+          <li><b>"If I were"</b> — bentuk baku Second Conditional untuk to be, dipakai untuk saran sopan.</li>
+          <li><b>Unless</b> = "if not", jangan ditambah <code>not</code> lagi.</li>
+          <li>Jangan campur rumus — konsisten present+will atau past+would dalam satu kalimat.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 LATIHAN ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">11</span> Latihan</div>
+        <h2>Latihan: isi titik-titik</h2>
+      </div>
+      <p class="lead reveal">Lengkapi kalimat memakai First atau Second Conditional sesuai konteksnya, lalu klik <b>Cek</b>. Jawaban salah boleh dicoba lagi — kamu baru bisa lanjut ke Materi 5 kalau <b>semua</b> soal di bagian Latihan &amp; Quiz sudah benar.</p>
+
+      <div class="quizmeta reveal d1">
+        <span class="quizmeta__count" id="quizCount">0 / 17 benar</span>
+        <div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill"></div></div>
+      </div>
+
+      <div id="quizLatihan" class="reveal d1"></div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Cara pakai bagian ini</div>
+          <p>Ketik jawabanmu lengkap (misalnya "will deploy", bukan cuma "deploy"), tekan <b>Enter</b> atau klik <b>Cek</b>. Kalau salah lebih dari 2-3 kali di soal yang sama, ulangi bagian "Penjelasan Konsep" (bab 02) sebelum lanjut.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 12 QUIZ ============ -->
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">12</span> Uji pemahaman</div>
+        <h2>Quiz</h2>
+      </div>
+      <p class="lead reveal">Lima soal campuran pilihan ganda &amp; isian. Setelah itu ada satu <b>soal cerita</b> (reading comprehension) — baca cerita sprint planning di bawah, lalu jawab pertanyaannya. Semuanya menentukan materi ini <b>selesai</b> atau belum.</p>
+
+      <div class="quizmeta reveal d1">
+        <span class="quizmeta__count" id="quizCount2">0 / 17 benar</span>
+        <div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill2"></div></div>
+      </div>
+
+      <div id="quizQuiz" class="reveal d1"></div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">soal cerita — baca dulu, baru jawab di bawah</span><span class="lang">STORY</span></div>
+        <pre class="code" style="white-space:pre-wrap;font-family:var(--sans);font-size:15px;line-height:1.7;color:var(--ink-strong)">Hi team. If we finish the API integration today, we will start testing tomorrow. But if the third-party service goes down again, we will need a backup plan. Honestly, if I were the product manager, I would push the deadline by two days — this sprint feels too tight. Unless something changes, I don't think we can ship by Friday. If the QA team had more time, they would catch more edge cases before release.</pre>
+      </div>
+      <p class="body reveal d2" style="font-size:14px;color:var(--muted)"><i>(Terjemahan bebas: Hai tim. Kalau kita selesaikan integrasi API hari ini, kita akan mulai testing besok. Tapi kalau layanan pihak ketiga down lagi, kita akan butuh rencana cadangan. Jujur, kalau aku jadi product manager, aku akan undur deadline dua hari — sprint ini terasa terlalu ketat. Kalau tidak ada perubahan, aku rasa kita tidak bisa rilis hari Jumat. Kalau tim QA punya lebih banyak waktu, mereka akan menemukan lebih banyak edge case sebelum rilis.)</i></p>
+
+      <div id="quizStory" class="reveal d2"></div>
+
+      <div class="completebanner" id="completeBanner">
+        <h4>🎉 Materi 4 selesai!</h4>
+        <p>Semua soal Latihan &amp; Quiz sudah benar. <b>Materi 5</b> sekarang terbuka — cek halaman <a href="../index.html" style="color:var(--good)">Belajar Inggris</a> untuk lanjut.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 13 PERCAKAPAN ============ -->
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">13</span> Praktik</div>
+        <h2>Percakapan — diskusi "what if" saat code review</h2>
+      </div>
+      <p class="lead reveal">Situasi: dua rekan kerja membahas pull request dan kemungkinan-kemungkinan yang bisa terjadi.</p>
+
+      <div class="dialogue reveal d1">
+        <div class="brow"><div class="bubble"><span class="who">Reviewer</span>If this endpoint receives too many requests, will it crash?<span class="id">Kalau endpoint ini menerima terlalu banyak request, apakah dia akan crash?</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>Good question. If we don't add rate limiting, it probably will.<span class="id">Pertanyaan bagus. Kalau kita tidak menambahkan rate limiting, kemungkinan besar iya.</span></div></div>
+        <div class="brow"><div class="bubble"><span class="who">Reviewer</span>If I were you, I would add a simple rate limiter before merging this.<span class="id">Kalau aku jadi kamu, aku akan menambahkan rate limiter sederhana sebelum merge ini.</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>That's fair. If I add it today, I will push the update by tonight.<span class="id">Itu masuk akal. Kalau aku tambahkan hari ini, aku akan push update-nya malam ini.</span></div></div>
+        <div class="brow"><div class="bubble"><span class="who">Reviewer</span>Perfect. Unless something urgent comes up, I will approve it tomorrow.<span class="id">Sempurna. Kalau tidak ada yang mendesak, aku akan approve besok.</span></div></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Perhatikan</div>
+          <p>Perhatikan campuran First (<code>if we don't add..., it probably will</code>, <code>if I add it today, I will push</code>) dan Second (<code>if I were you, I would add</code>) dalam satu percakapan — keduanya dipakai secara natural tergantung apakah membahas rencana nyata atau saran/andaian.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 14 WRITING ============ -->
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">14</span> Praktik</div>
+        <h2>Writing exercise</h2>
+      </div>
+      <p class="lead reveal">Tulis 5 kalimat tentang pekerjaanmu, wajib memakai minimal 2 First Conditional dan 2 Second Conditional (boleh campur urutannya). Contoh kerangka:</p>
+
+      <ul class="plain reveal d1">
+        <li>Rencana nyata minggu ini — <i>"If [syarat realistis], I will ..."</i></li>
+        <li>Risiko yang mungkin terjadi — <i>"Unless [syarat], we will ..."</i></li>
+        <li>Andaian/saran ke rekan kerja — <i>"If I were [posisi/orang], I would ..."</i></li>
+        <li>Situasi hipotetis tentang proyekmu — <i>"If [sesuatu yang belum tentu terjadi], I would ..."</i></li>
+        <li>Bebas, boleh gabungan First &amp; Second.</li>
+      </ul>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kirimkan hasilnya</div>
+        <p>Kirimkan hasil tulisanmu di chat kapan saja — akan dikoreksi konsistensi rumus (present+will vs past+would) dan kealamian kalimat sebelum kamu lanjut ke Materi 5.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 15 SPEAKING ============ -->
+  <section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">15</span> Praktik</div>
+        <h2>Speaking exercise</h2>
+      </div>
+      <p class="lead reveal">Ucapkan keras-keras (boleh rekam suara sendiri untuk didengar ulang):</p>
+
+      <ol class="steps reveal d1">
+        <li>"If [rencana kerjamu] happens today, I will [langkah selanjutnya]."</li>
+        <li>"Unless [risiko], we will [rencana cadangan]."</li>
+        <li>"If I were [posisi orang lain — the lead/the manager], I would [saranmu]."</li>
+        <li>"If I had more time this week, I would [hal yang ingin kamu lakukan tapi belum sempat]."</li>
+      </ol>
+
+      <p class="body reveal d2">Fokus bukan pada kecepatan, tapi kejelasan kontraksi <code>I'll</code>, <code>I'd</code>, <code>won't</code>, dan <code>wouldn't</code> saat diucapkan santai (lihat bagian Pronunciation berikutnya).</p>
+    </div>
+  </section>
+
+  <!-- ============ 16 LISTENING ============ -->
+  <section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">16</span> Perkaya telinga</div>
+        <h2>Listening recommendation</h2>
+      </div>
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">🎧 channel</div><h4>Sprint planning / retro recordings (YouTube: "sprint planning meeting example")</h4><p>Cari video contoh sprint planning tim engineering asli — perhatikan seberapa sering "if... we will..." dan "if I were..." muncul saat membahas rencana dan risiko.</p></div>
+        <div class="card up"><div class="ic">🎧 podcast</div><h4>Business English Pod — episode tentang "conditionals in meetings"</h4><p>Podcast yang fokus pada bahasa kantor formal, sering membahas pola conditional untuk negosiasi dan pengambilan keputusan.</p></div>
+      </div>
+      <p class="body reveal d2">Kenapa direkomendasikan level ini: keduanya konteks kerja nyata, sehingga kamu terbiasa dengar conditional dipakai untuk perencanaan sungguhan, bukan cuma latihan grammar.</p>
+    </div>
+  </section>
+
+  <!-- ============ 17 READING ============ -->
+  <section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">17</span> Perkaya bacaan</div>
+        <h2>Reading recommendation</h2>
+      </div>
+      <div class="quote reveal d1">
+        <p>"If the team completes the migration this quarter, we will save significant infrastructure costs. However, if the legacy system were replaced too quickly, we would risk breaking critical workflows that depend on it. Unless we test thoroughly, unexpected issues will appear in production. If I were leading this project, I would prioritize a gradual rollout instead of a full switch."</p>
+        <cite>Paragraf perencanaan proyek ini sengaja dipadatkan dengan First &amp; Second Conditional supaya kamu langsung latihan mengenali polanya dalam teks utuh, bukan cuma kalimat lepas.</cite>
+      </div>
+      <p class="body reveal d2">Kalau sudah lancar, coba baca bagian "Risks" atau "Alternatives Considered" dari technical design document (RFC/ADR) project mana pun — biasanya penuh conditional: <i>"If we choose option A, ... If we had chosen option B, we would ..."</i></p>
+    </div>
+  </section>
+
+  <!-- ============ 18 VOCAB ============ -->
+  <section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">18</span> Perkaya kosakata</div>
+        <h2>Vocabulary list (20 kata)</h2>
+      </div>
+      <p class="lead reveal">Kata-kata ini akan <b>muncul lagi</b> di materi-materi berikutnya (spaced repetition) — jadi tidak perlu dihafal mati sekarang, cukup familiar.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">if</span><span class="vocab-ipa">/ɪf/</span><span class="vocab-meaning">kalau / jika</span></div><p><span class="pos">conjunction</span> — Contoh: <i>"If it rains, we will stay inside."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">unless</span><span class="vocab-ipa">/ənˈles/</span><span class="vocab-meaning">kecuali / kalau tidak</span></div><p><span class="pos">conjunction</span> — Contoh: <i>"Unless we hurry, we will be late."</i> Tips: jangan digabung dengan "not" lagi.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">will</span><span class="vocab-ipa">/wɪl/</span><span class="vocab-meaning">akan (First Conditional)</span></div><p><span class="pos">modal</span> — Contoh: <i>"If it works, we will ship it."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">would</span><span class="vocab-ipa">/wʊd/</span><span class="vocab-meaning">akan (Second Conditional / andaian)</span></div><p><span class="pos">modal</span> — Contoh: <i>"If I had time, I would learn Rust."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">condition</span><span class="vocab-ipa">/kənˈdɪʃn/</span><span class="vocab-meaning">syarat / kondisi</span></div><p><span class="pos">noun</span> — Contoh: <i>"There is one condition before we deploy."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">hypothetical</span><span class="vocab-ipa">/ˌhaɪpəˈθetɪkl/</span><span class="vocab-meaning">bersifat andaian</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This is just a hypothetical scenario."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">possibility</span><span class="vocab-ipa">/ˌpɒsəˈbɪləti/</span><span class="vocab-meaning">kemungkinan</span></div><p><span class="pos">noun</span> — Contoh: <i>"There's a possibility the server will crash."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">likely</span><span class="vocab-ipa">/ˈlaɪkli/</span><span class="vocab-meaning">kemungkinan besar</span></div><p><span class="pos">adjective/adverb</span> — Contoh: <i>"It's likely we will finish on time."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">assume</span><span class="vocab-ipa">/əˈsjuːm/</span><span class="vocab-meaning">mengasumsikan</span></div><p><span class="pos">verb</span> — Contoh: <i>"Let's assume the API is stable for now."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">scenario</span><span class="vocab-ipa">/səˈnɑːriəʊ/</span><span class="vocab-meaning">skenario</span></div><p><span class="pos">noun</span> — Contoh: <i>"What's the worst-case scenario here?"</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">deploy</span><span class="vocab-ipa">/dɪˈplɔɪ/</span><span class="vocab-meaning">menerapkan / merilis</span></div><p><span class="pos">verb</span> — Contoh: <i>"If the tests pass, we will deploy it."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">refactor</span><span class="vocab-ipa">/riːˈfæktər/</span><span class="vocab-meaning">menata ulang kode</span></div><p><span class="pos">verb</span> — Contoh: <i>"If I were you, I would refactor this first."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">approve</span><span class="vocab-ipa">/əˈpruːv/</span><span class="vocab-meaning">menyetujui</span></div><p><span class="pos">verb</span> — Contoh: <i>"If everything looks good, I will approve the PR."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">delay</span><span class="vocab-ipa">/dɪˈleɪ/</span><span class="vocab-meaning">menunda / penundaan</span></div><p><span class="pos">verb / noun</span> — Contoh: <i>"If I were the PM, I would delay the launch."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">backup</span><span class="vocab-ipa">/ˈbækʌp/</span><span class="vocab-meaning">cadangan</span></div><p><span class="pos">noun</span> — Contoh: <i>"If the service fails, we will use the backup plan."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">edge case</span><span class="vocab-ipa">/edʒ keɪs/</span><span class="vocab-meaning">kasus tepi / kasus khusus</span></div><p><span class="pos">noun phrase</span> — Contoh: <i>"If we had more time, we would test more edge cases."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">integrate</span><span class="vocab-ipa">/ˈɪntɪɡreɪt/</span><span class="vocab-meaning">mengintegrasikan</span></div><p><span class="pos">verb</span> — Contoh: <i>"If we integrate this today, we will test it tomorrow."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">occur</span><span class="vocab-ipa">/əˈkɜːr/</span><span class="vocab-meaning">terjadi</span></div><p><span class="pos">verb</span> — Contoh: <i>"If an error occurs, the system will log it."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">risk</span><span class="vocab-ipa">/rɪsk/</span><span class="vocab-meaning">risiko</span></div><p><span class="pos">noun</span> — Contoh: <i>"If we skip testing, we will take a big risk."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">outcome</span><span class="vocab-ipa">/ˈaʊtkʌm/</span><span class="vocab-meaning">hasil akhir</span></div><p><span class="pos">noun</span> — Contoh: <i>"If we change the approach, the outcome would be different."</i></p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 19 PRONUNCIATION ============ -->
+  <section class="chapter" id="c19">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">19</span> Perkaya ucapan</div>
+        <h2>Pronunciation tips</h2>
+      </div>
+      <ul class="plain reveal d1">
+        <li><b>will /wɪl/</b> — dalam kalimat cepat, sering dikontraksi jadi <code>'ll</code>, hampir tidak terdengar sebagai suku kata terpisah. <i>"I'll bring it."</i></li>
+        <li><b>would /wʊd/</b> — dikontraksi jadi <code>'d</code>, mirip bunyi "d" pendek yang ditempel ke kata sebelumnya. <i>"I'd learn it."</i> Hati-hati: <code>I'd</code> bisa berarti "I would" ATAU "I had", bedanya ditebak dari kata setelahnya.</li>
+        <li><b>were /wɜːr/</b> — bunyinya seperti "wer" pendek, bukan "were" dieja huruf per huruf. Sering muncul dalam frasa cepat "if I were" — /ɪf aɪ wɜːr/.</li>
+      </ul>
+      <div class="why reveal d2">
+        <div class="tag">◆ Contraction (kependekan)</div>
+        <p>Dalam kalimat natural: <code>will</code> → <code>'ll</code> (<code>I'll</code>, <code>we'll</code>, <code>they'll</code>), <code>will not</code> → <code>won't</code>, <code>would</code> → <code>'d</code> (<code>I'd</code>, <code>you'd</code>), dan <code>would not</code> → <code>wouldn't</code>. Untuk speaking santai, pakai bentuk kontraksi ini. Untuk tulisan formal (email kerja, dokumentasi teknis), bentuk penuh lebih disukai — terutama saat menuliskan kondisi/syarat yang penting supaya tidak ambigu.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 20 REVIEW ============ -->
+  <section class="chapter" id="c20">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">20</span> Sebelum lanjut</div>
+        <h2>Review sebelum lanjut ke Materi 5</h2>
+      </div>
+      <p class="lead reveal">Sebelum masuk ke Materi 5 (Linking Words &amp; Connectors — cara menyambungkan gagasan dengan kata seperti because, although, however), pastikan fondasi conditional di materi ini sudah kokoh.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Checklist sebelum lanjut ke Materi 5</div>
+        <ul class="plain" style="margin:6px 0 0;">
+          <li>Bisa membedakan kapan pakai First Conditional (present+will) dan kapan pakai Second Conditional (past+would).</li>
+          <li>Tidak lagi mencampur rumus di satu kalimat (misalnya present+would atau past+will).</li>
+          <li>Bisa memakai <code>"if I were you"</code> untuk memberi saran secara sopan.</li>
+          <li>Paham <code>unless</code> = "if not", dan tidak menambah "not" lagi setelahnya.</li>
+        </ul>
+      </div>
+
+      <p class="body reveal d2">Kalau salah satu poin di atas masih ragu, tidak apa — kirim saja hasil Latihan/Writing Exercise-mu, dan ulangi bagian yang belum kuat sebelum lanjut ke <b>Materi 5: Linking Words &amp; Connectors</b>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 21 TIER BELAJAR ============ -->
+  <section class="chapter" id="c21">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Arah belajar</div>
+        <h2>Tier belajar: dari materi ini ke depan</h2>
+      </div>
+      <p class="lead reveal">Materi ini adalah <b>Level 3 — Menyambung Gagasan, Materi 4 dari 5</b>. Tiga tier di bawah membagi: apa yang wajib kamu kuasai dari materi ini, bagaimana mempraktikkannya di kehidupan nyata, dan ke arah mana kamu belajar setelah ini.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Kuasai dulu materi ini</h4>
+          <p>Target minimum sebelum lanjut ke Materi 5 — semua ada di checklist bab Review.</p>
+          <ul>
+            <li>Hafal rumus <code>If + Simple Present, ... will + V1</code> untuk First Conditional.</li>
+            <li>Hafal rumus <code>If + Simple Past, ... would + V1</code> untuk Second Conditional.</li>
+            <li>Bisa memilih conditional yang tepat berdasarkan seberapa realistis syaratnya.</li>
+            <li>Kenali &amp; hindari 4 kesalahan umum di bab 08, terutama soal mencampur rumus.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Praktikkan di kehidupan nyata</h4>
+          <p>Setelah hafal rumus, pindahkan ke situasi asli — bukan cuma soal latihan.</p>
+          <ul>
+            <li>Pakai First Conditional saat membahas rencana sprint yang masih realistis.</li>
+            <li>Pakai <code>"if I were you"</code> saat memberi masukan di code review.</li>
+            <li>Latih dengar lewat rekomendasi di bab Listening (rekaman sprint planning, podcast bisnis).</li>
+            <li>Coba kenali pola conditional di bagian "Risks" dokumen desain teknis (RFC/ADR).</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Arah belajar lanjut</h4>
+          <p>Setelah checklist Materi 4 tuntas, ini yang menanti untuk menutup Level 3.</p>
+          <ul>
+            <li><b>Materi 5</b> — Linking Words &amp; Connectors (because/although/however/so/therefore), materi terakhir Level 3.</li>
+            <li>Setelah Materi 5 tuntas, lanjut ke <b>Cerita Hari Ini Level 3</b> — gerbang menuju Level 4.</li>
+            <li>Mulai biasakan membuat kalimat "what if" sendiri saat mendiskusikan rencana kerja, walau singkat.</li>
+            <li>Simpan istilah <code>Third Conditional</code> di kepala — itu menanti di Level 4, untuk membahas penyesalan/andaian masa lalu.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 22 PENUTUP ============ -->
+  <section class="chapter" id="c22">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Menimbang kemungkinan, bukan cuma menyatakan fakta</h2>
+      </div>
+      <p class="lead reveal">Materi 4 Level 3 selesai — conditional memang butuh latihan lebih untuk membedakan "masih mungkin" dan "cuma andaian", tapi kemampuan ini penting banget untuk merencanakan, bernegosiasi, dan memberi saran di dunia kerja software engineering. Jangan buru-buru; pastikan checklist di bab Review benar-benar tuntas.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>First Conditional</b> — <code>If + present, will + V1</code> — kemungkinan nyata di masa depan.</li>
+          <li><b>Second Conditional</b> — <code>If + past, would + V1</code> — andaian/hipotetis, tidak nyata sekarang.</li>
+          <li><b>If I were you</b> — cara sopan memberi saran, dipakai luas dalam code review.</li>
+          <li><b>Latih di dunia nyata</b> — sprint planning, risk assessment, code review, negosiasi.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Level 3 · Materi 4 dari 5</h3>
+        <p id="endcardStatus">Materi 5 (Linking Words &amp; Connectors) terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar. Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // If + present, will + V1 (mungkin terjadi) — If + past, would + V1 (cuma andaian).
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Notebook Inggris — Level 3, Materi 4</b> · First &amp; Second Conditional · Menyambung Gagasan · <a href="../index.html">← kembali ke Belajar Inggris</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var MATERI_KEY = "english::level-3-materi-4";
+  var STATE_KEY = "materi-answers::" + MATERI_KEY;
+  var DONE_KEY = "materi-progress::" + MATERI_KEY;
+
+  var QUESTIONS = [
+    { id: "l1", type: "fill", prompt: "If the tests pass, we <span class=\"blank\">___</span> (deploy) the app.", answer: ["will deploy"], explain: "Klausa hasil First Conditional pakai <b>will + V1</b>: <b>will deploy</b>." },
+    { id: "l2", type: "fill", prompt: "If I <span class=\"blank\">___</span> (have) more time, I would learn Rust.", answer: ["had"], explain: "Klausa if Second Conditional pakai Simple Past: <b>had</b> (bukan “have”, walau artinya bukan masa lalu)." },
+    { id: "l3", type: "fill", prompt: "Unless we optimize the query, it <span class=\"blank\">___</span> (time out).", answer: ["will time out"], explain: "“Unless” = if not, tetap First Conditional → klausa hasil pakai <b>will + V1</b>: <b>will time out</b>." },
+    { id: "l4", type: "fill", prompt: "If she <span class=\"blank\">___</span> (be) the lead, she would approve this PR.", answer: ["were", "was"], explain: "Second Conditional untuk “to be” idealnya <b>were</b> untuk semua subjek; “was” juga sering diterima secara informal." },
+    { id: "l5", type: "fill", prompt: "If the server crashes, the team <span class=\"blank\">___</span> (get) an alert.", answer: ["will get"], explain: "First Conditional: klausa hasil pakai <b>will + V1</b> → <b>will get</b>." },
+    { id: "l6", type: "fill", prompt: "If I were you, I <span class=\"blank\">___</span> (refactor) this function first.", answer: ["would refactor"], explain: "Setelah “if I were you”, klausa hasil Second Conditional pakai <b>would + V1</b>: <b>would refactor</b>." },
+    { id: "l7", type: "fill", prompt: "If we <span class=\"blank\">___</span> (finish) early, we will start the next sprint.", answer: ["finish"], explain: "Klausa if First Conditional pakai Simple Present, bukan “will”: <b>finish</b> (bukan “will finish”)." },
+    { id: "l8", type: "fill", prompt: "If the client <span class=\"blank\">___</span> (not / approve), we would delay the release.", answer: ["did not approve", "didn't approve"], explain: "Klausa if Second Conditional bentuk negatif pakai Simple Past negatif: <b>did not approve / didn't approve</b>." },
+    { id: "q1", type: "mc", prompt: "Mana yang benar (First Conditional)?", options: ["If it rains, I will bring an umbrella.", "If it will rain, I bring an umbrella.", "If it rains, I would bring an umbrella."], answer: "If it rains, I will bring an umbrella.", explain: "First Conditional: <b>if + present, ... will + V1</b> — bukan “will” di klausa if, bukan pula “would” di klausa hasil." },
+    { id: "q2", type: "mc", prompt: "Mana yang benar (Second Conditional)?", options: ["If I had more time, I would learn Rust.", "If I have more time, I would learn Rust.", "If I had more time, I will learn Rust."], answer: "If I had more time, I would learn Rust.", explain: "Second Conditional: <b>if + past, ... would + V1</b> — dua-duanya harus konsisten pola pastnya." },
+    { id: "q3", type: "fill", prompt: "Lengkapi: “If I ___ you, I would ask for code review first.”", answer: ["were", "was"], explain: "Second Conditional untuk “to be”: <b>were</b> (baku) atau <b>was</b> (informal), keduanya diterima di sini." },
+    { id: "q4", type: "mc", prompt: "“Unless” punya arti sama dengan...", options: ["if not", "even if", "only if"], answer: "if not", explain: "“Unless” = “if not” — kalau tidak/kecuali." },
+    { id: "q5", type: "fill", prompt: "Betulkan kalimat ini: “If I have money, I would buy a new laptop.”", answer: ["if i had money, i would buy a new laptop"], explain: "Rumusnya harus konsisten Second Conditional: <b>“If I had money, I would buy a new laptop.”</b>" },
+    { id: "s1", type: "mc", prompt: "Soal cerita — Menurut cerita, kapan tim akan mulai testing?", options: ["Besok, kalau integrasi API selesai hari ini", "Hari ini juga, tanpa syarat", "Setelah deadline diundur dua hari"], answer: "Besok, kalau integrasi API selesai hari ini", explain: "Ceritanya bilang: “If we finish the API integration today, we will start testing tomorrow.”" },
+    { id: "s2", type: "mc", prompt: "Soal cerita — Apakah pembicara benar-benar seorang product manager?", options: ["Ya, dia memang product manager", "Tidak — itu cuma andaian (hypothetical)"], answer: "Tidak — itu cuma andaian (hypothetical)", explain: "“If I were the product manager” adalah Second Conditional — artinya dia BUKAN product manager, ini cuma andaian." },
+    { id: "s3", type: "fill", prompt: "Soal cerita — Lengkapi: “Unless something changes, I don't think we ___ ship by Friday.” (isi dengan satu kata dari cerita)", answer: ["can"], explain: "Ceritanya bilang: “I don't think we can ship by Friday.”" },
+    { id: "s4", type: "mc", prompt: "Soal cerita — Kalimat “If the QA team had more time, they would catch more edge cases” termasuk conditional jenis apa?", options: ["First Conditional", "Second Conditional"], answer: "Second Conditional", explain: "Polanya <b>if + past (had), ... would + V1 (would catch)</b> — dan artinya QA team sebenarnya TIDAK punya cukup waktu, jadi ini andaian, bukan rencana nyata." }
+  ];
+
+  function normalize(s) {
+    return String(s || "").trim().toLowerCase().replace(/[.!?]+$/, "").replace(/\s+/g, " ");
+  }
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveState(state) {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var state = loadState();
+
+  function countDone() {
+    return QUESTIONS.filter(function (q) { return state[q.id] === true; }).length;
+  }
+
+  function renderProgress() {
+    var done = countDone();
+    var total = QUESTIONS.length;
+    var pct = Math.round((done / total) * 100);
+    ["quizCount", "quizCount2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = done + " / " + total + " benar";
+    });
+    ["quizFill", "quizFill2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.width = pct + "%";
+    });
+    var pill = document.getElementById("progressPill");
+    var pillCount = document.getElementById("progressPillCount");
+    if (pillCount) pillCount.textContent = done + "/" + total;
+    if (pill) pill.classList.toggle("done", done === total);
+
+    var banner = document.getElementById("completeBanner");
+    if (banner) banner.classList.toggle("show", done === total);
+
+    var endcardStatus = document.getElementById("endcardStatus");
+    if (endcardStatus) {
+      endcardStatus.innerHTML = done === total
+        ? "✅ Semua soal Latihan &amp; Quiz sudah benar — <b style=\"color:var(--good)\">Materi 5</b> sudah terbuka. Kirim hasil Writing Exercise-mu kapan saja untuk dikoreksi."
+        : "Materi 5 (Linking Words &amp; Connectors) terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar (" + done + "/" + total + " saat ini). Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.";
+    }
+
+    try { localStorage.setItem(DONE_KEY, done === total ? "true" : "false"); } catch (e) {}
+  }
+
+  function markCorrect(id) {
+    state[id] = true;
+    saveState(state);
+    renderProgress();
+  }
+
+  function buildFillBox(q, index) {
+    var box = document.createElement("div");
+    box.className = "qbox";
+    box.setAttribute("data-qid", q.id);
+
+    var num = document.createElement("div");
+    num.className = "qbox__num";
+    num.textContent = String(index);
+    box.appendChild(num);
+
+    var body = document.createElement("div");
+    body.className = "qbox__body";
+
+    var prompt = document.createElement("p");
+    prompt.className = "qbox__prompt";
+    prompt.innerHTML = q.prompt;
+    body.appendChild(prompt);
+
+    var row = document.createElement("div");
+    row.className = "qbox__input-row";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "qinput";
+    input.placeholder = "ketik jawabanmu…";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "qbtn";
+    btn.textContent = "Cek";
+
+    row.appendChild(input);
+    row.appendChild(btn);
+    body.appendChild(row);
+
+    var feedback = document.createElement("div");
+    feedback.className = "qbox__feedback";
+    body.appendChild(feedback);
+
+    box.appendChild(body);
+
+    var isDone = state[q.id] === true;
+    if (isDone) {
+      box.classList.add("correct");
+      input.value = q.answer[0];
+      input.disabled = true;
+      input.classList.add("is-correct");
+      btn.disabled = true;
+      feedback.className = "qbox__feedback ok";
+      feedback.innerHTML = "✓ Benar! " + q.explain;
+    }
+
+    function check() {
+      var val = normalize(input.value);
+      var ok = q.answer.some(function (a) { return normalize(a) === val; });
+      if (!val) return;
+      if (ok) {
+        box.classList.add("correct");
+        input.disabled = true;
+        input.classList.remove("is-wrong");
+        input.classList.add("is-correct");
+        btn.disabled = true;
+        feedback.className = "qbox__feedback ok";
+        feedback.innerHTML = "✓ Benar! " + q.explain;
+        markCorrect(q.id);
+      } else {
+        input.classList.remove("is-wrong");
+        void input.offsetWidth;
+        input.classList.add("is-wrong");
+        feedback.className = "qbox__feedback bad";
+        feedback.innerHTML = "✕ Belum tepat, coba lagi.";
+      }
+    }
+
+    btn.addEventListener("click", check);
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); check(); }
+    });
+
+    return box;
+  }
+
+  function buildMcBox(q, index) {
+    var box = document.createElement("div");
+    box.className = "qbox";
+    box.setAttribute("data-qid", q.id);
+
+    var num = document.createElement("div");
+    num.className = "qbox__num";
+    num.textContent = String(index);
+    box.appendChild(num);
+
+    var body = document.createElement("div");
+    body.className = "qbox__body";
+
+    var prompt = document.createElement("p");
+    prompt.className = "qbox__prompt";
+    prompt.innerHTML = q.prompt;
+    body.appendChild(prompt);
+
+    var opts = document.createElement("div");
+    opts.className = "qbox__options";
+
+    var feedback = document.createElement("div");
+    feedback.className = "qbox__feedback";
+
+    var isDone = state[q.id] === true;
+    var buttons = [];
+
+    q.options.forEach(function (optVal) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "qopt";
+      b.textContent = optVal;
+      b.setAttribute("data-value", optVal);
+      buttons.push(b);
+
+      if (isDone) {
+        b.disabled = true;
+        if (optVal === q.answer) b.classList.add("is-correct");
+      }
+
+      b.addEventListener("click", function () {
+        if (box.classList.contains("correct")) return;
+        if (optVal === q.answer) {
+          b.classList.add("is-correct");
+          buttons.forEach(function (o) { o.disabled = true; });
+          box.classList.add("correct");
+          feedback.className = "qbox__feedback ok";
+          feedback.innerHTML = "✓ Benar! " + q.explain;
+          markCorrect(q.id);
+        } else {
+          b.classList.remove("is-wrong");
+          void b.offsetWidth;
+          b.classList.add("is-wrong");
+          feedback.className = "qbox__feedback bad";
+          feedback.innerHTML = "✕ Belum tepat, coba lagi.";
+          setTimeout(function () { b.classList.remove("is-wrong"); }, 500);
+        }
+      });
+
+      opts.appendChild(b);
+    });
+
+    body.appendChild(opts);
+    body.appendChild(feedback);
+    box.appendChild(body);
+
+    if (isDone) {
+      box.classList.add("correct");
+      feedback.className = "qbox__feedback ok";
+      feedback.innerHTML = "✓ Benar! " + q.explain;
+    }
+
+    return box;
+  }
+
+  var latihanHost = document.getElementById("quizLatihan");
+  var quizHost = document.getElementById("quizQuiz");
+  var storyHost = document.getElementById("quizStory");
+  var qNum = 0;
+
+  QUESTIONS.forEach(function (q) {
+    qNum++;
+    var box = q.type === "mc" ? buildMcBox(q, qNum) : buildFillBox(q, qNum);
+    var host = latihanHost;
+    if (q.id.indexOf("l") === 0) host = latihanHost;
+    else if (q.id.indexOf("s") === 0) host = storyHost;
+    else host = quizHost;
+    if (host) host.appendChild(box);
+  });
+
+  renderProgress();
+})();
+</script>
+</body>
+</html>

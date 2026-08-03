@@ -1,0 +1,1722 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fundamental Engineering di Era AI — Knowledge Sharing Tim</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #1f2933;
+        --ink-2: #2c3a45;
+        --paper: #fcfcfb;
+        --teal: #0d9488;
+        --teal-dk: #0f766e;
+        --teal-tint: #f0fdfa;
+        --amber: #d97706;
+        --amber-tint: #fff7ed;
+        --red: #b91c1c;
+        --red-tint: #fef2f2;
+        --green: #15803d;
+        --green-tint: #f0fdf4;
+        --muted: #64748b;
+        --code-bg: #111827;
+        --code-tx: #e5e7eb;
+        --code-gn: #6ee7b7;
+        --code-yl: #fcd34d;
+        --display: "Fraunces", Georgia, serif;
+        --body: "Inter", -apple-system, Segoe UI, sans-serif;
+        --mono: "JetBrains Mono", "Courier New", monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        background: #0e1418;
+        font-family: var(--body);
+        overflow: hidden;
+      }
+
+      /* ---------- stage scaling (desain 1280x720) ---------- */
+      #viewport {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+      #stage {
+        width: 1280px;
+        height: 720px;
+        position: relative;
+        transform-origin: center center;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        padding: 60px 72px;
+        background: var(--paper);
+        color: var(--ink);
+        display: none;
+        flex-direction: column;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .slide.active {
+        display: flex;
+        animation: fadeIn 0.35s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .slide.active {
+          animation: none;
+        }
+      }
+      .slide.dark {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      /* ---------- tipografi ---------- */
+      h1 {
+        font-family: var(--display);
+        font-size: 58px;
+        line-height: 1.07;
+        font-weight: 700;
+      }
+      h2 {
+        font-family: var(--display);
+        font-size: 40px;
+        line-height: 1.12;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--teal);
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+      .lede {
+        font-size: 18px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .dark .lede {
+        color: #94a3b8;
+      }
+      .foot {
+        margin-top: auto;
+        font-size: 15px;
+        font-style: italic;
+        color: var(--teal-dk);
+        padding-top: 14px;
+      }
+      .dark .foot {
+        color: var(--teal);
+      }
+
+      /* label pilar bergaya terminal */
+      .lens-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+      }
+      .lens-tag::before {
+        content: "❯";
+        font-weight: 700;
+      }
+      .lt-green {
+        background: var(--green-tint);
+        color: var(--green);
+      }
+      .lt-amber {
+        background: var(--amber-tint);
+        color: var(--amber);
+      }
+      .lt-teal {
+        background: var(--teal-tint);
+        color: var(--teal-dk);
+      }
+      .lt-ink {
+        background: #edf1f5;
+        color: var(--ink);
+      }
+      .lt-red {
+        background: var(--red-tint);
+        color: var(--red);
+      }
+
+      /* ---------- komponen ---------- */
+      .cols {
+        display: grid;
+        gap: 28px;
+      }
+      .c2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .c3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .card {
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 22px 24px;
+        box-shadow: 0 3px 14px rgba(15, 23, 42, 0.07);
+      }
+      .card h3 {
+        font-size: 19px;
+        margin-bottom: 8px;
+      }
+      .card p {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .tint-teal {
+        background: var(--teal-tint);
+      }
+      .tint-amber {
+        background: var(--amber-tint);
+      }
+      .tint-red {
+        background: var(--red-tint);
+      }
+      .tint-green {
+        background: var(--green-tint);
+      }
+
+      pre.code {
+        background: var(--code-bg);
+        color: var(--code-tx);
+        font-family: var(--mono);
+        font-size: 14.5px;
+        line-height: 1.6;
+        border-radius: 14px;
+        padding: 20px 24px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+      }
+      pre.code.sm {
+        font-size: 12.5px;
+        padding: 14px 18px;
+        line-height: 1.55;
+      }
+      pre.code .cm {
+        color: var(--code-gn);
+      }
+      pre.code .kw {
+        color: var(--code-yl);
+      }
+      .codehead {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .bad {
+        color: var(--red);
+      }
+      .good {
+        color: var(--green);
+      }
+
+      ul.clean {
+        list-style: none;
+      }
+      ul.clean li {
+        position: relative;
+        padding-left: 26px;
+        margin-bottom: 13px;
+        font-size: 16.5px;
+        line-height: 1.45;
+      }
+      ul.clean li::before {
+        content: "›";
+        position: absolute;
+        left: 4px;
+        color: var(--teal);
+        font-weight: 700;
+      }
+      .dark ul.clean li::before {
+        color: var(--teal);
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 16px;
+      }
+      th {
+        background: var(--ink);
+        color: #fff;
+        text-align: left;
+        padding: 10px 16px;
+        font-weight: 600;
+      }
+      td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      td.mono {
+        font-family: var(--mono);
+        font-weight: 700;
+      }
+
+      .iconrow {
+        display: flex;
+        gap: 18px;
+        align-items: flex-start;
+        margin-bottom: 22px;
+      }
+      .dot {
+        flex: 0 0 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 21px;
+        color: #fff;
+      }
+      .iconrow h3 {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+      .iconrow p {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.45;
+        max-width: 560px;
+      }
+
+      .bigbrace {
+        position: absolute;
+        right: 30px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: var(--mono);
+        font-size: 560px;
+        line-height: 1;
+        color: #2c3e46;
+        user-select: none;
+        pointer-events: none;
+        font-weight: 700;
+      }
+
+      .cycle {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 18px 0;
+      }
+      .cycle .step {
+        border-radius: 12px;
+        padding: 14px 20px;
+        font-weight: 700;
+        font-size: 16.5px;
+        color: #fff;
+        text-align: center;
+      }
+      .cycle .arrow {
+        font-size: 24px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .dsacase h3 {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: var(--teal-dk);
+        margin-bottom: 2px;
+      }
+      .dsacase .case {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      /* ---------- chrome ---------- */
+      #bar {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        height: 4px;
+        background: var(--teal);
+        width: 0;
+        transition: width 0.25s ease;
+        z-index: 50;
+      }
+      #hud {
+        position: fixed;
+        right: 18px;
+        bottom: 14px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        z-index: 50;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: #7b8794;
+      }
+      #hud button {
+        background: #1f2933;
+        color: #cbd5e1;
+        border: 1px solid #3a4a56;
+        border-radius: 8px;
+        width: 36px;
+        height: 32px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      #hud button:hover {
+        background: #2c3a45;
+      }
+      #hud button:focus-visible {
+        outline: 2px solid var(--teal);
+        outline-offset: 2px;
+      }
+      #notes {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(17, 24, 39, 0.97);
+        color: #e5e7eb;
+        z-index: 60;
+        padding: 18px 28px 22px;
+        font-size: 15px;
+        line-height: 1.55;
+        display: none;
+        border-top: 2px solid var(--teal);
+      }
+      #notes.open {
+        display: block;
+      }
+      #notes .nlabel {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: var(--teal);
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      #help {
+        position: fixed;
+        left: 18px;
+        bottom: 14px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: #5b6b78;
+        z-index: 50;
+      }
+    </style>
+  </head>
+  <body>
+<a id="__exitbtn" href="../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+    <div id="viewport">
+      <div id="stage">
+        <!-- ════════ 1 — JUDUL ════════ -->
+        <section
+          class="slide dark"
+          data-notes="Buka dengan santai. Framing-nya: ini bukan kuliah computer science. Ini empat fundamental yang menentukan apakah kode buatan AI agent kita layak masuk production: memilih data structure yang tepat, tahu mana yang lambat, membuktikan kebenaran lewat test yang ditulis duluan, dan menulis prompt yang presisi. Semua contoh hari ini pakai Java. Intro-nya singkat saja."
+        >
+          <div class="bigbrace">{ }</div>
+          <div style="margin-top: 100px; max-width: 780px; position: relative">
+            <div class="eyebrow">Knowledge sharing tim · Edisi Java</div>
+            <h1>Fundamental Engineering<br />di Era AI</h1>
+            <p
+              style="
+                font-size: 21px;
+                font-style: italic;
+                color: #cbd5e1;
+                margin-top: 26px;
+                max-width: 620px;
+              "
+            >
+              DSA · Big O · TDD · Better Prompting — empat skill yang membuat
+              kode buatan AI siap untuk production.
+            </p>
+            <p style="margin-top: 42px; font-size: 16px; color: #94a3b8">
+              <span
+                style="
+                  color: var(--teal);
+                  font-family: var(--mono);
+                  font-weight: 700;
+                "
+                >$</span
+              >
+              AI yang menulis kodenya — tapi kita yang ship.
+            </p>
+          </div>
+        </section>
+
+        <!-- ════════ 2 — KENAPA PENTING ════════ -->
+        <section
+          class="slide"
+          data-notes="Bikin personal: tanya ke tim, 'siapa yang benar-benar baca tiap baris dari diff AI terakhir yang di-merge?' Biasanya pada ketawa. Tujuannya bukan menyalahkan — kita semua memang generate lebih cepat daripada kemampuan kita mengecek, dan itu normal sekarang. Solusinya: fundamental. Fundamental menunjukkan seperti apa kode yang bagus, jadi kita bisa memintanya langsung ke agent."
+        >
+          <h2>AI yang menulis kodenya. Kita yang menanggung bug-nya.</h2>
+          <div
+            class="cols"
+            style="grid-template-columns: 1.5fr 1fr; margin-top: 26px"
+          >
+            <div>
+              <div class="iconrow">
+                <div class="dot" style="background: var(--teal)">🤖</div>
+                <div>
+                  <h3>AI agent menulis sebagian besar kode kita</h3>
+                  <p>
+                    Kecepatan sudah bukan masalah. Setiap hari kita menghasilkan
+                    lebih banyak kode dari sebelumnya.
+                  </p>
+                </div>
+              </div>
+              <div class="iconrow">
+                <div class="dot" style="background: var(--amber)">⎇</div>
+                <div>
+                  <h3>
+                    Yang kita cek lebih sedikit daripada yang kita generate
+                  </h3>
+                  <p>
+                    Saat kode jadi dalam hitungan detik, godaannya besar: baca
+                    sekilas, jalankan sekali, langsung merge.
+                  </p>
+                </div>
+              </div>
+              <div class="iconrow">
+                <div class="dot" style="background: var(--red)">🐞</div>
+                <div>
+                  <h3>Production tidak peduli siapa yang menulis</h3>
+                  <p>
+                    Outage, query lambat, dan data yang salah tetap jadi
+                    tanggung jawab tim kita — nama kita yang tercatat di commit.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="card tint-teal"
+              style="
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                text-align: center;
+              "
+            >
+              <div
+                style="
+                  font-family: var(--display);
+                  font-size: 40px;
+                  font-weight: 700;
+                  color: var(--teal-dk);
+                "
+              >
+                Judgment
+              </div>
+              <p style="font-size: 16px; color: var(--ink); margin-top: 6px">
+                sekarang jadi skill paling penting
+              </p>
+              <p style="font-size: 14px; font-style: italic; margin-top: 18px">
+                Kecepatan mengetik sudah tidak relevan.<br />Kemampuan
+                membedakan kode bagus dan kode buruk akan selalu relevan.
+              </p>
+            </div>
+          </div>
+          <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px 0 0;border-radius:0 10px 10px 0;max-width:70ch">
+            <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+            <p style="margin:5px 0"><b>Given</b> — AI bisa generate kode dengan cepat, dan developer menerima kode itu tanpa benar-benar paham struktur data, kompleksitas, atau alasan desainnya.</p>
+            <p style="margin:5px 0"><b>When</b> — kode itu cuma dibaca sekilas, dites "jalan atau tidak", lalu di-merge — bukan diverifikasi lewat pemahaman atau test yang membuktikan kebenarannya.</p>
+            <p style="margin:5px 0"><b>Then</b> — bug tersembunyi, struktur data yang salah pilih, dan kompleksitas yang harusnya bisa lebih cepat ikut lolos ke production tanpa disadari siapa pun.</p>
+            <p style="margin:8px 0 0">→ makanya kita pakai <b>fundamental engineering</b> — supaya developer bisa menilai & memperbaiki kode dari AI, bukan cuma menyalinnya.</p>
+          </div>
+          <div class="foot">
+            Hari ini: empat fundamental yang menunjukkan seperti apa "kode yang
+            bagus" — supaya kita bisa memintanya ke agent.
+          </div>
+        </section>
+
+        <!-- ════════ 3 — AGENDA / EMPAT PILAR ════════ -->
+        <section
+          class="slide"
+          data-notes="Jelaskan empat pilarnya dengan cepat. Mereka saling menopang: DSA memberi kosakata, Big O memberi cara menghitung biaya, TDD memberi bukti kebenaran, dan prompting adalah tempat ketiganya dipakai — saat kode di-generate, bukan setelahnya."
+        >
+          <h2>Empat pilar</h2>
+          <div
+            class="cols"
+            style="grid-template-columns: repeat(4, 1fr); margin-top: 30px"
+          >
+            <div class="card tint-teal">
+              <div class="lens-tag lt-teal" style="margin-bottom: 14px">
+                pilar 1
+              </div>
+              <h3>Data structures</h3>
+              <p style="color: var(--ink)">
+                List, HashSet, HashMap, Deque, Queue, TreeMap — satu contoh
+                nyata di Java untuk masing-masing, plus cara memilih yang tepat.
+              </p>
+            </div>
+            <div class="card tint-amber">
+              <div class="lens-tag lt-amber" style="margin-bottom: 14px">
+                pilar 2
+              </div>
+              <h3>Big O</h3>
+              <p style="color: var(--ink)">
+                Cara sederhana mengukur cepat-lambatnya kode — dan cara
+                menemukan kode lambat di dalam diff buatan AI.
+              </p>
+            </div>
+            <div class="card tint-green">
+              <div class="lens-tag lt-green" style="margin-bottom: 14px">
+                pilar 3
+              </div>
+              <h3>TDD</h3>
+              <p style="color: var(--ink)">
+                Tulis test duluan. Kenapa ini makin penting di era AI agent —
+                dan kenapa tool seperti superpowers sampai mewajibkannya.
+              </p>
+            </div>
+            <div class="card">
+              <div class="lens-tag lt-ink" style="margin-bottom: 14px">
+                pilar 4
+              </div>
+              <h3>Better prompting</h3>
+              <p style="color: var(--ink)">
+                Prompt adalah spec. Ubah tiga pilar pertama jadi instruksi yang
+                jelas untuk agent.
+              </p>
+            </div>
+          </div>
+          <div class="foot" style="text-align: center; color: var(--muted)">
+            Tiap pilar mendukung pilar berikutnya: kosakata → biaya → bukti →
+            prompt.
+          </div>
+        </section>
+
+        <!-- ════════ 4 — WARM-UP ════════ -->
+        <section
+          class="slide"
+          data-notes="Beri waktu berpikir yang benar-benar hening — tahan diri untuk tidak mengisi keheningan. Setelah itu kumpulkan jawaban di whiteboard sebelum lanjut. Kebanyakan tim menemukan nested loop-nya. Jauh lebih sedikit yang sadar soal == pada object Long (aman untuk id sampai 127 karena Java meng-cache object-nya, lalu diam-diam gagal) atau bug duplicate-add. Kalau ada yang menemukan keempatnya, minta dia menjelaskan ke teman-temannya — peer teaching memang tujuannya."
+        >
+          <h2>Warm-up: kode ini jalan. Berani di-merge?</h2>
+          <div
+            class="cols"
+            style="grid-template-columns: 1.8fr 1fr; margin-top: 18px"
+          >
+            <pre
+              class="code"
+              style="font-size: 13.5px"
+            ><span class="cm">// Buatan AI: kembalikan user yang punya minimal satu order</span>
+<span class="cm">// User.getId() dan Order.getUserId() sama-sama mengembalikan Long</span>
+<span class="kw">public</span> List&lt;User&gt; getUsersWithOrders(List&lt;User&gt; users,
+                                     List&lt;Order&gt; orders) {
+    List&lt;User&gt; result = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">for</span> (<span class="kw">int</span> i = 0; i &lt; users.size(); i++) {
+        <span class="kw">for</span> (<span class="kw">int</span> j = 0; j &lt; orders.size(); j++) {
+            <span class="kw">if</span> (orders.get(j).getUserId() == users.get(i).getId()) {
+                result.add(users.get(i));
+            }
+        }
+    }
+    <span class="kw">return</span> result;
+}</pre>
+            <div class="card tint-amber">
+              <div class="lens-tag lt-amber">giliran kalian</div>
+              <ul class="clean" style="margin-top: 6px">
+                <li>Compile sukses.</li>
+                <li>Demo lancar.</li>
+                <li>Test-nya hijau.</li>
+                <li>
+                  <strong
+                    >Catat semua hal yang menurut kalian bermasalah.</strong
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="foot" style="color: var(--muted)">
+            Petunjuk: minimal ada empat masalah berbeda — salah satunya baru
+            muncul kalau id-nya lebih besar dari 127.
+          </div>
+        </section>
+
+        <!-- ════════ 5 — JAWABAN ════════ -->
+        <section
+          class="slide"
+          data-notes="Momen kunci: tiap masalah memetakan ke satu pilar. (1) Bug duplikat — telusuri pelan-pelan: result.add() ada di DALAM loop dalam, jadi dia jalan sekali untuk tiap order yang cocok, bukan sekali per user. User A dengan 3 order → [A, A, A]. Tidak ada break, tidak ada Set. Kalau list ini dipakai untuk kirim email, si A dapat 3 email. Disebut 'diam-diam' karena tidak ada yang crash — dan demo dengan 1 order per user pasti lolos. Test 'user dengan 3 order muncul sekali', kalau ditulis duluan, langsung menangkapnya. (2) Nested loop → Big O memberi nama untuk biayanya. (3) Scan List padahal bisa di-index → DSA memperbaikinya. (4) Akar masalahnya: satu prompt yang tidak jelas. Prompt-nya tidak pernah menyebut hasil unik, lookup cepat, atau cara membandingkan id, jadi AI memilih opsi termudah — termasuk == untuk id Long. Jelaskan boxing pelan-pelan: long (l kecil) itu angka primitif; Long (L besar) itu angka yang dibungkus object — itulah arti 'boxed'. Untuk object, == bertanya 'object-nya sama?', bukan 'nilainya sama?'. Java memakai ulang object Long untuk −128 sampai 127 demi hemat memori, jadi demo dengan id kecil lolos, sementara id besar diam-diam gagal. Solusinya: equals(). 'Jalan di demo' itulah jebakannya: kode AI dioptimalkan supaya terlihat benar."
+        >
+          <h2>Empat masalah — dan empat pilar yang memperbaikinya</h2>
+          <div class="cols c2" style="margin-top: 20px">
+            <div class="card tint-green">
+              <div class="lens-tag lt-green">→ diperbaiki oleh TDD</div>
+              <h3>Hasilnya salah, tanpa error</h3>
+              <p style="color: var(--ink); font-size: 13.5px; line-height: 1.5">
+                Method ini seharusnya mengembalikan tiap user <em>sekali</em>.
+                Tapi
+                <code style="font-family: var(--mono)">result.add()</code> jalan
+                sekali untuk setiap order yang cocok — tidak ada
+                <code style="font-family: var(--mono)">break</code>. Telusuri:
+                user A punya 3 order → hasilnya
+                <code style="font-family: var(--mono)">[A, A, A]</code>,
+                ukurannya 3, padahal seharusnya 1. Di demo (1 order per user)
+                terlihat aman; dengan data nyata, rusak. Test yang ditulis
+                <em>duluan</em> akan menangkapnya.
+              </p>
+            </div>
+            <div class="card tint-amber">
+              <div class="lens-tag lt-amber">→ diberi nama oleh Big O</div>
+              <h3>O(n × m) — terlalu lambat</h3>
+              <p style="color: var(--ink)">
+                10 ribu user × 100 ribu order = 1.000.000.000 perbandingan.
+                Cepat di demo, bermenit-menit di production.
+              </p>
+            </div>
+            <div class="card tint-teal">
+              <div class="lens-tag lt-teal">→ diperbaiki oleh DSA</div>
+              <h3>Salah pilih container</h3>
+              <p style="color: var(--ink)">
+                Kode ini men-scan seluruh List untuk tiap pencocokan. Kalau id
+                order dimasukkan ke HashSet, tiap lookup cukup satu langkah.
+              </p>
+            </div>
+            <div class="card">
+              <div class="lens-tag lt-ink">→ dicegah oleh prompting</div>
+              <h3>Satu prompt yang tidak jelas, akar dari semuanya</h3>
+              <p style="color: var(--ink); font-size: 13px; line-height: 1.5">
+                Prompt-nya tidak pernah menyebut: hasil harus unik, lookup harus
+                cepat, atau cara membandingkan id. Jadi AI memilih opsi termudah
+                — termasuk
+                <code style="font-family: var(--mono)">==</code> untuk id
+                bertipe <code style="font-family: var(--mono)">Long</code>.
+                <strong>Kenapa salah:</strong>
+                <code style="font-family: var(--mono)">Long</code> itu angka
+                yang dibungkus object ("boxed"), dan untuk object,
+                <code style="font-family: var(--mono)">==</code> bertanya
+                "object-nya sama?", bukan "nilainya sama?". Java memakai ulang
+                object Long dari −128 sampai 127, jadi di demo ber-id kecil
+                terlihat aman — lalu diam-diam mengembalikan false di
+                production. Selalu pakai
+                <code style="font-family: var(--mono)">equals()</code>.
+              </p>
+            </div>
+          </div>
+          <div class="foot">
+            Satu snippet, empat jenis kegagalan — dan itulah agenda kita hari
+            ini.
+          </div>
+        </section>
+
+        <!-- ════════ 6 — PILAR 1: TUR DSA ════════ -->
+        <section
+          class="slide"
+          data-notes="Buat DSA terasa akrab: tim sudah memakai keenamnya tiap hari — mengenal namanya yang membuat pilihan jadi sadar. Fokuskan waktu di baris atas (List/HashSet/HashMap), karena itu keputusan sehari-hari. Baris bawah cukup level pengenalan: saat melihat job queue atau index database, kalian tahu struktur apa yang sedang dipakai. Dua slide berikutnya memberi satu contoh Java konkret untuk masing-masing."
+        >
+          <div class="lens-tag lt-teal">pilar 1 · data structures</div>
+          <h2>Enam struktur yang kalian pakai setiap hari</h2>
+          <div class="cols c3" style="margin-top: 16px; gap: 18px">
+            <div class="card">
+              <h3
+                style="
+                  font-family: var(--mono);
+                  font-size: 16px;
+                  color: var(--teal-dk);
+                "
+              >
+                List / ArrayList
+              </h3>
+              <p style="color: var(--ink)">
+                Item yang berurutan: hasil API, baris tabel, baris invoice.
+              </p>
+              <p style="margin-top: 6px">
+                Jago untuk loop dan menjaga urutan.
+                <strong style="color: var(--red)"
+                  >Lemah untuk "cari berdasarkan nilai" — O(n).</strong
+                >
+              </p>
+            </div>
+            <div class="card">
+              <h3
+                style="
+                  font-family: var(--mono);
+                  font-size: 16px;
+                  color: var(--teal-dk);
+                "
+              >
+                Set / HashSet
+              </h3>
+              <p style="color: var(--ink)">
+                Keanggotaan: id yang sudah pernah dilihat, menghapus duplikat,
+                permission.
+              </p>
+              <p style="margin-top: 6px">
+                "Sudah pernah lihat ini?" dijawab dalam
+                <strong style="color: var(--green)">O(1)</strong>.
+              </p>
+            </div>
+            <div class="card">
+              <h3
+                style="
+                  font-family: var(--mono);
+                  font-size: 16px;
+                  color: var(--teal-dk);
+                "
+              >
+                Map / HashMap
+              </h3>
+              <p style="color: var(--ink)">
+                Key → value: cache, cari berdasarkan id, counting, grouping.
+              </p>
+              <p style="margin-top: 6px">
+                Andalan sehari-hari —
+                <strong style="color: var(--green)">O(1)</strong> per key.
+              </p>
+            </div>
+            <div class="card">
+              <h3
+                style="
+                  font-family: var(--mono);
+                  font-size: 16px;
+                  color: var(--teal-dk);
+                "
+              >
+                Stack / ArrayDeque
+              </h3>
+              <p style="color: var(--ink)">
+                Riwayat undo, call stack, tombol back.
+              </p>
+              <p style="margin-top: 6px">Last in, first out (LIFO).</p>
+            </div>
+            <div class="card">
+              <h3
+                style="
+                  font-family: var(--mono);
+                  font-size: 16px;
+                  color: var(--teal-dk);
+                "
+              >
+                Queue / BlockingQueue
+              </h3>
+              <p style="color: var(--ink)">
+                Job queue, message broker, pola producer–consumer.
+              </p>
+              <p style="margin-top: 6px">
+                First in, first out (FIFO) — urutannya adil.
+              </p>
+            </div>
+            <div class="card">
+              <h3
+                style="
+                  font-family: var(--mono);
+                  font-size: 16px;
+                  color: var(--teal-dk);
+                "
+              >
+                Tree / TreeMap
+              </h3>
+              <p style="color: var(--ink)">
+                Key yang terurut, range query — dan semua index database
+                (B-tree).
+              </p>
+              <p style="margin-top: 6px">
+                Pencarian <strong style="color: var(--green)">O(log n)</strong>.
+              </p>
+            </div>
+          </div>
+          <div class="foot">
+            Keenamnya sudah kalian pakai setiap hari. Mengenal namanya membantu
+            kalian memilih dengan sadar. Berikutnya: satu contoh nyata untuk
+            masing-masing.
+          </div>
+        </section>
+
+        <!-- ════════ 7 — CONTOH DSA 1 ════════ -->
+        <section
+          class="slide"
+          data-notes="Satu contoh nyata per struktur — tiga ini yang paling sering dipakai. List: urutan penting, jadi baris invoice tetap pakai List. HashSet: nilai balik add() adalah trik dedupe yang elegan — true artinya 'baru pertama kali lihat'. HashMap: merge() adalah satu baris di balik semua counter; computeIfAbsent saudaranya untuk grouping (slide berikutnya). Tanya ke tim: di codebase KITA, pola ini muncul di mana saja? Biasanya langsung kesebut tiga tempat."
+        >
+          <div class="lens-tag lt-teal">
+            pilar 1 · satu contoh untuk masing-masing — tiga yang harian
+          </div>
+          <h2>List, HashSet, HashMap di kode nyata</h2>
+          <div class="cols c3" style="margin-top: 14px; gap: 18px">
+            <div class="dsacase">
+              <h3>List&lt;T&gt;</h3>
+              <div class="case">
+                Contoh: menampilkan baris invoice — urutan penting
+              </div>
+              <pre class="code sm">List&lt;LineItem&gt; items =
+    invoice.getItems();
+
+<span class="kw">for</span> (LineItem it : items) {
+    render(it);
+}
+<span class="cm">// urutan insert terjaga;
+// jangan dipakai untuk cari nilai</span></pre>
+            </div>
+            <div class="dsacase">
+              <h3>HashSet&lt;T&gt;</h3>
+              <div class="case">
+                Contoh: kirim ke tiap alamat email hanya sekali
+              </div>
+              <pre class="code sm">Set&lt;String&gt; seen =
+    <span class="kw">new</span> HashSet&lt;&gt;();
+
+<span class="kw">for</span> (String email : recipients) {
+    <span class="kw">if</span> (seen.add(email)) {
+        send(email);
+    }
+}
+<span class="cm">// add() mengembalikan false
+// kalau sudah ada — O(1)</span></pre>
+            </div>
+            <div class="dsacase">
+              <h3>HashMap&lt;K,V&gt;</h3>
+              <div class="case">Contoh: menghitung jumlah login per user</div>
+              <pre class="code sm">Map&lt;Long, Integer&gt; logins =
+    <span class="kw">new</span> HashMap&lt;&gt;();
+
+<span class="kw">for</span> (Event ev : events) {
+    logins.merge(
+        ev.userId(), 1,
+        Integer::sum);
+}
+<span class="cm">// merge(): counter satu baris</span></pre>
+            </div>
+          </div>
+          <div class="foot">
+            Tiga ini mencakup ±90% keputusan harian: urutan → List · keanggotaan
+            → HashSet · key-ke-value → HashMap.
+          </div>
+        </section>
+
+        <!-- ════════ 8 — CONTOH DSA 2 ════════ -->
+        <section
+          class="slide"
+          data-notes="Tiga yang level pengenalan. Stack: cek palindrome adalah cara paling bersih untuk menunjukkan KENAPA stack itu ada — masukkan semuanya, dan saat keluar urutannya terbalik; kalau urutan terbaliknya sama dengan aslinya, berarti palindrome. Perilaku LIFO yang sama dipakai oleh fitur undo dan call stack. Pakai ArrayDeque, bukan kelas java.util.Stack yang lama (Stack itu synchronized dan extends Vector — kelemahan desain yang sudah terkenal). Queue: di production ini jadi BlockingQueue antar-thread, atau Kafka/SQS antar-service — ide FIFO yang sama di skala berbeda. TreeMap: floorEntry fiturnya paling keren — 'cari tier tempat nilai ini jatuh' tanpa rantai if; dan semua index database memakai ide yang sama (B-tree), itulah kenapa query yang ber-index O(log n)."
+        >
+          <div class="lens-tag lt-teal">
+            pilar 1 · satu contoh untuk masing-masing — tiga yang struktural
+          </div>
+          <h2>Stack, Queue, TreeMap di kode nyata</h2>
+          <div class="cols c3" style="margin-top: 14px; gap: 18px">
+            <div class="dsacase">
+              <h3>Deque (sebagai Stack)</h3>
+              <div class="case">
+                Contoh: cek palindrome — LIFO membalik urutan
+              </div>
+              <pre
+                class="code sm"
+              ><span class="kw">boolean</span> isPalindrome(String s) {
+  Deque&lt;Character&gt; stack =
+      <span class="kw">new</span> ArrayDeque&lt;&gt;();
+
+  <span class="kw">for</span> (<span class="kw">char</span> c : s.toCharArray())
+      stack.push(c);          <span class="cm">// masuk</span>
+
+  <span class="kw">for</span> (<span class="kw">char</span> c : s.toCharArray())
+      <span class="kw">if</span> (stack.pop() != c)   <span class="cm">// keluar, terbalik</span>
+          <span class="kw">return false</span>;
+  <span class="kw">return true</span>;
+}
+<span class="cm">// "level" → true · "java" → false
+// pakai ArrayDeque, bukan
+// java.util.Stack yang lama</span></pre>
+            </div>
+            <div class="dsacase">
+              <h3>Queue&lt;T&gt;</h3>
+              <div class="case">Contoh: job email di background — FIFO</div>
+              <pre class="code sm">Queue&lt;EmailJob&gt; jobs =
+    <span class="kw">new</span> ArrayDeque&lt;&gt;();
+
+jobs.offer(job);      <span class="cm">// producer</span>
+
+EmailJob next = jobs.poll();
+worker.process(next); <span class="cm">// yang paling lama duluan</span>
+<span class="cm">// antar-thread: BlockingQueue
+// antar-service: Kafka / SQS</span></pre>
+            </div>
+            <div class="dsacase">
+              <h3>TreeMap&lt;K,V&gt;</h3>
+              <div class="case">
+                Contoh: tier loyalti dari poin — terurut + range
+              </div>
+              <pre class="code sm">TreeMap&lt;Integer, String&gt; tiers =
+    <span class="kw">new</span> TreeMap&lt;&gt;(Map.of(
+        0, <span class="cm">"BRONZE"</span>,
+        1_000, <span class="cm">"SILVER"</span>,
+        5_000, <span class="cm">"GOLD"</span>));
+
+String tier = tiers
+    .floorEntry(points).getValue();
+<span class="cm">// tanpa rantai if; index DB
+// memakai ide yang sama (B-tree)</span></pre>
+            </div>
+          </div>
+          <div class="foot">
+            Sekarang kalian tahu struktur di balik cek palindrome, fitur undo,
+            job queue, dan query yang ber-index.
+          </div>
+        </section>
+
+        <!-- ════════ 9 — DSA: PILIH DARI PERTANYAANNYA ════════ -->
+        <section
+          class="slide"
+          data-notes="Inilah satu-satunya keputusan DSA yang dibutuhkan tiap hari: pilih container dari PERTANYAAN yang diajukan kodenya. 'Sudah pernah lihat ini?' = HashSet. 'Apa yang terkait dengan key ini?' = HashMap. 'Proses sesuai urutan' = List. 'Terurut atau range?' = TreeMap. Bahas contoh grouping-nya — computeIfAbsent (atau groupingBy kalau pakai streams) adalah pola di balik kebanyakan kode report dan agregasi yang ditulis agent."
+        >
+          <div class="lens-tag lt-teal">pilar 1 · data structures</div>
+          <h2>Pilih container dari pertanyaan yang dijawabnya</h2>
+          <div
+            class="cols"
+            style="grid-template-columns: 1.25fr 1fr; margin-top: 14px"
+          >
+            <div>
+              <table>
+                <tr>
+                  <th style="width: 130px">Pakai</th>
+                  <th>Saat kodenya bertanya…</th>
+                  <th style="width: 140px">Lookup</th>
+                </tr>
+                <tr>
+                  <td class="mono" style="color: var(--teal-dk)">List</td>
+                  <td>"proses item-nya sesuai urutan"</td>
+                  <td class="mono" style="color: var(--red)">O(n) by value</td>
+                </tr>
+                <tr>
+                  <td class="mono" style="color: var(--teal-dk)">HashSet</td>
+                  <td>"sudah pernah lihat ini?"</td>
+                  <td class="mono" style="color: var(--green)">O(1)</td>
+                </tr>
+                <tr>
+                  <td class="mono" style="color: var(--teal-dk)">HashMap</td>
+                  <td>
+                    "apa yang terkait dengan key ini?" — counting, grouping,
+                    indexing
+                  </td>
+                  <td class="mono" style="color: var(--green)">O(1)</td>
+                </tr>
+                <tr>
+                  <td class="mono" style="color: var(--teal-dk)">TreeMap</td>
+                  <td>"perlu urutan, nilai terdekat, atau range?"</td>
+                  <td class="mono" style="color: var(--green)">O(log n)</td>
+                </tr>
+              </table>
+              <p
+                style="font-size: 13.5px; color: var(--muted); margin-top: 12px"
+              >
+                Sebagian besar kode AI yang lambat cukup diperbaiki dengan satu
+                perubahan: ganti scan List dengan lookup HashSet atau HashMap.
+              </p>
+            </div>
+            <div>
+              <div class="codehead" style="color: var(--teal-dk)">
+                Pola di balik kebanyakan report
+              </div>
+              <pre
+                class="code"
+                style="font-size: 13px"
+              ><span class="cm">// kelompokkan order per customer — satu pass</span>
+Map&lt;Long, List&lt;Order&gt;&gt; byCustomer =
+    <span class="kw">new</span> HashMap&lt;&gt;();
+
+<span class="kw">for</span> (Order o : orders) {
+    byCustomer
+      .computeIfAbsent(o.getCustomerId(),
+                       k -&gt; <span class="kw">new</span> ArrayList&lt;&gt;())
+      .add(o);
+}
+<span class="cm">// atau: orders.stream().collect(
+//        groupingBy(Order::getCustomerId))</span></pre>
+            </div>
+          </div>
+          <div class="foot">
+            Kebiasaan: setiap melihat lookup, tanyakan "pertanyaan apa yang
+            sedang diajukan kode ini?" — lalu cek apakah container-nya cocok.
+          </div>
+        </section>
+
+        <!-- ════════ 10 — PILAR 2: BIG O ════════ -->
+        <section
+          class="slide"
+          data-notes="Sederhanakan notasinya: ini label pertumbuhan, bukan matematika. Hubungkan semuanya ke kolom 1 juta record — itu yang membuatnya terasa nyata. Jangan lebih dalam dari tabel ini hari ini (tanpa amortized analysis, tanpa pembuktian). Slide berikutnya menunjukkan cara MENEMUKAN baris merah di kode Java buatan AI. Cara baca notasinya: O(1) dibaca 'oh of one', O(n) 'oh of en', O(n²) 'oh of en squared' — huruf O, bukan angka nol."
+        >
+          <div class="lens-tag lt-amber">pilar 2 · big o</div>
+          <h2>Big O itu sederhana</h2>
+          <p class="lede">
+            Big O = "seberapa banyak kerja bertambah kalau datanya bertambah?"
+            Itu saja. Tidak perlu jago matematika.
+          </p>
+          <table style="margin-top: 16px">
+            <tr>
+              <th style="width: 160px">Notasi</th>
+              <th>Kode yang umum</th>
+              <th>Dengan 1.000.000 record…</th>
+            </tr>
+            <tr>
+              <td class="mono" style="color: var(--green)">O(1)</td>
+              <td>lookup HashMap / HashSet, list.get(i)</td>
+              <td style="color: var(--green); font-weight: 600">
+                instan — 1 langkah
+              </td>
+            </tr>
+            <tr>
+              <td class="mono" style="color: var(--green)">O(log n)</td>
+              <td>binary search, TreeMap, lookup index DB</td>
+              <td style="color: var(--green); font-weight: 600">
+                instan — ±20 langkah
+              </td>
+            </tr>
+            <tr>
+              <td class="mono" style="color: var(--teal-dk)">O(n)</td>
+              <td>satu loop untuk seluruh data, list.contains(x)</td>
+              <td style="color: var(--teal-dk); font-weight: 600">
+                aman — 1 juta langkah, hitungan milidetik
+              </td>
+            </tr>
+            <tr>
+              <td class="mono" style="color: var(--amber)">O(n log n)</td>
+              <td>Collections.sort / stream().sorted()</td>
+              <td style="color: var(--amber); font-weight: 600">
+                aman — ±20 juta langkah
+              </td>
+            </tr>
+            <tr>
+              <td class="mono" style="color: var(--red)">O(n²)</td>
+              <td>loop di dalam loop</td>
+              <td style="color: var(--red); font-weight: 700">
+                10¹² langkah — bisa bermenit-menit sampai berjam-jam
+              </td>
+            </tr>
+          </table>
+          <p style="font-size: 13.5px; color: var(--muted); margin-top: 12px">
+            Belajar lebih lanjut:
+            <a
+              href="https://www.bigocheatsheet.com/"
+              target="_blank"
+              rel="noopener"
+              style="color: var(--teal-dk); font-weight: 600"
+              >bigocheatsheet.com</a
+            >
+            — Big O untuk semua data structure dan algoritma sorting, lengkap di
+            satu halaman.
+          </p>
+          <div class="foot" style="color: var(--amber); font-weight: 600">
+            Yang benar-benar menyakitkan di proyek nyata cuma baris terakhir —
+            dan justru paling gampang dikenali.
+          </div>
+        </section>
+
+        <!-- ════════ 11 — BIG O DI KODE NYATA ════════ -->
+        <section
+          class="slide"
+          data-notes="Ini bug warm-up tadi, dalam penyamarannya yang paling umum: list.contains() di dalam loop — O(n) yang bersembunyi di balik nama method yang terlihat polos. Pilar 1 dan 2 bekerja sama di sini: Big O memberi nama masalahnya, data structure memperbaikinya. Perbaikannya cuma dua baris, dan kalian cukup minta ke agent: 'masukkan id-nya ke HashSet supaya tiap lookup O(1)'. Tahu APA yang harus diminta — itulah skill-nya. Sebut juga versi database-nya: panggilan repository di dalam loop = masalah N+1 — penyakit yang sama, dan dengan Hibernate gampang sekali terjadi tanpa sadar."
+        >
+          <div class="lens-tag lt-amber">pilar 2 · big o</div>
+          <h2>Cara menemukan yang lambat di kode nyata</h2>
+          <p class="lede">
+            Jebakannya:
+            <code style="font-family: var(--mono)">list.contains()</code> /
+            <code style="font-family: var(--mono)">indexOf()</code> di dalam
+            loop sama saja loop di dalam loop — O(n) yang bersembunyi di balik
+            nama method.
+          </p>
+          <div class="cols c2" style="margin-top: 14px">
+            <div>
+              <div class="codehead bad">AI suka menulis seperti ini ✗</div>
+              <pre
+                class="code"
+                style="font-size: 13.5px"
+              ><span class="cm">// activeIds bertipe List&lt;Long&gt; → O(n × m)</span>
+List&lt;User&gt; active = <span class="kw">new</span> ArrayList&lt;&gt;();
+<span class="kw">for</span> (User u : users) {
+    <span class="kw">if</span> (activeIds.contains(u.getId())) {
+        active.add(u);
+    }
+}
+<span class="cm">// 1jt × 1jt ≈ 10¹² pengecekan → berjam-jam</span></pre>
+            </div>
+            <div>
+              <div class="codehead good">Minta yang seperti ini ✓</div>
+              <pre
+                class="code"
+                style="font-size: 13.5px"
+              ><span class="cm">// O(n + m)</span>
+Set&lt;Long&gt; idSet = <span class="kw">new</span> HashSet&lt;&gt;(activeIds);
+List&lt;User&gt; active = users.stream()
+    .filter(u -&gt; idSet.contains(u.getId()))
+    .toList();
+
+
+<span class="cm">// ≈ 2jt langkah → hitungan milidetik</span></pre>
+            </div>
+          </div>
+          <div class="foot">
+            Masalah yang sama ada di database: panggilan repository di dalam
+            loop itu masalah N+1 — minta join atau satu query batch saja.
+          </div>
+        </section>
+
+        <!-- ════════ 12 — PILAR 3: TDD ════════ -->
+        <section
+          class="slide"
+          data-notes="Posisikan TDD sebagai pasangan alami AI coding, bukan ritual zaman dulu. Argumen terkuatnya: failing test adalah prompt paling presisi yang ada — tidak mungkin disalahartikan. Contoh test JUnit-nya akan menangkap bug duplikat di warm-up bahkan sebelum kodenya ditulis. Me-review test (kecil, terbaca) jauh lebih mudah daripada me-review implementasi (besar, hasil generate). Prompt tip-nya nyambung dengan poin 'refactor jadi aman': kalau test mengecek isi perut kode (private method, urutan pemanggilan, state internal), tiap refactor pasti merusak test — akhirnya orang malas refactor. Test yang mengecek perilaku yang bisa diamati (nilai balik, error, side effect) tetap lolos walau kodenya dirombak — itulah yang membuat langkah refactor benar-benar aman di praktiknya. Jujur soal cakupannya: TDD paling terasa manfaatnya untuk business logic dan bug fix; tidak ada yang menuntutnya untuk skrip sekali pakai."
+        >
+          <div class="lens-tag lt-green">pilar 3 · test-driven development</div>
+          <h2>Tulis test sebelum kodenya</h2>
+          <div class="cycle" style="margin: 12px 0">
+            <div class="step" style="background: var(--red)">
+              Red — tulis test yang gagal
+            </div>
+            <div class="arrow">→</div>
+            <div class="step" style="background: var(--green)">
+              Green — buat lolos
+            </div>
+            <div class="arrow">→</div>
+            <div class="step" style="background: var(--teal-dk)">
+              Refactor — rapikan dengan aman
+            </div>
+            <div class="arrow" style="color: #cbd5e1">↺</div>
+          </div>
+          <div
+            class="cols"
+            style="grid-template-columns: 1fr 1.25fr; margin-top: 6px"
+          >
+            <div>
+              <ul class="clean">
+                <li style="font-size: 15px; margin-bottom: 10px">
+                  <strong>Test adalah spec.</strong> Berikan failing test ke
+                  agent dan biarkan dia membuatnya lolos — test tidak mungkin
+                  disalahartikan.
+                </li>
+                <li style="font-size: 15px; margin-bottom: 10px">
+                  <strong
+                    >Yang kalian review test-nya, bukan hanya diff.</strong
+                  >
+                  10 assertion pendek jauh lebih gampang dicek daripada 200
+                  baris hasil generate.
+                </li>
+                <li style="font-size: 15px; margin-bottom: 10px">
+                  <strong>Menutup jalan happy path.</strong> Edge case sudah
+                  jadi test sebelum kodenya ada.
+                </li>
+                <li style="font-size: 15px; margin-bottom: 10px">
+                  <strong>Refactor jadi aman.</strong> Selama test suite hijau,
+                  agent bebas merombak tanpa rasa takut.
+                </li>
+              </ul>
+              <div
+                class="codehead"
+                style="color: var(--amber); margin-top: 4px"
+              >
+                Prompt tip — tempel apa adanya
+              </div>
+              <pre
+                class="code"
+                style="font-size: 11.5px; padding: 12px 16px; line-height: 1.45"
+              ><span class="cm">"Test behavior, not implementation.
+ Each test verifies an observable outcome —
+ a returned value, an error, or a side
+ effect — never the internal wiring. This
+ lets us refactor and optimize the code
+ without breaking any tests."</span></pre>
+            </div>
+            <div>
+              <div class="codehead" style="color: var(--green)">
+                Test JUnit ini, kalau ditulis duluan, menangkap bug warm-up tadi
+              </div>
+              <pre
+                class="code"
+                style="font-size: 13px"
+              ><span class="kw">@Test</span>
+<span class="kw">void</span> userWithThreeOrdersAppearsOnce() {
+    List&lt;User&gt; users  = List.of(<span class="kw">new</span> User(1L));
+    List&lt;Order&gt; orders = List.of(
+        <span class="kw">new</span> Order(1L), <span class="kw">new</span> Order(1L), <span class="kw">new</span> Order(1L));
+
+    assertEquals(1,
+        getUsersWithOrders(users, orders).size());
+    <span class="cm">// versi AI-nya mengembalikan 3 ✗</span>
+}</pre>
+            </div>
+          </div>
+          <div class="foot">
+            Failing test adalah satu-satunya feedback yang tidak bisa dibantah
+            oleh AI agent.
+          </div>
+        </section>
+
+        <!-- ════════ 13 — TDD: YAGNI / KISS / COVERAGE ════════ -->
+        <section
+          class="slide"
+          data-notes="Slide ini menjawab pertanyaan yang kemungkinan besar bakal muncul. Jawab dengan jujur: TDD mendorong ketiganya, tapi tidak ada yang otomatis. YAGNI — efek alami terkuat: kode yang tidak diminta oleh test tidak akan pernah ditulis; tapi kalau kalian menulis test untuk fitur yang tidak diminta siapa pun, TDD justru akan membantu membangun kode yang tidak perlu, satu test hijau demi satu. KISS — langkah green mendorong kode minimal, tapi test tidak peduli sejelek apa kodenya; kesederhanaan datang dari langkah REFACTOR, dan itu disiplin manusia — dilewati terus, hasilnya spaghetti yang ter-test rapi. Ini juga persis alasan agent suka melewatkan refactor: test sudah hijau, buat apa diubah lagi? Coverage — kalau tiap baris lahir karena diminta test, coverage kode baru otomatis tinggi (sering 90%+). Dua jebakannya: coverage menghitung baris yang DIJALANKAN, bukan perilaku yang DICEK — coverage 100% pun masih bisa kelewatan bug duplicate-order kalau test case-nya tidak pernah ditulis; dan TDD tidak menolong kode legacy yang sudah ada. Kalimat penutup: TDD adalah disiplin yang mempermudah ketiganya — tapi tidak menjamin satu pun."
+        >
+          <div class="lens-tag lt-green">pilar 3 · test-driven development</div>
+          <h2>Apakah TDD otomatis memberi semua ini?</h2>
+          <div class="cols c3" style="margin-top: 16px; gap: 18px">
+            <div class="card tint-green">
+              <div class="lens-tag lt-green">umumnya iya</div>
+              <h3>YAGNI</h3>
+              <p
+                style="
+                  color: var(--muted);
+                  font-size: 12.5px;
+                  margin-bottom: 8px;
+                "
+              >
+                "You Aren't Gonna Need It" — jangan bangun fitur sebelum
+                benar-benar dibutuhkan.
+              </p>
+              <p style="color: var(--ink); font-size: 13.5px">
+                Kode hanya ditulis kalau ada failing test yang memintanya — jadi
+                kode "siapa tahu nanti perlu" tidak pernah lahir.
+                <strong>Tapi:</strong> kalau kalian menulis test untuk fitur
+                yang tidak diminta siapa pun, TDD tetap akan membantu
+                membangunnya.
+              </p>
+            </div>
+            <div class="card tint-amber">
+              <div class="lens-tag lt-amber">hanya kalau refactor jalan</div>
+              <h3>KISS</h3>
+              <p
+                style="
+                  color: var(--muted);
+                  font-size: 12.5px;
+                  margin-bottom: 8px;
+                "
+              >
+                "Keep It Simple" — pilih desain paling sederhana yang berfungsi.
+              </p>
+              <p style="color: var(--ink); font-size: 13.5px">
+                Langkah green meminta kode seminimal mungkin.
+                <strong>Tapi:</strong> test tidak peduli sejelek apa kodenya.
+                Kesederhanaan datang dari langkah <em>refactor</em> — dan itu
+                soal disiplin. Kalau dilewati terus, hasilnya spaghetti yang
+                ter-test rapi.
+              </p>
+            </div>
+            <div class="card">
+              <div class="lens-tag lt-ink">iya, tapi ada jebakannya</div>
+              <h3>Coverage tinggi</h3>
+              <p
+                style="
+                  color: var(--muted);
+                  font-size: 12.5px;
+                  margin-bottom: 8px;
+                "
+              >
+                Coverage = seberapa banyak kode yang dijalankan oleh test.
+              </p>
+              <p style="color: var(--ink); font-size: 13.5px">
+                Kalau tiap baris lahir karena diminta test, coverage kode baru
+                otomatis tinggi. <strong>Tapi:</strong> coverage menghitung
+                baris yang <em>dijalankan</em>, bukan perilaku yang
+                <em>dicek</em> — TDD hanya menutup edge case yang sempat
+                terpikirkan oleh kalian.
+              </p>
+            </div>
+          </div>
+          <div class="foot">
+            TDD mempermudah ketiganya — tapi tidak menjamin satu pun. Test
+            membatasi kodenya, refactor menjaganya tetap sederhana, dan coverage
+            mengikuti dengan sendirinya.
+          </div>
+        </section>
+
+        <!-- ════════ 14 — TDD: SUPERPOWERS ════════ -->
+        <section
+          class="slide"
+          data-notes="Bukti bahwa ini bukan sekadar opini kita: superpowers, karya Jesse Vincent (obra), adalah salah satu toolkit agent terpopuler di GitHub — lebih dari 200 ribu stars (sekitar 220 ribu+ per pertengahan 2026; cek repo-nya untuk angka terkini sebelum presentasi). Jalan di banyak coding agent: Claude Code, Cursor, Codex CLI, Gemini CLI, OpenCode, GitHub Copilot CLI, dan lainnya — slide ini menampilkan cara install di Claude Code sebagai salah satu contoh; langkah untuk agent lain ada di repo-nya. Ini skills framework yang mengajarkan metode engineering lengkap ke agent, dan TDD adalah salah satu skill terketatnya: tidak ada kode production sampai ada failing test, ditegakkan lewat siklus red-green-refactor. Dia juga menekankan YAGNI dan DRY — nyambung dengan slide sebelumnya. Detail desain yang cerdas: tiap skill ketat dibuka dengan aturan yang tidak bisa ditawar, plus daftar alasan yang biasa dipakai agent untuk melewatinya — karena agent, sama seperti junior, suka berdalih 'kasus ini beda'. Kalau tool sepopuler ini mewajibkan TDD untuk AI agent, arahnya industri sudah jelas. Demo install-nya langsung kalau ada wifi."
+        >
+          <div class="lens-tag lt-green">pilar 3 · test-driven development</div>
+          <h2>Bukan cuma kata kami — tool-nya pun mewajibkan</h2>
+          <div
+            class="cols"
+            style="grid-template-columns: 1.15fr 1fr; margin-top: 16px"
+          >
+            <div>
+              <div class="card tint-green" style="margin-bottom: 16px">
+                <h3 style="color: var(--green)">
+                  superpowers
+                  <span
+                    style="
+                      color: var(--muted);
+                      font-weight: 400;
+                      font-size: 14px;
+                    "
+                    >— karya Jesse Vincent (obra)</span
+                  >
+                </h3>
+                <p style="color: var(--ink)">
+                  Salah satu toolkit agent terpopuler di GitHub (200 ribu+
+                  stars): skills framework yang mengajarkan metode engineering
+                  lengkap ke coding agent kalian — brainstorming, planning,
+                  debugging… dan TDD yang ketat.
+                </p>
+              </div>
+              <ul class="clean">
+                <li style="font-size: 15px">
+                  Skill TDD-nya
+                  <strong
+                    >memblokir kode production sampai ada failing test</strong
+                  >
+                  — red, green, refactor, tanpa pengecualian.
+                </li>
+                <li style="font-size: 15px">
+                  Bahkan
+                  <strong
+                    >alasan-alasan yang biasa dipakai agent untuk skip
+                    testing</strong
+                  >
+                  ("terlalu sederhana untuk di-test", "test-nya nanti saja")
+                  ikut didaftar — dan dilarang.
+                </li>
+                <li style="font-size: 15px">
+                  Kenapa? Agent cenderung buru-buru selesai lalu mengklaim
+                  sukses. Failing test adalah
+                  <strong>feedback objektif yang tidak bisa dibantah</strong>.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <div class="codehead" style="color: var(--teal-dk)">
+                Contoh: install di Claude Code
+              </div>
+              <pre
+                class="code"
+                style="font-size: 12.5px"
+              ><span class="cm"># tambahkan sumber plugin-nya</span>
+/plugin marketplace add obra/superpowers-marketplace
+
+<span class="cm"># install plugin-nya</span>
+/plugin install superpowers@superpowers-marketplace
+
+<span class="cm"># lalu perhatikan: agent menulis failing</span>
+<span class="cm"># test sebelum implementasi apa pun.</span></pre>
+              <p
+                style="font-size: 13.5px; color: var(--muted); margin-top: 12px"
+              >
+                github.com/obra/superpowers — juga jalan di Cursor, Codex CLI,
+                Gemini CLI, OpenCode, GitHub Copilot CLI, dan lainnya. Cara
+                install untuk tiap agent ada di repo-nya.
+              </p>
+            </div>
+          </div>
+          <div class="foot">
+            Kalau toolkit agent terpopuler saja mewajibkan TDD, itu pertanda
+            jelas dari mana kualitas berasal.
+          </div>
+        </section>
+
+        <!-- ════════ 15 — PILAR 4: PROMPTING ════════ -->
+        <section
+          class="slide"
+          data-notes="Slide puncaknya: tiga pilar pertama bertemu di cara kita menulis prompt. Jalani pemetaannya — tiap baris requirement berasal dari satu pilar. Insight kuncinya: prompt yang tidak jelas di sebelah kiri itulah yang melahirkan bencana di warm-up. Agent mengisi tiap celah yang tidak kalian sebut dengan jawaban termudah yang tetap jalan — termasuk == bukannya equals()."
+        >
+          <div class="lens-tag lt-ink">pilar 4 · better prompting</div>
+          <h2>Prompt adalah spec — tulislah layaknya spec</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div>
+              <div class="codehead bad">Begini lahirnya bug warm-up tadi ✗</div>
+              <pre class="code"><span class="cm">"buatkan method untuk mencari
+ user yang punya order"</span></pre>
+              <p style="font-size: 14px; color: var(--muted); margin-top: 14px">
+                Prompt yang tidak jelas → AI mengisi tiap celah dengan jawaban
+                termudah yang tetap jalan: nested loop,
+                <code style="font-family: var(--mono)">==</code> bukannya
+                <code style="font-family: var(--mono)">equals()</code>, tanpa
+                cek null, happy path saja.
+              </p>
+            </div>
+            <div>
+              <div class="codehead good">Tiap pilar jadi satu baris ✓</div>
+              <pre
+                class="code"
+                style="font-size: 13px"
+              ><span class="cm">"Tulis getUsersWithOrders(users, orders):</span>
+<span class="cm"> - tulis failing JUnit test-nya DULUAN:</span>
+<span class="cm">   kosong, duplikat, id tidak ada</span>         <span class="kw">← TDD</span>
+<span class="cm"> - tiap user muncul maksimal sekali</span>
+<span class="cm"> - masukkan id order ke HashSet</span>           <span class="kw">← DSA</span>
+<span class="cm"> - O(n + m), tanpa nested scan</span>            <span class="kw">← Big O</span>
+<span class="cm"> - equals() untuk id, cek null/kosong"</span></pre>
+            </div>
+          </div>
+          <div class="foot">
+            Tiap konsep yang bisa kalian sebut namanya, bisa kalian minta
+            sebagai requirement. Itulah kenapa fundamental membuat prompt kalian
+            lebih baik.
+          </div>
+        </section>
+
+        <!-- ════════ 16 — PROMPTING: LIMA KEBIASAAN ════════ -->
+        <section
+          class="slide"
+          data-notes="Kebiasaan ini tidak terikat bahasa pemrograman — berlaku untuk Java, skrip, infrastruktur, agent apa pun. Bahas satu per satu. Beri waktu ekstra untuk dua yang terakhir. (1) Suruh bertanya — agent BISA saja menebak saat ada yang kurang jelas, dan justru itu masalahnya: requirement hasil tebakan diam-diam akan jadi bug nanti. Dua prompt siap pakai ada di slide: 'Ask me more questions for clarification' (pendek, enak ditempel di akhir prompt apa pun) dan 'If the requirements are unclear, ask me first — do not guess' (cocok jadi instruksi permanen). (2) Honesty clause — agent suka setuju dan memuji ide kalian, dan itu berbahaya saat kalian salah; prompt ini membuat agent mengkritisi cara berpikir kalian. Sebagai tips tambahan: prompt yang sering dipakai bisa disimpan di agent config supaya termuat otomatis — tapi itu opsional, kebiasaannya lebih penting daripada tooling-nya."
+        >
+          <div class="lens-tag lt-ink">pilar 4 · better prompting</div>
+          <h2>Lima kebiasaan untuk prompt yang lebih baik</h2>
+          <div
+            class="cols"
+            style="grid-template-columns: 1.15fr 1fr; margin-top: 14px"
+          >
+            <div>
+              <ul class="clean">
+                <li style="font-size: 15.5px">
+                  <strong>Spesifik.</strong> Prompt yang tidak jelas akan
+                  mendapat tafsiran termudah — sebutkan persis apa yang kalian
+                  butuhkan.
+                </li>
+                <li style="font-size: 15.5px">
+                  <strong>Beri satu contoh.</strong> Satu contoh input → output
+                  yang diharapkan lebih jelas daripada deskripsi panjang.
+                </li>
+                <li style="font-size: 15.5px">
+                  <strong>Sebutkan constraint-nya.</strong> Performa, error
+                  handling, penamaan — kalau memang penting, tulis.
+                </li>
+                <li style="font-size: 15.5px">
+                  <strong>Suruh bertanya, jangan biarkan menebak.</strong> Agent
+                  <em>bisa</em> menebak saat ada yang kurang jelas — justru itu
+                  masalahnya. Requirement hasil tebakan akan jadi bug nanti.
+                  Minta dia bertanya dulu → prompt-nya di sebelah kanan.
+                </li>
+                <li style="font-size: 15.5px">
+                  <strong>Minta kejujuran.</strong> Agent cenderung selalu
+                  setuju dengan kalian. Honesty clause membuat agent mengkritisi
+                  cara berpikir kalian, bukan memujinya.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <div class="codehead" style="color: var(--teal-dk)">
+                Prompt "tanya dulu" — pilih salah satu
+              </div>
+              <pre
+                class="code"
+                style="font-size: 12.5px; padding: 14px 18px; line-height: 1.5"
+              ><span class="cm">"Ask me more questions for clarification."
+
+"If the requirements are unclear,
+ ask me first — do not guess."</span></pre>
+              <div
+                class="codehead"
+                style="color: var(--amber); margin-top: 14px"
+              >
+                Honesty clause — tempel apa adanya
+              </div>
+              <pre
+                class="code"
+                style="font-size: 12.5px; padding: 14px 18px; line-height: 1.5"
+              ><span class="cm">"Never agree with me just to be agreeable.
+ If I'm wrong, say so directly. You are not
+ here to make me feel validated. Find the
+ weak spots and blind spots in my thinking.
+ Point them out, even if I didn't ask.
+ If I ever seem to want validation more
+ than truth, call it out."</span></pre>
+              <p style="font-size: 13px; color: var(--muted); margin-top: 10px">
+                Tips: prompt yang sering dipakai bisa disimpan di agent config,
+                supaya otomatis termuat di tiap sesi.
+              </p>
+            </div>
+          </div>
+          <div class="foot">
+            Kebiasaan ini berlaku untuk bahasa apa pun dan agent apa pun —
+            bagian dari workflow engineering, bukan pekerjaan tambahan.
+          </div>
+        </section>
+
+        <!-- ════════ 17 — PENUTUP ════════ -->
+        <section
+          class="slide dark"
+          data-notes="Tutup dengan empat kalimat kunci — minta empat orang berbeda membacakan satu kalimat masing-masing. Akhiri di baris prompting: lima kebiasaan tadi adalah bagian yang bisa langsung dipakai semua orang besok, di bahasa apa pun. Kalau ada yang tanya 'mulai dari mana?', tunjuk kebiasaan ke-4 (suruh bertanya, jangan biarkan menebak) dan honesty clause — keduanya langsung terasa hasilnya di sesi pertama."
+        >
+          <div class="bigbrace" style="font-size: 460px">{ }</div>
+          <div style="position: relative; max-width: 860px">
+            <h2 style="color: #fff">Empat hal untuk diingat</h2>
+            <div
+              style="
+                margin-top: 26px;
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+              "
+            >
+              <div style="display: flex; gap: 22px; align-items: baseline">
+                <div
+                  style="
+                    flex: 0 0 170px;
+                    font-family: var(--mono);
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--teal);
+                  "
+                >
+                  ❯ dsa
+                </div>
+                <p style="font-size: 17px; color: #e2e8f0">
+                  Pilih container dari pertanyaan yang diajukan kodenya —
+                  kebanyakan kode lambat jadi cepat hanya dengan satu pergantian
+                  ke HashSet/HashMap.
+                </p>
+              </div>
+              <div style="display: flex; gap: 22px; align-items: baseline">
+                <div
+                  style="
+                    flex: 0 0 170px;
+                    font-family: var(--mono);
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--teal);
+                  "
+                >
+                  ❯ big-o
+                </div>
+                <p style="font-size: 17px; color: #e2e8f0">
+                  Tanyakan "bagaimana kalau datanya 1.000× lebih banyak?" — dan
+                  selalu cek biaya tiap baris di dalam loop.
+                </p>
+              </div>
+              <div style="display: flex; gap: 22px; align-items: baseline">
+                <div
+                  style="
+                    flex: 0 0 170px;
+                    font-family: var(--mono);
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--teal);
+                  "
+                >
+                  ❯ tdd
+                </div>
+                <p style="font-size: 17px; color: #e2e8f0">
+                  Failing test adalah prompt paling presisi yang ada — tulis
+                  duluan; toolkit agent terpopuler pun mewajibkannya.
+                </p>
+              </div>
+              <div style="display: flex; gap: 22px; align-items: baseline">
+                <div
+                  style="
+                    flex: 0 0 170px;
+                    font-family: var(--mono);
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--teal);
+                  "
+                >
+                  ❯ prompting
+                </div>
+                <p style="font-size: 17px; color: #e2e8f0">
+                  Prompt adalah spec. Jadikan lima kebiasaan tadi bagian dari
+                  workflow harian kalian — dan tiap diff langsung mulai di level
+                  senior.
+                </p>
+              </div>
+            </div>
+            <p
+              style="
+                margin-top: 36px;
+                font-size: 17px;
+                font-weight: 700;
+                color: var(--teal);
+              "
+            >
+              Terima kasih — sekarang pecut AI kalian dan minta kode yang lebih
+              bagus.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="bar"></div>
+    <div id="help">← → navigasi · N catatan · F fullscreen</div>
+    <div id="hud">
+      <span id="counter">1 / 17</span>
+      <button id="prev" aria-label="Slide sebelumnya">‹</button>
+      <button id="next" aria-label="Slide berikutnya">›</button>
+    </div>
+    <div id="notes" aria-live="polite">
+      <div class="nlabel">Catatan presenter — tekan N untuk menutup</div>
+      <div id="notesText"></div>
+    </div>
+
+    <script>
+      (function () {
+        const slides = Array.from(document.querySelectorAll(".slide"));
+        const bar = document.getElementById("bar");
+        const counter = document.getElementById("counter");
+        const notes = document.getElementById("notes");
+        const notesText = document.getElementById("notesText");
+        let i = Math.min(
+          slides.length - 1,
+          Math.max(0, parseInt(location.hash.slice(1), 10) - 1 || 0),
+        );
+
+        function show(n) {
+          i = Math.max(0, Math.min(slides.length - 1, n));
+          slides.forEach((s, k) => s.classList.toggle("active", k === i));
+          bar.style.width = ((i + 1) / slides.length) * 100 + "%";
+          counter.textContent = i + 1 + " / " + slides.length;
+          notesText.textContent = slides[i].dataset.notes || "";
+          history.replaceState(null, "", "#" + (i + 1));
+        }
+        function fit() {
+          const s = Math.min(innerWidth / 1280, innerHeight / 720) * 0.97;
+          document.getElementById("stage").style.transform = "scale(" + s + ")";
+        }
+        addEventListener("resize", fit);
+        addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+            e.preventDefault();
+            show(i + 1);
+          } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+            e.preventDefault();
+            show(i - 1);
+          } else if (e.key === "Home") show(0);
+          else if (e.key === "End") show(slides.length - 1);
+          else if (e.key.toLowerCase() === "n") notes.classList.toggle("open");
+          else if (e.key.toLowerCase() === "f") {
+            document.fullscreenElement
+              ? document.exitFullscreen()
+              : document.documentElement.requestFullscreen();
+          }
+        });
+        document.getElementById("prev").onclick = () => show(i - 1);
+        document.getElementById("next").onclick = () => show(i + 1);
+        // klik sepertiga kanan/kiri slide untuk maju/mundur
+        document.getElementById("stage").addEventListener("click", (e) => {
+          if (e.target.closest("a,button")) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          (e.clientX - r.left) / r.width > 0.33 ? show(i + 1) : show(i - 1);
+        });
+        fit();
+        show(i);
+      })();
+    </script>
+  </body>
+</html>

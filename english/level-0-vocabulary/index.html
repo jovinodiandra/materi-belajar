@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rekap Vocabulary — Level 0</title>
+<meta name="description" content="Rekap seluruh kosakata yang sudah diajarkan di Level 0 Notebook Inggris, digabung dari semua materi.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.08);
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --maxw: 1120px;
+  }
+  body { background: var(--void); color: var(--ink); font-family: var(--sans); line-height: 1.66; font-size: 17px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(18px,5vw,60px); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 40; background: rgba(11,14,26,.88); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar__inner { display: flex; align-items: center; gap: 14px; padding: 12px clamp(18px,5vw,60px); max-width: var(--maxw); margin: 0 auto; font-family: var(--mono); font-size: 12.5px; }
+  .topbar__inner a.home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+  .topbar__inner a.home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .topbar__inner .path { color: var(--muted-2); }
+  .topbar__inner .path b { color: var(--ink-strong); }
+
+  .hero { padding: clamp(40px,6vw,64px) 0 clamp(20px,3vw,32px); }
+  .hero .eyebrow { font-family: var(--mono); color: var(--cyan); font-size: 13px; margin-bottom: 16px; }
+  .hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(28px,5vw,48px); line-height: 1.12; letter-spacing: -.01em; color: var(--ink-strong); max-width: 22ch; }
+  .hero h1 em { color: var(--cyan); font-style: italic; }
+  .hero p.sub { margin-top: 18px; max-width: 72ch; font-size: 17.5px; color: var(--ink); }
+  .hero p.sub b { color: var(--ink-strong); }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px; min-width: 110px; }
+  .stat .n { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--cyan); }
+  .stat .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  main { padding-bottom: 60px; }
+  .group { margin-top: 10px; padding: 30px 0; border-top: 1px solid var(--line-soft); }
+  .group:first-of-type { border-top: none; }
+  .grouphead { margin-bottom: 16px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .grouphead .kicker { font-family: var(--mono); font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--amber); }
+  .grouphead .count { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 11px; padding: 16px 18px; background: var(--panel); transition: border-color .2s, transform .2s; }
+  .card:hover { transform: translateY(-3px); border-color: var(--cyan-dim); }
+  .vocab-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .vocab-word { font-family: var(--serif); font-weight: 600; font-size: 18px; color: var(--ink-strong); }
+  .vocab-ipa { font-family: var(--mono); font-size: 12px; color: var(--muted-2); }
+  .vocab-meaning { color: var(--cyan); font-weight: 600; font-size: 13.5px; margin-left: auto; }
+  .pos { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; }
+  .card p { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .card p i { color: var(--ink); font-style: italic; }
+  .src { display: inline-block; margin-top: 8px; font-family: var(--mono); font-size: 10px; letter-spacing: .04em; color: var(--muted-2); border: 1px dashed var(--line); border-radius: 5px; padding: 2px 7px; }
+
+  .searchbox { margin: 22px 0 28px; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px; max-width: 420px; }
+  .searchbox input { flex: 1; border: none; background: transparent; outline: none; color: var(--ink-strong); font-size: 14.5px; font-family: var(--sans); }
+  .searchbox input::placeholder { color: var(--muted); }
+  .searchbox svg { color: var(--muted); flex: none; }
+  .card[hidden] { display: none; }
+
+  footer { padding: 26px clamp(18px,5vw,60px); font-family: var(--mono); font-size: 12px; color: var(--muted-2); text-align: center; border-top: 1px solid var(--line); }
+  footer a { color: var(--cyan); text-decoration: none; }
+
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__inner">
+    <a class="home" href="../index.html">← Belajar Inggris</a>
+    <span class="path">docs/learning/english/level-0-vocabulary/<b>index.md</b></span>
+  </div>
+</div>
+
+<main>
+  <div class="wrap hero">
+    <div class="eyebrow">// Level 0 · Rekap Vocabulary</div>
+    <h1>Semua kata yang sudah kamu <em>kenal</em>, di satu tempat.</h1>
+    <p class="sub">Halaman ini menggabungkan <b>semua kosakata</b> dari tiap Materi di Level 0. Tiap kali Materi baru selesai ditulis, kata-kata barunya ditambahkan ke daftar ini — jadi kamu punya satu daftar rujukan yang terus tumbuh, bukan tersebar di banyak halaman.</p>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statTotal">20</div><div class="l">total kata</div></div>
+      <div class="stat"><div class="n">1</div><div class="l">materi tergabung</div></div>
+    </div>
+    <div class="searchbox">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Cari kata… (mis. busy, engineer)" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Pronoun</span><span class="count">7 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="i"><div class="vocab-head"><span class="vocab-word">I</span><span class="vocab-ipa">/aɪ/</span><span class="vocab-meaning">saya</span></div><p><span class="pos">pronoun</span> <i>"I am a developer."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="you"><div class="vocab-head"><span class="vocab-word">you</span><span class="vocab-ipa">/juː/</span><span class="vocab-meaning">kamu / kalian</span></div><p><span class="pos">pronoun</span> <i>"You are welcome."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="he"><div class="vocab-head"><span class="vocab-word">he</span><span class="vocab-ipa">/hiː/</span><span class="vocab-meaning">dia (laki-laki)</span></div><p><span class="pos">pronoun</span> <i>"He is my manager."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="she"><div class="vocab-head"><span class="vocab-word">she</span><span class="vocab-ipa">/ʃiː/</span><span class="vocab-meaning">dia (perempuan)</span></div><p><span class="pos">pronoun</span> <i>"She is a designer."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="it"><div class="vocab-head"><span class="vocab-word">it</span><span class="vocab-ipa">/ɪt/</span><span class="vocab-meaning">itu (benda/hewan)</span></div><p><span class="pos">pronoun</span> <i>"It is broken."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="we"><div class="vocab-head"><span class="vocab-word">we</span><span class="vocab-ipa">/wiː/</span><span class="vocab-meaning">kami / kita</span></div><p><span class="pos">pronoun</span> <i>"We are a team."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="they"><div class="vocab-head"><span class="vocab-word">they</span><span class="vocab-ipa">/ðeɪ/</span><span class="vocab-meaning">mereka</span></div><p><span class="pos">pronoun</span> <i>"They are new here."</i></p><span class="src">dari Materi 1</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Verb · To Be</span><span class="count">3 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="am"><div class="vocab-head"><span class="vocab-word">am</span><span class="vocab-ipa">/æm/</span><span class="vocab-meaning">adalah/sedang (untuk "I")</span></div><p><span class="pos">verb</span> <i>"I am ready."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="is"><div class="vocab-head"><span class="vocab-word">is</span><span class="vocab-ipa">/ɪz/</span><span class="vocab-meaning">adalah/sedang (tunggal)</span></div><p><span class="pos">verb</span> <i>"This is easy."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="are"><div class="vocab-head"><span class="vocab-word">are</span><span class="vocab-ipa">/ɑːr/</span><span class="vocab-meaning">adalah/sedang (jamak)</span></div><p><span class="pos">verb</span> <i>"We are close."</i></p><span class="src">dari Materi 1</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Noun</span><span class="count">4 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="name"><div class="vocab-head"><span class="vocab-word">name</span><span class="vocab-ipa">/neɪm/</span><span class="vocab-meaning">nama</span></div><p><span class="pos">noun</span> <i>"My name is Dimas."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="engineer"><div class="vocab-head"><span class="vocab-word">engineer</span><span class="vocab-ipa">/ˌendʒɪˈnɪər/</span><span class="vocab-meaning">insinyur / engineer</span></div><p><span class="pos">noun</span> <i>"She is a software engineer."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="colleague"><div class="vocab-head"><span class="vocab-word">colleague</span><span class="vocab-ipa">/ˈkɒliːɡ/</span><span class="vocab-meaning">rekan kerja</span></div><p><span class="pos">noun</span> <i>"They are my colleagues."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="friend"><div class="vocab-head"><span class="vocab-word">friend</span><span class="vocab-ipa">/frend/</span><span class="vocab-meaning">teman</span></div><p><span class="pos">noun</span> <i>"He is my friend."</i></p><span class="src">dari Materi 1</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Adjective</span><span class="count">6 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="busy"><div class="vocab-head"><span class="vocab-word">busy</span><span class="vocab-ipa">/ˈbɪzi/</span><span class="vocab-meaning">sibuk</span></div><p><span class="pos">adjective</span> <i>"I am busy today."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="tired"><div class="vocab-head"><span class="vocab-word">tired</span><span class="vocab-ipa">/ˈtaɪərd/</span><span class="vocab-meaning">lelah</span></div><p><span class="pos">adjective</span> <i>"We are tired."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="ready"><div class="vocab-head"><span class="vocab-word">ready</span><span class="vocab-ipa">/ˈredi/</span><span class="vocab-meaning">siap</span></div><p><span class="pos">adjective</span> <i>"I am ready."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="late"><div class="vocab-head"><span class="vocab-word">late</span><span class="vocab-ipa">/leɪt/</span><span class="vocab-meaning">terlambat</span></div><p><span class="pos">adjective</span> <i>"You are late."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="hungry"><div class="vocab-head"><span class="vocab-word">hungry</span><span class="vocab-ipa">/ˈhʌŋɡri/</span><span class="vocab-meaning">lapar</span></div><p><span class="pos">adjective</span> <i>"I am hungry."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="excited"><div class="vocab-head"><span class="vocab-word">excited</span><span class="vocab-ipa">/ɪkˈsaɪtɪd/</span><span class="vocab-meaning">senang / antusias</span></div><p><span class="pos">adjective</span> <i>"I am excited too."</i></p><span class="src">dari Materi 1</span></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <b>Rekap Vocabulary — Level 0</b> · 20 kata dari 1 materi · <a href="../index.html">← kembali ke Belajar Inggris</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var q = document.getElementById("q");
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card[data-word]"));
+  q.addEventListener("input", function () {
+    var term = q.value.trim().toLowerCase();
+    cards.forEach(function (c) {
+      var word = c.getAttribute("data-word");
+      var text = c.textContent.toLowerCase();
+      c.hidden = term !== "" && text.indexOf(term) === -1 && word.indexOf(term) === -1;
+    });
+    document.querySelectorAll(".group").forEach(function (g) {
+      var visible = g.querySelectorAll(".card:not([hidden])").length;
+      g.style.display = visible === 0 ? "none" : "";
+    });
+  });
+})();
+</script>
+</body>
+</html>

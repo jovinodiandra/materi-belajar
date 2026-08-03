@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cerita Hari Ini — Level 5 (Final)</title>
+<meta name="description" content="Ujian akhir seluruh notebook Bahasa Inggris: tulis refleksi profesional dalam register formal, lalu cek grammar-nya otomatis.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.08);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.08);
+    --good-line:  rgba(86,211,100,.30);
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --maxw: 980px;
+  }
+  body { background: var(--void); color: var(--ink); font-family: var(--sans); line-height: 1.66; font-size: 17px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(18px,5vw,60px); }
+
+  .topbar { position: sticky; top: 0; z-index: 40; background: rgba(11,14,26,.88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .topbar__inner { display: flex; align-items: center; gap: 14px; padding: 12px clamp(18px,5vw,60px); max-width: var(--maxw); margin: 0 auto; font-family: var(--mono); font-size: 12.5px; }
+  .topbar__inner a.home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+  .topbar__inner a.home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .topbar__inner .path { color: var(--muted-2); }
+  .topbar__inner .path b { color: var(--ink-strong); }
+
+  .hero { padding: clamp(36px,6vw,56px) 0 clamp(16px,3vw,26px); }
+  .hero .eyebrow { font-family: var(--mono); color: var(--cyan); font-size: 13px; margin-bottom: 16px; }
+  .hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(28px,5vw,46px); line-height: 1.12; letter-spacing: -.01em; color: var(--ink-strong); max-width: 24ch; }
+  .hero h1 em { color: var(--cyan); font-style: italic; }
+  .hero p.sub { margin-top: 16px; max-width: 74ch; font-size: 16.5px; color: var(--ink); }
+  .hero p.sub b { color: var(--ink-strong); }
+
+  main { padding-bottom: 70px; }
+
+  .promptbox {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 18px 22px; margin: 24px 0; border-radius: 0 12px 12px 0; max-width: 78ch;
+  }
+  .promptbox .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--amber); margin-bottom: 9px; }
+  .promptbox p { color: var(--ink); font-size: 15.5px; margin: 6px 0; }
+  .promptbox b { color: var(--ink-strong); }
+  .promptbox.alt { border-color: var(--cyan-dim); border-left-color: var(--cyan); background: linear-gradient(100deg, rgba(69,212,222,.07), transparent 75%); }
+  .promptbox.alt .tag { color: var(--cyan); }
+  .promptbox ul { margin: 8px 0 4px 20px; }
+  .promptbox li { font-size: 14.5px; color: var(--ink); margin: 4px 0; }
+  .promptbox li i { color: var(--ink-strong); font-style: normal; }
+
+  .reqlist { list-style: none; margin: 18px 0 26px; max-width: 78ch; }
+  .reqlist li {
+    display: flex; align-items: center; gap: 10px; padding: 9px 0;
+    border-bottom: 1px solid var(--line-soft); font-size: 14.5px; color: var(--muted);
+    font-family: var(--mono);
+  }
+  .reqlist li .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent; }
+  .reqlist li.met { color: var(--good); }
+  .reqlist li.met .dot { border-color: var(--good); background: var(--good); color: var(--void); }
+
+  textarea#story {
+    width: 100%; min-height: 260px; resize: vertical; margin-top: 6px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; color: var(--ink-strong); font-family: var(--sans); font-size: 15.5px;
+    line-height: 1.6;
+  }
+  textarea#story:focus { outline: none; border-color: var(--cyan-dim); }
+
+  .actionrow { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--mono); font-size: 13.5px; letter-spacing: .03em; color: var(--void); background: var(--cyan);
+    border: none; border-radius: 8px; padding: 10px 20px; font-weight: 700; cursor: pointer; transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.secondary { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .statusline { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+
+  .disclaimer { margin: 18px 0; max-width: 78ch; font-size: 12.5px; color: var(--muted-2); border: 1px dashed var(--line); border-radius: 10px; padding: 12px 16px; }
+  .disclaimer b { color: var(--muted); }
+
+  .results { margin-top: 26px; max-width: 78ch; }
+  .results h3 { font-family: var(--serif); font-size: 19px; color: var(--ink-strong); margin-bottom: 12px; }
+  .matchcard {
+    border: 1px solid var(--bad-line); background: var(--bad-bg); border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 10px;
+  }
+  .matchcard .m-head { font-family: var(--mono); font-size: 12px; color: var(--bad); margin-bottom: 6px; letter-spacing: .04em; }
+  .matchcard .m-wrong { font-size: 14.5px; color: var(--ink); margin-bottom: 4px; }
+  .matchcard .m-wrong b { color: var(--bad); text-decoration: line-through; }
+  .matchcard .m-fix { font-size: 14.5px; color: var(--ink); }
+  .matchcard .m-fix b { color: var(--good); }
+  .matchcard .m-msg { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  .allclear {
+    border: 1px solid var(--good-line); background: var(--good-bg); border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 10px; color: var(--good); font-size: 14.5px; font-family: var(--mono);
+  }
+
+  .completebanner {
+    margin-top: 26px; border: 1px solid var(--good-line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--good-bg), var(--panel) 70%);
+    padding: 26px 30px; max-width: 78ch; display: none;
+  }
+  .completebanner.show { display: block; }
+  .completebanner h4 { font-family: var(--serif); color: var(--ink-strong); font-size: 23px; margin-bottom: 10px; }
+  .completebanner p { color: var(--ink); font-size: 14.5px; margin-top: 8px; }
+  .completebanner p.big { font-size: 15.5px; color: var(--ink-strong); }
+  .completebanner .seal { font-family: var(--mono); font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--good); margin-bottom: 10px; }
+
+  footer { padding: 26px clamp(18px,5vw,60px); font-family: var(--mono); font-size: 12px; color: var(--muted-2); text-align: center; border-top: 1px solid var(--line); margin-top: 20px; }
+  footer a { color: var(--cyan); text-decoration: none; }
+
+  a:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+  @media (max-width: 640px) { .actionrow { flex-direction: column; align-items: stretch; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__inner">
+    <a class="home" href="../index.html">← Belajar Inggris</a>
+    <span class="path">docs/learning/english/level-5-cerita/<b>index.md</b></span>
+  </div>
+</div>
+
+<main>
+  <div class="wrap hero">
+    <div class="eyebrow">// Level 5 · Cerita Hari Ini — Ujian Akhir</div>
+    <h1>Rangkum perjalananmu, <em>secara profesional.</em></h1>
+    <p class="sub">Ini bukan sekadar gerbang ke level berikutnya — <b>tidak ada Level 6</b>. Halaman ini adalah <b>ujian akhir dari seluruh notebook</b>, mulai dari Level 0 (Fondasi Nol) sampai Level 5 (Advance) yang baru saja kamu selesaikan. Tulis satu refleksi utuh dalam register formal/profesional, gabungkan semua yang sudah kamu kuasai: advanced modals, inversion/emphatic structure, subjunctive, cohesive devices, dan kosakata akademis — lalu pastikan bersih dari kesalahan grammar.</p>
+  </div>
+
+  <div class="wrap">
+    <div class="promptbox">
+      <div class="tag">◆ Topik — Refleksi Profesional</div>
+      <p>Tulis sebuah <b>professional reflection</b> — boleh tentang perjalanan belajar Bahasa Inggris-mu di seluruh notebook ini dari Level 0 sampai sekarang, atau tentang sebuah proyek software engineering nyata yang baru saja rampung kamu kerjakan (retrospective, post-mortem, atau laporan singkat ke atasan/klien). Gunakan register formal-akademis: hindari bahasa gaul, singkatan tidak baku, atau nada terlalu santai.</p>
+      <p>Tunjukkan penguasaan grammar tingkat lanjut yang sudah kamu pelajari di Level 5: <b>advanced modal</b> untuk berspekulasi tentang masa lalu (must have, should have, might have, can't have), dan minimal satu <b>inversion / emphatic structure</b> (Never have I…, Not only did…, It was … that…, Had we known…, dsb).</p>
+    </div>
+
+    <div class="promptbox alt">
+      <div class="tag">◆ Referensi struktur (boleh dimodifikasi, jangan disalin mentah)</div>
+      <ul>
+        <li><i>Advanced modal:</i> "The regression must have been introduced during the last refactor." / "We should have written integration tests earlier." / "They might have underestimated the migration's complexity."</li>
+        <li><i>Inversion / emphatic:</i> "Never have I worked on a project with such tight deadlines." / "Not only did the team deliver on time, but it also improved test coverage." / "It was the code review process that ultimately prevented a costly outage." / "Had we anticipated the traffic spike, the incident could have been avoided."</li>
+        <li><i>Subjunctive / hedging:</i> "If only we had allocated more time for QA." / "It is recommended that the team adopt stricter linting rules." / "The results arguably suggest a need for further optimisation."</li>
+      </ul>
+    </div>
+
+    <ul class="reqlist" id="reqList">
+      <li data-req="sentences"><span class="dot">✓</span> Minimal 12 kalimat</li>
+      <li data-req="vocab"><span class="dot">✓</span> Pakai minimal 10 kata/frasa dari <a href="../level-5-vocabulary/index.html" style="color:var(--cyan)">Rekap Vocabulary Level 5</a></li>
+      <li data-req="inversion"><span class="dot">✓</span> Pakai minimal 1 struktur inversion / emphatic (Never have I…, It is/was … that…, dst)</li>
+      <li data-req="modal"><span class="dot">✓</span> Pakai minimal 1 advanced modal spekulatif (must have / should have / might have / can't have, dst)</li>
+      <li data-req="grammar"><span class="dot">✓</span> Sudah dicek grammar &amp; tidak ada kesalahan tersisa</li>
+    </ul>
+
+    <textarea id="story" placeholder="Looking back on this journey, I ... Never have I ... Notwithstanding the challenges, ... The most difficult module must have been ..."></textarea>
+
+    <div class="actionrow">
+      <button type="button" class="btn" id="checkBtn">Cek Ceritaku</button>
+      <button type="button" class="btn secondary" id="clearBtn">Hapus draft</button>
+      <span class="statusline" id="statusLine"></span>
+    </div>
+
+    <div class="disclaimer">
+      <b>Perlu diketahui:</b> tombol "Cek Ceritaku" mengirim teks yang kamu tulis ke layanan pihak ketiga
+      <a href="https://languagetool.org" target="_blank" rel="noopener" style="color:var(--muted)">LanguageTool.org</a>
+      untuk diperiksa grammar-nya (butuh koneksi internet). Jangan tulis data pribadi yang sensitif di sini.
+    </div>
+
+    <div class="results" id="results" hidden>
+      <h3>Hasil pengecekan</h3>
+      <div id="resultsBody"></div>
+    </div>
+
+    <div class="completebanner" id="completeBanner">
+      <div class="seal">◆ Notebook selesai ◆</div>
+      <h4>🎓 Selamat — kamu baru saja menuntaskan SELURUH notebook ini.</h4>
+      <p class="big">Semua syarat Level 5 terpenuhi dan tidak ada kesalahan grammar tersisa. Ini bukan cuma checkpoint biasa: kamu baru saja menyelesaikan perjalanan penuh dari <b style="color:var(--good)">Level 0 (Fondasi Nol)</b> sampai <b style="color:var(--good)">Level 5 (Advance)</b> — enam level, puluhan materi, ratusan latihan, dan sekarang sebuah tulisan reflektif dengan register profesional yang benar-benar bersih secara grammar.</p>
+      <p>Tidak ada Level 6 untuk dituju. Simpan cerita ini — ini adalah bukti nyata bahwa kemampuan Bahasa Inggris-mu sudah berada di level yang siap dipakai untuk komunikasi profesional di dunia kerja software engineering: menulis laporan, retrospective, dokumentasi teknis, atau berdiskusi dengan tim/klien internasional. Kerja luar biasa.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <b>Cerita Hari Ini — Level 5 (Final)</b> · ujian akhir seluruh notebook Level 0–5 · <a href="../index.html">← kembali ke Belajar Inggris</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var LEVEL_KEY = "english::level-5-cerita";
+  var DONE_KEY = "materi-progress::" + LEVEL_KEY;
+  var STORY_KEY = "materi-story::" + LEVEL_KEY;
+
+  var VOCAB = [
+    "nevertheless", "notwithstanding", "arguably", "meticulous", "consolidate",
+    "unequivocally", "albeit", "hitherto", "invaluable", "milestone",
+    "collaboration", "proficiency", "rigorous", "cornerstone", "wholeheartedly",
+    "bear fruit", "come full circle", "food for thought", "go the extra mile", "in light of"
+  ];
+
+  var INVERSION_RE = /\b(never (?:have|had|before)|rarely (?:do|does|did|have|has)|seldom (?:do|does|did|have|has)|little did|not only (?:do|does|did|have|has|is|are|was|were)|no sooner had|hardly (?:had|do|does|did)|only (?:after|when|then|by|through|in this way) (?:do|does|did|have|has|had|is|are|was|were|can|could|will|would)|were it not for|had (?:i|we|they|he|she|it|you) (?:known|realized|realised|understood|been|expected|anticipated))\b/i;
+  var EMPHATIC_RE = /\bit (?:is|was) [a-z' ]{1,40} (?:that|who|which)\b/i;
+
+  var ADV_MODAL_RE = /\b(must|might|may|could|should|shouldn't|couldn't|wouldn't|can't|cannot)\s+(?:not\s+)?have\s+\w+/i;
+
+  var textarea = document.getElementById("story");
+  var checkBtn = document.getElementById("checkBtn");
+  var clearBtn = document.getElementById("clearBtn");
+  var statusLine = document.getElementById("statusLine");
+  var resultsEl = document.getElementById("results");
+  var resultsBody = document.getElementById("resultsBody");
+  var completeBanner = document.getElementById("completeBanner");
+
+  var lastGrammarClean = false;
+
+  try {
+    var saved = localStorage.getItem(STORY_KEY);
+    if (saved) textarea.value = saved;
+  } catch (e) {}
+
+  try {
+    if (localStorage.getItem(DONE_KEY) === "true") {
+      completeBanner.classList.add("show");
+    }
+  } catch (e) {}
+
+  function countSentences(text) {
+    return text.split(/[.!?]+/).map(function (s) { return s.trim(); }).filter(function (s) { return s.split(/\s+/).length >= 2; }).length;
+  }
+
+  function countVocabUsed(text) {
+    var lower = " " + text.toLowerCase().replace(/[^a-z\s]/g, " ") + " ";
+    lower = lower.replace(/\s+/g, " ");
+    var used = 0;
+    VOCAB.forEach(function (w) {
+      if (lower.indexOf(" " + w + " ") !== -1) used++;
+    });
+    return used;
+  }
+
+  function hasInversion(text) {
+    var t = text.toLowerCase();
+    return INVERSION_RE.test(t) || EMPHATIC_RE.test(t);
+  }
+
+  function hasAdvModal(text) {
+    return ADV_MODAL_RE.test(text.toLowerCase());
+  }
+
+  function evalRequirements() {
+    var text = textarea.value;
+    var sentences = countSentences(text);
+    var vocabUsed = countVocabUsed(text);
+    var inversionOk = hasInversion(text);
+    var modalOk = hasAdvModal(text);
+
+    var reqs = {
+      sentences: sentences >= 12,
+      vocab: vocabUsed >= 10,
+      inversion: inversionOk,
+      modal: modalOk,
+      grammar: lastGrammarClean
+    };
+
+    Object.keys(reqs).forEach(function (key) {
+      var li = document.querySelector('.reqlist li[data-req="' + key + '"]');
+      if (li) li.classList.toggle("met", reqs[key]);
+    });
+
+    var allMet = reqs.sentences && reqs.vocab && reqs.inversion && reqs.modal && reqs.grammar;
+
+    try { localStorage.setItem(STORY_KEY, text); } catch (e) {}
+    try { localStorage.setItem(DONE_KEY, allMet ? "true" : "false"); } catch (e) {}
+    completeBanner.classList.toggle("show", allMet);
+
+    return { sentences: sentences, vocabUsed: vocabUsed, inversionOk: inversionOk, modalOk: modalOk };
+  }
+
+  textarea.addEventListener("input", function () {
+    lastGrammarClean = false;
+    evalRequirements();
+    resultsEl.hidden = true;
+  });
+
+  clearBtn.addEventListener("click", function () {
+    textarea.value = "";
+    lastGrammarClean = false;
+    resultsEl.hidden = true;
+    evalRequirements();
+    try { localStorage.removeItem(STORY_KEY); } catch (e) {}
+  });
+
+  checkBtn.addEventListener("click", function () {
+    var text = textarea.value.trim();
+    if (!text) { statusLine.textContent = "Tulis ceritamu dulu."; return; }
+
+    evalRequirements();
+
+    checkBtn.disabled = true;
+    statusLine.textContent = "Menghubungi LanguageTool…";
+    resultsEl.hidden = true;
+
+    fetch("https://api.languagetool.org/v2/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "text=" + encodeURIComponent(text) + "&language=en-US"
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        var matches = data.matches || [];
+        resultsBody.innerHTML = "";
+        resultsEl.hidden = false;
+
+        if (matches.length === 0) {
+          lastGrammarClean = true;
+          var ok = document.createElement("div");
+          ok.className = "allclear";
+          ok.textContent = "✓ Tidak ada kesalahan grammar terdeteksi. Kerja bagus!";
+          resultsBody.appendChild(ok);
+        } else {
+          lastGrammarClean = false;
+          matches.forEach(function (m) {
+            var ctx = m.context || {};
+            var wrongText = (ctx.text || "").substr(ctx.offset || 0, ctx.length || 0);
+            var suggestion = (m.replacements && m.replacements[0]) ? m.replacements[0].value : null;
+
+            var card = document.createElement("div");
+            card.className = "matchcard";
+
+            var head = document.createElement("div");
+            head.className = "m-head";
+            head.textContent = "✕ " + (m.shortMessage || "Belum tepat");
+            card.appendChild(head);
+
+            if (wrongText) {
+              var wrongEl = document.createElement("div");
+              wrongEl.className = "m-wrong";
+              wrongEl.innerHTML = "kamu tulis: <b>" + escapeHtml(wrongText) + "</b>";
+              card.appendChild(wrongEl);
+            }
+            if (suggestion) {
+              var fixEl = document.createElement("div");
+              fixEl.className = "m-fix";
+              fixEl.innerHTML = "mestinya: <b>" + escapeHtml(suggestion) + "</b>";
+              card.appendChild(fixEl);
+            }
+            var msgEl = document.createElement("div");
+            msgEl.className = "m-msg";
+            msgEl.textContent = m.message || "";
+            card.appendChild(msgEl);
+
+            resultsBody.appendChild(card);
+          });
+        }
+
+        statusLine.textContent = matches.length === 0 ? "Bersih dari kesalahan." : (matches.length + " hal untuk diperbaiki.");
+        checkBtn.disabled = false;
+        evalRequirements();
+      })
+      .catch(function (err) {
+        statusLine.textContent = "Gagal terhubung ke pengecek grammar. Coba lagi sebentar lagi.";
+        checkBtn.disabled = false;
+      });
+  });
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  evalRequirements();
+})();
+</script>
+</body>
+</html>

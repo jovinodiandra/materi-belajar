@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NewSQL — SQL yang Ikut Skala Horizontal</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .topbar__home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; transition: color .18s, border-color .18s; }
+  .topbar__home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- step list ---------- */
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 9px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700;
+    background: var(--cyan); border-radius: 50%;
+  }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/newsql/<b>index.md</b></div>
+  <a class="topbar__home" href="../index.html">← Database</a>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Dilema lama: SQL vs NoSQL</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Consensus &amp; ACID terdistribusi</a>
+    <a href="#c03"><span class="yr">03</span> TrueTime &amp; Raft</a>
+
+    <div class="rail__part">III · Praktik &amp; level belajar</div>
+    <a href="#c04"><span class="yr">04</span> Best practice skema</a>
+    <a href="#c05"><span class="yr">◆</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Untung &amp; harga</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">V · Keputusan &amp; ekosistem</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — saat kamu ingin SQL yang konsisten TAPI juga skala horizontal ala NoSQL</div>
+      <h1 class="reveal d1">SQL yang tetap <span class="accent">konsisten</span>, walau datanya tersebar ke seluruh dunia.</h1>
+      <p class="sub reveal d2">
+        Selama bertahun-tahun kamu seolah harus memilih: database relasional yang <b>konsisten &amp; punya SQL</b>
+        tapi susah di-scale ke banyak mesin, atau database NoSQL yang <b>gampang di-scale</b> tapi melonggarkan
+        konsistensi &amp; membuang SQL. <b>NewSQL</b> — dipelopori Google Spanner, lalu diikuti CockroachDB &amp;
+        YugabyteDB — mencoba membuktikan kamu tidak harus memilih. Deck ini buat pemula: dari <b>kenapa</b> kelas
+        database ini lahir, <b>bagaimana</b> ia mencapai konsistensi lintas node, <b>trade-off</b>-nya, sampai
+        <b>kapan harus dipakai di production</b> — diselingi kalimat dari paper &amp; buku rujukan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">1970an</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Relasional &amp; SQL lahir</b> <span>— konsisten &amp; ACID, tapi didesain untuk satu mesin</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">2000an</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>NoSQL menjawab skala</b> <span>— Bigtable, Dynamo, Cassandra: scale horizontal, konsistensi dilonggarkan</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">2012</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Google publikasikan Spanner</b> <span>— TrueTime bikin konsistensi kuat lintas datacenter jadi mungkin</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">2015+</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>NewSQL open-source lahir</b> <span>— CockroachDB, YugabyteDB, TiDB terinspirasi Spanner &amp; Raft</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Saat butuh SQL + ACID + skala</b> <span>— bukan salah satu, tapi dua-duanya sekaligus</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why" style="max-width:70ch;margin:20px auto 20px clamp(22px,5vw,78px)">
+    <p class="tag">◆ Buat apa ini? Kenapa pakai NewSQL?</p>
+    <p><b>Given</b> — tim engineering punya data user yang terus tumbuh di satu Postgres/MySQL primary: transaksi ACID jalan mulus, JOIN gampang, saldo &amp; stok selalu akurat karena semua ditulis ke satu master.</p>
+    <p><b>When</b> — trafik &amp; volume data naik sampai satu master kehabisan kapasitas tulis, lalu tim terpaksa sharding manual di level aplikasi, atau migrasi ke NoSQL (Cassandra/DynamoDB) supaya bisa scale horizontal ke banyak node.</p>
+    <p><b>Then</b> — kalau tetap tanpa NewSQL: sharding manual bikin JOIN &amp; transaksi lintas-shard jadi tidak atomic (butuh kode rekonsiliasi sendiri), sedangkan pindah ke NoSQL berarti melepas SQL &amp; ACID sehingga konsistensi jadi <em>eventual</em> — saldo/stok bisa terbaca beda antar node saat race condition.</p>
+    <p>→ makanya kita pakai <b>NewSQL</b>.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA NEWSQL LAHIR ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Dilema lama</div>
+        <h2>Pilih SQL yang konsisten, atau NoSQL yang bisa scale?</h2>
+      </div>
+      <p class="lead reveal">Sebelum NewSQL ada, tim engineering yang datanya membesar biasanya dihadapkan pada pilihan yang terasa seperti tawar-menawar: pertahankan database relasional (Postgres/MySQL) yang punya <strong>transaksi ACID &amp; SQL</strong> yang familiar, tapi mentok saat harus di-scale ke banyak mesin sekaligus — atau pindah ke NoSQL yang <strong>scale horizontal</strong>-nya gampang, tapi harus merelakan JOIN, transaksi lintas baris, dan kadang konsistensi kuat.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — buku kas toko vs waralaba ribuan cabang</div>
+        <p>Database relasional tradisional ibarat <strong>satu buku kas</strong> di satu toko: semua transaksi tercatat rapi, saldo selalu akurat, tidak mungkin dobel catat. Tapi begitu bisnismu membuka ribuan cabang di seluruh dunia, satu buku kas fisik jelas tidak sanggup. NoSQL ibarat <strong>tiap cabang mencatat sendiri</strong> — cepat dibuka di mana saja, tapi rekonsiliasi saldo antar cabang jadi urusan belakangan (<em>eventual consistency</em>). NewSQL ingin: ribuan cabang, tapi tetap <strong>satu kebenaran</strong> yang sama di semua tempat, kapan saja dicek.</p>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">// RDBMS tradisional (single-node)</h4>
+          <ul class="bad-l">
+            <li>Susah di-<em>shard</em> sendiri — biasanya butuh sharding manual di level aplikasi.</li>
+            <li>Satu master untuk tulis → jadi bottleneck &amp; titik gagal tunggal.</li>
+            <li>Scale vertikal (mesin makin besar) ada batasnya &amp; makin mahal.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// NoSQL klasik (Dynamo, Cassandra, dst)</h4>
+          <ul class="bad-l">
+            <li>Umumnya tanpa transaksi ACID lintas baris/partisi.</li>
+            <li>Konsistensi sering <em>eventual</em>, bukan kuat &amp; instan.</li>
+            <li>Tanpa SQL &amp; JOIN — banyak logika relasi pindah ke aplikasi.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 CONSENSUS & ACID TERDISTRIBUSI ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Consensus &amp; ACID terdistribusi</div>
+        <h2>Data dipecah ke banyak node, transaksi tetap ACID</h2>
+      </div>
+      <p class="lead reveal">NewSQL membagi tabel jadi potongan-potongan kecil (disebut <strong>range</strong> atau <strong>tablet</strong>) yang tersebar ke banyak node. Tiap range direplikasi ke beberapa node lain, dan replikanya sepakat lewat protokol <strong>consensus</strong> (Raft atau Paxos) sebelum sebuah tulisan dianggap "commit". Karena mayoritas replika harus setuju dulu, sistem tetap <strong>konsisten</strong> walau satu-dua node mati — dan karena data dipecah ke banyak range, sistem tetap bisa <strong>scale horizontal</strong> seperti NoSQL.</p>
+
+      <div class="quote reveal d1">
+        <p>“Mencapai kesepakatan di antara sekumpulan node yang bisa gagal kapan saja adalah salah satu masalah paling mendasar &amp; sulit dalam sistem terdistribusi — dan algoritma seperti Raft atau Paxos adalah cara untuk membuktikan bahwa kesepakatan itu benar secara matematis.”</p>
+        <cite>— parafrase dari Martin Kleppmann, <i>Designing Data-Intensive Applications</i> (Bab 9, pembahasan konsensus terdistribusi)</cite>
+      </div>
+
+      <p class="body reveal d1">Yang membuat NewSQL terasa "biasa saja" buat developer: dari sisi aplikasi kamu tetap menulis SQL standar. Berikut contoh yang jalan apa adanya di CockroachDB (dan konsepnya serupa di Spanner):</p>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">transfer_saldo.sql — transaksi lintas baris, lintas node</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="k">CREATE TABLE</span> accounts (
+  id      <span class="t">UUID</span> <span class="k">PRIMARY KEY</span> <span class="k">DEFAULT</span> gen_random_uuid(),
+  owner   <span class="t">STRING</span> <span class="k">NOT NULL</span>,
+  balance <span class="t">DECIMAL</span> <span class="k">NOT NULL</span> <span class="k">DEFAULT</span> <span class="n">0</span>
+);
+
+<span class="k">BEGIN</span>;
+<span class="k">UPDATE</span> accounts <span class="k">SET</span> balance = balance - <span class="n">100</span> <span class="k">WHERE</span> id = <span class="s">'a1'</span>;
+<span class="k">UPDATE</span> accounts <span class="k">SET</span> balance = balance + <span class="n">100</span> <span class="k">WHERE</span> id = <span class="s">'a2'</span>;
+<span class="k">COMMIT</span>;
+<span class="hl-good">-- atomic &amp; konsisten walau baris a1 & a2 hidup di range/node berbeda</span></pre>
+      </div>
+
+      <p class="body reveal d2">Di balik layar, saat <code>COMMIT</code> dijalankan, node koordinator memastikan semua range yang terlibat sudah setuju lewat consensus sebelum transaksi dianggap sukses. Kalau salah satu gagal sepakat, seluruh transaksi dibatalkan — persis semantik ACID yang kamu kenal dari database relasional biasa, hanya saja datanya boleh tersebar ke banyak mesin &amp; region.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 TRUETIME & RAFT ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep penting</span> · TrueTime vs Raft</div>
+        <h2>Dua cara berbeda mencapai kesepakatan urutan waktu</h2>
+      </div>
+      <p class="lead reveal">Salah satu masalah tersulit di database terdistribusi global: bagaimana memastikan <strong>urutan kejadian</strong> tetap benar walau jamnya tersebar di ribuan mesin yang jamnya sendiri-sendiri tidak pernah persis sinkron? Spanner &amp; CockroachDB menjawabnya dengan pendekatan yang berbeda.</p>
+
+      <div class="quote reveal d1">
+        <p>“Spanner memakai TrueTime — sebuah API waktu dengan interval ketidakpastian yang eksplisit — untuk mencapai konsistensi eksternal (external consistency) pada skala global, sesuatu yang sebelumnya dianggap mustahil untuk sistem terdistribusi seluas itu.”</p>
+        <cite>— parafrase dari Corbett et al. (Google), <i>Spanner: Google's Globally-Distributed Database</i> (OSDI 2012)</cite>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Dua pendekatan mencapai kesepakatan urutan</div>
+        <div class="erabox__row"><span class="erabox__lang">Spanner</span><code>TrueTime — jam atom + GPS, commit-wait sampai interval ketidakpastian lewat</code></div>
+        <div class="erabox__row"><span class="erabox__lang">CockroachDB /<br>YugabyteDB</span><code>Raft consensus + Hybrid Logical Clock (HLC), tanpa hardware jam khusus</code></div>
+        <p class="erabox__note">TrueTime butuh infrastruktur jam atom &amp; GPS di tiap datacenter Google — sesuatu yang praktis cuma dimiliki Google sendiri. Karena itu database open-source seperti CockroachDB &amp; YugabyteDB memilih <b>Raft</b> untuk replikasi &amp; konsensus per-range, dikombinasikan dengan <code>Hybrid Logical Clock</code> (campuran jam fisik &amp; counter logis) supaya tidak bergantung pada jam yang super presisi.</p>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Kenapa ini penting buat kamu</div>
+          <p>Kamu tidak perlu mengimplementasikan Raft atau TrueTime sendiri — itu urusan internal database-nya. Yang perlu kamu pahami: <strong>menjaga konsistensi kuat lintas node itu ada harganya</strong>, biasanya berupa <em>latency</em> tambahan (menunggu quorum replika sepakat, atau menunggu interval ketidakpastian TrueTime lewat) setiap kali kamu menulis data yang direplikasi lintas region.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Desain skema</div>
+        <h2>Desain skema untuk locality, bukan cuma normalisasi</h2>
+      </div>
+      <p class="lead reveal">Aturan desain skema di NewSQL sedikit beda dari RDBMS biasa, karena sekarang kamu juga harus mikirin <strong>di mana secara fisik</strong> data itu akan hidup &amp; siapa yang akan menulisnya bersamaan.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Desain primary key untuk locality.</b> Data yang sering diakses/ditulis bersama sebaiknya berada di range yang sama, supaya satu transaksi tidak perlu koordinasi lintas banyak node.</li>
+        <li><b>Hindari hot partition/hot range.</b> Jangan pakai kolom sequential (auto-increment) sebagai awalan primary key — semua tulisan baru akan menumpuk ke satu range/leader yang sama. Pakai UUID acak atau key dengan prefix ter-hash.</li>
+        <li><b>Manfaatkan geo-partitioning kalau butuh.</b> Kalau ada kebutuhan compliance data residency atau latency regional, taruh data dekat penggunanya (mis. fitur <code>REGIONAL BY ROW</code> di CockroachDB, atau geo-partitioning di Spanner/YugabyteDB).</li>
+        <li><b>Batasi jumlah range yang terlibat dalam satu transaksi.</b> Makin banyak range/node yang harus ikut sepakat lewat consensus, makin mahal &amp; makin lambat commit transaksi itu.</li>
+        <li><b>Pantau latency commit, bukan cuma CPU.</b> Bottleneck di NewSQL sering ada di round-trip jaringan &amp; consensus, bukan di komputasi lokal — jadi metrik yang relevan berbeda dari tuning database single-node biasa.</li>
+        <li><b>Uji failover node secara berkala.</b> Pastikan replika benar-benar bisa mengambil alih leadership dengan mulus saat node lain mati, sebelum insiden itu benar-benar terjadi di production.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Level belajar</div>
+        <h2>Belajar NewSQL bertahap, jangan loncat ke internals dulu</h2>
+      </div>
+      <p class="lead reveal">Kamu tidak perlu paham Raft dari hari pertama untuk mulai pakai NewSQL. Berikut peta belajar bertahap, dari sekadar "kenal" sampai bisa mendesain arsitektur multi-region-nya sendiri.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>NewSQL = SQL yang bisa nyebar</h4>
+          <p>Titik awal: sadar bahwa NewSQL tetap pakai SQL biasa yang kamu kenal — bedanya di bawah permukaan.</p>
+          <ul>
+            <li>Paham query SELECT/INSERT/UPDATE/JOIN tetap sama seperti Postgres/MySQL.</li>
+            <li>Sadar bedanya: data &amp; replikanya tersebar ke banyak node/mesin.</li>
+            <li>Coba jalankan CockroachDB single-node lokal, rasakan familiar-nya.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Kapan NewSQL worth kompleksitasnya</h4>
+          <p>Mulai mikir trade-off: NewSQL bukan pengganti default Postgres/MySQL untuk semua kasus.</p>
+          <ul>
+            <li>Paham NewSQL baru masuk akal saat butuh multi-region write dengan konsistensi kuat.</li>
+            <li>Sadar ada biaya latency dibanding database single-node biasa.</li>
+            <li>Mulai belajar desain skema untuk locality &amp; menghindari hot partition.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Konsensus terdistribusi &amp; latency trade-off geo-replicated</h4>
+          <p>Masuk ke internals: bagaimana sistem ini benar-benar mencapai kesepakatan di skala global.</p>
+          <ul>
+            <li>Pelajari Raft/Paxos — leader election &amp; log replication secara mendalam.</li>
+            <li>Pahami TrueTime &amp; konsep clock uncertainty di sistem terdistribusi.</li>
+            <li>Ukur &amp; tuning commit latency lintas region, evaluasi trade-off CAP/PACELC.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: konsistensi kuat & skala vs kompleksitas &amp; latency</h2>
+      </div>
+      <p class="lead reveal">NewSQL bukan "yang terbaik dari dua dunia" tanpa syarat — ia adalah <strong>kompromi baru</strong> dengan harganya sendiri. Kamu tetap membayar sesuatu untuk mendapatkan konsistensi kuat di skala terdistribusi.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Transaksi ACID &amp; SQL familiar, walau data tersebar.</li>
+            <li>Skala horizontal seperti NoSQL — tambah node, tambah kapasitas.</li>
+            <li>Ketersediaan tinggi otomatis lewat replikasi &amp; consensus.</li>
+            <li>Tak perlu sharding manual di level aplikasi.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Latency commit lebih tinggi — apalagi replikasi lintas region.</li>
+            <li>Kompleksitas operasional: cluster banyak node, tuning locality.</li>
+            <li>Butuh desain skema yang sadar-topologi (locality, hot partition).</li>
+            <li>Ekosistem tooling &amp; talent belum sematang RDBMS lama.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan realistis</div>
+          <p>Kalau aplikasimu masih single-region &amp; datanya masih muat di satu database besar, Postgres/MySQL ditambah read replica sering kali <strong>sudah cukup</strong> — jauh lebih sederhana dioperasikan daripada cluster NewSQL. NewSQL baru benar-benar terbayar saat kebutuhan skala &amp; distribusi geografisnya nyata, bukan sekadar antisipasi "kalau-kalau nanti besar".</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai NewSQL</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>kalau kamu butuh transaksi ACID yang konsisten kuat DAN skala/ketersediaan lintas region sekaligus, NewSQL masuk akal. Kalau salah satu dari dua syarat itu tidak ada, biasanya ada pilihan yang lebih sederhana.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai NewSQL saat…</h4>
+          <ul class="good-l">
+            <li>Butuh strong consistency lintas banyak node/region.</li>
+            <li>Skala tulis/baca sudah melampaui satu mesin RDBMS.</li>
+            <li>Butuh high availability tanpa downtime saat satu region mati.</li>
+            <li>Tetap ingin SQL &amp; transaksi ACID, bukan model NoSQL.</li>
+            <li>Ada tim yang siap menanggung kompleksitas operasional cluster.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, pilih yang lain saat…</h4>
+          <ul class="bad-l">
+            <li>Data masih muat nyaman di satu instance Postgres/MySQL.</li>
+            <li>Aplikasi single-region &amp; latency tambahan tidak sepadan.</li>
+            <li>Tim kecil tanpa kapasitas mengoperasikan cluster terdistribusi.</li>
+            <li>Kebutuhan sebenarnya cuma scaling baca → read replica cukup.</li>
+            <li>Konsistensi longgar sudah cukup → NoSQL lebih sederhana &amp; murah.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan ke sistemmu: <strong>"Apakah aku butuh SQL + ACID DAN skala/distribusi geografis, dua-duanya, di saat bersamaan?"</strong> Kalau ya, NewSQL layak dicoba. Kalau kamu cuma butuh salah satunya, database yang lebih sederhana — RDBMS klasik atau NoSQL — biasanya lebih murah untuk dioperasikan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Kapan tim memilih NewSQL di production</h2>
+      </div>
+      <p class="lead reveal">Beberapa skenario nyata (kualitatif — tanpa angka yang tidak bisa dipastikan) di mana kelas database NewSQL jadi pilihan yang masuk akal.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// asal-usul</div><h4>Google Ads / AdWords</h4><p><b>Kasus:</b> Spanner awalnya dibangun di Google untuk sistem periklanan yang butuh transaksi konsisten lintas datacenter global, menggantikan sharded MySQL yang makin sulit dikelola seiring skala. <b>Kenapa NewSQL:</b> data finansial butuh konsistensi kuat, tapi skalanya sudah melampaui satu datacenter. <b>Tool:</b> Google Spanner.</p></div>
+        <div class="card up"><div class="ic">// multi-region resilience</div><h4>Perusahaan yang butuh "selalu up"</h4><p><b>Kasus:</b> beberapa perusahaan skala global memilih CockroachDB karena butuh database yang tetap berjalan &amp; konsisten walau satu region mengalami gangguan, tanpa kehilangan semantik SQL/ACID. <b>Kenapa NewSQL:</b> replikasi lintas region otomatis dengan konsistensi kuat. <b>Tool:</b> CockroachDB.</p></div>
+        <div class="card up"><div class="ic">// eksplorasi skala besar</div><h4>Eksplorasi di perusahaan tech skala besar</h4><p><b>Kasus:</b> beberapa perusahaan teknologi skala besar seperti Netflix diketahui mengeksplorasi database terdistribusi kelas NewSQL untuk use case tertentu yang butuh strong consistency lintas region — meski sebagian besar beban kerja mereka historisnya didominasi NoSQL. <b>Kenapa NewSQL:</b> kasus spesifik yang butuh transaksi konsisten, bukan seluruh sistem.</p></div>
+        <div class="card up"><div class="ic">// on-demand / logistik</div><h4>Perusahaan logistik &amp; on-demand</h4><p><b>Kasus:</b> beberapa perusahaan di sektor logistik/on-demand seperti DoorDash dilaporkan mengeksplorasi database bergaya NewSQL untuk sebagian beban kerja yang butuh transaksi konsisten dengan skala tinggi &amp; ketersediaan lintas region. <b>Kenapa NewSQL:</b> transaksi pesanan/pembayaran perlu akurat walau trafik terdistribusi.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di semua kasus ini, polanya sama: butuh <strong>transaksi konsisten kuat</strong> (biasanya karena menyangkut uang/pesanan) DAN <strong>skala atau resilience lintas region</strong> secara bersamaan. Begitu salah satu dari dua kebutuhan itu tidak ada, tim biasanya kembali ke RDBMS klasik atau NoSQL yang jauh lebih sederhana dioperasikan.</p>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Karena detail arsitektur internal perusahaan-perusahaan di atas jarang dipublikasikan lengkap &amp; terus berubah, anggap contoh ini sebagai <b>pola kualitatif</b> — bukan klaim angka atau status adopsi yang presisi. Yang perlu kamu ambil adalah <b>alasan</b> di baliknya, bukan nama perusahaannya.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools &amp; ekosistem NewSQL</h2>
+      </div>
+      <p class="lead reveal">Kenali nama-nama besarnya dulu. Sebagai pemula, mulai dari CockroachDB atau YugabyteDB — keduanya open-source &amp; bisa dicoba di laptop sebelum berpikir soal cluster multi-region.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// pelopor, managed</div><h4>Google Spanner</h4><p>Database yang memulai kelas NewSQL. Fully-managed di Google Cloud, memakai TrueTime untuk konsistensi eksternal di skala global. Tidak open-source &amp; hanya tersedia via GCP.</p></div>
+        <div class="card up"><div class="ic">// open-source, populer</div><h4>CockroachDB</h4><p>Terinspirasi langsung dari paper Spanner, tapi open-source &amp; jalan di infrastruktur mana saja. Kompatibel dengan sebagian besar wire protocol PostgreSQL. Titik awal yang bagus untuk belajar.</p></div>
+        <div class="card up"><div class="ic">// kompatibel Postgres</div><h4>YugabyteDB</h4><p>Open-source, arsitektur mirip Spanner (layer penyimpanan berbasis DocDB + Raft), dengan API yang kompatibel dengan PostgreSQL secara lebih dalam.</p></div>
+        <div class="card up"><div class="ic">// kompatibel MySQL</div><h4>TiDB</h4><p>NewSQL open-source dari PingCAP, kompatibel dengan protokol MySQL. Populer di ekosistem yang sudah terbiasa dengan tooling MySQL tapi butuh skala terdistribusi.</p></div>
+        <div class="card up"><div class="ic">// hibrida / adjacent</div><h4>Vitess / PlanetScale</h4><p>Bukan NewSQL "murni", tapi layer sharding di atas MySQL yang memberi sebagian manfaat serupa (scale horizontal) tanpa mengganti mesin databasenya. Pilihan hibrida saat migrasi penuh ke NewSQL terasa terlalu jauh.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Bingung mulai dari mana? Jalankan CockroachDB atau YugabyteDB secara <strong>single-node lokal</strong> dulu — query-nya nyaris identik dengan Postgres. Baru pikirkan cluster multi-node/multi-region setelah kamu benar-benar paham kapan butuhnya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>SQL &amp; ACID, tapi siap dibawa ke skala global</h2>
+      </div>
+      <p class="lead reveal">NewSQL lahir dari keinginan untuk berhenti memilih antara "konsisten" dan "bisa scale". Ia bersinar saat kamu betul-betul butuh keduanya sekaligus, dan terasa berlebihan saat salah satunya sebenarnya tidak kamu perlukan.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Dilema lama</b> — RDBMS konsisten tapi susah scale, NoSQL scale tapi longgar konsistensi.</li>
+          <li><b>Consensus (Raft/Paxos)</b> — cara mayoritas node sepakat sebelum tulisan dianggap commit.</li>
+          <li><b>TrueTime &amp; HLC</b> — dua cara berbeda mengurutkan kejadian lintas mesin yang jamnya tak sinkron.</li>
+          <li><b>Desain untuk locality</b> — data yang diakses bersama, taruh di range yang sama; hindari hot partition.</li>
+          <li><b>Ada harganya</b> — latency commit lebih tinggi &amp; kompleksitas operasional yang nyata.</li>
+          <li><b>Pakai saat butuh dua-duanya</b> — konsistensi kuat DAN skala/distribusi geografis sekaligus.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya: <strong>"Apakah aku butuh transaksi ACID yang konsisten kuat, DAN skala atau resilience lintas region, di saat bersamaan?"</strong> Kalau ya, NewSQL memberimu keduanya dengan harga kompleksitas operasional &amp; latency yang jujur. Kalau kamu cuma butuh salah satu, RDBMS klasik atau NoSQL biasa kemungkinan besar lebih sederhana &amp; lebih murah untuk dioperasikan.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Konsensus di antara node yang bisa gagal kapan saja — itulah yang dibuktikan benar oleh Raft &amp; Paxos."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>NewSQL</b> · Spanner, CockroachDB, YugabyteDB — kenapa, konsep, trade-off, kapan, &amp; tools-nya · untuk pemula · rujukan: paper Spanner (Corbett et al., OSDI 2012) &amp; DDIA (Kleppmann) · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../index.html">← kembali ke Database</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

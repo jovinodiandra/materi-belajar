@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time-Series Database — Data yang Selalu Menunjuk Maju</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home {
+    color: var(--muted); text-decoration: none; letter-spacing: .02em;
+    padding: 3px 9px; border: 1px solid var(--line); border-radius: 6px;
+    transition: color .18s, border-color .18s;
+    white-space: nowrap;
+  }
+  .topbar__home:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- steps ---------- */
+  .steps { max-width: 74ch; margin-top: 22px; counter-reset: stepnum; }
+  .steps li {
+    list-style: none; counter-increment: stepnum;
+    position: relative; padding: 12px 0 12px 46px; margin-bottom: 4px;
+    font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft);
+  }
+  .steps li::before {
+    content: counter(stepnum, decimal-leading-zero);
+    position: absolute; left: 0; top: 10px;
+    font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--cyan);
+    border: 1px solid var(--cyan-dim); border-radius: 6px;
+    width: 28px; height: 22px; display: flex; align-items: center; justify-content: center;
+    background: rgba(69,212,222,.08);
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Database</a>
+  <div class="topbar__file">docs/learning/database/time-series/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa TSDB lahir</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Model data time-series</a>
+    <a href="#c03"><span class="yr">03</span> Kompresi &amp; downsampling</a>
+
+    <div class="rail__part">III · Praktik &amp; level</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">🎓</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Untung &amp; harga</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">V · Keputusan &amp; praktik</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — data yang selalu bertambah, hampir tak pernah diubah</div>
+      <h1 class="reveal d1">Data yang <span class="accent">selalu menunjuk maju</span>, jarang menoleh ke belakang.</h1>
+      <p class="sub reveal d2">
+        Metrik CPU server, suhu dari sensor IoT, harga saham tiap detik — semuanya punya pola yang sama:
+        ditulis <b>jutaan kali</b>, hampir selalu <b>append</b> (data baru, bukan update data lama), dan
+        dibaca dengan pertanyaan seperti <b>"bagaimana tren 1 jam terakhir?"</b>. Database <b>time-series</b>
+        dirancang khusus untuk pola ini. Deck ini buat pemula: dari <b>kenapa</b> ia lahir, <b>model datanya</b>,
+        <b>kompresi &amp; retention</b>, sampai <b>kapan harus dipakai di production</b> — diselingi kalimat
+        dari buku rujukan &amp; desain sistem time-series modern.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Volume tulis meledak</b> <span>— relasional biasa kewalahan menampung jutaan baris/detik</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Timestamp + tag + value</b> <span>— model data yang dioptimalkan untuk rentang waktu</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Tulis &amp; query rentang waktu cepat</b> <span>— plus kompresi kolumnar yang efisien</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bukan buat data relasional umum</b> <span>— model query terbatas, tak jago JOIN</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Saat data = deret waktu</b> <span>— monitoring, IoT, observability, harga saham</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 KENAPA TSDB LAHIR ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="why reveal">
+        <div class="tag">◆ Buat apa ini? Kenapa pakai Time Series Database?</div>
+        <p><b>Given</b> — tim monitoring nyimpen metrik CPU, memori, dan network dari 2.000 server ke tabel relasional biasa, satu baris per <code>(server_id, timestamp, metric, value)</code> tiap 5 detik.</p>
+        <p><b>When</b> — volume tulis tembus jutaan baris per hari, lalu ada yang minta dashboard <em>"tren CPU 30 hari terakhir, agregasi per menit"</em> untuk ribuan server sekaligus.</p>
+        <p><b>Then</b> — index B-tree terus membengkak dan direorganisasi tiap insert, tulis makin lambat, dan query rentang waktu jatuh jadi <em>full table scan</em> — dashboard yang seharusnya real-time malah lag bermenit-menit, sementara disk cepat penuh karena tiap angka disimpan mentah tanpa kompresi.</p>
+        <p>→ makanya kita pakai <b>Time Series Database</b>.</p>
+      </div>
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Kenapa time-series database lahir</div>
+        <h2>Relational biasa kewalahan menampung deret waktu</h2>
+      </div>
+      <p class="lead reveal">Bayangkan satu server yang melaporkan CPU, memori, dan network tiap detik. Kalikan dengan ribuan server, ribuan sensor IoT, atau tiap transaksi harga saham — datanya bisa <strong>jutaan baris per detik</strong>, dan hampir semuanya cuma ditulis sekali lalu dibaca ulang berdasarkan rentang waktu. Ia <strong>nyaris tidak pernah di-update</strong>.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — grafik detak jantung di monitor EKG</div>
+        <p>Monitor detak jantung di rumah sakit menggambar garis yang terus <em>bergerak maju</em> — tiap detak baru ditambahkan di ujung kanan, detak lama tidak pernah ditulis ulang, dan dokter membacanya sebagai <em>tren</em>, bukan satu angka lepas. Menyimpan data ini di tabel relasional biasa ibarat mencoba mencatat tiap detak sebagai baris terpisah dengan index B-tree yang harus terus di-reorganisasi — cepat penuh, cepat lambat. Time-series database dirancang supaya menulis garis yang terus memanjang itu <strong>murah</strong>, dan membaca potongan rentangnya <strong>cepat</strong>.</p>
+      </div>
+
+      <p class="body reveal d2">Tiga ciri beban kerja ini yang bikin database umum kewalahan: <code>write-heavy</code> (tulisan jauh lebih sering dari baca-per-baris), <code>append-only</code> (data baru selalu punya timestamp lebih besar dari sebelumnya), dan <code>query-by-range</code> (hampir semua query berbentuk "dari waktu A sampai B"). Index relasional generik dioptimalkan untuk pola akses acak — bukan pola berurutan seperti ini.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 MODEL DATA ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Model data time-series</div>
+        <h2>Timestamp, tag, dan value — tiga bagian intinya</h2>
+      </div>
+      <p class="lead reveal">Setiap titik data (<em>point</em>) di time-series database punya tiga bagian: <strong>timestamp</strong> (kapan), <strong>tags/labels</strong> (dimensi untuk memfilter, misalnya nama server atau region), dan <strong>value/field</strong> (angka yang diukur, misalnya CPU usage).</p>
+
+      <div class="quote reveal d1">
+        <p>Data time-series idealnya diberi label untuk dimensi yang dipakai memfilter — misalnya nama server atau region — bukan disimpan sebagai kolom bebas seperti tabel relasional biasa, karena pola query time-series selalu berbasis rentang waktu ditambah filter dimensi.</p>
+        <cite>— gagasan inti desain Prometheus &amp; InfluxDB (dokumentasi &amp; desain sistem time-series modern)</cite>
+      </div>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Anatomi satu titik data (point)</div>
+        <div class="erabox__row"><span class="erabox__lang">Waktu</span><code>timestamp  →  2026-07-16T09:00:05Z</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Tag</span><code>server_id="web-03", region="jakarta"</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Field</span><code>cpu_usage=72.4, mem_usage=61.0</code></div>
+        <p class="erabox__note"><b>Tag</b> di-index &amp; dipakai untuk <code>WHERE</code> / <code>GROUP BY</code> — jaga jumlah kombinasi tag unik (cardinality) tetap terkendali. <b>Field</b> adalah angkanya sendiri, biasanya tidak di-index satu per satu.</p>
+      </div>
+
+      <div class="code-card good reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">TimescaleDB — hypertable &amp; query rentang waktu</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- metrics adalah "hypertable": tabel Postgres biasa yang dipartisi otomatis per waktu</span>
+<span class="k">CREATE TABLE</span> metrics (
+  time        <span class="t">TIMESTAMPTZ</span>       <span class="k">NOT NULL</span>,
+  server_id   <span class="t">TEXT</span>              <span class="k">NOT NULL</span>,   <span class="c">-- tag</span>
+  region      <span class="t">TEXT</span>              <span class="k">NOT NULL</span>,   <span class="c">-- tag</span>
+  cpu_usage   <span class="t">DOUBLE PRECISION</span>              <span class="c">-- field</span>
+);
+<span class="k">SELECT</span> <span class="f">create_hypertable</span>(<span class="s">'metrics'</span>, <span class="s">'time'</span>);
+
+<span class="c">-- rata-rata CPU per 5 menit, 1 hari terakhir, per server</span>
+<span class="k">SELECT</span> <span class="f">time_bucket</span>(<span class="s">'5 minutes'</span>, time) <span class="k">AS</span> bucket,
+       server_id,
+       <span class="f">avg</span>(cpu_usage) <span class="k">AS</span> avg_cpu
+<span class="k">FROM</span> metrics
+<span class="k">WHERE</span> time > now() - <span class="k">interval</span> <span class="s">'1 day'</span>
+  <span class="k">AND</span> region = <span class="s">'jakarta'</span>
+<span class="k">GROUP BY</span> bucket, server_id
+<span class="k">ORDER BY</span> bucket;</pre>
+      </div>
+
+      <p class="body reveal d3">Bandingkan dengan gaya InfluxQL (bahasa query InfluxDB) untuk kebutuhan serupa — <code>WHERE</code> pada tag, <code>GROUP BY time()</code> untuk downsampling on-the-fly:</p>
+      <div class="code-card good reveal d3">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">InfluxQL — rata-rata per interval</span><span class="lang c">InfluxQL</span></div>
+<pre class="code"><span class="k">SELECT</span> <span class="f">mean</span>(<span class="s">"cpu_usage"</span>)
+<span class="k">FROM</span> <span class="s">"metrics"</span>
+<span class="k">WHERE</span> <span class="s">"region"</span> = <span class="s">'jakarta'</span> <span class="k">AND</span> time > now() - <span class="n">1</span>h
+<span class="k">GROUP BY</span> time(<span class="n">5</span>m), <span class="s">"server_id"</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 KOMPRESI & DOWNSAMPLING ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep penting</span> · Kompresi &amp; downsampling</div>
+        <h2>Data lama tak perlu resolusi setinggi data baru</h2>
+      </div>
+      <p class="lead reveal">Menyimpan tiap detik data mentah selamanya cepat membengkak. Time-series database mengandalkan dua trik: <strong>kompresi kolumnar</strong> (nilai-nilai berdekatan waktu cenderung mirip, jadi mudah dipadatkan) dan <strong>downsampling + retention policy</strong> (data lama disimpan dalam resolusi lebih rendah, lalu akhirnya dihapus).</p>
+
+      <div class="quote reveal d1">
+        <p>Data yang bersifat mostly-append (jarang di-update) dan sering di-query berdasarkan rentang tertentu — seperti data time-series — sangat diuntungkan oleh penyimpanan kolumnar dan kompresi, karena nilai-nilai yang berdekatan dalam waktu cenderung mirip dan mudah dikompres.</p>
+        <cite>— parafrase dari Martin Kleppmann, <i>Designing Data-Intensive Applications</i> (Bab 3, storage engine kolumnar)</cite>
+      </div>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">simpan semua raw selamanya</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- tabel biasa, tanpa partisi waktu, tanpa retention</span>
+<span class="k">CREATE TABLE</span> metrics_raw (
+  time      <span class="t">TIMESTAMPTZ</span>,
+  server_id <span class="t">TEXT</span>,
+  cpu_usage <span class="t">DOUBLE PRECISION</span>
+);
+<span class="c">-- data 3 tahun lalu tetap tersimpan resolusi per detik</span>
+<span class="hl-bad">-- tabel terus membesar, query "1 tahun terakhir" scan miliaran baris</span>
+<span class="hl-bad">-- storage & biaya query naik terus, tak pernah dibersihkan</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">downsample + retention policy</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- kompres chunk yang lebih tua dari 7 hari</span>
+<span class="k">SELECT</span> <span class="f">add_compression_policy</span>(<span class="s">'metrics'</span>, <span class="k">INTERVAL</span> <span class="s">'7 days'</span>);
+
+<span class="c">-- agregat kontinu: ringkas jadi rata-rata per 5 menit</span>
+<span class="k">CREATE MATERIALIZED VIEW</span> metrics_5m
+<span class="k">WITH</span> (timescaledb.continuous) <span class="k">AS</span>
+<span class="k">SELECT</span> <span class="f">time_bucket</span>(<span class="s">'5 minutes'</span>, time) <span class="k">AS</span> bucket,
+       server_id, <span class="f">avg</span>(cpu_usage) <span class="k">AS</span> avg_cpu
+<span class="k">FROM</span> metrics <span class="k">GROUP BY</span> bucket, server_id;
+
+<span class="c">-- buang data mentah > 90 hari, sisakan agregatnya saja</span>
+<span class="hl-good">SELECT add_retention_policy('metrics', INTERVAL '90 days');</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Hasilnya: query "tren 1 tahun terakhir" cukup baca <code>metrics_5m</code> yang jauh lebih kecil, bukan miliaran baris mentah. Kamu tetap simpan detail penuh untuk data <em>baru</em> (butuh debugging presisi tinggi), tapi data <em>lama</em> cukup dalam bentuk ringkasan.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Supaya tidak menyesal nanti</div>
+        <h2>Best practice memakai time-series database</h2>
+      </div>
+      <p class="lead reveal">Sebagian besar masalah production di TSDB berasal dari hal yang sama: <strong>cardinality tag yang meledak</strong> dan <strong>retention yang tak pernah diatur</strong>. Ikuti poin-poin ini sejak awal.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Atur retention policy sejak hari pertama.</b> Tentukan berapa lama data mentah relevan (mis. <code>90 days</code>) sebelum di-downsample atau dihapus — jangan tunggu disk penuh baru mikir.</li>
+        <li><b>Pakai tag untuk filter, bukan untuk nilai bebas.</b> ID user unik atau UUID request sebaiknya jadi <em>field</em>, bukan <em>tag</em> — tiap kombinasi tag baru menambah <em>series</em> baru dan bisa meledakkan cardinality.</li>
+        <li><b>Downsample data lama secara terjadwal.</b> Simpan resolusi tinggi (per detik) hanya untuk beberapa hari/minggu terakhir; sisanya cukup agregat per menit/jam.</li>
+        <li><b>Batch penulisan, jangan satu-satu.</b> Kirim banyak point sekaligus per request tulis — jauh lebih efisien daripada satu HTTP call per metrik.</li>
+        <li><b>Pantau cardinality secara aktif.</b> Jumlah series unik (kombinasi tag) adalah metrik kesehatan tersendiri — lonjakan tiba-tiba biasanya tanda ada tag yang salah desain.</li>
+        <li><b>Pisahkan metrik dari log/trace mentah.</b> TSDB jago untuk angka teragregasi; log teks panjang atau trace detail lebih cocok di sistem lain (mis. object storage / search engine).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">🎓 Tier belajar · Dari nulis metrik sampai skala jutaan point/detik</div>
+        <h2>Jenjang belajar time-series database</h2>
+      </div>
+      <p class="lead reveal">Tidak perlu langsung paham semuanya. Berikut jenjang wajar dari pemula sampai level yang menangani beban production skala besar.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Tulis &amp; query metrik dasar</h4>
+          <p>Fokus memahami bentuk data timestamp + tag + value, dan bisa menulis query rentang waktu sederhana.</p>
+          <ul>
+            <li>Insert point ke InfluxDB/TimescaleDB via client library</li>
+            <li>Query "nilai 1 jam terakhir" dengan filter tag</li>
+            <li>Paham beda tag vs field</li>
+            <li>Coba dashboard sederhana di Grafana</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Desain retention &amp; downsampling nyata</h4>
+          <p>Bisa merancang skema tag yang aman, retention policy, dan continuous aggregate untuk dashboard monitoring produksi.</p>
+          <ul>
+            <li>Rancang retention policy multi-tier (raw → 5m → 1h)</li>
+            <li>Setup continuous aggregate / rollup job</li>
+            <li>Hindari cardinality explosion saat desain tag</li>
+            <li>Integrasi Prometheus + alerting rules</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Skala jutaan point/detik</h4>
+          <p>Menangani beban tulis masif, cardinality tinggi, dan optimasi kompresi kolumnar di level storage engine.</p>
+          <ul>
+            <li>Sharding &amp; partisi hypertable lintas node</li>
+            <li>Tuning kompresi kolumnar &amp; chunk interval</li>
+            <li>Kelola cardinality jutaan series unik</li>
+            <li>Desain federasi/remote-write antar cluster TSDB</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: yang kamu dapat & yang kamu korbankan</h2>
+      </div>
+      <p class="lead reveal">Time-series database bukan pengganti database relasional — ia <strong>spesialis</strong> untuk satu pola beban kerja tertentu.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Tulis &amp; query rentang waktu sangat cepat.</li>
+            <li>Kompresi kolumnar hemat storage untuk data mirip-mirip.</li>
+            <li>Downsampling &amp; retention bawaan, bukan tempelan.</li>
+            <li>Skala tulis tinggi untuk beban <code>append-only</code>.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Bukan buat data relasional umum (users, orders, dll).</li>
+            <li>Model query terbatas — JOIN kompleks bukan kekuatannya.</li>
+            <li>Cardinality tag tinggi bisa merusak performa.</li>
+            <li>Update/delete baris individual mahal &amp; jarang didukung baik.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan</div>
+          <p>Batas antar kategori database makin kabur — TimescaleDB adalah ekstensi Postgres, jadi kamu tetap bisa <code>JOIN</code> tabel relasional biasa dengan hypertable-nya. Tapi inti kekuatannya tetap sama: beban tulis <em>append-only</em> berbasis waktu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai time-series database</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>kalau data kamu selalu punya timestamp, hampir tak pernah diubah, dan selalu di-query berdasarkan rentang waktu — pakai TSDB. Kalau butuh relasi kompleks &amp; update sering — pakai relasional.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai TSDB saat…</h4>
+          <ul class="good-l">
+            <li>Metrik server, aplikasi, atau infrastruktur.</li>
+            <li>Data sensor IoT yang mengalir terus-menerus.</li>
+            <li>Harga saham / data finansial berbasis tick.</li>
+            <li>Query selalu berbentuk "dari waktu A ke B".</li>
+            <li>Volume tulis sangat tinggi &amp; append-only.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, pilih lain saat…</h4>
+          <ul class="bad-l">
+            <li>Data punya banyak relasi many-to-many antar entitas.</li>
+            <li>Baris sering di-update setelah ditulis.</li>
+            <li>Butuh transaksi kompleks lintas banyak tabel.</li>
+            <li>Data teks panjang / dokumen (bukan angka berdimensi waktu).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Jangan paksa data non-time-series masuk TSDB hanya karena "sedang tren observability". Kalau kebutuhanmu adalah menyimpan profil user atau relasi pesanan-item, itu pekerjaan relasional/document — TSDB tidak akan menyelamatkanmu di sana.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Time-series database di production</h2>
+      </div>
+      <p class="lead reveal">Beberapa contoh nyata di mana pola time-series jadi fondasi sistem berskala besar.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// cloud-native</div><h4>Prometheus di dunia Kubernetes</h4><p>Prometheus jadi standar de-facto untuk monitoring di ekosistem Kubernetes &amp; cloud-native — hampir setiap tooling observability modern punya integrasi dengannya karena model metrik berbasis time-series-nya cocok dengan sifat container yang dinamis &amp; berumur pendek.</p></div>
+        <div class="card up"><div class="ic">// IoT / otomotif</div><h4>Telemetri kendaraan skala besar</h4><p>Perusahaan otomotif &amp; IoT seperti Tesla dikenal mengumpulkan data telemetri kendaraan (posisi, baterai, sensor) dalam skala time-series yang masif — pola tulis konstan dari banyak perangkat, dianalisis berdasarkan rentang waktu perjalanan.</p></div>
+        <div class="card up"><div class="ic">// observability</div><h4>Datadog &amp; Grafana</h4><p>Platform observability modern seperti Datadog dan ekosistem Grafana dibangun di atas backend time-series untuk menyimpan &amp; memvisualisasikan metrik, karena beban kerjanya persis: tulis terus-menerus, query berdasarkan rentang waktu.</p></div>
+        <div class="card up"><div class="ic">// finansial</div><h4>Data pasar &amp; harga tick</h4><p>Sistem trading &amp; analitik pasar finansial menyimpan data harga berbasis tick (tiap perubahan harga = satu titik waktu) — pola akses "lihat pergerakan harga dalam rentang X" sangat pas dengan model time-series.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di semua kasus di atas: data <strong>selalu bertambah</strong>, jarang di-update, dan pertanyaannya <strong>selalu soal rentang waktu &amp; tren</strong> — bukan relasi antar entitas. Begitu kebutuhan bergeser ke data relasional biasa (akun user, transaksi keuangan berelasi), tim biasanya menaruh itu di database lain di sampingnya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools time-series database</h2>
+      </div>
+      <p class="lead reveal">Cukup kenali nama populernya &amp; kapan kira-kira dipakai. Sebagai pemula, mulai dari Prometheus (monitoring) atau TimescaleDB (kalau sudah pakai Postgres).</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// purpose-built</div><h4>InfluxDB</h4><p>Time-series database native, dirancang dari nol untuk metrik &amp; event. Punya bahasa query sendiri (InfluxQL/Flux), populer untuk IoT &amp; monitoring custom.</p></div>
+        <div class="card up"><div class="ic">// ekstensi Postgres</div><h4>TimescaleDB</h4><p>Ekstensi di atas PostgreSQL — kamu tetap dapat SQL penuh &amp; relasi, ditambah hypertable, kompresi, dan continuous aggregate. Pilihan aman kalau tim sudah nyaman dengan Postgres.</p></div>
+        <div class="card up"><div class="ic">// monitoring standar</div><h4>Prometheus</h4><p>Fokus pada metrik &amp; alerting, model pull-based, bahasa query PromQL. Standar de-facto monitoring di dunia Kubernetes/cloud-native.</p></div>
+        <div class="card up"><div class="ic">// analitik skala besar</div><h4>Apache Druid</h4><p>Time-series &amp; analitik kolumnar untuk skala sangat besar — sering dipakai untuk dashboard analitik real-time dengan volume event tinggi.</p></div>
+        <div class="card up"><div class="ic">// visualisasi</div><h4>Grafana</h4><p>Bukan database, tapi pendamping wajib — dashboard visualisasi yang bisa menyambung ke Prometheus, InfluxDB, TimescaleDB, dan lainnya sekaligus.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Bingung memilih? Kalau tim sudah pakai Postgres, coba <strong>TimescaleDB</strong> dulu — tak perlu belajar bahasa query baru. Kalau fokusnya murni monitoring infrastruktur/Kubernetes, <strong>Prometheus + Grafana</strong> adalah kombinasi paling umum dipakai.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Rentang waktu adalah pertanyaannya, TSDB jawabannya</h2>
+      </div>
+      <p class="lead reveal">Time-series database lahir dari beban kerja yang sangat spesifik: data yang terus bertambah, jarang diubah, dan selalu ditanya lewat rentang waktu. Ia bersinar di sana, dan tersandung saat dipaksa jadi database serba guna.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Append-only, bukan update-heavy</b> — metrik, sensor, harga, ditulis maju terus.</li>
+          <li><b>Timestamp + tag + value</b> — tag untuk filter, field untuk angkanya.</li>
+          <li><b>Kompresi kolumnar</b> — data berdekatan waktu mudah dipadatkan.</li>
+          <li><b>Downsampling &amp; retention</b> — data lama cukup ringkasannya, bukan mentahnya.</li>
+          <li><b>Jaga cardinality tag</b> — jangan taruh nilai bebas/unik sebagai tag.</li>
+          <li><b>Pilih dari pola bebannya</b> — bukan karena "observability lagi tren".</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya: <strong>"Apakah data ini selalu punya timestamp, hampir tak pernah diubah setelah ditulis, dan selalu ditanya lewat rentang waktu?"</strong> Kalau ya, time-series database akan memberimu kecepatan tulis &amp; query yang jauh lebih baik daripada memaksakannya ke tabel relasional biasa. Kalau tidak, database lain akan lebih pas.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Nilai yang berdekatan dalam waktu, cenderung mirip — dan mudah dikompres."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Time-Series Database</b> · Kenapa, model data, kompresi, tier belajar, trade-off, kapan, &amp; tools-nya · untuk pemula · rujukan: DDIA (Kleppmann) &amp; desain Prometheus/InfluxDB · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · kembali ke <a href="../index.html">← Database</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

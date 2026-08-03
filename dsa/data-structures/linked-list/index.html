@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linked List — Data yang Saling Menunjuk</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home {
+    color: var(--muted); text-decoration: none; white-space: nowrap; flex: none;
+    border-right: 1px solid var(--line); padding-right: 14px; transition: color .18s;
+  }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- steps ---------- */
+  .steps { max-width: 78ch; margin: 24px 0 6px; counter-reset: step; }
+  .steps li {
+    list-style: none; position: relative; padding: 14px 0 14px 46px;
+    border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    counter-increment: step; content: counter(step, decimal-leading-zero);
+    position: absolute; left: 0; top: 12px; font-family: var(--mono); font-size: 11.5px;
+    color: var(--cyan); border: 1px solid var(--cyan-dim); border-radius: 6px;
+    width: 28px; height: 22px; display: flex; align-items: center; justify-content: center;
+    background: rgba(69,212,222,.08);
+  }
+  .steps li b { color: var(--ink-strong); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); } .tier-block.middle { border-color: rgba(245,177,76,.35); } .tier-block.advance { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); } .tier-block.middle .tier-badge { color:#f5b14c; background:rgba(245,177,76,.1); } .tier-block.advance .tier-badge { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; } .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; } .tier-block ul { list-style:none; } .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; } .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../../index.html">← Data Structures &amp; Algorithms</a>
+  <div class="topbar__file">docs/learning/dsa/data-structures/linked-list/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Masalah array</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Singly linked list</a>
+    <a href="#c03"><span class="yr">03</span> Doubly linked list</a>
+
+    <div class="rail__part">III · Praktik &amp; level</div>
+    <a href="#c04"><span class="yr">◆</span> Best practice</a>
+    <a href="#c05"><span class="yr">◆</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Keputusan</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">V · Dunia nyata</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools &amp; referensi</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Data Structures &amp; Algorithms — saat array terlalu kaku untuk disisipi</div>
+      <h1 class="reveal d1">Data yang saling <span class="accent">menunjuk</span>, bukan berjajar dalam larik.</h1>
+      <p class="sub reveal d2">
+        Array itu enak diakses langsung lewat index, tapi kaku saat kamu perlu sering menyisip atau menghapus di
+        tengah — semua elemen setelahnya harus digeser. <b>Linked list</b> menyelesaikannya dengan cara berbeda:
+        tiap elemen jadi <b>node</b> mandiri yang menyimpan alamat node berikutnya. Deck ini membahas dari
+        <b>kenapa</b> ia lahir, <b>singly vs doubly</b> linked list, <b>trade-off</b>-nya, sampai <b>studi kasus
+        production</b> seperti LRU cache — diselingi kalimat dari buku rujukan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Array kaku</b> <span>— insert/delete di tengah = geser semua elemen, O(n)</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Node saling menunjuk</b> <span>— tiap elemen simpan alamat elemen berikutnya</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Insert/delete O(1)</b> <span>— di posisi mana pun yang sudah diketahui pointer-nya</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Akses O(n)</b> <span>— tak ada index langsung, harus menyusuri dari awal</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Saat sering sisip/hapus</b> <span>— stack, queue, LRU cache, undo history</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="why reveal">
+      <div class="tag">◆ Buat apa ini? Kenapa pakai ini?</div>
+      <p><strong>Given</strong> — kamu simpan data pakai array, dan fiturmu sering menyisip atau menghapus elemen di tengah, bukan cuma membaca lewat index.</p>
+      <p><strong>When</strong> — daftar itu tumbuh (misalnya antrian task, riwayat undo, atau cache), dan tiap insert/delete di tengah harus menggeser semua elemen setelahnya, plus array kadang perlu dialokasikan ulang saat kapasitasnya penuh.</p>
+      <p><strong>Then</strong> — tanpa struktur node yang saling menunjuk, tiap operasi sisip/hapus tetap O(n): makin banyak data, makin lambat, dan kode jadi sibuk menggeser memori alih-alih fokus pada logika.</p>
+      <p>→ makanya kita pakai <strong>linked list</strong> — cukup sambung-ulang pointer ke node tetangga, tanpa menggeser elemen lain sama sekali.</p>
+    </div>
+  </div>
+
+  <!-- ============ 01 KENAPA LINKED LIST ADA ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Array yang kaku</div>
+        <h2>Array cepat diakses, tapi mahal disisipi</h2>
+      </div>
+      <p class="lead reveal">Array menyimpan elemen berurutan di memori sehingga <code>array[i]</code> bisa langsung dihitung alamatnya — akses O(1). Tapi begitu kamu ingin <strong>menyisip atau menghapus di tengah</strong>, seluruh elemen setelah posisi itu harus digeser satu-satu. Di banyak bahasa, ukuran array juga harus <strong>diketahui atau dialokasikan ulang</strong> saat penuh.</p>
+
+      <div class="code-card bad reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">array — sisip di tengah = geser semua elemen</span><span class="lang">Java</span></div>
+<pre class="code"><span class="c">// sisipkan 99 di index 2, array penuh berisi [10,20,30,40,50]</span>
+<span class="t">int</span>[] arr = { <span class="n">10</span>, <span class="n">20</span>, <span class="n">30</span>, <span class="n">40</span>, <span class="n">50</span> };
+<span class="k">for</span> (<span class="t">int</span> i = arr.length - <span class="n">1</span>; i > <span class="n">2</span>; i--) {
+    arr[i] = arr[i - <span class="n">1</span>];      <span class="c">// geser satu-satu ke kanan</span>
+}
+arr[<span class="n">2</span>] = <span class="n">99</span>;
+<span class="hl-bad">// -- O(n): elemen ke-3 sampai terakhir semua ikut bergerak</span></pre>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — gerbong kereta yang saling terhubung</div>
+        <p>Array itu seperti <em>bangku bioskop</em> — nomor kursi sudah dicetak berurutan, mudah dicari, tapi kalau mau menambah satu kursi di tengah baris, semua orang di kanan harus geser. Linked list itu seperti <strong>gerbong kereta</strong>: tiap gerbong hanya perlu tahu <code>gerbong berikutnya</code>. Mau menyisip satu gerbong baru? Cukup putuskan satu sambungan &amp; pasang ulang dua kait — gerbong lain tidak perlu bergeser sama sekali.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 SINGLY LINKED LIST ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Struktur node</div>
+        <h2>Node: data + pointer ke next</h2>
+      </div>
+      <p class="lead reveal">Unit paling dasar sebuah linked list adalah <strong>node</strong>: sebuah "kotak" yang menyimpan data, plus satu referensi (<code>next</code>) ke node berikutnya. List itu sendiri hanya perlu menyimpan satu pointer: <code>head</code>, yang menunjuk node pertama. Ini disebut <strong>singly linked list</strong> — rantainya hanya bisa disusuri maju.</p>
+
+      <div class="quote reveal d1">
+        <p>"Sebuah linked list memungkinkan operasi <span style="font-style:normal">INSERT</span> dan <span style="font-style:normal">DELETE</span> dilakukan dalam waktu O(1) di posisi mana pun yang pointer-nya sudah diketahui — sebagai gantinya, ia kehilangan kemampuan akses acak O(1) yang dimiliki array."</p>
+        <cite>— parafrase dari Thomas H. Cormen dkk., <i>Introduction to Algorithms</i> (CLRS), bab struktur data dasar</cite>
+      </div>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">SinglyLinkedList.java — node, insert di head, traversal</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">Node</span><T> {
+    T data;
+    Node<T> next;
+
+    Node(T data) {
+        <span class="k">this</span>.data = data;
+        <span class="k">this</span>.next = <span class="k">null</span>;
+    }
+}
+
+<span class="k">class</span> <span class="t">SinglyLinkedList</span><T> {
+    <span class="k">private</span> Node<T> head;
+
+    <span class="c">// insert di head — O(1), tak peduli sepanjang apa list-nya</span>
+    <span class="k">public</span> <span class="k">void</span> <span class="f">insertAtHead</span>(T data) {
+        Node<T> newNode = <span class="k">new</span> Node<>(data);
+        newNode.next = head;
+        head = newNode;
+    }
+
+    <span class="c">// traversal — HARUS O(n), tak ada index langsung ke elemen ke-i</span>
+    <span class="k">public</span> <span class="k">void</span> <span class="f">traverse</span>() {
+        Node<T> current = head;
+        <span class="k">while</span> (current != <span class="k">null</span>) {
+            System.out.println(current.data);
+            current = current.next;
+        }
+    }
+}</pre>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Padanan istilah array ↔ linked list</div>
+        <div class="erabox__row"><span class="erabox__lang">arr[i]</span><code>→  node.next diikuti sebanyak i kali (traversal)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">index 0</span><code>→  head (pointer ke node pertama)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">length</span><code>→  tidak tetap, tumbuh/susut per node</code></div>
+        <div class="erabox__row"><span class="erabox__lang">memori</span><code>→  berurutan (contiguous) → tersebar, disatukan pointer</code></div>
+        <p class="erabox__note">Intinya: array menghitung alamat elemen secara matematis (<b>base + i × ukuran</b>), sedangkan linked list menyimpan alamat elemen berikutnya secara eksplisit di tiap node — itu sebabnya harus disusuri satu per satu.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 DOUBLY LINKED LIST ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Dua arah</div>
+        <h2>Doubly linked list: pointer prev & next</h2>
+      </div>
+      <p class="lead reveal">Singly linked list cuma bisa maju. Kalau kamu perlu menghapus sebuah node dan hanya tahu <em>node itu sendiri</em> (bukan node sebelumnya), kamu terpaksa menyusuri ulang dari <code>head</code> untuk mencari <code>prev</code>-nya — itu O(n). <strong>Doubly linked list</strong> menambah satu pointer lagi, <code>prev</code>, sehingga tiap node sudah "kenal" tetangga kiri dan kanannya sekaligus.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">singly — hanya maju</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">Node</span><T> {
+    T data;
+    Node<T> next;
+}
+
+<span class="c">// hapus node "target": prev-nya tidak diketahui</span>
+Node<T> prev = head;
+<span class="k">while</span> (prev.next != target) {
+    prev = prev.next;        <span class="c">// telusuri dari head</span>
+}
+prev.next = target.next;
+<span class="hl-bad">// -- O(n) hanya untuk MENCARI prev-nya</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">doubly — maju & mundur</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">Node</span><T> {
+    T data;
+    Node<T> prev;
+    Node<T> next;
+}
+
+<span class="c">// hapus node "target": prev sudah dikenal node itu sendiri</span>
+target.prev.next = target.next;
+target.next.prev = target.prev;
+<span class="hl-good">// -- O(1) murni, tanpa traversal cari prev</span></pre>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Kemampuan mundur ini <b>tidak gratis</b>: tiap node doubly linked list butuh satu pointer ekstra (<code>prev</code>), artinya overhead memori per elemen lebih besar dibanding singly linked list. Pakai doubly hanya kalau kamu memang butuh navigasi dua arah atau delete O(1) dari referensi node langsung — kalau cuma perlu maju, singly sudah cukup &amp; lebih hemat.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Kebiasaan baik</div>
+        <h2>Best practice memakai linked list</h2>
+      </div>
+      <p class="lead reveal">Linked list gampang salah kalau lupa mengurus pointer-nya. Beberapa kebiasaan ini bikin implementasimu jauh lebih aman &amp; jarang bug.</p>
+
+      <ol class="steps reveal d1">
+        <li><b>Pakai dummy/sentinel node</b> di depan <code>head</code> (dan/atau setelah <code>tail</code>) supaya insert/delete tidak perlu penanganan khusus untuk kasus "list masih kosong" — kode jadi lebih seragam.</li>
+        <li><b>Simpan pointer <code>tail</code> terpisah</b> kalau kamu sering insert di akhir list, supaya tidak perlu traversal O(n) hanya untuk sampai ke ujung.</li>
+        <li><b>Simpan counter <code>size</code></b> kalau butuh tahu panjang list — jangan hitung dengan traversal penuh tiap kali dibutuhkan.</li>
+        <li><b>Di bahasa dengan manajemen memori manual</b> (C/C++), selalu <code>free</code>/<code>delete</code> node yang sudah dihapus dari rantai — tanpa garbage collector, node yatim itu jadi memory leak.</li>
+        <li><b>Urutkan update pointer dengan benar</b> saat insert/delete di doubly linked list — salah urutan menyambung <code>prev</code>/<code>next</code> bisa memutus rantai atau bikin cycle tak sengaja.</li>
+        <li><b>Waspada dangling pointer</b> — setelah sebuah node dihapus, pastikan tidak ada node atau variabel lain yang masih menunjuk ke situ.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Level · Peta belajar</div>
+        <h2>Tier belajar linked list</h2>
+      </div>
+      <p class="lead reveal">Dari operasi dasar sampai struktur turunan yang dipakai di sistem nyata — begini kira-kira jenjangnya.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Beginner</span>
+          <h4>Operasi dasar</h4>
+          <p>Kuasai dulu manipulasi node paling mendasar sampai lancar tanpa bug pointer.</p>
+          <ul>
+            <li>Insert di head &amp; di tail</li>
+            <li>Delete berdasarkan nilai atau posisi</li>
+            <li>Traversal &amp; print isi list</li>
+            <li>Cari panjang &amp; cari elemen tertentu</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Middle</span>
+          <h4>Manipulasi struktur</h4>
+          <p>Mulai memutar &amp; menganalisis bentuk rantai node, bukan cuma insert/delete lurus.</p>
+          <ul>
+            <li>Reverse linked list (iteratif &amp; rekursif)</li>
+            <li>Deteksi cycle — Floyd's slow/fast pointer</li>
+            <li>Cari node tengah dengan two-pointer</li>
+            <li>Gabung dua sorted linked list</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Advance</span>
+          <h4>Struktur turunan</h4>
+          <p>Linked list jadi bahan bangunan untuk struktur data yang dipakai di sistem production.</p>
+          <ul>
+            <li>LRU cache — doubly linked list + hash map</li>
+            <li>Skip list — ekstensi probabilistik untuk search cepat</li>
+            <li>Implementasi deque &amp; circular buffer</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: linked list vs array</h2>
+      </div>
+      <p class="lead reveal">Linked list bukan "lebih baik" dari array — ia menukar satu kelebihan dengan kelebihan lain. Sedgewick &amp; Wayne menyebut ide struktur "linked" ini sebagai salah satu gagasan paling fundamental dalam ilmu komputer.</p>
+
+      <div class="quote reveal d1">
+        <p>"Struktur data yang saling terhubung lewat referensi ('linked') adalah salah satu ide paling fundamental dalam ilmu komputer — ia membebaskan struktur data dari kebutuhan alokasi memori berurutan, membuka jalan untuk struktur yang lebih kompleks seperti tree dan graph."</p>
+        <cite>— parafrase dari Robert Sedgewick &amp; Kevin Wayne, <i>Algorithms</i>, bab struktur data fundamental</cite>
+      </div>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Insert/delete O(1) di posisi yang pointer-nya sudah diketahui.</li>
+            <li>Ukuran dinamis — tumbuh/susut tanpa realokasi besar-besaran.</li>
+            <li>Tidak butuh blok memori berurutan yang besar.</li>
+            <li>Fondasi untuk struktur lebih kompleks (tree, graph, hash chaining).</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Yang kamu korbankan</h4>
+          <ul class="bad-l">
+            <li>Akses elemen ke-<code>i</code> jadi O(n) — tak ada index langsung.</li>
+            <li>Overhead memori: tiap node menyimpan pointer ekstra.</li>
+            <li>Cache locality buruk — node tersebar di memori, bukan berdekatan.</li>
+            <li>Lebih rawan bug pointer dibanding operasi index array.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai linked list</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>kalau pola aksesmu didominasi sisip/hapus di posisi yang sudah kamu pegang referensinya, pilih linked list. Kalau kamu sering butuh akses acak cepat ke elemen ke-i, pilih array.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai linked list saat…</h4>
+          <ul class="good-l">
+            <li>Sering insert/delete di depan, tengah, atau akhir.</li>
+            <li>Ukuran data tidak diketahui &amp; berubah-ubah drastis.</li>
+            <li>Implementasi stack, queue, atau deque.</li>
+            <li>Butuh LRU cache atau undo/redo history.</li>
+            <li>Kamu sudah pegang referensi node — bukan indeksnya.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, pilih array saat…</h4>
+          <ul class="bad-l">
+            <li>Butuh akses acak cepat lewat index (<code>arr[i]</code>).</li>
+            <li>Perlu binary search atau operasi berbasis index.</li>
+            <li>Ukuran data sudah tetap/diketahui dari awal.</li>
+            <li>Perhitungan numerik berat yang butuh cache locality.</li>
+            <li>Iterasi sekuensial murni tanpa insert/delete di tengah.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan ke pola aksesmu: <strong>"Apakah aku lebih sering menyisip/menghapus, atau lebih sering melompat langsung ke elemen tertentu?"</strong> Kalau sisip/hapus yang dominan → linked list. Kalau lompat ke index yang dominan → array.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Linked list di sistem production</h2>
+      </div>
+      <p class="lead reveal">Tiga skenario di mana linked list (khususnya doubly linked list) jadi bahan bangunan struktur data yang dipakai luas — perhatikan polanya: butuh navigasi dua arah atau insert/delete O(1) di ujung rantai.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// caching</div><h4>LRU Cache</h4><p><b>Kasus:</b> sistem cache perlu tahu item mana yang paling lama tidak dipakai untuk dibuang saat kapasitas penuh. <b>Kenapa linked list:</b> doubly linked list + hash map memberi <code>get</code>/<code>put</code> O(1) — node yang diakses dipindah ke depan, node paling belakang yang dibuang.</p></div>
+        <div class="card up"><div class="ic">// text editor</div><h4>Undo / redo history</h4><p><b>Kasus:</b> editor teks perlu mengingat riwayat perubahan &amp; bisa maju-mundur di antaranya. <b>Kenapa linked list:</b> doubly linked list pas untuk navigasi dua arah — <code>undo</code> jalan ke <code>prev</code>, <code>redo</code> jalan ke <code>next</code>.</p></div>
+        <div class="card up"><div class="ic">// media player</div><h4>Playlist next / prev</h4><p><b>Kasus:</b> pemutar musik perlu berpindah ke lagu berikutnya atau sebelumnya, kadang berulang (mode "repeat"). <b>Kenapa linked list:</b> doubly (atau circular) linked list membuat navigasi maju-mundur antar lagu jadi O(1) tanpa index array.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di ketiga kasus di atas, kebutuhannya bukan "akses elemen ke-<code>i</code>", melainkan <strong>berpindah relatif dari posisi sekarang</strong> (maju, mundur, atau buang ujung) — dan itu persis kekuatan utama linked list.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS & REFERENSI ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools &amp; referensi linked list</h2>
+      </div>
+      <p class="lead reveal">Sebagai pemula, tidak perlu selalu menulis linked list dari nol — kenali dulu implementasi built-in &amp; alat bantu visualisasinya.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// built-in Java</div><h4>java.util.LinkedList</h4><p>Implementasi doubly linked list bawaan Java. Mengimplementasikan <code>List</code> &amp; <code>Deque</code>, jadi bisa dipakai sebagai stack, queue, atau deque sekaligus.</p></div>
+        <div class="card up"><div class="ic">// visualisasi</div><h4>Visualizer pointer</h4><p>Tools seperti VisuAlgo atau visualisasi struktur data USF menampilkan animasi insert/delete pointer langkah demi langkah — bagus untuk membangun intuisi sebelum menulis kode sendiri.</p></div>
+        <div class="card up"><div class="ic">// keputusan</div><h4>Built-in vs implementasi manual</h4><p>Pakai <code>LinkedList</code> bawaan untuk kebutuhan umum &amp; correctness yang sudah teruji. Implementasikan manual saat belajar/latihan interview, atau saat butuh kontrol penuh atas struktur (mis. sentinel node custom untuk LRU cache).</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Pilih berdasarkan pola akses, bukan kebiasaan</h2>
+      </div>
+      <p class="lead reveal">Linked list lahir dari keinginan menyisip &amp; menghapus data tanpa harus menggeser semuanya. Ia bersinar saat kamu sering mengubah posisi node yang sudah kamu pegang, dan tersandung saat kamu butuh akses acak cepat.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Node</b> — data + pointer <code>next</code> (dan <code>prev</code> untuk doubly).</li>
+          <li><b>Insert/delete O(1)</b> — di posisi mana pun yang pointer-nya sudah diketahui.</li>
+          <li><b>Akses O(n)</b> — tak ada index langsung, harus menyusuri dari <code>head</code>.</li>
+          <li><b>Singly</b> — hanya maju; <b>Doubly</b> — maju &amp; mundur dengan <code>prev</code>.</li>
+          <li><b>Sentinel node</b> — sederhanakan edge case list kosong.</li>
+          <li><b>Studi kasus nyata</b> — LRU cache, undo/redo, playlist next/prev.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya: <strong>"Apakah aku lebih sering menyisip/menghapus dari posisi yang sudah kupegang, atau melompat ke index tertentu?"</strong> Kalau sisip/hapus yang dominan, linked list memberimu O(1) di situ. Kalau lompat ke index yang dominan, array (dengan akses O(1))-nya akan lebih cocok. Selanjutnya, gagasan "sisip/hapus di satu ujung, O(1)" ini akan kamu pakai lagi saat belajar struktur data berikutnya.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // Lanjut ke bab berikutnya: <a href="../stack/index.html" style="color:var(--cyan)">Stack →</a>
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Linked List</b> · Node, singly vs doubly, trade-off, &amp; studi kasus production · untuk pemula · rujukan: CLRS (Cormen dkk.), Algorithms (Sedgewick &amp; Wayne) · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../../index.html">← Kembali ke Data Structures &amp; Algorithms</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

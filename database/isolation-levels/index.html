@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Isolation Levels — Saat Transaksi Berjalan Bersamaan</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; transition: color .18s, border-color .18s; }
+  .topbar__home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- numbered steps ---------- */
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 9px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700;
+    background: var(--cyan); border-radius: 50%;
+  }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Database</a>
+  <div class="topbar__file">docs/learning/database/isolation-levels/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Dua transaksi, satu saldo</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Empat level isolasi</a>
+    <a href="#c03"><span class="yr">03</span> Dirty read, lost update, write skew</a>
+
+    <div class="rail__part">III · Praktik &amp; belajar</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">🎓</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Untung &amp; harga</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">V · Dunia nyata</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — saat dua transaksi menyentuh data yang sama, bersamaan</div>
+      <h1 class="reveal d1">Isolation level: <span class="accent">pagar tak kasat mata</span> antar transaksi.</h1>
+      <p class="sub reveal d2">
+        Di dunia nyata, database tidak pernah cuma dipakai satu orang. Ratusan transaksi berjalan <b>bersamaan</b>,
+        saling baca &amp; tulis data yang sama. Tanpa aturan main, hasilnya bisa kacau: saldo salah, baris
+        ke-<i>overwrite</i>, keputusan diambil berdasarkan data yang sudah basi. <b>Isolation level</b> adalah
+        kontrak yang menentukan seberapa "terisolasi" satu transaksi dari transaksi lain — dari yang paling longgar
+        (<b>Read Uncommitted</b>) sampai yang paling ketat (<b>Serializable</b>). Deck ini bahas keempatnya, race
+        condition yang mengintai, sampai kapan kamu harus naik level di production.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Concurrency tanpa aturan</b> <span>— dua transaksi rebutan baris yang sama</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">L0</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Read Uncommitted</b> <span>— boleh baca data yang belum di-commit</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">L1</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Read Committed</b> <span>— cuma baca data yang sudah final</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">L2</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Snapshot Isolation (MVCC)</b> <span>— tiap transaksi lihat "foto" data yang konsisten</span></div></div>
+        <div class="tl__row"><div class="tl__yr">L3</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Serializable</b> <span>— seolah semua transaksi jalan satu-satu, bergiliran</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why" style="max-width:78ch;margin:32px auto;margin-left:calc(var(--rail-w) + clamp(22px,5vw,78px));margin-right:clamp(22px,5vw,78px)">
+    <div class="tag">◆ Buat apa ini? Kenapa pakai ini?</div>
+    <p><b>Given</b> — sebuah tabel <code>stok</code> atau <code>saldo</code> diakses banyak transaksi sekaligus, dan tim tidak menetapkan isolation level secara sadar (jadi jalan di default engine-nya).</p>
+    <p><b>When</b> — dua transaksi membaca baris yang sama nyaris bersamaan (mis. dua checkout menarik stok terakhir, atau dua penarikan ATM dari saldo yang sama), lalu masing-masing menulis ulang berdasarkan angka yang sudah basi saat dibaca.</p>
+    <p><b>Then</b> — terjadi <em>lost update</em>, <em>dirty read</em>, atau <em>phantom read</em>: stok bisa minus, satu penarikan hilang dari catatan, laporan finansial tidak konsisten — dan bug ini nyaris mustahil direproduksi di testing karena cuma muncul saat load tinggi.</p>
+    <p style="margin-top:8px">→ makanya kita pakai <b>Isolation Levels</b>.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA PENTING ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Concurrency itu default, bukan pengecualian</div>
+        <h2>Dua transaksi, satu saldo, satu waktu</h2>
+      </div>
+      <p class="lead reveal">Bayangkan saldomu Rp1.000.000. Kamu tarik Rp200.000 dari ATM di satu sisi kota. Bersamaan, pasanganmu yang pegang kartu tambahan tarik Rp300.000 dari ATM lain. Kalau database tidak punya aturan isolasi yang benar, <strong>kedua transaksi bisa sama-sama membaca saldo awal Rp1.000.000</strong>, lalu sama-sama menulis hasil kurangnya sendiri-sendiri — dan salah satu penarikan <em>hilang</em> dari catatan.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — dua orang, satu ATM, satu saldo</div>
+        <p>Ini seperti dua orang membaca angka di buku tabungan yang sama di waktu yang sama: <em>"Oh, saldonya 1 juta"</em>. Masing-masing menghitung sendiri saldo baru di kepala, lalu menulis ulang buku itu. Yang tertulis terakhir <strong>menimpa</strong> tulisan yang pertama — padahal keduanya berhak dicatat. Inilah race condition: hasil akhirnya bergantung pada <code>timing</code>, bukan pada logika bisnis yang benar.</p>
+      </div>
+
+      <p class="body reveal d2">Masalah ini bukan teori belaka — ini terjadi tiap detik di sistem yang punya banyak pengguna bersamaan: e-commerce saat flash sale, sistem booking kursi, atau aplikasi perbankan. <strong>Isolation level</strong> adalah cara database menjanjikan seberapa jauh transaksi-transaksi ini dilindungi satu sama lain — dan tiap level punya harga performanya sendiri.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP INTI: 4 LEVEL ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Empat tingkat isolasi</div>
+        <h2>Dari yang paling longgar sampai paling ketat</h2>
+      </div>
+      <p class="lead reveal">Standar SQL mendefinisikan empat level isolasi. Makin ketat levelnya, makin sedikit race condition yang mungkin terjadi — tapi makin mahal juga secara performa &amp; concurrency.</p>
+
+      <div class="quote reveal d1">
+        <p>Database jarang benar-benar serializable secara default, karena biayanya mahal terhadap performa. Sebagian besar justru menawarkan level isolasi yang lebih lemah — yang melindungi dari sebagian masalah concurrency, tapi tidak semuanya. Karena itu, aplikasi yang memakainya harus paham betul race condition apa saja yang masih bisa lolos di level yang dipilih.</p>
+        <cite>— diparafrasekan dari Martin Kleppmann, <i>Designing Data-Intensive Applications</i>, Bab 7 ("Weak Isolation Levels")</cite>
+      </div>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Empat level isolasi (standar SQL)</div>
+        <div class="erabox__row"><span class="erabox__lang">L0</span><code>Read Uncommitted → boleh baca data yang belum di-commit transaksi lain</code></div>
+        <div class="erabox__row"><span class="erabox__lang">L1</span><code>Read Committed → hanya baca data yang sudah di-commit (default banyak DB)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">L2</span><code>Snapshot Isolation (MVCC) → baca "foto" data yang konsisten sepanjang transaksi</code></div>
+        <div class="erabox__row"><span class="erabox__lang">L3</span><code>Serializable → hasil akhir seolah semua transaksi jalan satu per satu</code></div>
+        <p class="erabox__note">Catatan: PostgreSQL tidak benar-benar mengimplementasikan <code>READ UNCOMMITTED</code> — kalau kamu minta level itu, ia otomatis diperlakukan sebagai <b>Read Committed</b>. MySQL/InnoDB adalah salah satu yang benar-benar mendukung keempatnya.</p>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">contoh — mengatur isolation level per transaksi</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- pola umum di PostgreSQL / MySQL / SQL Server</span>
+<span class="k">BEGIN</span>;
+<span class="k">SET TRANSACTION ISOLATION LEVEL</span> <span class="t">SERIALIZABLE</span>;
+
+<span class="k">SELECT</span> saldo <span class="k">FROM</span> akun <span class="k">WHERE</span> id = <span class="n">1</span>;
+<span class="k">UPDATE</span> akun <span class="k">SET</span> saldo = saldo - <span class="n">200000</span> <span class="k">WHERE</span> id = <span class="n">1</span>;
+
+<span class="k">COMMIT</span>;
+
+<span class="c">-- level lain yang bisa dipilih:</span>
+<span class="c">-- SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;</span>
+<span class="c">-- SET TRANSACTION ISOLATION LEVEL READ COMMITTED;   -- default PostgreSQL</span>
+<span class="c">-- SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;  -- = Snapshot Isolation di Postgres</span></pre>
+      </div>
+
+      <p class="body reveal d3">Di PostgreSQL, level <code>REPEATABLE READ</code> pada dasarnya adalah implementasi <strong>Snapshot Isolation</strong> berbasis MVCC (<i>Multi-Version Concurrency Control</i>): tiap transaksi melihat "foto" database persis seperti saat transaksi itu dimulai, tidak peduli transaksi lain menulis apa setelahnya — sampai transaksi ini sendiri yang commit.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 RACE CONDITIONS ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti masalah</span> · Race condition yang mengintai</div>
+        <h2>Dirty read, lost update, write skew</h2>
+      </div>
+      <p class="lead reveal">Tiap level isolasi menutup sebagian race condition, tapi tidak semuanya. Tiga yang paling penting untuk kamu kenali: <strong>dirty read</strong>, <strong>lost update</strong>, dan yang paling licik — <strong>write skew</strong>.</p>
+
+      <p class="body reveal d1"><strong>Dirty read</strong> terjadi di <code>Read Uncommitted</code>: transaksi A membaca data yang ditulis transaksi B, padahal B <em>belum</em> commit. Kalau B akhirnya <code>ROLLBACK</code>, A sudah terlanjur bekerja dengan data yang ternyata tidak pernah benar-benar terjadi.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">lost update — dua transaksi timpa-menimpa</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- Transaksi A                  -- Transaksi B</span>
+<span class="k">BEGIN</span>;                          <span class="k">BEGIN</span>;
+<span class="k">SELECT</span> stok <span class="k">FROM</span> produk
+  <span class="k">WHERE</span> id=<span class="n">1</span>; <span class="c">-- 10</span>       <span class="k">SELECT</span> stok <span class="k">FROM</span> produk
+                                <span class="k">WHERE</span> id=<span class="n">1</span>; <span class="c">-- 10</span>
+<span class="c">-- hitung di app: 10-1=9</span>       <span class="c">-- hitung di app: 10-1=9</span>
+<span class="k">UPDATE</span> produk <span class="k">SET</span> stok=<span class="n">9</span>
+  <span class="k">WHERE</span> id=<span class="n">1</span>;
+<span class="k">COMMIT</span>;                         <span class="k">UPDATE</span> produk <span class="k">SET</span> stok=<span class="n">9</span>
+                                  <span class="k">WHERE</span> id=<span class="n">1</span>;
+<span class="hl-bad">-- B menimpa hasil A, padahal</span>   <span class="k">COMMIT</span>;
+<span class="hl-bad">-- 2 pembeli checkout, stok</span>
+<span class="hl-bad">-- akhir cuma turun 1, bukan 2</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">fix — kunci baris atau update atomik</span><span class="lang">SQL</span></div>
+<pre class="code"><span class="c">-- opsi 1: SELECT ... FOR UPDATE (kunci baris)</span>
+<span class="k">BEGIN</span>;
+<span class="k">SELECT</span> stok <span class="k">FROM</span> produk
+  <span class="k">WHERE</span> id=<span class="n">1</span> <span class="k">FOR UPDATE</span>; <span class="c">-- B nunggu</span>
+<span class="k">UPDATE</span> produk <span class="k">SET</span> stok = stok - <span class="n">1</span>
+  <span class="k">WHERE</span> id=<span class="n">1</span>;
+<span class="k">COMMIT</span>;
+
+<span class="c">-- opsi 2: update atomik, tanpa read-modify-write</span>
+<span class="k">UPDATE</span> produk
+<span class="k">SET</span> stok = stok - <span class="n">1</span>
+<span class="k">WHERE</span> id = <span class="n">1</span> <span class="k">AND</span> stok &gt; <span class="n">0</span>;
+<span class="hl-good">-- database sendiri yang jamin urutan tulis</span></pre>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--violet),var(--violet-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--violet)">◆ Write skew — yang lolos bahkan di Snapshot Isolation</div>
+          <p>Contoh klasik: sebuah rumah sakit mewajibkan <strong>minimal 1 dokter jaga</strong>. Ada 2 dokter jaga, keduanya merasa capek dan sama-sama cek dulu "apakah masih ada dokter lain jaga?" — jawabannya sama-sama "ya, masih ada 2". Keduanya lalu sama-sama mengajukan cuti dari transaksi terpisah. Karena masing-masing hanya menulis ke <em>baris miliknya sendiri</em> (bukan baris yang sama), Snapshot Isolation tidak mendeteksi konflik apa pun — padahal hasil akhirnya melanggar aturan: <strong>0 dokter jaga</strong>.</p>
+        </div>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>Write skew adalah race condition yang tetap bisa lolos bahkan di Snapshot Isolation. Polanya: dua transaksi membaca objek yang sama, lalu memperbarui objek yang <em>berbeda</em> berdasarkan apa yang mereka baca — dan karena keduanya menulis ke baris berlainan, mekanisme deteksi konflik berbasis baris tidak pernah tersentuh, padahal asumsi yang dipakai kedua transaksi itu sudah sama-sama usang.</p>
+        <cite>— diparafrasekan dari konsep "write skew", Martin Kleppmann, <i>Designing Data-Intensive Applications</i>, Bab 7</cite>
+      </div>
+
+      <p class="body reveal d3">Cuma <strong>Serializable</strong> (atau varian modern seperti <i>Serializable Snapshot Isolation</i>) yang benar-benar menutup celah write skew — karena ia menjamin hasil akhirnya <em>seolah-olah</em> semua transaksi berjalan satu per satu, bergiliran, tak peduli baris mana yang disentuh.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Cara aman pakai isolation level</div>
+        <h2>Best practice yang layak kamu ingat</h2>
+      </div>
+      <p class="lead reveal">Kamu tidak perlu hafal teori concurrency control untuk aman di production. Pegang enam kebiasaan ini.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Percayai default-nya dulu.</b> PostgreSQL &amp; kebanyakan database relasional memakai <code>Read Committed</code> sebagai default — cukup aman untuk mayoritas kasus CRUD biasa.</li>
+        <li><b>Naik ke <code>Serializable</code> hanya untuk transaksi kritis</b> — transfer saldo, booking kursi/tiket, alokasi stok terbatas — di mana konsistensi lebih penting dari sekadar throughput.</li>
+        <li><b>Pakai <code>SELECT ... FOR UPDATE</code></b> saat kamu tahu persis baris mana yang mau dikunci, tanpa perlu menaikkan isolation level seluruh transaksi.</li>
+        <li><b>Lebih suka update atomik</b> (<code>UPDATE ... SET x = x - 1 WHERE ...</code>) daripada pola <i>read-modify-write</i> di level aplikasi — biarkan database yang menjamin urutan.</li>
+        <li><b>Tangani <code>serialization failure</code>.</b> Transaksi Serializable bisa gagal &amp; perlu di-<i>retry</i> — pastikan kode kamu siap mengulang transaksi yang di-abort database.</li>
+        <li><b>Uji dengan beban konkuren sungguhan</b>, bukan cuma satu transaksi di satu waktu — race condition baru kelihatan saat dua request benar-benar tabrakan.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">🎓 Tier belajar · Sesuaikan dengan levelmu</div>
+        <h2>Belajar isolation level bertahap</h2>
+      </div>
+      <p class="lead reveal">Topik ini gampang terasa berat kalau langsung loncat ke teori formal. Ikuti tiga tahap ini sesuai levelmu sekarang.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Paham 4 level dasar</h4>
+          <p>Fokus dulu ke <em>apa</em> yang dijanjikan tiap level, bukan cara implementasinya di dalam mesin database.</p>
+          <ul>
+            <li>Hafal urutan: Read Uncommitted → Read Committed → Snapshot Isolation → Serializable.</li>
+            <li>Paham bahwa makin ketat = makin aman, tapi makin lambat.</li>
+            <li>Coba jalankan <code>SET TRANSACTION ISOLATION LEVEL</code> di database lokalmu.</li>
+            <li>Kenali istilah "dirty read" secara konsep, tanpa perlu bikin contoh sendiri dulu.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Cegah race condition di kode</h4>
+          <p>Mulai kenali pola berbahaya di kode aplikasi sehari-hari, dan tahu cara memperbaikinya.</p>
+          <ul>
+            <li>Kenali pola <i>read-modify-write</i> yang rawan lost update di codebase-mu.</li>
+            <li>Biasa pakai <code>SELECT ... FOR UPDATE</code> atau update atomik.</li>
+            <li>Bisa menjelaskan lost update ke rekan tim dengan contoh nyata.</li>
+            <li>Paham kenapa transaksi butuh logika retry saat kena <i>serialization failure</i>.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Serializable &amp; sistem terdistribusi</h4>
+          <p>Masuk ke detail implementasi &amp; kasus-kasus yang cuma muncul di skala besar.</p>
+          <ul>
+            <li>Paham cara kerja <i>Serializable Snapshot Isolation</i> (SSI) mendeteksi konflik.</li>
+            <li>Bisa mengidentifikasi write skew dari gejalanya, bukan cuma dari definisi buku.</li>
+            <li>Paham trade-off isolasi ketat di database terdistribusi (mis. Spanner, CockroachDB).</li>
+            <li>Bisa merancang uji concurrency (mis. dengan Jepsen) untuk memverifikasi klaim isolasi.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada isolasi gratis</div>
+        <h2>Trade-off: isolasi ketat vs performa</h2>
+      </div>
+      <p class="lead reveal">Isolation level bukan cuma soal "aman atau tidak" — ia soal <strong>berapa banyak concurrency yang kamu korbankan</strong> untuk mendapatkan jaminan itu.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Isolasi ketat (Serializable)</h4>
+          <ul class="good-l">
+            <li>Menutup hampir semua race condition, termasuk write skew.</li>
+            <li>Logika bisnis kamu jadi lebih sederhana — tidak perlu mikirin edge case concurrency.</li>
+            <li>Cocok untuk data yang <em>tidak boleh salah</em>: saldo, kursi, kuota.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Harganya</h4>
+          <ul class="bad-l">
+            <li>Throughput turun — transaksi lebih sering saling menunggu / di-abort.</li>
+            <li>Butuh logika retry di aplikasi untuk <i>serialization failure</i>.</li>
+            <li>Di skala terdistribusi, biayanya makin mahal (koordinasi antar node).</li>
+            <li>Overkill untuk operasi baca yang toleran terhadap data sedikit basi.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Kenapa Read Committed tetap jadi default di mana-mana</div>
+          <p>Sebagian besar query di aplikasi tipikal — tampilkan profil, tampilkan daftar produk, tampilkan riwayat — <strong>tidak butuh</strong> jaminan seketat Serializable. Menjalankan semuanya di Serializable cuma akan menambah <i>abort rate</i> tanpa manfaat nyata. Pilih level isolasi <strong>per kebutuhan transaksi</strong>, bukan satu level untuk semuanya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pilih level yang pas</div>
+        <h2>Kapan naik level, kapan cukup default</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>mulai dari Read Committed, naik ke Serializable (atau kunci eksplisit) hanya untuk transaksi yang benar-benar rawan race condition.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Naik ke Serializable / kunci eksplisit saat…</h4>
+          <ul class="good-l">
+            <li>Transaksi finansial: transfer, pembayaran, refund.</li>
+            <li>Alokasi sumber daya terbatas: kursi, tiket, kuota stok.</li>
+            <li>Ada aturan invarian lintas-baris (mis. "minimal 1 dokter jaga").</li>
+            <li>Konsekuensi race condition mahal secara bisnis / hukum.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Cukup Read Committed (default) saat…</h4>
+          <ul class="bad-l">
+            <li>Query baca biasa: dashboard, listing, laporan non-kritis.</li>
+            <li>Update yang idempotent &amp; tidak bergantung pada nilai lama.</li>
+            <li>Aplikasi CRUD standar tanpa aturan lintas-baris yang ketat.</li>
+            <li>Throughput tinggi lebih penting daripada konsistensi mutlak.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan: <strong>"Kalau dua transaksi ini tabrakan tepat di detik yang sama, apakah hasilnya bisa merugikan orang atau melanggar aturan bisnis?"</strong> Kalau ya — naikkan level isolasi atau kunci barisnya secara eksplisit. Kalau tidak — default sudah cukup, jangan bayar mahal untuk risiko yang tidak ada.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Bagaimana tim production memilih isolation level</h2>
+      </div>
+      <p class="lead reveal">Beberapa pola nyata yang sering ditemui di industri — perhatikan bahwa keputusan level isolasi selalu mengikuti <strong>seberapa mahal konsekuensi race condition-nya</strong>, bukan sekadar ikut default.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// mayoritas startup</div><h4>Default Read Committed di PostgreSQL</h4><p><b>Pola:</b> kebanyakan aplikasi web/startup tidak pernah mengubah isolation level sama sekali, tetap di default Read Committed PostgreSQL. <b>Kenapa cukup:</b> mayoritas operasinya bukan operasi finansial rawan-konflik, dan Read Committed sudah menutup dirty read.</p></div>
+        <div class="card up"><div class="ic">// fintech / perbankan</div><h4>Naik ke Serializable untuk transaksi kritis</h4><p><b>Pola:</b> sistem perbankan &amp; fintech biasanya menaikkan isolation level (atau memakai kunci eksplisit) khusus untuk alur transfer dana &amp; rekonsiliasi saldo. <b>Kenapa:</b> lost update atau write skew di jalur ini berarti uang salah hitung — konsekuensinya langsung finansial &amp; legal.</p></div>
+        <div class="card up"><div class="ic">// e-commerce skala besar</div><h4>Row locking untuk cegah overselling</h4><p><b>Pola:</b> platform e-commerce besar seperti Shopify dikenal memakai kunci baris/antrean eksplisit di jalur checkout &amp; pengurangan stok saat flash sale, bukan mengandalkan isolation level default begitu saja. <b>Kenapa:</b> race condition di stok berarti barang terjual melebihi stok yang ada (oversell).</p></div>
+        <div class="card up"><div class="ic">// platform developer</div><h4>Row locking di alur kritis GitHub</h4><p><b>Pola:</b> sistem skala besar seperti GitHub menangani operasi yang rawan konflik (mis. penomoran issue/PR, antrean job) dengan kombinasi transaksi &amp; kunci baris eksplisit di titik-titik kritis. <b>Kenapa:</b> di titik-titik itu, urutan &amp; keunikan data jauh lebih penting daripada throughput maksimal.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Tidak ada satu level isolasi yang dipakai untuk <em>semua</em> query di satu sistem. Tim production biasanya memakai <strong>default yang longgar</strong> untuk mayoritas trafik, lalu <strong>menaikkan isolasi atau mengunci baris secara eksplisit</strong> hanya di jalur-jalur sempit yang benar-benar rawan &amp; mahal kalau salah.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat yang dipakai</div>
+        <h2>Tools &amp; mesin database seputar isolation level</h2>
+      </div>
+      <p class="lead reveal">Kamu tidak perlu membangun MVCC sendiri — pahami saja bagaimana mesin database populer mengimplementasikannya, dan alat yang bisa menguji klaim konsistensinya.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// paling umum</div><h4>PostgreSQL — MVCC</h4><p>Default <code>Read Committed</code>, dan <code>REPEATABLE READ</code>-nya sebenarnya adalah Snapshot Isolation berbasis MVCC. Punya <code>SERIALIZABLE</code> asli lewat teknik Serializable Snapshot Isolation (SSI).</p></div>
+        <div class="card up"><div class="ic">// paling banyak dipakai web</div><h4>MySQL / InnoDB</h4><p>Mendukung keempat level standar SQL secara harfiah, termasuk <code>READ UNCOMMITTED</code>. Default-nya <code>REPEATABLE READ</code>, sedikit berbeda perilaku dari Snapshot Isolation murni.</p></div>
+        <div class="card up"><div class="ic">// uji konsistensi</div><h4>Jepsen</h4><p>Framework pengujian yang dipakai untuk memverifikasi klaim konsistensi &amp; isolasi database terdistribusi dengan menyuntikkan kegagalan jaringan &amp; concurrency ekstrem — sering dipakai untuk membongkar klaim "serializable" yang ternyata bocor.</p></div>
+        <div class="card up"><div class="ic">// terdistribusi</div><h4>CockroachDB / Google Spanner</h4><p>Database terdistribusi yang menawarkan Serializable sebagai <em>default</em>-nya, dengan trade-off latensi lebih tinggi karena butuh koordinasi antar node/region.</p></div>
+        <div class="card up"><div class="ic">// ORM &amp; app layer</div><h4>Dukungan isolation level di ORM</h4><p>Kebanyakan ORM (Sequelize, TypeORM, Hibernate, Django ORM) menyediakan opsi untuk mengatur isolation level per transaksi atau memakai <code>SELECT ... FOR UPDATE</code> tanpa raw SQL.</p></div>
+        <div class="card up"><div class="ic">// observability</div><h4>pg_stat_activity / lock monitoring</h4><p>Tool bawaan seperti <code>pg_stat_activity</code> &amp; <code>pg_locks</code> di PostgreSQL membantu mendiagnosis transaksi yang saling menunggu (lock contention) di production.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tips pemula</div>
+          <p>Kalau kamu memakai PostgreSQL, kamu sudah otomatis dapat perlindungan dirty read secara gratis (default Read Committed). Langkah belajar berikutnya yang paling berguna: kenali kapan kamu butuh <code>SELECT ... FOR UPDATE</code>, sebelum buru-buru loncat ke <code>SERIALIZABLE</code> di semua tempat.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Isolasi itu kontrak, bukan jaminan otomatis</h2>
+      </div>
+      <p class="lead reveal">Isolation level adalah janji yang dibuat database — tapi kamu tetap harus tahu apa yang <em>tidak</em> dijanjikannya di level yang kamu pakai. Paham race condition di baliknya membuatmu bisa memilih level yang pas, bukan sekadar ikut default atau membabi buta naik ke Serializable.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Empat level</b> — Read Uncommitted, Read Committed, Snapshot Isolation, Serializable.</li>
+          <li><b>Dirty read</b> — baca data yang belum commit, cukup ditutup Read Committed.</li>
+          <li><b>Lost update</b> — dua transaksi timpa-menimpa, butuh kunci atau update atomik.</li>
+          <li><b>Write skew</b> — race condition licik yang lolos bahkan di Snapshot Isolation.</li>
+          <li><b>Pilih per kebutuhan</b> — default longgar untuk mayoritas, ketat untuk yang kritis.</li>
+          <li><b>Uji, jangan cuma asumsi</b> — concurrency nyata baru kelihatan di bawah beban tabrakan.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya untuk tiap transaksi kritis: <strong>"Kalau ini tabrakan dengan transaksi lain tepat di detik yang sama, apa yang bisa salah?"</strong> Kalau jawabannya membuatmu gelisah, naikkan isolasi atau kunci barisnya secara eksplisit. Kalau tidak, biarkan default bekerja — isolasi ketat itu alat, bukan kewajiban di mana-mana.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Aplikasi harus paham race condition apa yang masih mungkin terjadi di tiap level isolasi."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Isolation Levels</b> · Read Uncommitted, Read Committed, Snapshot Isolation (MVCC), Serializable · dirty read, lost update, write skew · rujukan: DDIA (Kleppmann) · kembali ke <a href="../index.html">← Database</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

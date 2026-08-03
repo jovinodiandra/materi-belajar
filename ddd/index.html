@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain-Driven Design — dari Bahasa sampai Kode</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  :root {
+    --ink:#0d1117; --ink-2:#0f141b; --panel:#161b22; --panel-2:#1b212b;
+    --line:#232b36; --line-soft:#1c232d; --fg:#c4cdda; --fg-strong:#f0f4f9;
+    --muted:#76828f; --muted-2:#5a6675; --brass:#d9a441; --brass-dim:#8a6d2f;
+    --bad:#f0746a; --bad-bg:rgba(240,116,106,.07); --bad-line:rgba(240,116,106,.32);
+    --good:#4ec9b0; --good-bg:rgba(78,201,176,.07); --good-line:rgba(78,201,176,.32);
+    --t-comment:#5f6b78; --t-key:#c99bf0; --t-type:#4ec9b0; --t-str:#9fc7f0;
+    --t-num:#e0a96b; --t-fn:#d9a441; --t-anno:#7fa6c4;
+    --mono:"Cascadia Code","Cascadia Mono","JetBrains Mono",Consolas,"SF Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --rail-w:250px; --maxw:1080px;
+  }
+
+  body { background:var(--ink); color:var(--fg); font-family:var(--sans);
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility; overflow-x:hidden; }
+
+  /* top bar */
+  .topbar { position:fixed; top:0; left:0; right:0; z-index:50; height:44px;
+    background:rgba(13,17,23,.86); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px;
+    padding:0 16px; font-family:var(--mono); font-size:12.5px; }
+  .topbar__dots { display:flex; gap:7px; }
+  .topbar__dots i { width:11px; height:11px; border-radius:50%; display:block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#d9a441; }
+  .topbar__dots i:nth-child(3){ background:#4ec9b0; }
+  .topbar__file { color:var(--muted); letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .topbar__file b { color:var(--fg-strong); font-weight:600; }
+  .topbar__counter { margin-left:auto; color:var(--brass); letter-spacing:.12em; white-space:nowrap; }
+  .progress { position:fixed; top:44px; left:0; height:2px; width:0%;
+    background:linear-gradient(90deg,var(--brass-dim),var(--brass)); z-index:51; transition:width .15s linear; }
+
+  /* rail */
+  .rail { position:fixed; top:44px; left:0; bottom:0; width:var(--rail-w);
+    border-right:1px solid var(--line); background:var(--ink-2); padding:26px 0 40px;
+    overflow-y:auto; z-index:40; font-family:var(--mono); }
+  .rail__title { font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted-2); padding:0 22px 16px; }
+  .rail a { display:flex; align-items:baseline; gap:11px; padding:8px 22px; color:var(--muted);
+    text-decoration:none; font-size:13px; border-left:2px solid transparent;
+    transition:color .18s, border-color .18s, background .18s; }
+  .rail a .num { color:var(--brass-dim); font-size:11.5px; min-width:20px; transition:color .18s; }
+  .rail a:hover { color:var(--fg-strong); background:rgba(255,255,255,.02); }
+  .rail a.active { color:var(--fg-strong); border-left-color:var(--brass); background:rgba(217,164,65,.05); }
+  .rail a.active .num { color:var(--brass); }
+
+  /* layout */
+  .stage { margin-left:var(--rail-w); }
+  section.chapter { min-height:100vh; padding:96px clamp(22px,5vw,80px) 90px;
+    border-bottom:1px solid var(--line-soft); scroll-margin-top:44px;
+    display:flex; flex-direction:column; justify-content:center; }
+  .wrap { width:100%; max-width:var(--maxw); margin:0 auto; }
+
+  /* reveal */
+  .reveal { opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity:1; transform:none; }
+  .reveal.d1 { transition-delay:.08s; } .reveal.d2 { transition-delay:.16s; } .reveal.d3 { transition-delay:.24s; }
+
+  /* hero */
+  .hero { text-align:left; }
+  .hero .eyebrow { font-family:var(--mono); color:var(--brass); font-size:13px; letter-spacing:.04em; margin-bottom:26px; max-width:70ch; }
+  .hero h1 { font-family:var(--mono); font-weight:700; font-size:clamp(30px,6.2vw,72px);
+    line-height:1.05; letter-spacing:-.02em; color:var(--fg-strong); max-width:18ch; }
+  .hero h1 .accent { color:var(--brass); }
+  .cursor { display:inline-block; width:.58ch; height:1.02em; background:var(--brass);
+    margin-left:.08em; transform:translateY(.12em); animation:blink 1.05s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .hero .sub { margin-top:30px; max-width:64ch; font-size:19px; color:var(--fg); }
+  .hero .byline { margin-top:22px; font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .hero .byline b { color:var(--fg-strong); font-weight:600; }
+  .scrollcue { margin-top:52px; font-family:var(--mono); font-size:12.5px; color:var(--muted-2);
+    letter-spacing:.14em; display:inline-flex; align-items:center; gap:10px; }
+  .scrollcue .arrow { animation:bob 1.6s ease-in-out infinite; color:var(--brass); }
+  @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(5px);} }
+  .herostats { display:flex; flex-wrap:wrap; gap:14px; margin-top:50px; font-family:var(--mono); }
+  .herostats .chip { border:1px solid var(--line); border-radius:8px; padding:12px 16px; background:var(--panel); font-size:12.5px; color:var(--muted); }
+  .herostats .chip b { color:var(--fg-strong); }
+
+  /* chapter heading */
+  .chead { display:flex; align-items:flex-start; gap:22px; margin-bottom:16px; }
+  .chead .cnum { font-family:var(--mono); font-weight:700; font-size:clamp(34px,5vw,58px);
+    color:transparent; -webkit-text-stroke:1.4px var(--brass-dim); line-height:.9; letter-spacing:-.02em; flex:none; }
+  .chead .ctitle { padding-top:4px; }
+  .chead .ctitle .kicker { font-family:var(--mono); font-size:13px; font-weight:600; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--brass); margin-bottom:8px; display:flex; align-items:center; gap:9px; }
+  .chead .ctitle .kicker::before { content:""; flex:none; width:3px; height:13px; background:var(--brass); border-radius:1px; }
+  .chead h2 { font-family:var(--mono); font-weight:700; font-size:clamp(24px,3.6vw,38px); line-height:1.1; letter-spacing:-.015em; color:var(--fg-strong); }
+
+  .lead { font-size:19px; color:var(--fg); max-width:72ch; margin:6px 0 8px; }
+  .lead strong { color:var(--fg-strong); font-weight:600; }
+  p.body { max-width:74ch; margin:14px 0; color:var(--fg); }
+  p.body strong { color:var(--fg-strong); }
+  p.body code, li code, .lead code, td code { font-family:var(--mono); font-size:.88em; color:var(--brass); background:rgba(217,164,65,.08); padding:1px 6px; border-radius:4px; }
+
+  /* note */
+  .note { display:flex; gap:16px; margin:28px 0 4px; max-width:82ch; border:1px solid var(--line);
+    border-radius:10px; overflow:hidden; background:var(--panel); }
+  .note__spine { flex:none; width:8px; background:linear-gradient(var(--brass),var(--brass-dim)); }
+  .note__body { padding:16px 20px 18px; }
+  .note__tag { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--brass); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .note__tag .ico { font-size:13px; }
+  .note p { color:var(--fg); font-size:15.5px; max-width:none; }
+  .note p strong { color:var(--fg-strong); }
+  .note p + p { margin-top:10px; }
+  .note code { font-family:var(--mono); font-size:.86em; color:var(--good); background:rgba(78,201,176,.08); padding:1px 6px; border-radius:4px; }
+
+  /* two-col */
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin:24px 0; }
+  .cols h4 { font-family:var(--mono); font-size:14px; margin-bottom:8px; color:var(--brass); }
+  .cols.split .l-h { color:var(--bad); } .cols.split .r-h { color:var(--good); }
+  .cols ul { list-style:none; }
+  .cols li { padding:7px 0 7px 24px; position:relative; font-size:15.5px; color:var(--fg); border-bottom:1px solid var(--line-soft); }
+  .cols li::before { position:absolute; left:0; font-family:var(--mono); color:var(--brass); content:"\2192"; }
+  .cols.split .bad-l li::before { content:"\2715"; color:var(--bad); }
+  .cols.split .good-l li::before { content:"\2713"; color:var(--good); }
+  .cols li b { color:var(--fg-strong); }
+
+  /* card grid */
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; margin-top:26px; }
+  .card { border:1px solid var(--line); border-radius:10px; padding:18px 18px 16px; background:var(--panel); transition:border-color .2s, transform .2s; }
+  .card:hover { border-color:var(--brass-dim); transform:translateY(-3px); }
+  .card .code-id { font-family:var(--mono); font-size:11.5px; color:var(--brass); letter-spacing:.06em; text-transform:uppercase; }
+  .card h4 { font-size:16px; color:var(--fg-strong); margin:6px 0 7px; font-weight:600; }
+  .card p { font-size:14.5px; color:var(--muted); }
+  .card p em { color:var(--fg); font-style:normal; }
+
+  /* timeline */
+  .timeline { position:relative; margin:30px 0 8px; max-width:820px; padding-left:26px; }
+  .timeline::before { content:""; position:absolute; left:7px; top:6px; bottom:6px; width:2px; background:linear-gradient(var(--brass-dim),var(--line)); }
+  .tl-item { position:relative; padding:0 0 26px 18px; }
+  .tl-item:last-child { padding-bottom:0; }
+  .tl-item::before { content:""; position:absolute; left:-26px; top:7px; width:12px; height:12px; border-radius:50%; background:var(--ink); border:2px solid var(--brass); }
+  .tl-item .tl-year { font-family:var(--mono); font-size:13px; font-weight:700; color:var(--brass); letter-spacing:.06em; }
+  .tl-item h4 { font-size:16.5px; color:var(--fg-strong); margin:3px 0 5px; font-weight:600; }
+  .tl-item p { font-size:15px; color:var(--fg); max-width:70ch; }
+  .tl-item p em { color:var(--fg-strong); }
+
+  /* flow */
+  .flow { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:28px 0 8px; align-items:stretch; }
+  .flow__col { border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:14px 13px 15px; position:relative; }
+  .flow__col .st { font-family:var(--mono); font-size:11px; letter-spacing:.1em; color:var(--brass); text-transform:uppercase; }
+  .flow__col h4 { font-size:14.5px; color:var(--fg-strong); margin:6px 0 5px; font-weight:600; }
+  .flow__col p { font-size:13.5px; color:var(--muted); }
+  .flow__col.is-in { border-color:var(--good-line); background:var(--good-bg); }
+  .flow__col.is-out { border-color:var(--brass-dim); background:rgba(217,164,65,.05); }
+
+  /* analogy */
+  .analogy { border-left:3px solid var(--brass); background:linear-gradient(90deg,rgba(217,164,65,.06),transparent 80%);
+    padding:18px 24px; margin:26px 0; border-radius:0 8px 8px 0; max-width:760px; }
+  .analogy .tag { font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--brass); display:block; margin-bottom:6px; }
+  .analogy p { color:var(--fg); font-size:16.5px; }
+  .analogy em { color:var(--fg-strong); font-style:italic; }
+
+  /* code editor card */
+  .editor { border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--panel);
+    display:flex; flex-direction:column; box-shadow:0 14px 40px -28px rgba(0,0,0,.9); margin:28px 0 8px; max-width:920px; }
+  .editor.good { border-color:var(--good-line); }
+  .editor__bar { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--line);
+    background:var(--panel-2); font-family:var(--mono); font-size:12px; }
+  .editor__bar .dots { display:flex; gap:6px; }
+  .editor__bar .dots i { width:9px; height:9px; border-radius:50%; display:block; background:var(--line); }
+  .editor__name { color:var(--muted); }
+  .editor__verdict { margin-left:auto; font-weight:600; letter-spacing:.04em; font-size:11.5px; color:var(--good); }
+  pre.code { font-family:var(--mono); font-size:13px; line-height:1.62; padding:16px 18px; overflow-x:auto; color:var(--fg); tab-size:2; flex:1; white-space:pre; }
+  pre.code::-webkit-scrollbar { height:9px; }
+  pre.code::-webkit-scrollbar-thumb { background:var(--line); border-radius:6px; }
+  .c{ color:var(--t-comment); font-style:italic; } .k{ color:var(--t-key); } .t{ color:var(--t-type); }
+  .s{ color:var(--t-str); } .n{ color:var(--t-num); } .f{ color:var(--t-fn); } .a{ color:var(--t-anno); }
+
+  /* data table */
+  .dtable-wrap { overflow-x:auto; margin:24px 0 8px; }
+  table.dtable { border-collapse:collapse; width:100%; min-width:520px; font-size:15px; }
+  table.dtable th, table.dtable td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  table.dtable th { font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--brass); border-bottom:1px solid var(--brass-dim); }
+  table.dtable td { color:var(--fg); }
+  table.dtable td strong { color:var(--fg-strong); }
+  table.dtable tr:hover td { background:rgba(255,255,255,.015); }
+
+  /* closing */
+  .creed { max-width:74ch; }
+  .creed li { list-style:none; font-family:var(--mono); font-size:clamp(14px,1.9vw,17px); color:var(--fg);
+    padding:12px 0 12px 30px; position:relative; border-bottom:1px solid var(--line-soft); line-height:1.55; }
+  .creed li::before { content:"\2192"; position:absolute; left:0; color:var(--brass); }
+  .creed li b { color:var(--fg-strong); }
+  .endcard { margin-top:38px; border:1px solid var(--line); border-radius:12px;
+    background:linear-gradient(160deg,var(--panel),var(--ink-2)); padding:30px clamp(20px,4vw,40px); }
+  .endcard h3 { font-family:var(--mono); color:var(--fg-strong); font-size:22px; margin-bottom:10px; }
+  .endcard p { color:var(--fg); max-width:70ch; }
+  .endcard .map { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:22px; font-family:var(--mono); font-size:12.5px; }
+  .endcard .map div { border:1px solid var(--line); border-radius:8px; padding:11px 13px; background:rgba(0,0,0,.2); }
+  .endcard .map b { color:var(--brass); display:block; margin-bottom:3px; }
+  .endcard .map span { color:var(--muted); }
+  .endcard .map a { color:var(--muted); text-decoration:none; }
+  .endcard .map a:hover { color:var(--fg-strong); text-decoration:underline; }
+
+  footer { margin-left:var(--rail-w); padding:34px clamp(22px,5vw,80px); font-family:var(--mono);
+    font-size:12.5px; color:var(--muted-2); border-top:1px solid var(--line); }
+  footer b { color:var(--muted); }
+
+  /* expert quotes */
+  .quotes { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:16px; margin:26px 0 8px; }
+  .qcard { border:1px solid var(--line); border-radius:10px; padding:16px 20px 16px; background:var(--panel); }
+  .qcard .mark { font-family:var(--mono); font-size:30px; line-height:.7; color:var(--brass-dim); }
+  .qcard blockquote { color:var(--fg-strong); font-size:15px; line-height:1.55; margin:8px 0 12px; font-style:italic; }
+  .qcard .who { font-family:var(--mono); font-size:12px; color:var(--brass); }
+  .qcard .who span { display:block; color:var(--muted); font-size:11px; margin-top:2px; }
+
+  @media (max-width:920px) {
+    :root { --rail-w:0px; }
+    .rail { display:none; } .stage, footer { margin-left:0; }
+    .cols { grid-template-columns:1fr; } body { font-size:16px; } .topbar__file { font-size:11px; }
+  }
+  @media (max-width:520px) { .chead { gap:14px; } section.chapter { padding-left:18px; padding-right:18px; } }
+  @media (prefers-reduced-motion:reduce) { * { animation:none !important; scroll-behavior:auto !important; }
+    .reveal { opacity:1; transform:none; transition:none; } html { scroll-behavior:auto; } }
+  a:focus-visible { outline:2px solid var(--brass); outline-offset:3px; border-radius:4px; }
+</style>
+</head>
+<body>
+<a id="__exitbtn" href="../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/ddd/<b>domain-driven-design.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 14</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__title">// Bab</div>
+  <a href="#c00"><span class="num">00</span> Pembuka</a>
+  <a href="#c01"><span class="num">01</span> Kenapa DDD penting</a>
+  <a href="#c02"><span class="num">02</span> Apa itu DDD</a>
+  <a href="#c03"><span class="num">03</span> Ubiquitous Language</a>
+  <a href="#c04"><span class="num">04</span> Domain &amp; Subdomain</a>
+  <a href="#c05"><span class="num">05</span> Bounded Context</a>
+  <a href="#c06"><span class="num">06</span> Context Map</a>
+  <a href="#c07"><span class="num">07</span> Entity &amp; Value Object</a>
+  <a href="#c08"><span class="num">08</span> Aggregate &amp; Root</a>
+  <a href="#c09"><span class="num">09</span> Domain Event</a>
+  <a href="#c10"><span class="num">10</span> Repository · Factory · Service</a>
+  <a href="#c11"><span class="num">11</span> Hexagonal Architecture</a>
+  <a href="#c12"><span class="num">12</span> CQRS</a>
+  <a href="#c13"><span class="num">13</span> Event Sourcing</a>
+  <a href="#c14"><span class="num">14</span> Menyatukan &amp; Penutup</a>
+</nav>
+
+<main class="stage">
+
+  <!-- 00 HERO -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// "The heart of software is its ability to solve domain-related problems for its user." — Eric Evans, 2003</div>
+      <h1 class="reveal d1">Domain-Driven <span class="accent">Design</span><span class="cursor" aria-hidden="true"></span></h1>
+      <p class="sub reveal d2">
+        DDD itu bukan kumpulan pattern koding yang harus dihafal. <strong>70%-nya soal cara berpikir &amp; komunikasi</strong>, cuma 30% yang teknik.
+        Kita jalan pelan-pelan — dari <span style="color:var(--brass)">bahasa</span> dan <span style="color:var(--brass)">batas</span>,
+        baru turun ke <span style="color:var(--brass)">blok bangunan kode</span> — pakai contoh dari domain yang semua orang paham:
+        <strong>aplikasi transportasi online</strong> kayak Gojek/Grab.
+      </p>
+      <div class="byline reveal d2">Materi knowledge sharing · sepuluh langkah dari awam sampai kepake</div>
+      <div class="herostats reveal d3">
+        <div class="chip"><b>Strategic</b> · bahasa &amp; batas</div>
+        <div class="chip"><b>Tactical</b> · Entity, VO, Aggregate</div>
+        <div class="chip">contoh: <b>ride-hailing</b> (Gojek/Grab)</div>
+        <div class="chip">bonus: <b>3 contoh dokumen</b> Confluence</div>
+      </div>
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--brass)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div style="padding:0 clamp(22px,5vw,80px)">
+    <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px 0;border-radius:0 10px 10px 0;max-width:70ch">
+      <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+      <p style="margin:5px 0"><b>Given</b> — tim engineering dan tim bisnis pakai istilah berbeda untuk konsep yang sama (PO bilang "mitra", developer nulis <code>User</code>, database nyimpen <code>partner_id</code>).</p>
+      <p style="margin:5px 0"><b>When</b> — developer menerjemahkan requirement bisnis jadi kode tanpa ada bahasa yang disepakati bersama, tiap kali informasi pindah tangan (rapat → dev → database → QA).</p>
+      <p style="margin:5px 0"><b>Then</b> — muncul salah paham dan bug logika bisnis yang mahal diperbaiki, karena tiap penerjemahan membocorkan makna aslinya.</p>
+      <p style="margin:8px 0 0">→ makanya kita pakai <b>Domain-Driven Design</b> — bahasa &amp; batas domain yang disepakati bersama.</p>
+    </div>
+  </div>
+
+  <!-- 01 KENAPA DDD PENTING -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">01</div><div class="ctitle">
+        <div class="kicker">Konteks · Kenapa layak didengar</div><h2>Seberapa besar DDD, dan kenapa masih relevan</h2></div></div>
+      <p class="lead reveal">Sebelum masuk konsep, wajar kalau kamu nanya: <em>"ini ilmu 2003, masih kepake?"</em> Jawabannya: justru <strong>makin kepake</strong>. Buku Eric Evans terbit lebih dari dua dekade lalu, dan kosakatanya sekarang jadi bahasa standar arsitektur modern — terutama sejak era microservices.</p>
+
+      <div class="cards reveal d1">
+        <div class="card"><div class="code-id">MICROSERVICES</div><h4>Penentu batas service</h4><p>Pertanyaan tersulit microservices — <em>"sebesar apa satu service?"</em> — dijawab DDD: <strong>satu bounded context</strong>. Ini prinsip de-facto buat memecah sistem.</p></div>
+        <div class="card"><div class="code-id">EVENT-DRIVEN</div><h4>Akar CQRS &amp; Event Sourcing</h4><p>CQRS dan Event Sourcing lahir dari komunitas DDD (Greg Young, Udi Dahan). Domain event jadi tulang punggung arsitektur event-driven.</p></div>
+        <div class="card"><div class="code-id">KOSAKATA</div><h4>Bahasa standar industri</h4><p><em>Ubiquitous language, aggregate, bounded context</em> — sekarang istilah baku di buku, konferensi, dan Technology Radar.</p></div>
+        <div class="card"><div class="code-id">UMUR PANJANG</div><h4>20+ tahun &amp; menguat</h4><p>Ide dari 2003 yang bukannya usang, malah jadi fondasi cara tim modern menata sistem berskala besar.</p></div>
+      </div>
+
+      <p class="body reveal d2">Beberapa suara yang membentuk &amp; mempopulerkannya:</p>
+
+      <div class="quotes reveal d2">
+        <div class="qcard">
+          <div class="mark">&ldquo;</div>
+          <blockquote>Tackling complexity in the heart of software.</blockquote>
+          <div class="who">Eric Evans <span>pencipta DDD · sub-judul "buku biru", 2003</span></div>
+        </div>
+        <div class="qcard">
+          <div class="mark">&ldquo;</div>
+          <blockquote>DDD memusatkan pengembangan pada model domain yang kaya akan proses &amp; aturan bisnisnya.</blockquote>
+          <div class="who">Martin Fowler <span>definisi DDD · martinfowler.com</span></div>
+        </div>
+        <div class="qcard">
+          <div class="mark">&ldquo;</div>
+          <blockquote>Bounded context adalah salah satu alat paling berguna untuk menemukan batas (seam) sebuah microservice.</blockquote>
+          <div class="who">Sam Newman <span>posisinya · "Building Microservices"</span></div>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Titik baliknya: era microservices</div>
+          <p>Waktu microservices meledak (sekitar 2014), semua orang bingung soal satu hal: <em>"motongnya di mana?"</em> Jawaban yang paling diterima datang dari DDD: <strong>potong di bounded context</strong>. Sejak itu DDD bangkit lagi. Dan menariknya, para kritikus DDD pun setuju satu hal: <strong>sisi strategisnya</strong> (bahasa bersama, batas yang jelas) tetap bernilai <em>walau</em> kamu nggak pakai satu pun pattern taktisnya. Makanya materi ini naruh strategi di depan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 APA ITU DDD -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">02</div><div class="ctitle">
+        <div class="kicker">Premis</div><h2>Apa itu DDD, dan kenapa ada</h2></div></div>
+      <p class="lead reveal"><strong>Domain-Driven Design</strong> (Eric Evans, 2003) = cara mendesain software di mana pusatnya bukan database atau framework, tapi <strong>domain</strong> — bidang masalah bisnisnya — dan <strong>bahasanya</strong>.</p>
+
+      <div class="note reveal d1">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Premis dasarnya</div>
+          <p>Yang bikin software susah itu <strong>bukan teknologinya — tapi aturan bisnisnya.</strong> Framework bisa dipelajari seminggu; aturan "kapan cancellation fee berlaku, kapan enggak" bisa bikin bug bertahun-tahun kalau tiap orang pahamnya beda. Nah, kalau model di kode kita meniru dengan setia model mental orang bisnis, software jadi lebih gampang dipahami, lebih gampang diubah, dan jauh lebih sedikit bug gara-gara salah paham.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d2">DDD punya <strong>dua bagian</strong> — dan urutannya penting. Bagian strategis jauh lebih berharga, tapi paling sering di-skip orang yang buru-buru pengen ke pattern kode:</p>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4>① Strategic DDD — peta besar</h4>
+          <ul>
+            <li>Ubiquitous Language (bahasa bersama)</li>
+            <li>Domain &amp; Subdomain (core/supporting/generic)</li>
+            <li>Bounded Context (batas makna)</li>
+            <li>Context Map (relasi antar-context)</li>
+          </ul>
+        </div>
+        <div>
+          <h4>② Tactical DDD — blok kode</h4>
+          <ul>
+            <li>Entity &amp; Value Object</li>
+            <li>Aggregate &amp; Aggregate Root</li>
+            <li>Domain Event</li>
+            <li>Repository, Factory, Domain Service</li>
+          </ul>
+        </div>
+      </div>
+      <p class="body reveal d3">Perekatnya: <strong>Hexagonal Architecture</strong> — cara menjaga domain tetap murni dari urusan framework &amp; vendor. Kita bahas semuanya satu per satu. Kalau cuma satu hal yang kamu ingat dari seluruh materi ini, ingat ini: <strong>strategic dulu, tactical belakangan.</strong></p>
+    </div>
+  </section>
+
+  <!-- 03 UBIQUITOUS LANGUAGE -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">03</div><div class="ctitle">
+        <div class="kicker">Strategic · Langkah 1</div><h2>Ubiquitous Language — bahasa yang sama</h2></div></div>
+      <p class="lead reveal">Satu set istilah yang disepakati dan dipakai <strong>konsisten oleh SEMUA orang</strong> — PO, developer, QA — <strong>dan di dalam kode</strong>. Nggak ada kamus terjemahan antara "bahasa rapat" dan "bahasa kode".</p>
+
+      <div class="cols split reveal d1">
+        <div>
+          <h4 class="l-h">Tanpa bahasa bersama</h4>
+          <ul class="bad-l">
+            <li>PO bilang <b>"mitra"</b></li>
+            <li>Developer nulis <b>User</b></li>
+            <li>Database: <b>partner_id</b></li>
+            <li>QA nyebut <b>"ojol"</b></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="r-h">Dengan bahasa bersama</h4>
+          <ul class="good-l">
+            <li>Semua sepakat: <b>"Driver"</b></li>
+            <li>class <b>Driver</b></li>
+            <li>tabel <b>driver</b></li>
+            <li>satu kata, dari mulut PO sampai nama tabel</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="body reveal d1">Kenapa ini masalah besar? Karena tiap kali informasi pindah tangan (bisnis → dev → DB → QA), ada <strong>penerjemahan</strong> — dan tiap penerjemahan <strong>membocorkan makna</strong>. Di situlah miskomunikasi dan bug lahir. Begini wujud nyatanya di sebuah sesi refinement:</p>
+
+      <div class="editor reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">notulen-refinement.txt — bahasa lagi ditempa</span><span class="editor__verdict">NEGOSIASI MAKNA</span></div>
+<pre class="code"><span class="t">PO </span> : "Kalau mitra batalin order setelah dapet penumpang, kena penalti."
+<span class="t">Dev</span> : "Mitra itu maksudnya driver kan? Terus 'penalti' ini potong saldo,
+       atau nurunin prioritas matching dia?"
+<span class="t">PO </span> : "Oh beda ya... maksudku potong saldo."
+<span class="t">Dev</span> : "Oke. Kita sepakat sebut <span class="f">Driver</span> (bukan mitra) dan <span class="f">CancellationFee</span>
+       (bukan penalti — soalnya 'penalti prioritas' bakal jadi fitur lain)."
+<span class="t">QA </span> : "Catat di glossary ya, biar test case-ku pakai istilah yang sama."
+
+<span class="c">// hasilnya: 1 istilah baru masuk glossary, 0 salah paham di sprint berikutnya</span></pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Bahasa yang hidup di kode</div>
+          <p>Bayangin package sebuah aplikasi ride-hailing: <code>trip</code>, <code>matching</code>, <code>pricing</code>, <code>driver</code> — nama-nama itu <strong>adalah Ubiquitous Language yang diekspresikan dalam kode.</strong> Dan konsekuensinya dua arah: kalau bahasanya berubah (istilah dipecah/diganti), <strong>kode ikut di-rename</strong>. Momen paling alami buat menempa bahasa ini: pas <strong>PO menjelaskan PBI di sprint planning</strong> — itu sesi negosiasi makna gratis tiap minggu. Hasilnya disimpan di glossary (lihat <em>contoh-confluence-1-glossary.html</em> di folder ini). Smell: PO &amp; developer pakai kata beda untuk hal yang sama — "mitra" vs "driver" vs "partner".</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 DOMAIN & SUBDOMAIN -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">04</div><div class="ctitle">
+        <div class="kicker">Strategic · Langkah 2</div><h2>Domain &amp; Subdomain</h2></div></div>
+      <p class="lead reveal"><strong>Domain</strong> = keseluruhan bidang masalah bisnis yang digarap. Domain seluas itu dibelah jadi <strong>subdomain</strong> — dan tiap jenis subdomain layak diperlakukan <em>beda</em>. Ini sebenarnya keputusan soal <strong>ke mana energi tim dialokasikan</strong>, bukan soal kode.</p>
+
+      <div class="cards reveal d1">
+        <div class="card"><div class="code-id">CORE</div><h4>Core Domain</h4><p>Jantung nilai bisnis; alasan pelanggan milih produk kamu. <em>Sikap: kerahkan talenta terbaik, bangun sendiri, garap serius.</em></p></div>
+        <div class="card"><div class="code-id">SUPPORTING</div><h4>Supporting Subdomain</h4><p>Perlu &amp; spesifik ke bisnis, tapi bukan pembeda. <em>Sikap: bangun secukupnya, nggak usah paling canggih.</em></p></div>
+        <div class="card"><div class="code-id">GENERIC</div><h4>Generic Subdomain</h4><p>Masalah umum yang solusinya udah ada di mana-mana. <em>Sikap: beli / pakai library jadi. Jangan bikin sendiri.</em></p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Contoh: aplikasi ride-hailing</div>
+          <p><strong>Core</strong>: <em>matching</em> (dapet driver dalam hitungan detik — alasan orang milih aplikasi ini) dan <em>dynamic pricing</em> (surge — salah hitung, rugi dua arah). <strong>Supporting</strong>: rating &amp; review, promo, riwayat perjalanan. <strong>Generic</strong>: OTP/SMS, push notification, peta — beli aja.</p>
+          <p>Dua jebakan yang paling sering kena orang: <strong>(1) kritikal ≠ core.</strong> Dompet driver itu nyentuh uang — kritikal banget — tapi dia <em>bukan</em> alasan penumpang milih aplikasi ini. Dia harus <strong>benar</strong>, bukan <strong>unggul</strong> → supporting dengan standar correctness tinggi. (Kecuali strategi bisnis berubah dan dompet jadi produk sendiri kayak GoPay — saat itu dia naik kelas jadi core.) <strong>(2) Jangan campur domain dengan teknologi.</strong> Google Maps itu alat generic yang <em>melayani</em> matching yang core — yang core itu algoritma pencocokannya, bukan petanya.</p>
+        </div>
+      </div>
+      <p class="body reveal d2"><strong>Smell:</strong> engineer terbaik ngabisin sprint demi sprint di subdomain generic (bikin sistem notifikasi canggih dari nol), sementara algoritma matching jarang disentuh orang terbaik. Alokasinya kebalik.</p>
+    </div>
+  </section>
+
+  <!-- 05 BOUNDED CONTEXT -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">05</div><div class="ctitle">
+        <div class="kicker">Strategic · Langkah 3</div><h2>Bounded Context — batas makna</h2></div></div>
+      <p class="lead reveal">Ini konsep paling powerful di DDD. <strong>Bounded Context</strong> = batas di mana satu model &amp; satu bahasa berlaku konsisten. Kuncinya yang sering bikin lega: <strong>kata yang sama boleh berarti beda di context yang beda — dan itu bukan masalah.</strong></p>
+
+      <p class="body reveal d1">Insting pemula: "bikin satu model <code>Driver</code> yang lengkap buat seluruh sistem." DDD bilang <strong>jangan</strong> — model tunggal raksasa selalu berakhir gembung dan penuh kontradiksi. Lihat gimana "Driver" beda kebutuhan per context:</p>
+
+      <div class="dtable-wrap reveal d1">
+        <table class="dtable">
+          <thead><tr><th>Bounded Context</th><th>"Driver" itu apa</th><th>Data &amp; aturannya</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Matching</strong></td><td>Kandidat penjemput</td><td>lokasi real-time, status online/offline, radius jangkauan</td></tr>
+            <tr><td><strong>Payout / Keuangan</strong></td><td>Penerima pendapatan</td><td>rekening bank, saldo dompet, potongan komisi</td></tr>
+            <tr><td><strong>Rating</strong></td><td>Subjek penilaian</td><td>skor rata-rata, jumlah ulasan, riwayat komplain</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="body reveal d2">Satu kata "Driver", tiga model yang beda — dan ketiganya <strong>benar</strong> di context masing-masing. Model Matching nggak perlu tahu rekening bank; model Payout nggak peduli lokasi real-time. Contoh lain: <strong>"Order"</strong> (perjalanan vs pesanan makanan vs kiriman paket), <strong>"Tarif"</strong> (estimasi di layar penumpang vs tagihan final vs pendapatan driver setelah komisi — tiga angka yang beda!).</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Bounded Context ≠ Subdomain</div>
+          <p>Sering ketukar: <strong>Subdomain</strong> = <em>problem space</em> — area bisnisnya, kamu <em>menemukan</em>-nya. <strong>Bounded Context</strong> = <em>solution space</em> — cara kamu mengukir software-nya, kamu <em>merancang</em>-nya. Idealnya 1:1, tapi nggak wajib. Antar-context, model bertukar lewat <strong>ID + terjemahan</strong>, bukan saling pinjam object. Smell paling gampang dikenali: satu class <code>Driver</code> yang nyerap field dari semua context sampai gemuk → <em>God object</em>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 CONTEXT MAP -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">06</div><div class="ctitle">
+        <div class="kicker">Strategic · Langkah 4</div><h2>Context Map — relasi antar-context</h2></div></div>
+      <p class="lead reveal">Context nggak hidup sendiri — mereka saling ngobrol. Context Map menjawab: <strong>siapa terhubung ke siapa, dan siapa memengaruhi siapa?</strong> Tiap sambungan punya arah: <strong>upstream (hulu)</strong> — yang menyediakan — dan <strong>downstream (hilir)</strong> — yang menanggung akibat perubahan hulu.</p>
+
+      <div class="cards reveal d1">
+        <div class="card"><div class="code-id">CUSTOMER–SUPPLIER</div><h4>Customer–Supplier</h4><p>Hulu mempertimbangkan kebutuhan hilir; hilir punya suara. Ini <em>komitmen</em> — kalau hulu berhenti melayani, diam-diam merosot jadi Conformist.</p></div>
+        <div class="card"><div class="code-id">CONFORMIST</div><h4>Conformist</h4><p>Hilir pasrah ikut model hulu apa adanya. Wajar kalau hulunya vendor raksasa yang nggak bisa kamu atur.</p></div>
+        <div class="card"><div class="code-id">⭐ ACL</div><h4>Anticorruption Layer</h4><p>Hilir bikin lapisan penerjemah buat melindungi model bersihnya dari model asing hulu. Tembok pertahanan domain.</p></div>
+        <div class="card"><div class="code-id">PUBLISHED LANG</div><h4>Published Language</h4><p>Format komunikasi yang didefinisikan &amp; didokumentasikan — biasanya skema event ber-versi.</p></div>
+        <div class="card"><div class="code-id">SHARED KERNEL</div><h4>Shared Kernel</h4><p>Dua context berbagi sepotong model/kode yang sama. Hemat, tapi rapuh — perubahan satu sisi bisa diam-diam merusak sisi lain. <em>Pakai seminimal mungkin.</em></p></div>
+        <div class="card"><div class="code-id">SEPARATE WAYS</div><h4>Separate Ways</h4><p>Sengaja <em>nggak</em> integrasi — dua context jalan sendiri-sendiri. Kadang duplikasi kecil lebih murah daripada kopling.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Contoh: aplikasi ride-hailing</div>
+          <p><strong>Vendor peta → Matching = Conformist + ACL</strong> 🛡️ — model Google Maps nggak bisa kita ubah; bungkus dengan adapter <code>MapsPort</code> supaya ganti vendor peta nggak mengguncang domain. <strong>Trip → Billing = Customer–Supplier</strong> — billing (hilir) butuh field baru, tim trip (hulu) menyediakannya lewat backlog mereka. <strong><code>trip-completed.v1</code> = Published Language</strong> 📜 — satu skema event yang dikonsumsi billing, loyalty, &amp; analytics sekaligus. <strong>Smell:</strong> respons mentah API peta/pembayaran bocor langsung ke domain tanpa ACL — atau integrasi antar-context yang <em>nggak tercatat di peta mana pun</em> (kopling tersembunyi).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 ENTITY & VALUE OBJECT -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">07</div><div class="ctitle">
+        <div class="kicker">Tactical · Langkah 5</div><h2>Entity vs Value Object</h2></div></div>
+      <p class="lead reveal">Masuk sisi taktis. Tiap kali kamu memodelkan sesuatu, pertanyaan pertamanya selalu ini: <em>benda ini punya <strong>identitas</strong>, atau dia cuma kumpulan <strong>nilai</strong>?</em></p>
+
+      <div class="dtable-wrap reveal d1">
+        <table class="dtable">
+          <thead><tr><th></th><th>Entity</th><th>Value Object</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Dikenali dari</strong></td><td>Identitas (ID)</td><td>Nilai/atribut</td></tr>
+            <tr><td><strong>Equality</strong></td><td>Berdasar ID</td><td>Berdasar semua atribut</td></tr>
+            <tr><td><strong>Berubah?</strong></td><td>Ya (ID-nya tetap)</td><td>Nggak — immutable</td></tr>
+            <tr><td><strong>Contoh</strong></td><td><code>Trip</code>, <code>Driver</code></td><td><code>Money</code>, <code>Location</code>, <code>TripId</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="body reveal d1"><strong>Tes cepat:</strong> "Kalau dua benda atributnya identik persis, apakah mereka benda yang SAMA?" Ya → Value Object (1000 IDR ya 1000 IDR, nggak perlu dibedain). Nggak → Entity (dua trip dengan rute &amp; tarif identik tetap dua perjalanan yang beda). <strong>Heuristik praktis: default-nya VO dulu</strong> — baru naikkan jadi Entity kalau memang perlu dilacak sepanjang waktu. VO lebih gampang di-test, aman di-share, nggak bisa berubah diam-diam.</p>
+
+      <div class="editor reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">trip/domain — Value Object vs Entity</span><span class="editor__verdict">TYPE-SAFE</span></div>
+<pre class="code"><span class="c">// VALUE OBJECT — identitas tak relevan, immutable, memvalidasi diri sendiri</span>
+<span class="k">public record</span> <span class="t">TripId</span>(<span class="t">String</span> value) { }                <span class="c">// id = VO, bukan String mentah</span>
+<span class="k">public record</span> <span class="t">Location</span>(<span class="k">double</span> lat, <span class="k">double</span> lng) {
+    <span class="k">public</span> <span class="f">Location</span> {
+        <span class="k">if</span> (lat &lt; -<span class="n">90</span> || lat &gt; <span class="n">90</span>) <span class="k">throw new</span> <span class="t">IllegalArgumentException</span>(<span class="s">"lat tidak sah"</span>);
+    }
+}
+<span class="k">public record</span> <span class="t">Money</span>(<span class="k">long</span> amount, <span class="t">Currency</span> currency) {
+    <span class="k">public</span> <span class="f">Money</span> {
+        <span class="k">if</span> (amount &lt; <span class="n">0</span>) <span class="k">throw new</span> <span class="t">IllegalArgumentException</span>(<span class="s">"tarif &lt; 0"</span>);  <span class="c">// aturan di constructor</span>
+    }
+}
+
+<span class="c">// ENTITY — punya identitas yang bertahan walau atributnya berubah</span>
+<span class="k">public final class</span> <span class="t">Trip</span> {                       <span class="c">// (Aggregate Root — bab 08)</span>
+    <span class="k">private final</span> <span class="t">TripId</span> id;                     <span class="c">// identitas, berupa VO</span>
+    <span class="c">// status, driver, rute — boleh berubah; id tetap</span>
+}</pre>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Obat buat Primitive Obsession</div>
+          <p>Nebar <code>String</code>/<code>long</code> mentah ke mana-mana bikin <code>fare = -5000</code> lolos begitu aja, dan <code>assign(driverId, tripId)</code> gampang kebalik urutannya — compiler diem aja soalnya dua-duanya String. Dengan VO: <code>Money</code> nggak pernah bisa negatif, dan <code>DriverId</code> nggak mungkin ketukar sama <code>PassengerId</code> — <strong>satu kelas bug hilang di tingkat tipe, sebelum test pun jalan.</strong></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 AGGREGATE -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">08</div><div class="ctitle">
+        <div class="kicker">Tactical · Langkah 6</div><h2>Aggregate &amp; Aggregate Root</h2></div></div>
+      <p class="lead reveal">Konsep taktis paling penting — penentu cara kamu menjaga <strong>konsistensi data</strong>. <strong>Aggregate</strong> = sekelompok Entity &amp; VO yang diperlakukan sebagai satu unit, dengan <strong>batas konsistensi</strong>. <strong>Aggregate Root</strong> = satu-satunya pintu masuk; dialah yang menegakkan <strong>invariant</strong> — aturan yang harus <em>selalu</em> benar.</p>
+
+      <div class="editor good reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">trip/domain/Trip.java — invariant dijaga DI DALAM root</span><span class="editor__verdict">AGGREGATE ROOT</span></div>
+<pre class="code"><span class="k">public final class</span> <span class="t">Trip</span> {                            <span class="c">// Aggregate Root</span>
+    <span class="k">private final</span> <span class="t">TripId</span> id;                          <span class="c">// identitasnya</span>
+    <span class="k">private</span> <span class="t">TripStatus</span> status;
+    <span class="k">private</span> <span class="t">DriverId</span> driver;                          <span class="c">// aggregate lain → pegang ID, bukan objek</span>
+
+    <span class="c">// konstruksi HANYA lewat factory — nggak ada `new` bebas (bab 10)</span>
+    <span class="k">public static</span> <span class="t">Trip</span> <span class="f">create</span>(<span class="c">/*…*/</span>)      { <span class="c">/* … */</span> }
+    <span class="k">public static</span> <span class="t">Trip</span> <span class="f">reconstitute</span>(<span class="c">/*…*/</span>){ <span class="c">/* dipanggil Repository */</span> }
+
+    <span class="k">public void</span> <span class="f">complete</span>(<span class="t">Money</span> finalFare) {
+        <span class="k">if</span> (status != <span class="t">TripStatus</span>.ONGOING)
+            <span class="k">throw new</span> <span class="t">TripNotOngoingException</span>(id);      <span class="c">// invariant: transisi status</span>
+        <span class="k">if</span> (finalFare.amount() &lt; minimumFare())
+            <span class="k">throw new</span> <span class="t">FareBelowMinimumException</span>(id);    <span class="c">// invariant: tarif minimum</span>
+        <span class="k">this</span>.status = <span class="t">TripStatus</span>.COMPLETED;
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Kode luar <strong>nggak boleh</strong> nge-update status trip langsung ke database — harus lewat method root (<code>complete()</code>, <code>cancel()</code>), supaya transisi status &amp; aturan tarif <em>selalu</em> dicek. Intinya aggregate bukan soal "ngelompokin class" — tapi soal <strong>memastikan nggak ada jalan pintas yang bisa bikin data jadi nggak sah</strong>. Trip yang "selesai" padahal nggak pernah jalan, misalnya.</p>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4>4 aturan praktis</h4>
+          <ul>
+            <li>Invariant dijaga <b>sinkron</b> di dalam batas (satu transaksi)</li>
+            <li>Referensi ke aggregate lain lewat <b>ID</b>, bukan objek</li>
+            <li><b>Satu transaksi = satu aggregate</b></li>
+            <li>Bikin aggregate <b>kecil</b> — yang gede bikin lock contention</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Konsistensi: sekarang vs nanti</h4>
+          <ul>
+            <li><b>Strong</b> (harus benar SEKARANG) → di dalam satu aggregate: status trip</li>
+            <li><b>Eventual</b> (boleh benar NANTI) → antar aggregate, lewat event</li>
+            <li>Saldo dompet driver → aggregate lain, di-update <b>via event</b> TripCompleted</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 DOMAIN EVENT -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">09</div><div class="ctitle">
+        <div class="kicker">Tactical · Langkah 7</div><h2>Domain Event</h2></div></div>
+      <p class="lead reveal">Catatan bahwa <strong>sesuatu yang bermakna telah terjadi</strong> di domain, ditulis dalam <strong>bentuk lampau</strong>: <code>TripCompleted</code>, <code>DriverAssigned</code>. Immutable (masa lalu nggak bisa diedit), bawa data secukupnya (ID + nilai kunci), ber-timestamp.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">trip/domain/event — fakta lampau, immutable</span><span class="editor__verdict">PAST TENSE</span></div>
+<pre class="code"><span class="k">public record</span> <span class="t">TripCompleted</span>(<span class="t">TripId</span> trip, <span class="t">DriverId</span> driver, <span class="t">Money</span> fare, <span class="t">Instant</span> at) { }
+<span class="c">// tetangganya: DriverAssigned, PassengerPickedUp, TripCancelled, …</span></pre>
+      </div>
+
+      <p class="body reveal d1"><strong>Kenapa ini penting:</strong> (1) <em>decoupling</em> — begitu <code>TripCompleted</code> terbit: pembayaran ditagih, dompet driver nambah, poin loyalti terakru, penumpang diminta rating — dan si <code>Trip</code> <strong>nggak perlu kenal satu pun</strong> dari mereka; (2) <em>mekanisme eventual consistency</em> — inget "satu transaksi = satu aggregate"? aggregate lain ikut berubah <em>lewat event, menyusul</em>; (3) <em>integrasi antar-context</em>.</p>
+
+      <p class="body reveal d2">Satu pembedaan yang berguna: <strong>domain event</strong> (internal, di dalam satu context — bebas berubah bareng modelnya) vs <strong>integration event</strong> (menyeberang context, kayak <code>trip-completed.v1</code> — ini <em>kontrak publik</em>, harus stabil &amp; ber-versi, alias Published Language dari bab 06). Jangan sebar event internal mentah-mentah ke context lain — itu sama saja bocorin model.</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Outbox Pattern — kenapa nggak publish langsung?</div>
+          <p>Masalah klasik <strong>dual-write</strong>: simpan aggregate ke DB, terus publish event ke broker secara terpisah — dua-duanya bisa nggak sinkron. DB commit tapi publish gagal → <em>driver nggak pernah dibayar</em>. Publish sukses tapi DB rollback → <em>driver "dibayar" untuk trip yang nggak pernah tersimpan</em>. <strong>Solusinya:</strong> di transaksi DB yang sama, tulis event ke tabel <code>outbox</code>; proses terpisah yang baca outbox dan mem-publish dengan andal. Hasil: <strong>event terbit jika &amp; hanya jika perubahan aggregate ter-commit.</strong> Smell: nama event bukan bentuk lampau — <code>CompleteTrip</code> itu perintah; event-nya <code>TripCompleted</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 REPOSITORY / FACTORY / SERVICE -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">10</div><div class="ctitle">
+        <div class="kicker">Tactical · Langkah 8</div><h2>Repository · Factory · Domain Service</h2></div></div>
+      <p class="lead reveal">Tiga blok pendukung yang bikin aggregate bisa "hidup": disimpan, dilahirkan dengan benar, dan dibantu logika yang lintas-aggregate.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">Repository = PORT di domain, ADAPTER yang meng-implement</span><span class="editor__verdict">DEPENDENCY INVERSION</span></div>
+<pre class="code"><span class="c">// trip/port — PORT (interface). Domain nggak tahu SQL sama sekali.</span>
+<span class="k">public interface</span> <span class="t">TripRepository</span> {
+    <span class="t">Optional</span>&lt;<span class="t">Trip</span>&gt; <span class="f">findById</span>(<span class="t">TripId</span> id);
+    <span class="k">void</span> <span class="f">save</span>(<span class="t">Trip</span> trip);
+}
+
+<span class="c">// adapter database — ADAPTER (JDBC). Yang depend KE domain, bukan sebaliknya.</span>
+<span class="k">final class</span> <span class="t">PostgresTripRepository</span> <span class="k">implements</span> <span class="t">TripRepository</span> { <span class="c">/* … */</span> }</pre>
+      </div>
+
+      <div class="cards reveal d2">
+        <div class="card"><div class="code-id">REPOSITORY</div><h4>Repository</h4><p>Ilusi "koleksi aggregate di memori" — minta by ID, simpan, selesai. <strong>Satu per Aggregate Root</strong>, bukan per tabel. DB cuma detail di baliknya.</p></div>
+        <div class="card"><div class="code-id">FACTORY</div><h4>Factory</h4><p><code>Trip.create()</code> = trip baru (identitas baru + event). <code>Trip.reconstitute()</code> = merakit ulang dari DB — <em>tanpa</em> event, soalnya nggak ada kejadian baru. Yang ini yang dipanggil Repository saat load.</p></div>
+        <div class="card"><div class="code-id">DOMAIN SERVICE</div><h4>Domain Service</h4><p>Aturan bisnis lintas-aggregate yang nggak punya "rumah" di satu Entity. Contoh: <em>SurgePricingService</em> — hitung faktor tarif dari supply–demand banyak wilayah. Stateless. <em>Pakai hemat.</em></p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Domain Service ≠ Application Service (use case)</div>
+          <p><strong>Application Service</strong> (<code>BookTripUseCase</code>) itu <em>sutradara</em>: buka transaksi, muat via repository, panggil method domain, simpan, publish event — <strong>tanpa</strong> aturan bisnis sendiri. <strong>Domain Service</strong> (<code>SurgePricingService</code>) justru <em>isinya</em> aturan bisnis. ⚠️ Kalau semua logika numpuk di service dan entity kamu tinggal getter-setter doang → itu <strong>Anemic Domain Model</strong>, anti-pattern paling umum. Obatnya: dorong logika masuk ke aggregate; domain service cuma buat yang beneran nggak punya rumah.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 HEXAGONAL -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">11</div><div class="ctitle">
+        <div class="kicker">Perekat · Langkah 9</div><h2>Hexagonal / Layered Architecture</h2></div></div>
+      <p class="lead reveal">Perekatnya. Taruh domain di pusat — murni, nggak bergantung apa pun. Dunia luar (HTTP, DB, vendor peta, payment) nempel lewat <strong>port &amp; adapter</strong>. Dan satu-satunya aturan yang perlu diingat: <strong>semua dependency menunjuk KE DALAM.</strong></p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">susunan lapisan — dependency menunjuk ke dalam</span><span class="editor__verdict">PORTS &amp; ADAPTERS</span></div>
+<pre class="code">  APP  → <span class="t">adapter-http</span>  <span class="c">(REST / mobile API — driving adapter)</span>  → masuk
+          <span class="t">application</span>  <span class="c">(use case: BookTripUseCase, CompleteTripUseCase…)</span>   orkestrasi
+          ┌───────────────────────────────────────────┐
+          │  <span class="t">domain</span>  (Trip, Money, Location, event…)     │   ← JANTUNG, murni
+          └───────────────────────────────────────────┘
+          <span class="t">port</span>  <span class="c">(TripRepository, MapsPort, PaymentGatewayPort, Clock…)</span>  kontrak keluar
+   DB   ← <span class="t">adapter-postgres</span>              <span class="c">(driven adapter)</span> ← keluar
+  MAPS  ← <span class="t">adapter-maps (Google Maps)</span>  ·  PAY ← <span class="t">adapter-payment-gateway</span>
+          <span class="c">bootstrap = ngerakit port ↔ adapter   ·   launcher = titik jalan</span></pre>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4>The Dependency Rule</h4>
+          <ul>
+            <li>Panah dependency <b>cuma boleh ke dalam</b></li>
+            <li>Domain <b>nggak tahu</b> adapter itu ada</li>
+            <li>Adapter yang depend ke <b>domain</b> (Dependency Inversion)</li>
+            <li>Framework &amp; vendor (peta, payment) cuma <b>detail</b> yang bisa diganti</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Yang kamu dapat</h4>
+          <ul>
+            <li><b>Testability</b> — domain &amp; use case dites tanpa DB/HTTP (pakai fake)</li>
+            <li><b>Bebas framework</b> — ganti framework, domain selamat</li>
+            <li><b>Investasi terlindungi</b> — core domain nggak ikut membusuk saat infra berubah</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Ditegakkan mesin, bukan sekadar niat</div>
+          <p>Aturan ini bisa dipaksa otomatis pakai <strong>ArchUnit</strong>: tulis test "package <code>domain</code> dilarang meng-import framework/adapter" — siapa pun yang nggak sengaja <code>import</code>, <strong>build-nya gagal</strong>. Jadi "menunjuk ke dalam" bukan kesepakatan di kepala orang yang bisa luntur — dia dijaga test, sama seperti unit test menjaga logika.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 CQRS -->
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">12</div><div class="ctitle">
+        <div class="kicker">Lanjutan · Pola baca/tulis</div><h2>CQRS — pisahkan yang nulis dari yang baca</h2></div></div>
+      <p class="lead reveal"><strong>CQRS</strong> (Command Query Responsibility Segregation) = pisahkan model yang <strong>menulis</strong> (mengubah data, jaga invariant) dari model yang <strong>membaca</strong> (menyajikan data ke layar). Akarnya dari prinsip lama <strong>CQS</strong>-nya Bertrand Meyer — <em>"sebuah method itu command ATAU query, jangan dua-duanya"</em> — yang oleh Greg Young diangkat ke level arsitektur.</p>
+
+      <p class="body reveal d1">Kenapa dipisah? Karena kebutuhan baca &amp; tulis itu beda banget. Sisi tulis butuh aggregate kecil yang ketat; sisi baca butuh data gepeng yang cepat ditampilkan. Maksa satu model ngelayanin dua-duanya = dua-duanya kompromi.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4>Write model (sisi perintah)</h4>
+          <ul>
+            <li>Menegakkan <b>invariant</b> (lewat aggregate)</li>
+            <li>Aggregate kecil, transaksional</li>
+            <li>Bentuknya ngikutin aturan bisnis</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Read model (sisi kueri)</h4>
+          <ul>
+            <li>Cepat, <b>denormalized</b>, siap-tampil</li>
+            <li>Boleh banyak bentuk untuk banyak layar</li>
+            <li>Bentuknya ngikutin kebutuhan tampilan</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="editor reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">port tulis &amp; port baca — dipisah sejak interface</span><span class="editor__verdict">CQRS RINGAN</span></div>
+<pre class="code"><span class="c">// SISI TULIS — model konsistensi (lewat aggregate root + invariant)</span>
+<span class="k">public interface</span> <span class="t">TripRepository</span> {
+    <span class="t">Optional</span>&lt;<span class="t">Trip</span>&gt; <span class="f">findById</span>(<span class="t">TripId</span> id);
+    <span class="k">void</span> <span class="f">save</span>(<span class="t">Trip</span> trip);
+}
+
+<span class="c">// SISI BACA — model kueri (langsung bentuk siap-tampil, tanpa aggregate)</span>
+<span class="k">public interface</span> <span class="t">TripHistoryReader</span> {
+    <span class="t">List</span>&lt;<span class="t">TripSummary</span>&gt; <span class="f">listByPassenger</span>(<span class="t">PassengerId</span> id, <span class="t">Month</span> month);
+}</pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Ringan vs penuh — dan harganya</div>
+          <p><strong>CQRS ringan:</strong> database-nya satu, cuma port baca (<code>TripHistoryReader</code>) dipisah dari port tulis (<code>TripRepository</code>). Murah, hampir selalu worth it. <strong>CQRS penuh:</strong> read store <em>terpisah</em>, di-update asinkron via event — contoh: layar "pendapatan harian driver". Event <code>TripCompleted</code> diproyeksikan ke database khusus dashboard, jadi kueri laporan yang berat nggak ngebebanin sisi transaksi yang harus ngebut. ⚠️ Harganya: <strong>eventual consistency</strong> — read model telat sepersekian detik dari write model, dan kompleksitas nambah. Jadi: <strong>pakai penuh cuma kalau kebutuhan baca &amp; tulis beneran beda jauh.</strong> Buat CRUD biasa? Satu model aja cukup, serius.</p>
+          <p>Mau lebih dalam? Ada deck khususnya: <strong><a href="cqrs/index.html" style="color:var(--brass)">CQRS deep dive</a></strong> — 4 level adopsi, 2 contoh end-to-end (kode + tabel + diagram), sampai strategi UX buat eventual consistency.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 EVENT SOURCING -->
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">13</div><div class="ctitle">
+        <div class="kicker">Lanjutan · Pola penyimpanan</div><h2>Event Sourcing — state = rekaman peristiwa</h2></div></div>
+      <p class="lead reveal">Biasanya kita nyimpan <strong>keadaan terkini</strong> — saldo 150 ribu, ya udah, satu angka. <strong>Event Sourcing</strong> membalik itu: yang disimpan adalah <strong>seluruh urutan peristiwa</strong>, dan keadaan terkini = hasil <em>replay</em> semua peristiwa. Log-nya yang jadi sumber kebenaran.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">state-oriented vs event-sourced</span><span class="editor__verdict">APPEND-ONLY</span></div>
+<pre class="code"><span class="c">// STATE-ORIENTED (paling umum) — simpan keadaan TERKINI; update menimpa</span>
+dompetDriver = { saldo: <span class="n">150000</span> }       <span class="c">UPDATE dompet SET saldo = 150000</span>
+
+<span class="c">// EVENT-SOURCED — simpan URUTAN peristiwa (append-only, nggak pernah ditimpa)</span>
+<span class="t">TripEarningCredited</span>(<span class="n">100000</span>)
+<span class="t">Withdrawn</span>(           <span class="n">30000</span>)   ──▶  saldo = <span class="f">fold</span>(events) = <span class="n">150000</span>
+<span class="t">TripEarningCredited</span>( <span class="n">80000</span>)</pre>
+      </div>
+
+      <div class="cols split reveal d2">
+        <div>
+          <h4 class="r-h">Yang kamu dapat</h4>
+          <ul class="good-l">
+            <li>Riwayat audit <b>lengkap</b>, gratis</li>
+            <li><b>Time travel</b> — bisa lihat saldo di titik mana pun di masa lalu</li>
+            <li>Debugging: "kok saldonya segini?" → tinggal baca event-nya</li>
+            <li>Cocok banget dengan domain event &amp; CQRS</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="l-h">Harganya</h4>
+          <ul class="bad-l">
+            <li>Versioning skema event (schema evolution) itu susah</li>
+            <li>Butuh <b>snapshot</b> — replay jutaan event tiap load itu lambat</li>
+            <li>Kueri langsung susah → <b>CQRS jadi hampir wajib</b></li>
+            <li>Kurva belajar curam buat seluruh tim</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Kesalahpahaman terbesar (baca ini)</div>
+          <p><strong>Event Sourcing ≠ pakai domain event.</strong> Banyak tim ngiranya sama. Padahal kamu bisa pakai domain event (bab 09) <strong>tanpa</strong> event sourcing — aggregate <code>Trip</code> tetap disimpan sebagai <em>state</em> biasa di database; event cuma diterbitkan sebagai pemberitahuan. ES itu komitmen yang jauh lebih spesifik: <em>"state ITU log event-nya."</em></p>
+          <p>Yang paling alami di-event-source di ride-hailing: <strong>dompet digital</strong> (saldo driver/penumpang) — buku besar <em>append-only</em> berisi rentetan transaksi yang immutable; saldo diturunkan dari peristiwa, bukan angka yang ditimpa. (Buku besar akuntan itu event sourcing sejak ratusan tahun lalu — kita cuma baru menamainya.) <strong>Sikap sehat:</strong> ES bukan default. Pakai di domain yang audit/riwayat/temporal-nya kebutuhan inti — uang, ledger. Buat profil driver atau master data promo? Simpan state biasa, hidup lebih tenang.</p>
+          <p>Mau lebih dalam? Ada deck khususnya: <strong><a href="event-sourcing/index.html" style="color:var(--brass)">Event Sourcing deep dive</a></strong> — anatomi event store, decide→append→replay, concurrency, projection, schema evolution, snapshot.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 MENYATUKAN -->
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">14</div><div class="ctitle">
+        <div class="kicker">Sintesis · Penutup</div><h2>Menyatukan semuanya</h2></div></div>
+      <p class="lead reveal">Kalau diperas jadi satu kalimat: DDD itu menyelaraskan <strong>tiga hal</strong> supaya saling menguatkan — <strong>bahasa bisnis</strong>, <strong>model di kode</strong>, dan <strong>struktur tim</strong>.</p>
+
+      <ul class="creed reveal d1">
+        <li><b>PO menjelaskan PBI</b> di planning → di situ Ubiquitous Language ditempa, gratis, tiap minggu.</li>
+        <li><b>PBI dikelompokkan per bagian</b> → itu pengelompokan per bounded context; tim mencerminkan context-nya (<b>Conway's Law</b>).</li>
+        <li><b>Batas module di kode</b> ≈ bounded context; tegakkan pakai <b>ArchUnit</b>, jangan cuma kesepakatan.</li>
+        <li><b>Strategic &gt; tactical</b> — pattern kode itu bagian paling gampang sekaligus paling nggak penting.</li>
+        <li><b>Jangan pakai DDD di mana-mana</b> — ongkosnya cuma sepadan buat domain yang kompleks &amp; bernilai (core). Yang generic? CRUD aja.</li>
+      </ul>
+
+      <div class="endcard reveal d2">
+        <h3>Mulai dari mana (praktis)</h3>
+        <p>Nilai tambah terbesar ada di <strong>sisi strategis &amp; komunikasi</strong>: satukan bahasa dengan PO, petakan context, sadari mana yang core. Folder ini menyertakan <strong>tiga contoh dokumen nyata</strong> (kasus: RideGo, ride-hailing fiktif) — pelajari bentuknya, lalu bikin versi produkmu sendiri. Urutan yang disarankan: glossary dulu (paling murah, dampak paling cepat), lalu subdomain map, lalu context map.</p>
+        <div class="map">
+          <div><b>Glossary</b><span><a href="contoh-confluence-1-glossary.html">contoh-confluence-1-glossary.html</a></span></div>
+          <div><b>Subdomain Map</b><span><a href="contoh-confluence-2-subdomain-map.html">contoh-confluence-2-subdomain-map.html</a></span></div>
+          <div><b>Context Map</b><span><a href="contoh-confluence-3-context-map.html">contoh-confluence-3-context-map.html</a></span></div>
+          <div><b>Bacaan</b><span>DDD Distilled → Khononov → Evans (buku biru)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>docs/learning/ddd/</b> — Domain-Driven Design · dari bahasa sampai kode · materi knowledge sharing.<br>
+  Navigasi: scroll, klik bab di panel kiri, atau tekan <b>←</b>/<b>→</b> (juga <b>j</b>/<b>k</b>, Home/End).
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") { ev.preventDefault(); goTo(current + 1); }
+    else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") { ev.preventDefault(); goTo(current - 1); }
+    else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

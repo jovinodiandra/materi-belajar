@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event Sourcing — Deep Dive · State = Rekaman Peristiwa</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  :root {
+    --ink:#0d1117; --ink-2:#0f141b; --panel:#161b22; --panel-2:#1b212b;
+    --line:#232b36; --line-soft:#1c232d; --fg:#c4cdda; --fg-strong:#f0f4f9;
+    --muted:#76828f; --muted-2:#5a6675; --brass:#d9a441; --brass-dim:#8a6d2f;
+    --bad:#f0746a; --bad-bg:rgba(240,116,106,.07); --bad-line:rgba(240,116,106,.32);
+    --good:#4ec9b0; --good-bg:rgba(78,201,176,.07); --good-line:rgba(78,201,176,.32);
+    --t-comment:#5f6b78; --t-key:#c99bf0; --t-type:#4ec9b0; --t-str:#9fc7f0;
+    --t-num:#e0a96b; --t-fn:#d9a441; --t-anno:#7fa6c4;
+    --mono:"Cascadia Code","Cascadia Mono","JetBrains Mono",Consolas,"SF Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --rail-w:250px; --maxw:1080px;
+  }
+
+  body { background:var(--ink); color:var(--fg); font-family:var(--sans);
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility; overflow-x:hidden; }
+
+  .topbar { position:fixed; top:0; left:0; right:0; z-index:50; height:44px;
+    background:rgba(13,17,23,.86); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px;
+    padding:0 16px; font-family:var(--mono); font-size:12.5px; }
+  .topbar__dots { display:flex; gap:7px; }
+  .topbar__dots i { width:11px; height:11px; border-radius:50%; display:block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#d9a441; }
+  .topbar__dots i:nth-child(3){ background:#4ec9b0; }
+  .topbar__file { color:var(--muted); letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .topbar__file b { color:var(--fg-strong); font-weight:600; }
+  .topbar__counter { margin-left:auto; color:var(--brass); letter-spacing:.12em; white-space:nowrap; }
+  .progress { position:fixed; top:44px; left:0; height:2px; width:0%;
+    background:linear-gradient(90deg,var(--brass-dim),var(--brass)); z-index:51; transition:width .15s linear; }
+
+  .rail { position:fixed; top:44px; left:0; bottom:0; width:var(--rail-w);
+    border-right:1px solid var(--line); background:var(--ink-2); padding:26px 0 40px;
+    overflow-y:auto; z-index:40; font-family:var(--mono); }
+  .rail__title { font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted-2); padding:0 22px 16px; }
+  .rail a { display:flex; align-items:baseline; gap:11px; padding:8px 22px; color:var(--muted);
+    text-decoration:none; font-size:13px; border-left:2px solid transparent;
+    transition:color .18s, border-color .18s, background .18s; }
+  .rail a .num { color:var(--brass-dim); font-size:11.5px; min-width:20px; transition:color .18s; }
+  .rail a:hover { color:var(--fg-strong); background:rgba(255,255,255,.02); }
+  .rail a.active { color:var(--fg-strong); border-left-color:var(--brass); background:rgba(217,164,65,.05); }
+  .rail a.active .num { color:var(--brass); }
+
+  .stage { margin-left:var(--rail-w); }
+  section.chapter { min-height:100vh; padding:96px clamp(22px,5vw,80px) 90px;
+    border-bottom:1px solid var(--line-soft); scroll-margin-top:44px;
+    display:flex; flex-direction:column; justify-content:center; }
+  .wrap { width:100%; max-width:var(--maxw); margin:0 auto; }
+
+  .reveal { opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity:1; transform:none; }
+  .reveal.d1 { transition-delay:.08s; } .reveal.d2 { transition-delay:.16s; } .reveal.d3 { transition-delay:.24s; }
+
+  .hero { text-align:left; }
+  .hero .eyebrow { font-family:var(--mono); color:var(--brass); font-size:13px; letter-spacing:.04em; margin-bottom:26px; max-width:70ch; }
+  .hero h1 { font-family:var(--mono); font-weight:700; font-size:clamp(30px,6.2vw,68px);
+    line-height:1.05; letter-spacing:-.02em; color:var(--fg-strong); max-width:18ch; }
+  .hero h1 .accent { color:var(--brass); }
+  .cursor { display:inline-block; width:.58ch; height:1.02em; background:var(--brass);
+    margin-left:.08em; transform:translateY(.12em); animation:blink 1.05s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .hero .sub { margin-top:30px; max-width:64ch; font-size:19px; color:var(--fg); }
+  .hero .byline { margin-top:22px; font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .hero .byline b { color:var(--fg-strong); font-weight:600; }
+  .scrollcue { margin-top:52px; font-family:var(--mono); font-size:12.5px; color:var(--muted-2);
+    letter-spacing:.14em; display:inline-flex; align-items:center; gap:10px; }
+  .scrollcue .arrow { animation:bob 1.6s ease-in-out infinite; color:var(--brass); }
+  @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(5px);} }
+  .herostats { display:flex; flex-wrap:wrap; gap:14px; margin-top:50px; font-family:var(--mono); }
+  .herostats .chip { border:1px solid var(--line); border-radius:8px; padding:12px 16px; background:var(--panel); font-size:12.5px; color:var(--muted); }
+  .herostats .chip b { color:var(--fg-strong); }
+
+  .chead { display:flex; align-items:flex-start; gap:22px; margin-bottom:16px; }
+  .chead .cnum { font-family:var(--mono); font-weight:700; font-size:clamp(34px,5vw,58px);
+    color:transparent; -webkit-text-stroke:1.4px var(--brass-dim); line-height:.9; letter-spacing:-.02em; flex:none; }
+  .chead .ctitle { padding-top:4px; }
+  .chead .ctitle .kicker { font-family:var(--mono); font-size:13px; font-weight:600; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--brass); margin-bottom:8px; display:flex; align-items:center; gap:9px; }
+  .chead .ctitle .kicker::before { content:""; flex:none; width:3px; height:13px; background:var(--brass); border-radius:1px; }
+  .chead h2 { font-family:var(--mono); font-weight:700; font-size:clamp(24px,3.6vw,38px); line-height:1.1; letter-spacing:-.015em; color:var(--fg-strong); }
+
+  .lead { font-size:19px; color:var(--fg); max-width:72ch; margin:6px 0 8px; }
+  .lead strong { color:var(--fg-strong); font-weight:600; }
+  p.body { max-width:74ch; margin:14px 0; color:var(--fg); }
+  p.body strong { color:var(--fg-strong); }
+  p.body code, li code, .lead code, td code { font-family:var(--mono); font-size:.88em; color:var(--brass); background:rgba(217,164,65,.08); padding:1px 6px; border-radius:4px; }
+
+  .note { display:flex; gap:16px; margin:28px 0 4px; max-width:82ch; border:1px solid var(--line);
+    border-radius:10px; overflow:hidden; background:var(--panel); }
+  .note__spine { flex:none; width:8px; background:linear-gradient(var(--brass),var(--brass-dim)); }
+  .note__body { padding:16px 20px 18px; }
+  .note__tag { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--brass); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .note__tag .ico { font-size:13px; }
+  .note p { color:var(--fg); font-size:15.5px; max-width:none; }
+  .note p strong { color:var(--fg-strong); }
+  .note p + p { margin-top:10px; }
+  .note code { font-family:var(--mono); font-size:.86em; color:var(--good); background:rgba(78,201,176,.08); padding:1px 6px; border-radius:4px; }
+
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin:24px 0; }
+  .cols h4 { font-family:var(--mono); font-size:14px; margin-bottom:8px; color:var(--brass); }
+  .cols.split .l-h { color:var(--bad); } .cols.split .r-h { color:var(--good); }
+  .cols ul { list-style:none; }
+  .cols li { padding:7px 0 7px 24px; position:relative; font-size:15.5px; color:var(--fg); border-bottom:1px solid var(--line-soft); }
+  .cols li::before { position:absolute; left:0; font-family:var(--mono); color:var(--brass); content:"\2192"; }
+  .cols.split .bad-l li::before { content:"\2715"; color:var(--bad); }
+  .cols.split .good-l li::before { content:"\2713"; color:var(--good); }
+  .cols li b { color:var(--fg-strong); }
+
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; margin-top:26px; }
+  .card { border:1px solid var(--line); border-radius:10px; padding:18px 18px 16px; background:var(--panel); transition:border-color .2s, transform .2s; }
+  .card:hover { border-color:var(--brass-dim); transform:translateY(-3px); }
+  .card .code-id { font-family:var(--mono); font-size:11.5px; color:var(--brass); letter-spacing:.06em; text-transform:uppercase; }
+  .card h4 { font-size:16px; color:var(--fg-strong); margin:6px 0 7px; font-weight:600; }
+  .card p { font-size:14.5px; color:var(--muted); }
+  .card p em { color:var(--fg); font-style:normal; }
+
+  .editor { border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--panel);
+    display:flex; flex-direction:column; box-shadow:0 14px 40px -28px rgba(0,0,0,.9); margin:28px 0 8px; max-width:940px; }
+  .editor.good { border-color:var(--good-line); }
+  .editor.bad { border-color:var(--bad-line); }
+  .editor__bar { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--line);
+    background:var(--panel-2); font-family:var(--mono); font-size:12px; }
+  .editor__bar .dots { display:flex; gap:6px; }
+  .editor__bar .dots i { width:9px; height:9px; border-radius:50%; display:block; background:var(--line); }
+  .editor__name { color:var(--muted); }
+  .editor__verdict { margin-left:auto; font-weight:600; letter-spacing:.04em; font-size:11.5px; color:var(--good); }
+  .editor.bad .editor__verdict { color:var(--bad); }
+  pre.code { font-family:var(--mono); font-size:13px; line-height:1.62; padding:16px 18px; overflow-x:auto; color:var(--fg); tab-size:2; flex:1; white-space:pre; }
+  pre.code::-webkit-scrollbar { height:9px; }
+  pre.code::-webkit-scrollbar-thumb { background:var(--line); border-radius:6px; }
+  .c{ color:var(--t-comment); font-style:italic; } .k{ color:var(--t-key); } .t{ color:var(--t-type); }
+  .s{ color:var(--t-str); } .n{ color:var(--t-num); } .f{ color:var(--t-fn); } .a{ color:var(--t-anno); }
+
+  .dtable-wrap { overflow-x:auto; margin:24px 0 8px; }
+  table.dtable { border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px; }
+  table.dtable th, table.dtable td { text-align:left; padding:9px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  table.dtable th { font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--brass); border-bottom:1px solid var(--brass-dim); }
+  table.dtable td { color:var(--fg); }
+  table.dtable td strong { color:var(--fg-strong); }
+  table.dtable tr:hover td { background:rgba(255,255,255,.015); }
+  table.dtable td.num { font-family:var(--mono); }
+
+  .creed { max-width:74ch; }
+  .creed li { list-style:none; font-family:var(--mono); font-size:clamp(14px,1.9vw,17px); color:var(--fg);
+    padding:12px 0 12px 30px; position:relative; border-bottom:1px solid var(--line-soft); line-height:1.55; }
+  .creed li::before { content:"\2192"; position:absolute; left:0; color:var(--brass); }
+  .creed li b { color:var(--fg-strong); }
+  .endcard { margin-top:38px; border:1px solid var(--line); border-radius:12px;
+    background:linear-gradient(160deg,var(--panel),var(--ink-2)); padding:30px clamp(20px,4vw,40px); }
+  .endcard h3 { font-family:var(--mono); color:var(--fg-strong); font-size:22px; margin-bottom:10px; }
+  .endcard p { color:var(--fg); max-width:70ch; }
+  .endcard .map { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:22px; font-family:var(--mono); font-size:12.5px; }
+  .endcard .map div { border:1px solid var(--line); border-radius:8px; padding:11px 13px; background:rgba(0,0,0,.2); }
+  .endcard .map b { color:var(--brass); display:block; margin-bottom:3px; }
+  .endcard .map span { color:var(--muted); }
+  .endcard .map a { color:var(--muted); text-decoration:none; }
+  .endcard .map a:hover { color:var(--fg-strong); text-decoration:underline; }
+
+  .analogy { border-left:3px solid var(--brass); background:linear-gradient(90deg,rgba(217,164,65,.06),transparent 80%);
+    padding:18px 24px; margin:26px 0; border-radius:0 8px 8px 0; max-width:760px; }
+  .analogy .tag { font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--brass); display:block; margin-bottom:6px; }
+  .analogy p { color:var(--fg); font-size:16.5px; }
+  .analogy em { color:var(--fg-strong); font-style:italic; }
+
+  footer { margin-left:var(--rail-w); padding:34px clamp(22px,5vw,80px); font-family:var(--mono);
+    font-size:12.5px; color:var(--muted-2); border-top:1px solid var(--line); }
+  footer b { color:var(--muted); }
+  footer a { color:var(--muted); }
+
+  @media (max-width:920px) {
+    :root { --rail-w:0px; }
+    .rail { display:none; } .stage, footer { margin-left:0; }
+    .cols { grid-template-columns:1fr; } body { font-size:16px; } .topbar__file { font-size:11px; }
+  }
+  @media (max-width:520px) { .chead { gap:14px; } section.chapter { padding-left:18px; padding-right:18px; } }
+  @media (prefers-reduced-motion:reduce) { * { animation:none !important; scroll-behavior:auto !important; }
+    .reveal { opacity:1; transform:none; transition:none; } html { scroll-behavior:auto; } }
+  a:focus-visible { outline:2px solid var(--brass); outline-offset:3px; border-radius:4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/ddd/event-sourcing/<b>event-sourcing-deep-dive.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 11</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__title">// Bab</div>
+  <a href="#c00"><span class="num">00</span> Pembuka</a>
+  <a href="#c01"><span class="num">01</span> Ide dasar: log, bukan foto</a>
+  <a href="#c02"><span class="num">02</span> Anatomi Event Store</a>
+  <a href="#c03"><span class="num">03</span> Menulis: decide → append</a>
+  <a href="#c04"><span class="num">04</span> Membaca: replay → fold</a>
+  <a href="#c05"><span class="num">05</span> Contoh 1 · Dompet driver</a>
+  <a href="#c06"><span class="num">06</span> Contoh 2 · Trip lifecycle</a>
+  <a href="#c07"><span class="num">07</span> Projection &amp; read model</a>
+  <a href="#c08"><span class="num">08</span> Schema evolution</a>
+  <a href="#c09"><span class="num">09</span> Snapshot &amp; performa</a>
+  <a href="#c10"><span class="num">10</span> Anti-pattern &amp; kapan jangan</a>
+  <a href="#c11"><span class="num">11</span> Penutup</a>
+</nav>
+
+<main class="stage">
+
+  <!-- 00 HERO -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// "Current state is a first-class derivative of the event log." — komunitas event sourcing</div>
+      <h1 class="reveal d1">Event Sourcing <span class="accent">deep dive</span><span class="cursor" aria-hidden="true"></span></h1>
+      <p class="sub reveal d2">
+        Di materi DDD utama, Event Sourcing cuma dapat satu bab. Di sini kita bongkar mesinnya:
+        <span style="color:var(--brass)">anatomi event store</span>, siklus <span style="color:var(--brass)">decide → append → replay</span>,
+        dua contoh lengkap (dompet driver &amp; siklus hidup trip), sampai bagian yang jarang diceritain orang:
+        <span style="color:var(--brass)">schema evolution</span>, <span style="color:var(--brass)">snapshot</span>, dan cara-cara nyakitin diri sendiri.
+        Tetap di dunia <strong>ride-hailing</strong> (RideGo).
+      </p>
+      <div class="byline reveal d2">Lanjutan dari <b>docs/learning/ddd</b> bab 13 · pasangannya <b>CQRS deep dive</b></div>
+      <div class="herostats reveal d3">
+        <div class="chip">state = <b>fold(events)</b></div>
+        <div class="chip"><b>2 contoh</b> end-to-end</div>
+        <div class="chip">tabel event store · <b>concurrency</b> · upcaster</div>
+      </div>
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--brass)">→</b> UNTUK MULAI</div>
+
+      <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:36px 0 0;border-radius:0 10px 10px 0;max-width:70ch">
+        <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+        <p style="margin:5px 0"><b>Given</b> — sistem cuma menyimpan state/kondisi terakhir suatu data (misal saldo dompet driver di-<code>UPDATE</code> menimpa nilai lama).</p>
+        <p style="margin:5px 0"><b>When</b> — ada kebutuhan audit trail, sengketa saldo, atau tim harus tahu <em>kenapa</em> data bisa jadi begini (bukan cuma tahu nilainya sekarang).</p>
+        <p style="margin:5px 0"><b>Then</b> — riwayat perubahannya sudah hilang duluan, ditimpa UPDATE demi UPDATE, dan tidak bisa direkonstruksi lagi.</p>
+        <p style="margin:8px 0 0">→ makanya kita pakai <b>Event Sourcing</b>: simpan setiap perubahan sebagai rekaman peristiwa (event) yang append-only, bukan cuma state akhir — state terkini tinggal hasil <code>fold(events)</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 IDE DASAR -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">01</div><div class="ctitle">
+        <div class="kicker">Ide dasar</div><h2>Simpan log-nya, bukan fotonya</h2></div></div>
+      <p class="lead reveal">Cara nyimpan data yang biasa itu kayak <strong>foto</strong>: tiap perubahan, fotonya ditimpa foto baru — yang lama hilang. Event Sourcing nyimpan <strong>film</strong>-nya: semua kejadian direkam berurutan, dan "foto terkini" tinggal diputar ulang dari awal.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">dua cara menyimpan kebenaran</span><span class="editor__verdict">FOTO vs FILM</span></div>
+<pre class="code"><span class="c">// STATE-ORIENTED — foto terkini, ditimpa terus</span>
+<span class="t">UPDATE</span> dompet <span class="t">SET</span> saldo = <span class="n">150000</span> <span class="t">WHERE</span> driver_id = <span class="s">'D-4471'</span>;
+<span class="c">// saldo kemarin? kenapa jadi segini? riwayatnya? → hilang. semoga ada tabel audit…</span>
+
+<span class="c">// EVENT-SOURCED — film lengkap, append-only</span>
+<span class="t">TripEarningCredited</span> { amount: <span class="n">100000</span>, tripId: <span class="s">"T-991"</span> }
+<span class="t">Withdrawn</span>           { amount:  <span class="n">30000</span>, payoutId: <span class="s">"P-14"</span> }
+<span class="t">TripEarningCredited</span> { amount:  <span class="n">80000</span>, tripId: <span class="s">"T-1004"</span> }
+<span class="c">// saldo sekarang = fold(events) = 150.000 — dan SELURUH ceritanya masih ada</span></pre>
+      </div>
+
+      <div class="analogy reveal d2">
+        <span class="tag">Analogi</span>
+        <p>Bank nggak pernah cuma nyimpan angka saldomu. Yang mereka simpan itu <em>mutasi</em> — rekening koran. Saldo hanyalah <em>kesimpulan</em> dari mutasi. Kalau ada sengketa, yang dibuka bukan "saldo", tapi riwayat transaksinya. Akuntansi udah "event sourcing" sejak ratusan tahun lalu — <em>append-only ledger, nggak boleh dihapus, koreksi lewat entry baru</em>. Software cuma baru menamainya.</p>
+      </div>
+
+      <p class="body reveal d2">Konsekuensi mendasarnya satu: <strong>log event = sumber kebenaran</strong> (source of truth). State terkini cuma turunan — bisa dihitung ulang kapan pun, bisa dibuang dan dibangun lagi. Ini bukan "nyimpan event <em>di samping</em> data" — event-nya <em>adalah</em> datanya.</p>
+    </div>
+  </section>
+
+  <!-- 02 ANATOMI EVENT STORE -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">02</div><div class="ctitle">
+        <div class="kicker">Mesinnya</div><h2>Anatomi Event Store</h2></div></div>
+      <p class="lead reveal">Event store itu sebenarnya sederhana: satu tabel append-only. Yang bikin dia "store" beneran cuma dua hal: <strong>stream</strong> (urutan event milik satu aggregate) dan <strong>version</strong> (nomor urut di dalam stream — kunci concurrency).</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">event_store.sql — cuma segini, serius</span><span class="editor__verdict">APPEND-ONLY</span></div>
+<pre class="code"><span class="k">CREATE TABLE</span> <span class="t">event_store</span> (
+  stream_id    <span class="t">TEXT</span>        <span class="k">NOT NULL</span>,   <span class="c">-- milik siapa: 'wallet-D-4471'</span>
+  version      <span class="t">BIGINT</span>      <span class="k">NOT NULL</span>,   <span class="c">-- urutan ke berapa di stream itu: 1,2,3,…</span>
+  event_type   <span class="t">TEXT</span>        <span class="k">NOT NULL</span>,   <span class="c">-- 'TripEarningCredited'</span>
+  payload      <span class="t">JSONB</span>       <span class="k">NOT NULL</span>,   <span class="c">-- isi event-nya</span>
+  occurred_at  <span class="t">TIMESTAMPTZ</span> <span class="k">NOT NULL</span>,
+  <span class="k">PRIMARY KEY</span> (stream_id, version)      <span class="c">-- ← INI kuncinya (lihat bab 03)</span>
+);
+<span class="c">-- aturan rumah: INSERT only. Nggak ada UPDATE. Nggak ada DELETE. Titik.</span></pre>
+      </div>
+
+      <p class="body reveal d1">Isinya kira-kira begini — satu stream per dompet driver:</p>
+
+      <div class="dtable-wrap reveal d2">
+        <table class="dtable">
+          <thead><tr><th>stream_id</th><th>version</th><th>event_type</th><th>payload</th><th>occurred_at</th></tr></thead>
+          <tbody>
+            <tr><td class="num">wallet-D-4471</td><td class="num">1</td><td><code>WalletOpened</code></td><td class="num">{}</td><td class="num">07-01 09:00</td></tr>
+            <tr><td class="num">wallet-D-4471</td><td class="num">2</td><td><code>TripEarningCredited</code></td><td class="num">{amount: 100000, tripId: "T-991"}</td><td class="num">07-24 08:14</td></tr>
+            <tr><td class="num">wallet-D-4471</td><td class="num">3</td><td><code>Withdrawn</code></td><td class="num">{amount: 30000, payoutId: "P-14"}</td><td class="num">07-24 10:02</td></tr>
+            <tr><td class="num">wallet-D-4471</td><td class="num">4</td><td><code>TripEarningCredited</code></td><td class="num">{amount: 80000, tripId: "T-1004"}</td><td class="num">07-24 13:47</td></tr>
+            <tr><td class="num">wallet-D-8102</td><td class="num">1</td><td><code>WalletOpened</code></td><td class="num">{}</td><td class="num">07-03 11:20</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Pakai apa nyimpannya?</div>
+          <p>Bisa tabel PostgreSQL kayak di atas (paling umum buat mulai), bisa store khusus (EventStoreDB, Axon), bisa ledger khusus untuk domain uang. Yang penting <strong>jaminannya</strong>, bukan mereknya: append-only, urutan per stream terjaga, dan tulis-nya atomik. Mesinnya detail; disiplinnya yang wajib.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 MENULIS -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">03</div><div class="ctitle">
+        <div class="kicker">Siklus tulis</div><h2>Menulis: load → decide → append</h2></div></div>
+      <p class="lead reveal">Di dunia ES, aggregate <strong>nggak pernah di-UPDATE</strong>. Menangani command artinya tiga langkah: <strong>load</strong> event lama → <strong>decide</strong> (cek aturan, hasilkan event baru) → <strong>append</strong> ke stream. Aturan bisnis tetap di aggregate — cuma outputnya sekarang berupa event, bukan mutasi.</p>
+
+      <div class="editor good reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">DriverWallet.java — pola decide / apply</span><span class="editor__verdict">AGGREGATE ala ES</span></div>
+<pre class="code"><span class="k">public final class</span> <span class="t">DriverWallet</span> {
+    <span class="k">private</span> <span class="t">Money</span> saldo = <span class="t">Money</span>.ZERO;
+    <span class="k">private long</span> version = <span class="n">0</span>;
+
+    <span class="c">// DECIDE — cek invariant, hasilkan event. NGGAK mengubah state di sini.</span>
+    <span class="k">public</span> <span class="t">Withdrawn</span> <span class="f">withdraw</span>(<span class="t">Money</span> amount, <span class="t">PayoutId</span> payout) {
+        <span class="k">if</span> (saldo.<span class="f">lessThan</span>(amount))
+            <span class="k">throw new</span> <span class="t">InsufficientBalanceException</span>(saldo, amount);  <span class="c">// invariant!</span>
+        <span class="k">return new</span> <span class="t">Withdrawn</span>(amount, payout);
+    }
+
+    <span class="c">// APPLY — satu-satunya tempat state berubah. Dipanggil saat replay JUGA.</span>
+    <span class="k">private void</span> <span class="f">apply</span>(<span class="t">TripEarningCredited</span> e) { saldo = saldo.<span class="f">plus</span>(e.amount()); }
+    <span class="k">private void</span> <span class="f">apply</span>(<span class="t">Withdrawn</span> e)           { saldo = saldo.<span class="f">minus</span>(e.amount()); }
+}</pre>
+      </div>
+
+      <div class="editor reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">alur satu command + concurrency check</span><span class="editor__verdict">OPTIMISTIC LOCKING</span></div>
+<pre class="code">1. <span class="t">LOAD</span>    events stream 'wallet-D-4471'          → dapat 4 event, versi terakhir = 4
+2. <span class="t">FOLD</span>    apply satu-satu                          → saldo di memori = 150.000
+3. <span class="t">DECIDE</span>  wallet.withdraw(50.000)                  → OK, hasilkan Withdrawn(50.000)
+4. <span class="t">APPEND</span>  INSERT (stream, version=<span class="n">5</span>, Withdrawn…)   → sukses ✓
+
+<span class="c">// kalau ADA YANG NYELIP di antara langkah 1 dan 4 (append versi 5 duluan):</span>
+4'. APPEND version=5  → <span class="s">GAGAL: duplicate key (stream_id, version)</span>
+5'. ulangi dari LOAD  → saldo terbaru ternyata tinggal 20.000 → withdraw DITOLAK ✓
+<span class="c">// primary key (stream_id, version) = optimistic locking gratisan.</span>
+<span class="c">// dua transaksi nggak mungkin sama-sama nulis versi 5. uang aman.</span></pre>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Kenapa decide &amp; apply dipisah?</div>
+          <p>Karena <code>apply()</code> punya dua majikan: dipanggil saat <em>replay</em> (muat dari store) dan saat event baru diterima. Makanya dia harus <strong>polos total</strong> — nggak boleh ada validasi, nggak boleh ada side effect, cuma mutasi state. Semua aturan hidup di <code>decide</code>. Kalau kamu naruh <code>if</code> bisnis di <code>apply()</code>, event lama yang sah bisa mendadak "ditolak" waktu di-replay pakai aturan baru — dan aggregate-mu gagal dimuat. Aturan boleh berubah; <strong>sejarah nggak boleh ditolak</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 MEMBACA -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">04</div><div class="ctitle">
+        <div class="kicker">Siklus baca</div><h2>Membaca: replay → fold</h2></div></div>
+      <p class="lead reveal">"Terus tiap mau tahu saldo harus muter ulang semua event? Nggak lambat?" — pertanyaan pertama semua orang. Jawabannya: replay itu <strong>per-stream</strong> (satu dompet = puluhan–ribuan event, bukan jutaan), dan buat layar/list, yang dibaca <strong>bukan event store</strong> — tapi read model hasil proyeksi (bab 07).</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">Repository ala ES — reconstitute = replay</span><span class="editor__verdict">FOLD</span></div>
+<pre class="code"><span class="k">public final class</span> <span class="t">EventSourcedWalletRepository</span> <span class="k">implements</span> <span class="t">DriverWalletRepository</span> {
+
+    <span class="k">public</span> <span class="t">DriverWallet</span> <span class="f">findById</span>(<span class="t">DriverId</span> id) {
+        <span class="k">var</span> events = store.<span class="f">readStream</span>(<span class="s">"wallet-"</span> + id.value());  <span class="c">// urut by version</span>
+        <span class="k">var</span> wallet = <span class="k">new</span> <span class="t">DriverWallet</span>();
+        events.<span class="f">forEach</span>(wallet::<span class="f">apply</span>);      <span class="c">// ← fold: state = hasil lipatan semua event</span>
+        <span class="k">return</span> wallet;
+    }
+
+    <span class="k">public void</span> <span class="f">save</span>(<span class="t">DriverWallet</span> w, <span class="t">List</span>&lt;<span class="t">DomainEvent</span>&gt; newEvents) {
+        store.<span class="f">append</span>(w.streamId(), w.version(), newEvents);   <span class="c">// expectedVersion check</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Perhatikan yang menarik: interface repository-nya <strong>sama</strong> dengan dunia state-oriented (<code>findById</code>, <code>save</code>). Use case dan aggregate nggak sadar di bawahnya event store atau tabel biasa — itu detail persistence di balik port. Hexagonal architecture bikin ES jadi <strong>keputusan yang bisa diganti</strong>, bukan pernikahan seumur hidup.</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Bonus yang sering kelupaan: time travel</div>
+          <p>Karena state = fold(events), kamu bisa fold <em>sebagian</em>: "saldo dompet ini tanggal 30 Juni jam 23:59" = fold semua event sampai timestamp itu. Buat rekonsiliasi akhir bulan, investigasi sengketa, atau debugging "kok kemarin bisa gini?" — nggak ada padanannya di dunia UPDATE-menimpa.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 CONTOH 1 DOMPET -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">05</div><div class="ctitle">
+        <div class="kicker">Contoh 1 · Uang</div><h2>Dompet driver: satu hari, satu stream</h2></div></div>
+      <p class="lead reveal">Ikuti satu hari dompet D-4471 dari sisi event — perhatikan kolom "saldo hasil fold" itu <strong>nggak pernah disimpan</strong>, dia selalu dihitung:</p>
+
+      <div class="dtable-wrap reveal d1">
+        <table class="dtable">
+          <thead><tr><th>v</th><th>event</th><th>payload</th><th>saldo hasil fold</th><th>cerita di baliknya</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td><code>WalletOpened</code></td><td class="num">{}</td><td class="num">0</td><td>Driver lolos verifikasi, dompet dibuka</td></tr>
+            <tr><td class="num">2</td><td><code>TripEarningCredited</code></td><td class="num">{100.000, T-991}</td><td class="num">100.000</td><td>Trip pagi selesai → event dari context Trip</td></tr>
+            <tr><td class="num">3</td><td><code>Withdrawn</code></td><td class="num">{30.000, P-14}</td><td class="num">70.000</td><td>Driver narik buat bensin</td></tr>
+            <tr><td class="num">4</td><td><code>TripEarningCredited</code></td><td class="num">{80.000, T-1004}</td><td class="num">150.000</td><td>Trip siang selesai</td></tr>
+            <tr><td class="num">5</td><td><code>WithdrawalRejected</code></td><td class="num">{500.000, "insufficient"}</td><td class="num">150.000</td><td>Percobaan tarik 500rb — <strong>ditolak pun dicatat</strong></td></tr>
+            <tr><td class="num">6</td><td><code>EarningAdjusted</code></td><td class="num">{-20.000, "refund T-991"}</td><td class="num">130.000</td><td>Komplain penumpang valid → <strong>koreksi = event baru</strong>, bukan edit v2</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="body reveal d2">Dua baris terakhir itu inti mentalitas ES: <strong>penolakan dicatat</strong> (v5 — emas buat deteksi fraud: "driver ini nyoba narik melebihi saldo 40× minggu ini"), dan <strong>koreksi = event kompensasi</strong> (v6 — bukan mengedit v2, persis kayak akuntan bikin jurnal koreksi, bukan men-tip-ex buku besar).</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Saat CS nanya "kok saldo saya berkurang 20 ribu?"</div>
+          <p>Di dunia state-oriented, jawabannya arkeologi: bongkar log aplikasi, tebak-tebakan. Di dunia ES, jawabannya <strong>baris v6</strong>: "ada refund atas trip T-991, ini waktunya, ini alasannya" — lengkap, pasti, dan nggak bisa dibantah, karena itulah datanya sendiri.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 CONTOH 2 TRIP -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">06</div><div class="ctitle">
+        <div class="kicker">Contoh 2 · State machine</div><h2>Trip lifecycle: event sebagai cerita perjalanan</h2></div></div>
+      <p class="lead reveal">Trip itu state machine — dan state machine itu kandidat alami buat ES, karena <strong>tiap transisi memang sebuah kejadian bermakna</strong>:</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">trip-state-machine.txt — transisi = event</span><span class="editor__verdict">STATE MACHINE</span></div>
+<pre class="code">  <span class="t">TripRequested</span> ──▶ <span class="t">DriverAssigned</span> ──▶ <span class="t">PassengerPickedUp</span> ──▶ <span class="t">TripCompleted</span>
+        │                  │                    │
+        └── <span class="t">TripCancelled</span>(who, reason)         └── <span class="t">TripCancelled</span>(who, reason, <span class="n">fee!</span>)
+            <span class="c">sebelum dapat driver: gratis        setelah dijemput: kena cancellation fee</span></pre>
+      </div>
+
+      <p class="body reveal d1">Sekarang lihat satu trip bermasalah lewat kacamata event — ini stream <code>trip-T-2210</code>:</p>
+
+      <div class="dtable-wrap reveal d2">
+        <table class="dtable">
+          <thead><tr><th>v</th><th>event</th><th>payload penting</th><th>jam</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td><code>TripRequested</code></td><td class="num">pickup: Kemang, dest: SCBD, estimasi: 42.000</td><td class="num">17:02:11</td></tr>
+            <tr><td class="num">2</td><td><code>DriverAssigned</code></td><td class="num">D-8102, eta: 4 menit</td><td class="num">17:02:19</td></tr>
+            <tr><td class="num">3</td><td><code>PassengerPickedUp</code></td><td class="num">lokasi jemput aktual: 300m dari titik</td><td class="num">17:09:40</td></tr>
+            <tr><td class="num">4</td><td><code>TripCancelled</code></td><td class="num">by: PASSENGER, reason: "changed_mind", fee: 10.000</td><td class="num">17:11:05</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="body reveal d2">Penumpang komplain: <em>"kok saya kena biaya 10 ribu?!"</em> CS tinggal baca streamnya kayak baca cerita: dibatalkan <strong>90 detik setelah dijemput</strong> (v3 → v4), oleh <strong>penumpang sendiri</strong>, dengan alasan berubah pikiran → sesuai aturan, fee berlaku. Sengketa selesai dengan <strong>fakta</strong>, bukan debat. Dan tim fraud dapat bonus: pola "cancel setelah pickup" per user bisa di-query dari event historis kapan pun.</p>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Kejujuran dulu: apakah Trip WAJIB di-ES?</div>
+          <p>Nggak. Trip bisa hidup nyaman sebagai state biasa + domain event + tabel audit. ES jadi menarik buat trip kalau <strong>kebutuhan investigasi/audit/analitik historisnya berat</strong> (sengketa sering, fraud analysis, replay skenario). Kalau cuma butuh status terkini — state biasa lebih murah. Bandingkan dengan dompet (contoh 1) yang hampir selalu layak ES karena dia <em>memang</em> buku besar uang.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 PROJECTION -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">07</div><div class="ctitle">
+        <div class="kicker">Jembatan ke layar</div><h2>Projection: dari log jadi read model</h2></div></div>
+      <p class="lead reveal">Event store itu jago nyimpan kebenaran, tapi <strong>jelek buat query layar</strong> ("semua trip Kemang minggu ini yang dibatalkan"). Solusinya: <strong>projection</strong> — proses yang melahap event dan membangun read model berbentuk apa pun yang layar butuhkan. Di sinilah ES dan CQRS jadi pasangan alami.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">satu log, banyak wajah</span><span class="editor__verdict">1 SUMBER → N PROYEKSI</span></div>
+<pre class="code">                        ┌──▶ [ projector saldo ]      ─▶ tabel <span class="t">wallet_balances</span>      (aplikasi driver)
+[ EVENT STORE ] ──feed──┼──▶ [ projector earnings ]   ─▶ tabel <span class="t">driver_daily_earnings</span> (dashboard)
+  (source of truth)     ├──▶ [ projector fraud ]      ─▶ tabel <span class="t">suspicious_patterns</span>  (tim risk)
+                        └──▶ [ projector analytics ]  ─▶ columnar DB                (BI / laporan)
+
+<span class="c">// tiap projector: konsumen independen dengan posisi baca (checkpoint) sendiri.</span>
+<span class="c">// satu mati? yang lain jalan terus. nyusul dari checkpoint pas hidup lagi.</span></pre>
+      </div>
+
+      <div class="editor good reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">BalanceProjector.java — polos, idempotent, bisa diulang</span><span class="editor__verdict">PROJECTOR</span></div>
+<pre class="code"><span class="k">public final class</span> <span class="t">BalanceProjector</span> {
+    <span class="k">public void</span> <span class="f">on</span>(<span class="t">TripEarningCredited</span> e) { db.<span class="f">addToBalance</span>(e.driver(), e.amount()); }
+    <span class="k">public void</span> <span class="f">on</span>(<span class="t">Withdrawn</span> e)           { db.<span class="f">addToBalance</span>(e.driver(), e.amount().negate()); }
+    <span class="c">// nggak ada keputusan bisnis di sini — cuma nyalin fakta ke bentuk lain</span>
+}</pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Fitur pembunuhnya: REBUILD</div>
+          <p>Read model rusak? Salah hitung? Butuh dashboard baru yang kemarin belum kepikiran? <strong>Truncate tabelnya, replay semua event dari nol.</strong> Dashboard "pendapatan per area per jam" yang baru diminta PO hari ini bisa langsung <em>terisi data setahun ke belakang</em> — karena kebenarannya nggak pernah hilang. Di dunia state-oriented, data historis yang nggak sempat dicatat ya sudah, hilang selamanya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 SCHEMA EVOLUTION -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">08</div><div class="ctitle">
+        <div class="kicker">Bagian yang jarang diceritain</div><h2>Schema evolution: event lama ketemu kode baru</h2></div></div>
+      <p class="lead reveal">Ini pajak terbesar ES yang jarang masuk demo: event yang tersimpan itu <strong>immutable dan hidup selamanya</strong>, sementara kodemu terus berubah. Event <code>Withdrawn</code> versi 2024 harus tetap bisa dibaca kode versi 2027. Strateginya:</p>
+
+      <div class="dtable-wrap reveal d1">
+        <table class="dtable">
+          <thead><tr><th>Perubahan</th><th>Strategi</th><th>Contoh</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Nambah field</strong></td><td>Additive + default — event lama dibaca dengan nilai default</td><td><code>Withdrawn</code> dapat field baru <code>channel</code>; event lama dibaca sebagai <code>channel = "BANK"</code></td></tr>
+            <tr><td><strong>Ubah struktur</strong></td><td><strong>Upcaster</strong> — penerjemah v1→v2 yang jalan saat baca</td><td>Dulu <code>amount</code> long rupiah, sekarang object <code>{amount, currency}</code> → upcaster bungkus otomatis</td></tr>
+            <tr><td><strong>Makna berubah total</strong></td><td>Event type BARU; yang lama tetap dibaca &amp; di-handle</td><td><code>Withdrawn</code> dipecah jadi <code>InstantPayoutRequested</code> + <code>ScheduledPayoutRequested</code></td></tr>
+            <tr><td><strong>Salah data di event lama</strong></td><td>Event <strong>kompensasi</strong> — bukan edit</td><td><code>EarningAdjusted</code> kayak di bab 05, ala jurnal koreksi akuntan</td></tr>
+            <tr><td><strong>Edit / hapus event lama</strong></td><td>❌ <strong>Nggak pernah.</strong></td><td>— (sekali kamu edit sejarah, seluruh kepercayaan pada store runtuh)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="editor reveal d2">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">WithdrawnUpcaster.java — penerjemah antar generasi</span><span class="editor__verdict">UPCASTER</span></div>
+<pre class="code"><span class="c">// jalan di jalur BACA, sebelum payload sampai ke apply(). event tersimpan nggak disentuh.</span>
+<span class="k">public final class</span> <span class="t">WithdrawnUpcaster</span> {
+    <span class="k">public</span> <span class="t">JsonNode</span> <span class="f">upcast</span>(<span class="t">JsonNode</span> old) {
+        <span class="k">if</span> (old.<span class="f">has</span>(<span class="s">"currency"</span>)) <span class="k">return</span> old;              <span class="c">// udah v2, lewat</span>
+        <span class="k">return</span> json.<span class="f">object</span>()                              <span class="c">// v1 → v2</span>
+            .<span class="f">put</span>(<span class="s">"amount"</span>,   old.<span class="f">get</span>(<span class="s">"amount"</span>))
+            .<span class="f">put</span>(<span class="s">"currency"</span>, <span class="s">"IDR"</span>)                      <span class="c">// default historis yang aman</span>
+            .<span class="f">put</span>(<span class="s">"payoutId"</span>, old.<span class="f">get</span>(<span class="s">"payoutId"</span>));
+    }
+}</pre>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Satu lagi yang WAJIB dipikirin di awal: data pribadi</div>
+          <p>"Nggak pernah dihapus" bentrok sama regulasi privasi (hak untuk dihapus). Praktik umumnya: <strong>PII jangan ditaruh di payload event</strong> — event simpan <code>driverId</code>, data pribadinya di store terpisah yang bisa dihapus. Alternatifnya <em>crypto-shredding</em>: payload PII dienkripsi per-user; "menghapus" = membuang kuncinya. Mikirin ini <em>setelah</em> jutaan event tersimpan = proyek migrasi yang menyakitkan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 SNAPSHOT -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">09</div><div class="ctitle">
+        <div class="kicker">Performa</div><h2>Snapshot: biar nggak replay dari zaman batu</h2></div></div>
+      <p class="lead reveal">Dompet driver aktif 3 tahun = puluhan ribu event. Replay semuanya tiap ada command? Mulai kerasa. Solusinya <strong>snapshot</strong>: tiap N event, simpan "foto" state + nomor versinya. Load = foto terakhir + <em>sisa</em> event setelahnya.</p>
+
+      <div class="editor reveal d1">
+        <div class="editor__bar"><div class="dots"><i></i><i></i><i></i></div><span class="editor__name">load dengan snapshot — dari O(semua) jadi O(sisa)</span><span class="editor__verdict">SNAPSHOT</span></div>
+<pre class="code"><span class="c">// tanpa snapshot: fold 41.532 event  😵</span>
+<span class="c">// dengan snapshot tiap 1.000 event:</span>
+
+1. <span class="t">LOAD SNAPSHOT</span>  wallet-D-4471 @ version <span class="n">41000</span>   → saldo: 230.000   (1 baris)
+2. <span class="t">LOAD EVENTS</span>    version &gt; <span class="n">41000</span>                 → 532 event sisa
+3. <span class="t">FOLD</span>           apply 532 event                  → state mutakhir  ✓
+
+<span class="k">CREATE TABLE</span> <span class="t">snapshots</span> (
+  stream_id  <span class="t">TEXT</span>   <span class="k">NOT NULL</span>,
+  version    <span class="t">BIGINT</span> <span class="k">NOT NULL</span>,   <span class="c">-- state ini hasil fold sampai versi berapa</span>
+  state      <span class="t">JSONB</span>  <span class="k">NOT NULL</span>,
+  <span class="k">PRIMARY KEY</span> (stream_id)        <span class="c">-- cukup simpan yang terbaru</span>
+);</pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag"><span class="ico">◆</span> Aturan emas snapshot</div>
+          <p>Snapshot itu <strong>cache, bukan kebenaran</strong>. Boleh dihapus semua kapan pun — sistem tetap benar, cuma lebih lambat sampai snapshot kebentuk lagi. Konsekuensinya enak: format snapshot berubah? Buang aja semua, nggak perlu migrasi. Jangan pernah kebalik: yang disayang-sayang itu event-nya, bukan snapshotnya. Dan jangan bikin snapshot sebelum kerasa perlu — banyak stream (kayak trip: belasan event terus tamat) <strong>nggak akan pernah butuh</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 ANTI-PATTERN -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">10</div><div class="ctitle">
+        <div class="kicker">Jebakan</div><h2>Anti-pattern &amp; kapan JANGAN pakai</h2></div></div>
+      <p class="lead reveal">ES itu alat tajam. Ini daftar cara paling populer orang teriris:</p>
+
+      <div class="cards reveal d1">
+        <div class="card"><div class="code-id">SMELL 1</div><h4>Event rasa CRUD</h4><p><code>DriverUpdated {field: "status", value: "x"}</code> — itu bukan peristiwa bisnis, itu diff tabel. Event harus <em>bermakna</em>: <code>DriverSuspended(reason)</code>. Kalau event-mu cuma mencerminkan kolom, kamu dapat semua ongkos ES tanpa satu pun manfaatnya.</p></div>
+        <div class="card"><div class="code-id">SMELL 2</div><h4>ES di mana-mana</h4><p>Master data promo, profil, setting — di-ES semua "biar konsisten". Padahal nggak ada yang butuh sejarah <code>NamaTokoDiubah</code>. <em>ES per aggregate/context, bukan per sistem.</em></p></div>
+        <div class="card"><div class="code-id">SMELL 3</div><h4>Ngedit event lama</h4><p>"Ada typo di payload, update dikit ya" — begitu sejarah bisa diedit, seluruh nilai store-nya runtuh: audit nggak bisa dipercaya, replay nggak deterministik. Koreksi = event baru. Selalu.</p></div>
+        <div class="card"><div class="code-id">SMELL 4</div><h4>Query layar ke event store</h4><p>Layar list yang fold ribuan stream on-the-fly. Event store itu buat nulis &amp; replay per-stream; layar dilayani <em>projection</em> (bab 07).</p></div>
+        <div class="card"><div class="code-id">SMELL 5</div><h4>Event = kereta barang</h4><p>Satu event bawa 40 field "biar lengkap". Event yang gemuk = kontrak yang rapuh + PII nyangkut di tempat yang nggak bisa dihapus. Bawa fakta secukupnya.</p></div>
+        <div class="card"><div class="code-id">SMELL 6</div><h4>"Kita udah pakai domain event, berarti udah ES"</h4><p>Belum. Domain event = <em>pemberitahuan</em>; state-mu masih tabel biasa. ES = event-nya <em>adalah</em> state. Dua komitmen beda kelas — jangan ngaku-ngaku, nanti keliru ekspektasi.</p></div>
+      </div>
+
+      <div class="cols split reveal d2">
+        <div>
+          <h4 class="r-h">Pakai ES kalau…</h4>
+          <ul class="good-l">
+            <li>Domain-nya <b>memang buku besar</b>: uang, saldo, inventory</li>
+            <li>Audit &amp; riwayat = kebutuhan inti, bukan nice-to-have</li>
+            <li>Sering ada sengketa/investigasi "kok bisa gini?"</li>
+            <li>Analitik historis &amp; rebuild read model bernilai tinggi</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="l-h">Jangan ES kalau…</h4>
+          <ul class="bad-l">
+            <li>Cuma butuh state terkini (profil, master data, setting)</li>
+            <li>Tim belum nyaman dengan async, versioning, projection</li>
+            <li>Motivasinya "biar canggih" / ikut-ikutan</li>
+            <li>Domain masih sering berubah total — event yang salah desain itu <b>selamanya</b></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 PENUTUP -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal"><div class="cnum">11</div><div class="ctitle">
+        <div class="kicker">Sintesis</div><h2>Penutup</h2></div></div>
+      <p class="lead reveal">Event Sourcing itu satu keputusan sederhana dengan konsekuensi panjang: <strong>jangan simpan kesimpulannya — simpan kejadiannya.</strong> Kesimpulan bisa dihitung ulang kapan aja; kejadian yang nggak dicatat hilang selamanya.</p>
+
+      <ul class="creed reveal d1">
+        <li><b>State = fold(events)</b> — log-nya sumber kebenaran, state cuma turunan.</li>
+        <li><b>Decide vs apply</b> — aturan di decide; apply polos biar replay selalu jalan.</li>
+        <li><b>(stream_id, version)</b> — primary key sederhana yang sekaligus optimistic locking.</li>
+        <li><b>Koreksi = event kompensasi</b> — sejarah nggak diedit, ditambah. Ala akuntan.</li>
+        <li><b>Layar dilayani projection</b> — dan projection bisa di-rebuild dari nol, kapan pun.</li>
+        <li><b>Pajaknya nyata</b>: schema evolution, snapshot, PII. Bayar cuma di domain yang pantas: uang &amp; buku besar.</li>
+      </ul>
+
+      <div class="endcard reveal d2">
+        <h3>Lanjut ke mana</h3>
+        <p>Kalau belum baca <strong>CQRS deep dive</strong>, baca — projection di bab 07 itu persis "Level 3"-nya CQRS, dan dua materi ini memang dua sisi koin yang sama. Habis itu, latihan terbaiknya: ambil satu aggregate di produkmu yang paling "buku besar", dan coba tulis daftar event-nya di kertas. Kalau daftar itu kebaca kayak cerita — dia kandidat ES.</p>
+        <div class="map">
+          <div><b>Deck utama DDD</b><span><a href="../index.html">../index.html</a></span></div>
+          <div><b>CQRS deep dive</b><span><a href="../cqrs/index.html">../cqrs/index.html</a></span></div>
+          <div><b>Bacaan</b><span>Greg Young "Versioning in an Event Sourced System" · Fowler bliki "Event Sourcing"</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>docs/learning/ddd/event-sourcing/</b> — Event Sourcing deep dive · lanjutan dari <a href="../index.html">materi DDD</a>.<br>
+  Navigasi: scroll, klik bab di panel kiri, atau tekan <b>←</b>/<b>→</b> (juga <b>j</b>/<b>k</b>, Home/End).
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") { ev.preventDefault(); goTo(current + 1); }
+    else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") { ev.preventDefault(); goTo(current - 1); }
+    else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

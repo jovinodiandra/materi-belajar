@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pattern Recognition — Kenali Bentuk Soal Sebelum Menyelesaikannya</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home {
+    color: var(--cyan); text-decoration: none; font-weight: 600;
+    white-space: nowrap; padding-right: 14px; border-right: 1px solid var(--line);
+  }
+  .topbar__home:hover { color: var(--ink-strong); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 78px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- numbered steps ---------- */
+  .steps { list-style: none; max-width: 76ch; margin: 26px 0 6px; counter-reset: stepnum; }
+  .steps li {
+    position: relative; padding: 14px 0 14px 56px; min-height: 34px;
+    border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    counter-increment: stepnum; content: counter(stepnum);
+    position: absolute; left: 0; top: 12px; width: 34px; height: 34px;
+    border-radius: 50%; border: 2px solid var(--cyan-dim); background: rgba(69,212,222,.08);
+    color: var(--cyan); font-family: var(--mono); font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .topbar__home { padding-right: 8px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+    .topbar__home span { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Problem Solving</a>
+  <div class="topbar__file">docs/learning/problem-solving/pattern-recognition/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa penting</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa pattern recognition</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Sinyal → pola</a>
+    <a href="#c03"><span class="yr">03</span> Bedah satu soal</a>
+
+    <div class="rail__part">III · Praktik &amp; tingkatan</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">05</span> Tier belajar</a>
+    <a href="#c06"><span class="yr">◆</span> Jebakan umum</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">IV · Studi kasus &amp; penutup</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Problem Solving — Pattern Recognition</div>
+      <h1 class="reveal d1">Kenali <span class="accent">bentuk soal</span>, bukan mulai dari nol tiap kali.</h1>
+      <p class="sub reveal d2">
+        Soal baru jarang benar-benar baru. Di balik kalimat cerita yang beda-beda, strukturnya sering
+        <b>mirip soal lain yang pernah kamu kerjakan</b>. Pattern recognition adalah kemampuan membaca
+        <b>sinyal</b> di soal — kata kunci, bentuk constraint, jenis pertanyaan — lalu menempelkannya ke
+        <b>keluarga teknik</b> yang cocok, sebelum kamu menulis baris kode pertama. Bab ini bukan tentang
+        detail algoritmanya (itu ada di modul DSA terpisah) — ini tentang <b>petunjuk</b> yang mengarahkanmu
+        ke sana.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Tiap soal terasa asing</b> <span>— padahal strukturnya sering berulang</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Sinyal</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Baca kata kunci di soal</b> <span>— "subarray", "kombinasi", "terpendek", dst</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Petakan</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Cocokkan ke keluarga teknik</b> <span>— sliding window, backtracking, BFS, heap...</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bukan jaminan mutlak</b> <span>— kadang soal sengaja menyamarkan polanya</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Hasil</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Loncat lebih cepat ke solusi</b> <span>— tanpa reinvent dari nol tiap kali</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 KENAPA PENTING ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Kenapa pattern recognition penting</div>
+        <h2>Pemula mulai dari nol, expert menempelkan ke yang dikenal</h2>
+      </div>
+
+      <div class="why reveal">
+        <div class="tag">◆ Buat apa ini? Kenapa pakai ini?</div>
+        <p><b>Given</b> — kamu buka soal baru, misal "cari subarray terpendek yang sum-nya ≥ target", dan menganggapnya <em>belum pernah kamu temui</em> sama sekali.</p>
+        <p><b>When</b> — kamu langsung menulis nested loop <code>O(n²)</code> atau <code>O(n³)</code> untuk mengecek semua kemungkinan subarray, tanpa curiga bahwa bentuk constraint-nya sebenarnya familiar.</p>
+        <p><b>Then</b> — submission kena <em>Time Limit Exceeded</em> di data besar, dan baru setelah lihat solusi orang lain kamu sadar ini cuma <em>sliding window</em> biasa — teknik yang sudah kamu kenal, tapi tidak ter-<em>trigger</em> karena sinyalnya tidak terbaca sejak awal.</p>
+        <p>→ makanya kita pakai <b>pattern recognition</b>.</p>
+      </div>
+
+      <p class="lead reveal">Programmer pemula membaca soal baru sebagai <strong>sesuatu yang unik</strong> — mereka mulai mikir dari kosong, coba-coba nested loop, lalu berharap ketemu solusi lewat trial and error. Programmer berpengalaman melakukan hal berbeda: dalam beberapa detik pertama membaca soal, mereka sudah punya <strong>hipotesis</strong> — "ini bentuknya kayak soal sliding window" atau "ini butuh backtracking" — lalu memverifikasi hipotesis itu.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — dokter mendiagnosis dari gejala familiar</div>
+        <p>Dokter berpengalaman tidak mendiagnosis pasien dari nol tiap kali. Begitu mendengar <em>demam + ruam + nyeri sendi</em>, otaknya langsung menempelkan gejala itu ke <em>kumpulan diagnosis yang mungkin</em> yang sudah pernah ia lihat — baru kemudian ia menyingkirkan satu per satu lewat pemeriksaan lanjutan. Dokter baru harus membuka buku teks dan menelusuri gejala satu per satu dari awal. Bedanya bukan kecerdasan — bedanya adalah <strong>katalog pola</strong> yang sudah terbentuk dari pengalaman.</p>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>“Apakah kamu tahu masalah yang serupa? Hampir semua masalah baru punya kemiripan struktural dengan masalah lama yang metode penyelesaiannya sudah kamu kenal.”</p>
+        <cite>— parafrase dari George Pólya, <i>How to Solve It</i></cite>
+      </div>
+
+      <p class="body reveal d2">Itulah inti pattern recognition dalam problem solving: sebelum menulis kode, tanya dulu <strong>"soal ini mirip soal apa yang pernah aku selesaikan?"</strong> Pertanyaan sederhana ini yang membedakan orang yang menghabiskan 40 menit meraba-raba dengan orang yang dalam 5 menit sudah punya arah yang jelas.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 SINYAL → POLA ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Sinyal kata kunci</div>
+        <h2>Petakan kata kunci soal ke keluarga teknik</h2>
+      </div>
+      <p class="lead reveal">Soal-soal DSA/interview punya <strong>kosakata berulang</strong>. Kata "subarray contiguous", "semua kombinasi", "elemen ke-K", atau "lintasan terpendek" bukan cuma deskripsi — itu <strong>sinyal</strong> yang mengarahkanmu ke keluarga teknik tertentu. Tabel di bawah adalah pemetaan yang paling sering kepakai.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">peta-sinyal.pseudo</span><span class="lang">SIGNAL → PATTERN</span></div>
+<pre class="code"><span class="c">// kata kunci di soal → keluarga teknik yang harus dicoba duluan</span>
+
+<span class="k">if</span> soal.<span class="f">contains</span>(<span class="s">"subarray"</span> | <span class="s">"substring"</span>) &amp;&amp; soal.<span class="f">contains</span>(<span class="s">"contiguous"</span> | <span class="s">"terpanjang"</span> | <span class="s">"jumlah tertentu"</span>)
+  <span class="f">coba</span>(<span class="t">SlidingWindow</span>)  <span class="c">// window bergerak, lebar/sempit sambil jaga constraint</span>
+
+<span class="k">if</span> soal.<span class="f">contains</span>(<span class="s">"semua kombinasi"</span> | <span class="s">"semua permutasi"</span> | <span class="s">"semua cara"</span>)
+  <span class="f">coba</span>(<span class="t">Backtracking</span>)  <span class="c">// eksplorasi & undo pilihan, sering + pruning</span>
+
+<span class="k">if</span> soal.<span class="f">contains</span>(<span class="s">"lintasan terpendek"</span> | <span class="s">"jarak minimum langkah"</span>) &amp;&amp; graph.unweighted
+  <span class="f">coba</span>(<span class="t">BFS</span>)  <span class="c">// jelajah level demi level, unweighted shortest path</span>
+
+<span class="k">if</span> soal.<span class="f">contains</span>(<span class="s">"elemen ke-K terbesar/terkecil"</span> | <span class="s">"top-K"</span>)
+  <span class="f">coba</span>(<span class="t">Heap</span>)  <span class="c">// jaga K kandidat terbaik, buang sisanya</span>
+
+<span class="k">if</span> soal.<span class="f">contains</span>(<span class="s">"pasangan"</span> | <span class="s">"triplet"</span>) &amp;&amp; array.sortable
+  <span class="f">coba</span>(<span class="t">TwoPointers</span> <span class="k">after</span> <span class="t">Sort</span>)  <span class="c">// dua ujung saling mendekat</span>
+
+<span class="k">if</span> soal.<span class="f">contains</span>(<span class="s">"jumlah subset"</span> | <span class="s">"cara termurah/termahal"</span>) &amp;&amp; overlapping_subproblems
+  <span class="f">coba</span>(<span class="t">DynamicProgramming</span>)  <span class="c">// pecah, cache hasil, gabung ulang</span>
+</pre>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Sinyal cepat lainnya</div>
+        <div class="erabox__row"><span class="erabox__lang">Interval</span><code>"jadwal tak tumpang tindih" →  Sort + Greedy / merge interval</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Prefix</span><code>"sum range [i,j] berulang kali" →  Prefix Sum / Prefix XOR</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Cyclic</span><code>"cari duplikat di array 1..n" →  Cyclic Sort / Floyd's cycle</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Tree</span><code>"level order" / "path root→leaf" →  DFS / BFS pada tree</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Monotonic</span><code>"elemen lebih besar berikutnya" →  Monotonic Stack</code></div>
+        <p class="erabox__note">Ini bukan daftar lengkap — anggap sebagai <b>starter kit</b>. Makin banyak soal yang kamu kerjakan, makin panjang katalog sinyal pribadimu.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 BEDAH SATU SOAL ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Bab kedua</span> · Studi mikro</div>
+        <h2>Bedah satu soal: dari kata kunci ke pola</h2>
+      </div>
+      <p class="lead reveal">Soal: <strong>"Diberi sebuah string, cari panjang substring terpanjang yang tidak memiliki karakter berulang."</strong> Mari lihat bagaimana kata-kata di soal ini menuntun ke pola yang tepat, tahap demi tahap.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Garis bawahi kata kunci.</b> "substring" (bukan "subsequence"), "terpanjang", "tanpa karakter berulang". Tiga kata ini yang akan menentukan arah.</li>
+        <li><b>"Substring" berarti contiguous.</b> Ini langsung menyingkirkan kandidat seperti backtracking yang biasa dipakai untuk "semua kombinasi" — di sini kita cuma peduli potongan yang berdempetan, bukan semua subset yang mungkin.</li>
+        <li><b>Gabungan "contiguous" + "batas yang menyusut kalau syarat dilanggar"</b> adalah sinyal khas <code>SlidingWindow</code>: dua pointer kiri-kanan bergerak di string yang sama, window melebar & menyempit tergantung kondisi.</li>
+        <li><b>Sebelum loncat ke sliding window, coba brute force dulu.</b> Dua nested loop, cek tiap substring satu-satu, O(n²). Ini bukan buang waktu — brute force memastikan kamu benar-benar paham apa yang dihitung, dan jadi baseline untuk verifikasi solusi optimal nanti.</li>
+        <li><b>Optimasi ke sliding window.</b> Pointer kanan memperluas window sambil mencatat karakter terakhir dilihat di hash map. Begitu ketemu duplikat <em>di dalam window</em>, geser pointer kiri sampai duplikat itu keluar.</li>
+        <li><b>Verifikasi pola cocok.</b> Jalankan di contoh kecil, cek kompleksitas turun jadi O(n). Kalau cocok — pola ini masuk ke katalog pribadimu, siap dipakai lagi saat soal serupa muncul.</li>
+      </ul>
+
+      <div class="quote reveal d2">
+        <p>“Pakar tidak berpikir lebih cepat karena otaknya lebih kuat — mereka mengenali <span style="font-style:normal">chunk</span> besar dari pengalaman, sehingga bisa langsung memetakan situasi baru ke solusi yang sudah dikenal tanpa menalar dari nol.”</p>
+        <cite>— parafrase dari riset kognitif tentang expertise (konsep "chunking")</cite>
+      </div>
+
+      <p class="body reveal d2">Itulah yang sebenarnya terjadi di langkah 3 tadi: begitu kamu mengenali kombinasi "contiguous + window yang menyusut", otakmu tidak menalar ulang dari nol — ia mengambil <em>chunk</em> "sliding window" yang sudah tersimpan dari soal-soal sebelumnya. Makin sering berlatih, makin besar & makin cepat chunk itu dipanggil.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Best practice · Melatih pattern recognition</div>
+        <h2>Cara membangun "insting" ini secara sengaja</h2>
+      </div>
+      <p class="lead reveal">Pattern recognition bukan bakat bawaan — ia hasil latihan yang disengaja. Berikut kebiasaan yang mempercepat proses itu.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Bangun katalog pola pribadi.</b> Tiap kali selesai mengerjakan soal, catat: sinyal apa yang muncul di soal, dan pola apa yang ternyata cocok. Lama-lama katalog ini jadi referensi cepatmu sendiri.</li>
+        <li><b>Selalu temukan brute force dulu.</b> Sebelum mencari pola optimasi, pastikan kamu punya solusi yang benar walau lambat — ini mencegah kamu memaksakan pola yang sebenarnya tidak kamu pahami betul.</li>
+        <li><b>Baca constraint-nya, bukan cuma soal ceritanya.</b> <code>n ≤ 20</code> mengisyaratkan brute force/backtracking masih aman; <code>n ≤ 10^5</code> mengisyaratkan kamu butuh solusi O(n log n) atau lebih baik — constraint sering jadi petunjuk kompleksitas yang diharapkan.</li>
+        <li><b>Latih mengenali variasi dari pola yang sama.</b> Two pointers, sliding window, dan prefix sum sering terasa mirip di permukaan — latihan berulang membantumu membedakan kapan masing-masing benar-benar cocok.</li>
+        <li><b>Jangan berhenti di "submit diterima".</b> Tulis ulang dengan kata-katamu sendiri kenapa pola X yang dipakai. Proses menjelaskan ulang ini yang memperkuat chunk di memori jangka panjang.</li>
+        <li><b>Kalau soal terasa asing, pecah dulu.</b> Cek subproblem-nya satu per satu — sering kali potongan kecil dari soal "baru" itu ternyata mirip pola yang sudah kamu kenal.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Tier belajar · Bertahap sesuai jam terbang</div>
+        <h2>Seberapa jauh katalog polamu harus berkembang</h2>
+      </div>
+      <p class="lead reveal">Pattern recognition itu bertingkat. Jangan berkecil hati kalau baru mengenali segelintir sinyal — semua orang mulai dari situ.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Mulai dari sini</span>
+          <h4>Hafal sinyal paling umum</h4>
+          <p>Target: kenali 5–6 sinyal paling sering muncul di soal-soal dasar sampai fasih.</p>
+          <ul>
+            <li>"subarray/substring contiguous" → sliding window</li>
+            <li>"semua kombinasi/permutasi" → backtracking</li>
+            <li>"cari elemen ke-K" → heap</li>
+            <li>"pasangan/triplet" setelah sort → two pointers</li>
+            <li>"lintasan terpendek" (unweighted) → BFS</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Satu langkah lebih jauh</span>
+          <h4>Kenali pola gabungan</h4>
+          <p>Target: soal yang butuh dua teknik sekaligus, bukan satu pola tunggal.</p>
+          <ul>
+            <li>Sort + backtracking untuk permutasi unik</li>
+            <li>Sliding window + hash map untuk constraint kompleks</li>
+            <li>DP di atas graph (longest path di DAG)</li>
+            <li>Two pointers + binary search untuk closest pair</li>
+            <li>Prefix sum + hash map untuk subarray sum == k</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Menyamar &amp; langka</span>
+          <h4>Kenali pola yang sengaja disamarkan</h4>
+          <p>Target: soal yang membungkus pola familiar dalam kalimat yang menyesatkan.</p>
+          <ul>
+            <li>Terlihat seperti DP, ternyata cukup greedy (atau sebaliknya)</li>
+            <li>Constraint kecil yang menyamarkan bahwa brute force sudah cukup</li>
+            <li>Pola matematis jarang: bitmask DP, matrix exponentiation, meet-in-the-middle</li>
+            <li>Soal graph yang dibungkus sebagai soal array/string biasa</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 JEBAKAN UMUM ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Jebakan · Overfitting ke pola yang salah</div>
+        <h2>Pattern recognition bisa membantu, bisa juga menjebak</h2>
+      </div>
+      <p class="lead reveal">Kemampuan yang sama yang membuatmu cepat mengenali pola, juga bisa membuatmu <strong>terlalu percaya diri</strong> memaksakan pola familiar padahal soalnya sedikit berbeda.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Membantu</h4>
+          <ul class="good-l">
+            <li>Punya hipotesis arah sejak menit pertama.</li>
+            <li>Memilih struktur data yang tepat lebih awal.</li>
+            <li>Bisa estimasi kompleksitas sebelum menulis kode.</li>
+            <li>Mempercepat komunikasi ide saat interview/diskusi tim.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Menjebak (overfitting)</h4>
+          <ul class="bad-l">
+            <li>Memaksakan sliding window padahal soal minta <code>subsequence</code>, bukan <code>contiguous</code>.</li>
+            <li>Berhenti berpikir begitu "merasa kenal" polanya, padahal ada twist di constraint.</li>
+            <li>Mengabaikan edge case karena terlalu percaya sama template pola.</li>
+            <li>Tidak memverifikasi ulang dengan brute force / contoh kecil sebelum lanjut.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Sinyal kata kunci itu <b>petunjuk kuat, bukan bukti mutlak</b>. Soal yang menyebut "terpanjang" tidak otomatis berarti sliding window — kalau ternyata bukan contiguous, kamu butuh pendekatan lain (mis. DP pada subsequence). Selalu cek ulang: apakah <em>seluruh</em> syarat soal cocok dengan pola yang kamu duga, bukan cuma satu-dua kata yang mirip.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Kapan cukup, kapan dari nol</div>
+        <h2>Kapan pattern recognition cukup, kapan harus mikir dari nol</h2>
+      </div>
+      <p class="lead reveal">Katalog pola sangat berguna untuk soal yang "berbentuk umum" — tapi tidak semua soal begitu.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Pattern recognition biasanya cukup untuk…</div>
+        <p>Soal latihan DSA standar, sebagian besar soal interview teknis, dan masalah production yang bentuknya sudah dikenal luas (paginasi, rate limiting, caching, dsb). Di sini, katalog pola langsung memberimu titik awal yang jauh lebih baik daripada mulai dari kosong.</p>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Butuh berpikir dari nol saat…</div>
+          <p>Soal riset/kompetisi tingkat lanjut yang memang dirancang untuk menghindari pola umum, sistem production dengan constraint unik yang tidak ada di buku manapun, atau saat kamu sudah mencoba beberapa pola familiar dan semuanya gagal cocok. Di titik ini, kembali ke definisi masalah dari awal — bukan memaksakan pola yang ada — biasanya lebih cepat daripada terus mencoba menambal pola yang salah.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Tiga contoh pattern recognition dalam praktik</h2>
+      </div>
+      <p class="lead reveal">Dari interview klasik, kompetitif programming, sampai kode production — pattern recognition muncul di mana-mana, termasuk saat polanya justru mudah ketuker.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// interview klasik</div><h4>Two Sum vs 3Sum</h4><p><b>Kasus:</b> Two Sum diselesaikan pakai hash map satu-pass, O(n). Banyak orang mencoba pola sama untuk 3Sum. <b>Kenapa ketuker:</b> 3Sum butuh <em>sort + two pointers</em> supaya bisa menghindari duplikat triplet dengan rapi — memaksakan hash map tiga lapis jadi rumit &amp; boros memori. Sinyal "triplet" + "array bisa disortir" seharusnya mengarah ke pola berbeda dari "pasangan" biasa.</p></div>
+        <div class="card up"><div class="ic">// competitive programming</div><h4>Soal dengan pola matematis</h4><p><b>Kasus:</b> soal menghitung jumlah cara dengan modulo besar (mis. <code>10^9+7</code>) dan <code>n</code> sampai <code>10^18</code>. <b>Sinyal:</b> constraint sebesar itu mustahil untuk loop biasa — ini menandakan solusi butuh rumus tertutup, matrix exponentiation, atau combinatorics, bukan simulasi langsung.</p></div>
+        <div class="card up"><div class="ic">// production refactor</div><h4>Event handling yang mirip Observer</h4><p><b>Kasus:</b> tim mendapati kode notifikasi yang tersebar di banyak modul, saling memanggil langsung satu sama lain. <b>Sinyal:</b> "banyak listener bereaksi ke satu perubahan state" adalah bentuk klasik pola desain <em>Observer</em> — mengenali ini mengarahkan refactor ke event bus/pub-sub, bukan menambah lagi pemanggilan langsung.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di ketiga kasus, kesalahan bukan karena tidak tahu tekniknya — tapi karena <strong>salah membaca sinyal</strong>: mengira "triplet" sama dengan "pasangan", mengira constraint besar masih bisa disimulasikan, atau tidak menyadari bahwa struktur kode yang berantakan sebenarnya adalah pola desain yang sudah punya nama.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Latihan · Tempat &amp; cara melatih pattern recognition</div>
+        <h2>Tools &amp; kebiasaan untuk mempertajam insting pola</h2>
+      </div>
+      <p class="lead reveal">Pattern recognition tidak datang dari membaca teori saja — ia terbentuk dari volume soal yang kamu kerjakan dan diulang lagi setelah beberapa waktu.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// per-tag</div><h4>Kategori soal LeetCode</h4><p>Kerjakan soal per-<em>tag</em> (sliding window, backtracking, DP, dst) bergantian, bukan urut nomor. Ini melatihmu mengenali sinyal tag itu tanpa diberi tahu tag-nya duluan.</p></div>
+        <div class="card up"><div class="ic">// domain</div><h4>Domain HackerRank</h4><p>Domain seperti "Dictionaries and Hashmaps" atau "Search" mengelompokkan soal berdasarkan teknik inti — bagus untuk membangun katalog sinyal per kategori dari awal.</p></div>
+        <div class="card up"><div class="ic">// roadmap</div><h4>Daftar soal terkurasi (mis. Blind 75 / NeetCode)</h4><p>Kumpulan soal yang dipilih supaya tiap pola punya representasi — cara efisien mengenal "peta" pola tanpa mengerjakan ribuan soal serupa.</p></div>
+        <div class="card up"><div class="ic">// spaced repetition</div><h4>Ulangi soal lama secara berkala</h4><p>Kerjakan ulang soal yang pernah kamu selesaikan sebulan lalu, tanpa lihat solusi lama. Kalau sinyalnya langsung kebaca lagi, chunk pola itu sudah tertanam kuat.</p></div>
+        <div class="card up"><div class="ic">// jurnal</div><h4>Katalog pola pribadi</h4><p>Simpan catatan singkat per soal: sinyal apa yang muncul, pola apa yang cocok, dan di mana kamu sempat salah menebak. Ini "buku diagnosis" versimu sendiri.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Bukan soal hafalan — soal katalog yang terus tumbuh</h2>
+      </div>
+      <p class="lead reveal">Pattern recognition mempercepat langkah pertamamu di soal apapun. Tapi ia cuma alat bantu di awal — verifikasi tetap wajib, dan kadang soal memang minta kamu berpikir dari nol.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Tanya dulu</b> — "soal ini mirip soal apa yang pernah aku selesaikan?"</li>
+          <li><b>Baca sinyal, bukan cuma cerita</b> — kata kunci &amp; constraint menuntun ke keluarga teknik.</li>
+          <li><b>Brute force dulu</b> — baru cari pola optimasinya, jangan lompat langsung.</li>
+          <li><b>Katalog pola tumbuh dari latihan</b> — bukan dari membaca teori sekali baca.</li>
+          <li><b>Verifikasi, jangan cuma percaya</b> — pola yang familiar bisa saja tidak cocok di detail.</li>
+          <li><b>Kadang polanya sengaja disamarkan</b> — siap-siap berpikir dari nol saat itu terjadi.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah berikutnya</h3>
+        <p>Setelah bisa mengenali pola yang cocok, tantangan berikutnya adalah <strong>menerjemahkannya jadi solusi efisien</strong> — bukan cuma solusi yang jalan. Lanjut ke halaman <a href="../brute-force-to-optimal/index.html" style="color:var(--cyan)">Brute Force to Optimal</a> untuk belajar proses mengubah solusi kasar jadi solusi yang benar-benar optimal.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Apakah kamu tahu masalah yang serupa?" — Pólya
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Pattern Recognition</b> · Sinyal soal → keluarga teknik · bagian dari Problem Solving · rujukan: Pólya &amp; riset kognitif expertise · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../index.html">↑ kembali ke Problem Solving</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

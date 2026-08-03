@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorting — Mengurutkan Data dari O(n²) sampai O(n log n)</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home {
+    color: var(--muted); text-decoration: none; letter-spacing: .02em;
+    white-space: nowrap; transition: color .18s;
+    border-right: 1px solid var(--line); padding-right: 14px;
+  }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- steps (best practice) ---------- */
+  .steps { max-width: 74ch; margin: 24px 0 6px; counter-reset: stepnum; }
+  .steps li {
+    list-style: none; counter-increment: stepnum; position: relative;
+    padding: 14px 0 14px 46px; border-bottom: 1px solid var(--line-soft);
+    color: var(--ink); font-size: 15.5px;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(stepnum); position: absolute; left: 0; top: 12px;
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--cyan-dim); background: rgba(69,212,222,.08);
+    color: var(--cyan); font-family: var(--mono); font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .tiers { grid-template-columns:1fr; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../../index.html">← Data Structures &amp; Algorithms</a>
+  <div class="topbar__file">docs/learning/dsa/algorithms/sorting/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa sorting fundamental</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Insertion sort — titik awal</a>
+    <a href="#c03"><span class="yr">03</span> Merge sort &amp; quick sort</a>
+
+    <div class="rail__part">III · Praktik</div>
+    <a href="#c04"><span class="yr">◆</span> Best practice</a>
+    <a href="#c05"><span class="yr">◆</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Untung &amp; harga</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">V · Dunia nyata</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools &amp; referensi</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// DSA — Algorithms · dasar dari hampir semua optimasi lain</div>
+      <h1 class="reveal d1">Data yang <span class="accent">terurut</span> membuka jalan untuk semua yang lebih cepat.</h1>
+      <p class="sub reveal d2">
+        <strong>Sorting</strong> adalah salah satu masalah paling tua &amp; paling sering dipakai di ilmu komputer:
+        mengubah kumpulan data acak jadi <b>berurutan</b>. Deck ini bertahap: mulai dari <b>bubble/selection/
+        insertion sort</b> yang O(n²) — lambat tapi paling mudah dipahami sebagai fondasi konsep — lalu naik ke
+        <b>merge sort</b> &amp; <b>quick sort</b> yang O(n log n) lewat pendekatan <em>divide-and-conquer</em>,
+        sampai kapan sebaiknya kamu <b>pakai sort bawaan bahasa</b> vs menulis sendiri.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Data acak susah dicari &amp; dianalisis</b> <span>— binary search &amp; dedup butuh data terurut</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Algoritma sorting sistematis</b> <span>— dari O(n²) sederhana ke O(n log n) divide-and-conquer</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Membuka optimasi lain</b> <span>— binary search, dedup cepat, merge dua list terurut</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Comparison-based dibatasi O(n log n)</b> <span>— kecuali kasus khusus non-comparison</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Nyaris di mana-mana</b> <span>— Collections.sort, ORDER BY, leaderboard, feed</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+
+      <div class="why reveal d4" style="margin-top:40px">
+        <div class="tag">◆ Buat apa ini? Kenapa pakai ini?</div>
+        <p><b>Given</b> — kamu punya daftar mentah: log transaksi, daftar nama, skor pemain — urutannya cuma urutan kedatangan, bukan urutan yang berguna.</p>
+        <p><b>When</b> — kamu butuh cari satu elemen cepat, deteksi duplikat, ambil top-N/terkecil, atau gabungkan dua daftar jadi satu yang rapi.</p>
+        <p><b>Then</b> — tanpa data terurut, tiap pencarian jadi <code>O(n)</code> linear scan, deteksi duplikat butuh struktur tambahan (hash set), dan "cari yang terbesar" harus memindai ulang semua elemen tiap kali — makin lambat seiring data membesar.</p>
+        <p style="margin-top:8px">→ makanya kita pakai <b>sorting</b>: sekali investasi mengurutkan, banyak operasi lain jadi jauh lebih murah.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 01 KENAPA SORTING FUNDAMENTAL ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Kenapa sorting fundamental</div>
+        <h2>Data terurut membuka banyak optimasi lain</h2>
+      </div>
+      <p class="lead reveal">Kalau data <strong>tidak terurut</strong>, mencari satu elemen berarti memeriksa satu-satu dari awal — <code>O(n)</code>. Begitu data <strong>terurut</strong>, kamu bisa pakai <em>binary search</em> — <code>O(log n)</code> — atau mendeteksi duplikat cukup dengan melihat tetangga kiri-kanan, tanpa hash set. Sorting sendiri bukan tujuan akhir; ia adalah <strong>investasi</strong> yang membayar banyak operasi lain jadi jauh lebih murah.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — menyusun kartu remi di tangan</div>
+        <p>Saat main kartu remi, kamu otomatis menyusun kartu di tangan dari kecil ke besar begitu menerimanya — bukan karena diminta, tapi karena kartu yang terurut membuat semua langkah berikutnya lebih mudah: gampang melihat kombinasi, gampang tahu kartu apa yang hilang, gampang membandingkan dengan kartu lawan. Komputer melakukan hal yang sama pada data: sekali diurutkan, banyak <em>pekerjaan lain</em> jadi lebih murah.</p>
+      </div>
+
+      <p class="body reveal d2">Itulah kenapa sorting jadi salah satu topik paling awal di ilmu komputer — bukan cuma latihan akademis, tapi <strong>blok bangunan</strong> yang dipakai ulang di database, search engine, sistem file, sampai algoritma grafik.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 INSERTION SORT — TITIK AWAL ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Titik awal memahami sorting</div>
+        <h2>Insertion sort — cara manusia mengurutkan kartu</h2>
+      </div>
+      <p class="lead reveal"><strong>Insertion sort</strong> bekerja persis seperti kamu menyusun kartu remi satu per satu: ambil kartu berikutnya, lalu <strong>sisipkan</strong> ke posisi yang benar di antara kartu-kartu yang sudah tersusun rapi di tangan kiri. Bagian array di sebelah kiri selalu terjaga terurut; bagian kanan belum disentuh.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">InsertionSort.java</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">import</span> java.util.Arrays;
+
+<span class="k">public class</span> <span class="t">InsertionSort</span> {
+
+    <span class="k">static void</span> <span class="f">insertionSort</span>(<span class="k">int</span>[] arr) {
+        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">1</span>; i &lt; arr.length; i++) {
+            <span class="k">int</span> key = arr[i];          <span class="c">// kartu yang mau disisipkan</span>
+            <span class="k">int</span> j = i - <span class="n">1</span>;
+<span class="hl-good">            <span class="k">while</span> (j &gt;= <span class="n">0</span> &amp;&amp; arr[j] &gt; key) {
+                arr[j + <span class="n">1</span>] = arr[j];     <span class="c">// geser kartu lebih besar ke kanan</span>
+                j--;
+            }
+            arr[j + <span class="n">1</span>] = key;           <span class="c">// sisipkan di posisi yang benar</span></span>
+        }
+    }
+
+    <span class="k">public static void</span> <span class="f">main</span>(<span class="t">String</span>[] args) {
+        <span class="k">int</span>[] data = { <span class="n">5</span>, <span class="n">2</span>, <span class="n">9</span>, <span class="n">1</span>, <span class="n">5</span>, <span class="n">6</span> };
+        <span class="f">insertionSort</span>(data);
+        <span class="t">System</span>.out.println(<span class="t">Arrays</span>.toString(data)); <span class="c">// [1, 2, 5, 5, 6, 9]</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d1">Kompleksitasnya <strong><code>O(n²)</code></strong>: untuk tiap elemen (n kali), worst-case kamu menggeser hampir seluruh bagian yang sudah terurut (n kali lagi). Lambat untuk data besar, tapi <strong>sangat cepat untuk data kecil</strong> atau data yang sudah <em>hampir</em> terurut — best-case-nya mendekati <code>O(n)</code> kalau tinggal sedikit yang perlu digeser.</p>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Keluarga sorting O(n²) — sederhana untuk belajar konsep</div>
+        <div class="erabox__row"><span class="erabox__lang">Bubble</span><code>tukar pasangan tetangga berulang sampai tak ada lagi yang perlu ditukar</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Selection</span><code>cari elemen terkecil sisa, tukar ke posisi depan, ulangi</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Insertion</span><code>sisipkan tiap elemen ke posisi benar di bagian yang sudah terurut</code></div>
+        <p class="erabox__note">Ketiganya <b>O(n²)</b> di kasus rata-rata &amp; terburuk, dan jarang dipakai untuk data besar di production — tapi memahami cara kerjanya adalah fondasi untuk mengerti kenapa algoritma <code>O(n log n)</code> di bab berikutnya jauh lebih baik untuk data besar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 MERGE SORT & QUICK SORT ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep lanjutan</span> · Divide-and-conquer</div>
+        <h2>Merge sort & quick sort — membagi lalu menaklukkan</h2>
+      </div>
+      <p class="lead reveal">Saat data makin besar, <code>O(n²)</code> mulai terasa sakit. <strong>Merge sort</strong> &amp; <strong>quick sort</strong> memakai pendekatan <em>divide-and-conquer</em>: pecah array jadi bagian lebih kecil, selesaikan tiap bagian secara rekursif, lalu gabungkan — hasilnya turun ke <code>O(n log n)</code>.</p>
+
+      <div class="quote reveal d1">
+        <p>“Merge sort mencontohkan pendekatan divide-and-conquer secara sempurna: membagi masalah jadi subproblem yang lebih kecil, menyelesaikannya secara rekursif, lalu menggabungkan hasilnya — dengan jaminan waktu O(n log n) di semua kasus, berbeda dari quick sort yang rata-rata cepat namun bisa memburuk menjadi O(n²).”</p>
+        <cite>— parafrase dari Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein, <i>Introduction to Algorithms</i> (CLRS)</cite>
+      </div>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">MergeSort.java</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">MergeSort</span> {
+
+    <span class="k">static void</span> <span class="f">mergeSort</span>(<span class="k">int</span>[] arr, <span class="k">int</span> left, <span class="k">int</span> right) {
+        <span class="k">if</span> (left &gt;= right) <span class="k">return</span>;     <span class="c">// base case: 0 atau 1 elemen</span>
+        <span class="k">int</span> mid = (left + right) / <span class="n">2</span>;
+        <span class="f">mergeSort</span>(arr, left, mid);       <span class="c">// urutkan separuh kiri</span>
+        <span class="f">mergeSort</span>(arr, mid + <span class="n">1</span>, right);  <span class="c">// urutkan separuh kanan</span>
+        <span class="f">merge</span>(arr, left, mid, right);   <span class="c">// gabungkan dua bagian terurut</span>
+    }
+
+    <span class="k">static void</span> <span class="f">merge</span>(<span class="k">int</span>[] arr, <span class="k">int</span> left, <span class="k">int</span> mid, <span class="k">int</span> right) {
+        <span class="k">int</span>[] temp = <span class="k">new</span> <span class="k">int</span>[right - left + <span class="n">1</span>]; <span class="c">// butuh array bantu</span>
+        <span class="k">int</span> i = left, j = mid + <span class="n">1</span>, k = <span class="n">0</span>;
+        <span class="k">while</span> (i &lt;= mid &amp;&amp; j &lt;= right) {
+            temp[k++] = (arr[i] &lt;= arr[j]) ? arr[i++] : arr[j++]; <span class="c">// &lt;= menjaga stabil</span>
+        }
+        <span class="k">while</span> (i &lt;= mid)   temp[k++] = arr[i++];
+        <span class="k">while</span> (j &lt;= right) temp[k++] = arr[j++];
+        <span class="t">System</span>.arraycopy(temp, <span class="n">0</span>, arr, left, temp.length);
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Merge sort selalu <strong>membagi tepat di tengah</strong>, jadi kedalaman rekursinya selalu <code>log n</code>, dan langkah gabung (<em>merge</em>) selalu <code>O(n)</code> — hasilnya <strong>O(n log n) di semua kasus</strong>, dan karena perbandingan <code>&lt;=</code> menjaga urutan elemen yang sama, ia juga <strong>stabil</strong>. Harganya: butuh array bantu (<code>temp</code>) seukuran data — memori ekstra <code>O(n)</code>.</p>
+
+      <p class="body reveal d2"><strong>Quick sort</strong> berbeda strategi: pilih satu <strong>pivot</strong>, lalu <em>partition</em> array supaya elemen lebih kecil dari pivot ada di kiri &amp; lebih besar di kanan — semuanya <strong>di tempat (in-place)</strong>, tanpa array bantu. Rata-rata juga <code>O(n log n)</code>, tapi kalau pivot yang dipilih selalu jadi elemen terkecil/terbesar (misalnya array sudah terurut &amp; pivot selalu elemen terakhir), partisinya jadi timpang &amp; kompleksitas memburuk ke <code>O(n²)</code>.</p>
+
+      <div class="diptych reveal d2">
+        <div class="code-card">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">merge sort — predictable, extra memory</span><span class="lang">Java</span></div>
+<pre class="code"><span class="c">// selalu bagi tepat tengah → kedalaman = log n</span>
+<span class="k">int</span> mid = (left + right) / <span class="n">2</span>;
+<span class="hl-bad"><span class="k">int</span>[] temp = <span class="k">new</span> <span class="k">int</span>[right - left + <span class="n">1</span>]; <span class="c">// alokasi tiap merge()</span></span>
+<span class="c">// jaminan O(n log n) di SEMUA kasus, dan stabil (arr[i] &lt;= arr[j])</span>
+<span class="c">// harga: memori ekstra O(n), tidak in-place</span></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">quick sort — in-place, worst case buruk</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">static int</span> <span class="f">partition</span>(<span class="k">int</span>[] arr, <span class="k">int</span> low, <span class="k">int</span> high) {
+    <span class="k">int</span> pivot = arr[high];        <span class="c">// pivot naif: elemen terakhir</span>
+    <span class="k">int</span> i = low - <span class="n">1</span>;
+    <span class="k">for</span> (<span class="k">int</span> j = low; j &lt; high; j++) {
+        <span class="k">if</span> (arr[j] &lt; pivot) { i++; <span class="f">swap</span>(arr, i, j); } <span class="c">// tukar di tempat</span>
+    }
+    <span class="f">swap</span>(arr, i + <span class="n">1</span>, high);
+    <span class="k">return</span> i + <span class="n">1</span>;
+}
+<span class="hl-bad"><span class="c">// array sudah terurut + pivot = elemen terakhir → partisi timpang → O(n²)</span></span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Kebiasaan aman menyortir data</div>
+        <h2>Best practice — kapan menulis sendiri, kapan tidak</h2>
+      </div>
+      <p class="lead reveal">Di production, kamu <strong>hampir tidak pernah</strong> menulis ulang merge sort atau quick sort dari nol untuk kode sehari-hari. Berikut kebiasaan yang menghindarkanmu dari bug &amp; kode yang lebih lambat dari seharusnya.</p>
+
+      <div class="quote reveal d1">
+        <p>“Tidak ada satu algoritma sorting yang “terbaik” untuk semua situasi — pilihan bergantung pada ukuran data, apakah stabilitas urutan penting, apakah memori terbatas, dan seberapa acak data awal; itulah sebabnya sistem modern sering memakai algoritma hybrid seperti Timsort.”</p>
+        <cite>— parafrase dari Robert Sedgewick &amp; Kevin Wayne, <i>Algorithms</i></cite>
+      </div>
+
+      <ol class="steps reveal d2">
+        <li><b>Pakai sort bawaan bahasa untuk kebanyakan kasus</b> — <code>Arrays.sort()</code> &amp; <code>Collections.sort()</code> di Java sudah dioptimasi &amp; hybrid (Timsort untuk objek), hasil rekayasa bertahun-tahun yang sulit dikalahkan kode sendiri.</li>
+        <li><b>Pakai <code>Comparator</code> custom untuk objek</b> — jangan ubah struktur data cuma supaya bisa diurutkan; tulis <code>Comparator&lt;T&gt;</code> atau <code>Comparable&lt;T&gt;</code> yang jelas &amp; teruji.</li>
+        <li><b>Perhatikan stabil vs tidak stabil</b> — penting untuk <em>multi-key sort</em> (urutkan berdasarkan tanggal, lalu nama): sort stabil menjaga urutan relatif elemen dengan key sama dari sort sebelumnya; <code>Arrays.sort()</code> untuk primitif <strong>tidak</strong> dijamin stabil, tapi untuk objek (Timsort) <strong>dijamin</strong> stabil.</li>
+        <li><b>Sadari harga memori</b> — kalau data terlalu besar untuk muat di RAM, sort in-memory biasa (termasuk built-in) bukan solusinya; itulah kenapa ada teknik <em>external sort</em>.</li>
+        <li><b>Tulis sort manual sendiri</b> hanya untuk belajar, wawancara kerja, atau kasus sangat khusus (mis. constraint memori ekstrem, kebutuhan non-comparison sort seperti counting sort).</li>
+        <li><b>Uji dengan data ekstrem</b> — array kosong, satu elemen, sudah terurut, terurut terbalik, dan banyak duplikat — sebelum percaya sort custom-mu benar &amp; cepat.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Roadmap · Bertahap sesuai levelmu</div>
+        <h2>Tier belajar sorting</h2>
+      </div>
+      <p class="lead reveal">Sorting adalah topik yang tumbuh bersama pengalamanmu — dari mengerti cara kerja dasar, sampai memahami kenapa satu algoritma dipilih di atas yang lain untuk kasus tertentu.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Beginner</span>
+          <h4>Sorting manual & O(n²)</h4>
+          <p>Kuasai dulu algoritma paling dasar dengan tangan sendiri, sampai benar-benar paham kenapa kompleksitasnya kuadratik.</p>
+          <ul>
+            <li>Bubble sort dari nol</li>
+            <li>Selection sort dari nol</li>
+            <li>Insertion sort dari nol</li>
+            <li>Paham &amp; bisa jelaskan kenapa O(n²)</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Middle</span>
+          <h4>Divide-and-conquer</h4>
+          <p>Naik ke algoritma yang benar-benar dipakai untuk data besar — di sinilah rekursi &amp; kompleksitas mulai terasa nyata.</p>
+          <ul>
+            <li>Implementasi merge sort dari nol</li>
+            <li>Implementasi quick sort dari nol</li>
+            <li>Paham konsep divide-and-conquer</li>
+            <li>Bisa jelaskan trade-off stabil vs in-place</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Advance</span>
+          <h4>Analisis mendalam & kasus khusus</h4>
+          <p>Di level ini kamu tidak cuma bisa menulis sortnya, tapi menganalisis &amp; memilih strategi yang tepat untuk situasi nyata.</p>
+          <ul>
+            <li>Analisis worst-case quick sort &amp; mitigasinya (random pivot)</li>
+            <li>Counting sort untuk rentang nilai kecil</li>
+            <li>Radix sort — non-comparison-based, O(n)</li>
+            <li>Kapan pakai external sort untuk data raksasa</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada sort yang menang segalanya</div>
+        <h2>Trade-off: stabil, cepat, in-place, dan batas teoretis</h2>
+      </div>
+      <p class="lead reveal">Tiap algoritma sorting menukar satu hal demi hal lain. Memahami trade-off ini yang membuatmu bisa memilih dengan alasan, bukan sekadar hafalan nama algoritma.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Stabil (merge sort, insertion sort, Timsort)</h4>
+          <ul class="good-l">
+            <li>Menjaga urutan relatif elemen dengan key sama.</li>
+            <li>Aman untuk <em>multi-key sort</em> bertahap.</li>
+            <li>Biasanya butuh memori ekstra untuk jaminan ini.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Cepat & in-place (quick sort, selection sort)</h4>
+          <ul class="bad-l">
+            <li>Tidak butuh (banyak) memori tambahan.</li>
+            <li>Umumnya <strong>tidak</strong> menjaga urutan elemen dengan key sama.</li>
+            <li>Performa bisa memburuk drastis di kasus tertentu (pivot buruk).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Batas teoretis: comparison-based vs non-comparison</div>
+          <p>Algoritma sorting yang bekerja dengan <strong>membandingkan pasangan elemen</strong> (merge sort, quick sort, insertion sort, dst.) tidak bisa lebih cepat dari <code>O(n log n)</code> di kasus umum — ini batas matematis, bukan soal implementasi. Tapi untuk kasus <strong>khusus</strong> (misalnya rentang nilai integer yang diketahui &amp; kecil), algoritma <strong>non-comparison-based</strong> seperti <em>counting sort</em> atau <em>radix sort</em> bisa mencapai <code>O(n)</code> — karena mereka tidak membandingkan elemen satu-satu, melainkan menghitung/mengelompokkan berdasarkan nilai.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan pakai algoritma sorting yang mana</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>untuk kode aplikasi sehari-hari, sort bawaan bahasa nyaris selalu menang. Tulis atau pilih algoritma spesifik hanya kalau ada alasan konkret</strong> — memori terbatas, kebutuhan stabilitas eksplisit, atau data dengan karakteristik khusus.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai sort bawaan / hybrid saat…</h4>
+          <ul class="good-l">
+            <li>Kode aplikasi umum — 99% kasus sehari-hari.</li>
+            <li>Data berupa objek yang butuh <code>Comparator</code>.</li>
+            <li>Butuh stabilitas tanpa mikirkan detail implementasi.</li>
+            <li>Ukuran data wajar &amp; muat di memori.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Pertimbangkan algoritma khusus saat…</h4>
+          <ul class="bad-l">
+            <li>Rentang nilai integer diketahui &amp; kecil → counting/radix sort.</li>
+            <li>Memori sangat terbatas → quick sort in-place custom.</li>
+            <li>Data tak muat di RAM → external sort (merge dari disk).</li>
+            <li>Wawancara kerja / belajar internal algoritma bahasa.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan ke dirimu: <strong>"Apakah aku punya alasan konkret untuk tidak percaya pada sort bawaan bahasa?"</strong> Kalau tidak — dan kebanyakan kasus memang tidak — pakai <code>Arrays.sort()</code> / <code>Collections.sort()</code>. Kalau ya, pastikan alasannya jelas: memori, stabilitas, atau bentuk data yang benar-benar khusus.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Di mana sorting benar-benar dipakai di production</h2>
+      </div>
+      <p class="lead reveal">Tiga contoh nyata yang menunjukkan bagaimana pilihan algoritma sorting terhubung langsung ke kebutuhan sistem — stabilitas, keterbatasan memori, atau tampilan data terurut ke pengguna.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// bahasa pemrograman</div><h4>Timsort di Java Collections.sort</h4><p><b>Kasus:</b> mengurutkan <code>List&lt;T&gt;</code> berisi objek — misalnya daftar pengguna yang diurutkan berdasarkan tanggal daftar, lalu (kalau sama) nama. <b>Kenapa Timsort:</b> algoritma hybrid gabungan merge sort &amp; insertion sort ini <strong>stabil</strong> — penting supaya urutan sekunder tidak kacau saat sort bertingkat — sekaligus cepat untuk data yang sudah sebagian terurut.</p></div>
+        <div class="card up"><div class="ic">// database</div><h4>ORDER BY & external sort</h4><p><b>Kasus:</b> query <code>ORDER BY</code> pada tabel yang jauh lebih besar dari memori yang tersedia. <b>Kenapa external sort:</b> database mengurutkan data per-blok yang muat di memori, menulisnya ke disk, lalu <em>menggabungkan</em> (merge) blok-blok terurut itu — pola yang persis mengikuti ide <em>merge step</em> pada merge sort, hanya dilakukan lintas disk, bukan lintas array.</p></div>
+        <div class="card up"><div class="ic">// tampilan data</div><h4>Leaderboard & feed berurutan waktu</h4><p><b>Kasus:</b> menampilkan papan peringkat game berdasarkan skor, atau feed media sosial berdasarkan waktu posting terbaru. <b>Kenapa sorting relevan:</b> data harus konsisten terurut setiap kali ditampilkan; sistem semacam ini sering mengandalkan struktur data yang <em>menjaga urutan</em> saat insert (mis. indeks terurut di database) daripada mengurutkan ulang seluruh data tiap kali dibaca.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di ketiga kasus di atas, pilihan algoritma bukan soal "mana yang paling cepat di atas kertas" saja — Timsort dipilih karena <strong>stabilitas</strong>, external sort dipilih karena <strong>keterbatasan memori</strong>, dan sistem leaderboard/feed sering menghindari sort ulang berulang dengan menjaga data <strong>tetap terurut</strong> di struktur penyimpanannya. Konteks pemakaian yang menentukan, bukan hanya kompleksitas Big-O.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS & REFERENSI ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat &amp; referensi lanjutan</div>
+        <h2>Tools & referensi sorting</h2>
+      </div>
+      <p class="lead reveal">Kamu tidak perlu menghafal implementasi semua algoritma sorting — cukup kenali alat bawaan yang akan kamu pakai sehari-hari, dan tahu ke mana melihat kalau butuh memahami lebih dalam.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// bawaan bahasa</div><h4>Arrays.sort() & Collections.sort()</h4><p>Titik awal untuk hampir semua kebutuhan sort di Java. <code>Arrays.sort()</code> untuk array primitif pakai varian quicksort/dual-pivot; untuk objek &amp; <code>List</code>, keduanya memakai Timsort — stabil &amp; hybrid.</p></div>
+        <div class="card up"><div class="ic">// visualisasi</div><h4>Sorting algorithm visualizer</h4><p>Tool interaktif (banyak tersedia daring, mis. visualgo / toptal sorting visualizer) yang menganimasikan langkah demi langkah bubble/insertion/merge/quick sort — sangat membantu untuk "melihat" cara kerja partition &amp; merge yang di bab 03 cuma ditulis sebagai kode.</p></div>
+        <div class="card up"><div class="ic">// algoritma hybrid</div><h4>Timsort</h4><p>Algoritma sort hybrid (gabungan merge sort &amp; insertion sort) yang dipakai Java, Python, dan Android — dirancang khusus untuk memanfaatkan data yang sudah sebagian terurut di dunia nyata, sambil tetap menjaga stabilitas &amp; jaminan O(n log n).</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Paham dasarnya, percaya sort bawaan untuk sisanya</h2>
+      </div>
+      <p class="lead reveal">Sorting adalah fondasi yang membuat banyak operasi lain jadi mungkin &amp; murah. Paham insertion sort mengajarkanmu cara berpikir dasar; paham merge sort &amp; quick sort mengajarkanmu divide-and-conquer; dan paham kapan memakai sort bawaan bahasa menyelamatkanmu dari menulis ulang sesuatu yang sudah dioptimasi bertahun-tahun.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Sorting membuka optimasi lain</b> — binary search, dedup, merge cepat.</li>
+          <li><b>O(n²) untuk belajar konsep</b> — bubble, selection, insertion sort.</li>
+          <li><b>O(n log n) untuk data besar</b> — merge sort (stabil, extra memory), quick sort (in-place, worst-case buruk).</li>
+          <li><b>Comparison-based dibatasi O(n log n)</b> — non-comparison (counting/radix) bisa O(n) untuk kasus khusus.</li>
+          <li><b>Pakai sort bawaan bahasa</b> — Timsort &amp; sejenisnya sudah dioptimasi &amp; hybrid.</li>
+          <li><b>Pilih berdasarkan konteks</b> — stabilitas, memori, ukuran data — bukan hafalan nama algoritma.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Kalau sedang belajar: implementasikan bubble/insertion/merge/quick sort dari nol sampai benar-benar paham cara kerjanya. Kalau sedang membangun aplikasi: pakai sort bawaan bahasa, dan simpan energi analisismu untuk hal yang lebih penting — kecuali kamu punya alasan konkret untuk tidak melakukannya.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // Lanjut ke topik berikutnya: "Searching"
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Sorting</b> · Bubble/selection/insertion, merge sort &amp; quick sort, best practice, tier belajar, &amp; studi kasus · untuk pemula · rujukan: CLRS (Cormen et al.), Sedgewick &amp; Wayne (<i>Algorithms</i>) · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../../index.html">← kembali ke Data Structures &amp; Algorithms</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

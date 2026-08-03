@@ -1,0 +1,2276 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Patterns — The Whiteboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  :root {
+    --paper:      #f9f8f3;
+    --paper-2:    #fffffb;
+    --card:       #fcfbf6;
+    --grid:       rgba(47,111,237,.05);
+    --ink:        #2c2c2e;
+    --ink-soft:   #54555a;
+    --muted:      #8b8b84;
+    --line:       #e4e0d4;
+    --line-soft:  #eeebe1;
+
+    --blue:       #2f6fed;   /* marker utama */
+    --blue-dim:   #1b4fbf;
+    --red:        #e23b2e;   /* bencana */
+    --red-bg:     #fdeceb;
+    --green:      #2faf5a;   /* beres */
+    --green-bg:   #eafaf0;
+    --sticky:     #ffe27a;   /* design principle */
+    --sticky-edge:#e8c84a;
+
+    /* syntax (light) */
+    --k: #cf222e;  --t: #0a7ea4;  --s: #0a3069;
+    --c: #6e7781;  --n: #0550ae;  --f: #8250df;  --a: #116329;
+
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono: "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --bar-bg:  rgba(252,251,246,.9);
+    --rail-bg: rgba(255,255,251,.6);
+    --mark:    var(--sticky);
+    --chip-bg: rgba(47,111,237,.08);
+
+    --rail-w: 256px;
+    --maxw: 1180px;
+  }
+
+  /* ---------- dark theme (blackboard) ---------- */
+  [data-theme="dark"] {
+    --paper: #14171d;  --paper-2: #1b212a;  --card: #1b212a;
+    --grid: rgba(128,162,240,.09);
+    --ink: #d9dde4;  --ink-soft: #aeb4bf;  --muted: #7c8390;
+    --line: #2b313c;  --line-soft: #222831;
+    --blue: #6f9bff;  --blue-dim: #9bb8ff;
+    --red: #ff6f63;   --red-bg: rgba(255,111,99,.12);
+    --green: #4cd07a; --green-bg: rgba(76,208,122,.12);
+    --k:#ff7b72; --t:#4ec9b0; --s:#9ecbff; --c:#8b949e; --n:#f0a868; --f:#d2a8ff; --a:#7ee787;
+    --bar-bg: rgba(20,23,29,.9);  --rail-bg: rgba(20,23,29,.5);
+    --mark: rgba(111,155,255,.30);
+    --chip-bg: rgba(111,155,255,.16);
+  }
+  [data-theme="dark"] .codecard.bad  { border-color: #6e3b36; }
+  [data-theme="dark"] .codecard.good { border-color: #2f5e40; }
+  [data-theme="dark"] .codecard.bad  .hl-bad  { border-left-color: #6e3b36; }
+  [data-theme="dark"] .codecard.good .hl-good { border-left-color: #2f5e40; }
+  [data-theme="dark"] .req.bad { border-color: #6e3b36; }
+
+  body {
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.65;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: 46px;
+    background: var(--bar-bg); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px; padding: 0 16px;
+    font-family: var(--mono); font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#e8553a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#2faf5a; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink); font-weight: 700; }
+  .topbar__counter { margin-left: auto; color: var(--blue); letter-spacing: .12em; white-space: nowrap; font-weight: 600; }
+  .progress { position: fixed; top: 46px; left: 0; height: 3px; width: 0%; background: var(--blue); z-index: 51; transition: width .15s linear; }
+  .theme-btn { margin-left: 14px; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink-soft); cursor: pointer; transition: color .16s, border-color .16s, background .16s; }
+  .theme-btn:hover { color: var(--blue); border-color: var(--blue); background: rgba(47,111,237,.08); }
+  .theme-btn svg { display: block; }
+  .theme-btn .ic-sun { display: none; } .theme-btn .ic-moon { display: inline; }
+  [data-theme="dark"] .theme-btn .ic-sun { display: inline; } [data-theme="dark"] .theme-btn .ic-moon { display: none; }
+
+  /* ---------- rail ---------- */
+  .rail {
+    position: fixed; top: 46px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line); background: var(--rail-bg);
+    padding: 22px 0 50px; overflow-y: auto; z-index: 40; font-family: var(--mono);
+  }
+  .rail__head { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); padding: 0 22px 8px; }
+  .rail__grp { font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--blue); padding: 16px 22px 5px; }
+  .rail a {
+    display: flex; align-items: baseline; gap: 9px; padding: 6px 22px;
+    color: var(--ink-soft); text-decoration: none; font-size: 12.5px;
+    border-left: 3px solid transparent; transition: color .16s, background .16s, border-color .16s;
+  }
+  .rail a .nq { color: var(--muted); font-size: 11px; min-width: 22px; }
+  .rail a:hover { color: var(--ink); background: rgba(47,111,237,.05); }
+  .rail a.active { color: var(--blue-dim); border-left-color: var(--blue); background: rgba(47,111,237,.07); font-weight: 600; }
+  .rail a.active .nq { color: var(--blue); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh; padding: 92px clamp(22px,5vw,76px) 84px;
+    border-bottom: 1px dashed var(--line); scroll-margin-top: 46px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .07s; } .reveal.d2 { transition-delay: .14s; }
+  .reveal.d3 { transition-delay: .21s; } .reveal.d4 { transition-delay: .28s; }
+
+  /* ---------- hero ---------- */
+  .hero .eyebrow { font-family: var(--mono); color: var(--blue); font-size: 13px; margin-bottom: 22px; }
+  .hero h1 { font-weight: 800; font-size: clamp(32px,6vw,68px); line-height: 1.05; letter-spacing: -.02em; color: var(--ink); max-width: 18ch; }
+  .hero h1 .mark { background: linear-gradient(180deg, transparent 58%, var(--mark) 58%); padding: 0 .08em; }
+  .hero .sub { margin-top: 26px; max-width: 60ch; font-size: 19px; color: var(--ink-soft); }
+  .hero .sub b { color: var(--ink); font-weight: 700; }
+  .scrollcue { margin-top: 46px; font-family: var(--mono); font-size: 12.5px; color: var(--muted); letter-spacing: .12em; display: inline-flex; align-items: center; gap: 10px; }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--blue); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 14px; }
+  .chead .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .chead .kicker::before { content: ""; width: 18px; height: 3px; background: var(--blue); border-radius: 2px; }
+  .chead .kicker .gof { color: var(--muted); }
+  .chead h2 { font-weight: 800; font-size: clamp(25px,3.8vw,42px); line-height: 1.1; letter-spacing: -.015em; color: var(--ink); max-width: 22ch; }
+
+  .lead { font-size: 19px; color: var(--ink-soft); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink); font-weight: 700; }
+  p.body { max-width: 72ch; margin: 13px 0; color: var(--ink-soft); }
+  p.body code, li code, .lead code, .note code, .req code {
+    font-family: var(--mono); font-size: .85em; color: var(--blue-dim);
+    background: var(--chip-bg); padding: 1px 6px; border-radius: 4px;
+  }
+  .sticky code { font-family: var(--mono); font-size: .85em; color: #6b4f0a; background: rgba(120,90,10,.14); padding: 1px 6px; border-radius: 4px; }
+  .sticky.alt code { color: #0a4a78; background: rgba(10,74,120,.12); }
+
+  /* ---------- requirement bubble (boss says...) ---------- */
+  .req {
+    display: flex; gap: 14px; align-items: flex-start; margin: 22px 0; max-width: 74ch;
+    background: var(--paper-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px;
+  }
+  .req .who { flex: none; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--blue); padding-top: 2px; }
+  .req p { color: var(--ink); font-size: 16px; }
+  .req.bad { border-color: #f1b3ad; background: var(--red-bg); }
+  .req.bad .who { color: var(--red); }
+
+  /* ---------- sticky note: DESIGN PRINCIPLE ---------- */
+  .sticky {
+    position: relative; display: block; max-width: 60ch; margin: 26px 0;
+    background: var(--sticky); border: 1px solid var(--sticky-edge);
+    padding: 18px 22px 20px; border-radius: 3px;
+    box-shadow: 4px 6px 14px -6px rgba(60,50,10,.4);
+    transform: rotate(-1.1deg);
+  }
+  .sticky::before {
+    content: ""; position: absolute; top: -9px; left: 50%; transform: translateX(-50%) rotate(2deg);
+    width: 74px; height: 18px; background: rgba(255,255,255,.45); border: 1px solid rgba(0,0,0,.06);
+  }
+  .sticky .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #7a5d10; display: block; margin-bottom: 7px; }
+  .sticky p { color: #3a2e08; font-size: 17px; font-weight: 600; line-height: 1.45; }
+  .sticky.alt { background: #bfe3ff; border-color: #8cc4ee; box-shadow: 4px 6px 14px -6px rgba(10,40,70,.35); transform: rotate(1deg); }
+  .sticky.alt .tag { color: #0a4a78; }
+  .sticky.alt p { color: #0a3a5e; }
+
+  /* ---------- code card (light) ---------- */
+  .codecard { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); margin: 22px 0 6px; max-width: 880px; box-shadow: 0 12px 30px -22px rgba(40,40,40,.35); }
+  .codecard.bad  { border-color: #f1b3ad; }
+  .codecard.good { border-color: #a9e3bd; }
+  .codecard__bar { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--line); background: var(--paper-2); font-family: var(--mono); font-size: 12px; }
+  .codecard__bar .dots { display: flex; gap: 6px; }
+  .codecard__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .codecard__name { color: var(--muted); }
+  .codecard__verdict { margin-left: auto; font-weight: 700; letter-spacing: .04em; font-size: 11.5px; }
+  .codecard.bad  .codecard__verdict { color: var(--red); }
+  .codecard.good .codecard__verdict { color: var(--green); }
+  pre.code { font-family: var(--mono); font-size: 13px; line-height: 1.6; padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre; }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .k{color:var(--k);} .t{color:var(--t);} .s{color:var(--s);} .c{color:var(--c);font-style:italic;} .n{color:var(--n);} .f{color:var(--f);} .a{color:var(--a);}
+  .hl-bad  { background: var(--red-bg);   border-left: 2px solid #f1b3ad; display: inline-block; width: 100%; }
+  .hl-good { background: var(--green-bg); border-left: 2px solid #a9e3bd; display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before -> after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; margin: 24px 0 6px; max-width: var(--maxw); }
+  .diptych .codecard { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.58; }
+  .xarrow { color: var(--blue); flex: none; display: flex; align-items: center; justify-content: center; }
+  .xarrow svg { width: 42px; height: 28px; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } .xarrow { transform: rotate(90deg); margin: 2px auto; } }
+
+  /* ---------- note (di codebase / catatan) ---------- */
+  .note { display: flex; gap: 15px; margin: 24px 0 4px; max-width: 80ch; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--paper-2); }
+  .note__spine { flex: none; width: 7px; background: var(--blue); }
+  .note__body { padding: 14px 18px 16px; }
+  .note__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--blue); margin-bottom: 7px; }
+  .note p { color: var(--ink-soft); font-size: 15.5px; max-width: none; }
+  .note.warn { } .note.warn .note__spine { background: var(--red); } .note.warn .note__tag { color: var(--red); }
+
+  /* ---------- definition strip ---------- */
+  .defn { margin: 22px 0 4px; max-width: 78ch; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper-2); padding: 16px 20px; }
+  .defn .t-lbl { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); margin-bottom: 6px; }
+  .defn p { color: var(--ink); font-size: 16px; }
+  .defn b { color: var(--blue-dim); }
+
+  /* ---------- two-col list ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 22px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 13.5px; margin-bottom: 8px; }
+  .cols .bad-h { color: var(--red); } .cols .good-h { color: var(--green); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink-soft); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before { content: "\2715"; color: var(--red); } .cols .good-l li::before { content: "\2713"; color: var(--green); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--blue-dim); }
+
+  /* ---------- closing creed ---------- */
+  .creed { max-width: 66ch; } .creed li { list-style: none; font-family: var(--mono); font-size: clamp(14px,1.8vw,16.5px); color: var(--ink-soft); padding: 10px 0 10px 30px; position: relative; border-bottom: 1px solid var(--line-soft); }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--blue); }
+  .creed li b { color: var(--ink); }
+
+  footer { margin-left: var(--rail-w); padding: 30px clamp(22px,5vw,76px); font-family: var(--mono); font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); }
+  footer b { color: var(--ink-soft); }
+
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    body { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .sticky { transform: none; }
+  }
+  a:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 4px; }
+</style>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('dp-theme');
+      if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<a id="__exitbtn" href="../../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/design-patterns/<b>the-whiteboard.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 19</div>
+  <button id="themeToggle" class="theme-btn" type="button" aria-label="Ganti tema terang/gelap" title="Tema terang / gelap">
+    <svg class="ic-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    <svg class="ic-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar isi">
+  <div class="rail__head">// Papan tulis</div>
+  <div class="rail__grp">Mula</div>
+  <a href="#c00"><span class="nq">00</span> Pembuka</a>
+  <a href="#c01"><span class="nq">01</span> SimUDuck ·1</a>
+  <a href="#c02"><span class="nq">02</span> SimUDuck ·2</a>
+
+  <div class="rail__grp">Pattern</div>
+  <a href="#c03"><span class="nq">03</span> Strategy</a>
+  <a href="#c04"><span class="nq">04</span> Observer</a>
+  <a href="#c05"><span class="nq">05</span> Decorator ·1</a>
+  <a href="#c06"><span class="nq">06</span> Decorator ·2</a>
+  <a href="#c07"><span class="nq">07</span> Factory ·1</a>
+  <a href="#c07b"><span class="nq">07</span> Factory ·2</a>
+  <a href="#c08"><span class="nq">08</span> Singleton</a>
+  <a href="#c09"><span class="nq">09</span> Command ·1</a>
+  <a href="#c10"><span class="nq">10</span> Command ·2</a>
+  <a href="#c11"><span class="nq">11</span> Adapter</a>
+  <a href="#c12"><span class="nq">12</span> Facade</a>
+  <a href="#c13"><span class="nq">13</span> Template Method</a>
+  <a href="#c14"><span class="nq">14</span> Iterator</a>
+  <a href="#c15"><span class="nq">15</span> Composite</a>
+  <a href="#c16"><span class="nq">16</span> State</a>
+  <a href="#c17"><span class="nq">17</span> Proxy</a>
+
+  <div class="rail__grp">Tutup</div>
+  <a href="#c18"><span class="nq">18</span> Penutup</a>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Head First Design Patterns — diceritakan ulang, santai</div>
+      <h1 class="reveal d1">Pattern itu nggak diciptakan. <span class="mark">Ditemukan.</span></h1>
+      <p class="sub reveal d2">
+        Orang lain udah kena masalah desain yang sama berkali-kali—dan nyaring jalan keluar yang paling tahan banting.
+        Itulah design pattern: <b>resep yang udah teruji</b>, bukan trik pamer. Deck ini ngikutin cara buku
+        <b>Head First Design Patterns</b>: mulai dari satu aplikasi bebek yang <b>berantakan gara-gara inheritance</b>,
+        lihat gimana tiap pattern lahir dari rasa sakit yang nyata. Contoh ikonik bukunya dipakai apa adanya
+        (SimUDuck, Starbuzz, Weather Station, Remote Control…). Bahasa santai, kode Java.
+      </p>
+      <div class="scrollcue reveal d3"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--blue)">→</b></div>
+
+      <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px 0;border-radius:0 10px 10px 0;max-width:70ch">
+        <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+        <p style="margin:5px 0"><b>Given</b> — tim nyelesain masalah desain yang sama berulang-ulang, tapi tiap kali pakai solusi ad-hoc yang beda-beda (kayak Joe langsung nambah <code>fly()</code> di superclass <code>Duck</code>).</p>
+        <p style="margin:5px 0"><b>When</b> — kodebase makin gede, dan solusi ad-hoc itu makin susah dikomunikasikan & dipahami developer lain—tiap orang motong masalah yang sama dengan cara sendiri-sendiri.</p>
+        <p style="margin:5px 0"><b>Then</b> — muncul inkonsistensi desain, duplikasi, dan bug yang susah dilacak (bebek karet tiba-tiba ikut terbang).</p>
+        <p style="margin:8px 0 0">→ makanya kita pakai <b>design pattern</b>: kosakata & solusi desain yang udah teruji, dipahami bersama tim.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 01 SIMUDUCK ·1 ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Studi kasus · SimUDuck</div>
+        <h2>Awalnya rapi. Lalu bos minta bebeknya bisa terbang.</h2>
+      </div>
+      <p class="lead reveal">Joe kerja di perusahaan yang bikin game simulasi kolam bebek, <strong>SimUDuck</strong>. Desain awalnya OOP yang "benar": ada superclass <code>Duck</code>, lalu macam-macam bebek mewarisinya. Rapi, semua orang senang.</p>
+
+      <div class="codecard reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Duck.java — desain awal</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">Duck</span> {
+    <span class="k">public void</span> <span class="f">quack</span>() { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Quack"</span>); }
+    <span class="k">public void</span> <span class="f">swim</span>()  { <span class="c">/* semua bebek ngambang */</span> }
+    <span class="k">public abstract void</span> <span class="f">display</span>();   <span class="c">// tiap jenis beda tampilan</span>
+}
+
+<span class="k">public class</span> <span class="t">MallardDuck</span> <span class="k">extends</span> <span class="t">Duck</span> {
+    <span class="a">@Override</span> <span class="k">public void</span> <span class="f">display</span>() { <span class="c">/* gambar mallard */</span> }
+}</pre>
+      </div>
+
+      <div class="req bad reveal d2">
+        <span class="who">BOS:</span>
+        <p>"Kompetitor bikin bebeknya <em>terbang</em>. Kita butuh bebek terbang juga—minggu depan rilis!"</p>
+      </div>
+
+      <p class="body reveal d2">Gampang, pikir Joe. Tinggal tambah <code>fly()</code> di superclass <code>Duck</code>, semua bebek otomatis bisa terbang. Dia commit, pulang. Besoknya... rapat ribut.</p>
+
+      <div class="codecard bad reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Duck.java — "tinggal tambah fly()"</span><span class="codecard__verdict">BENCANA</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">Duck</span> {
+    <span class="k">public void</span> <span class="f">quack</span>() { ... }
+<span class="hl-bad">    <span class="k">public void</span> <span class="f">fly</span>()   { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Terbang!"</span>); }  <span class="c">// ditaruh di induk</span></span>
+}
+
+<span class="k">public class</span> <span class="t">RubberDuck</span> <span class="k">extends</span> <span class="t">Duck</span> {
+    <span class="a">@Override</span> <span class="k">public void</span> <span class="f">quack</span>() { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Squeak"</span>); }
+<span class="hl-bad">    <span class="c">// ...tapi RubberDuck sekarang IKUT terbang. Bebek karet terbang?! 🐤💥</span></span>
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Bebek karet melayang-layang di layar. Satu perubahan di superclass <strong>nyebar ke semua subclass</strong>—termasuk yang nggak seharusnya. Dan bentar lagi ada <code>DecoyDuck</code> (bebek umpan dari kayu): nggak bisa terbang, nggak bisa bersuara. Inheritance mulai berasa salah.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 SIMUDUCK ·2 ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Studi kasus · SimUDuck</div>
+        <h2>Interface? Malah lebih parah.</h2>
+      </div>
+      <p class="lead reveal">Joe mikir: "Oke, override <code>fly()</code> di RubberDuck biar nggak ngapa-ngapain." Tapi tiap ada bebek baru yang aneh, dia harus inget override lagi. Lupa sekali = bug. Lalu dia coba ide kedua: <strong>interface</strong> <code>Flyable</code> dan <code>Quackable</code>.</p>
+
+      <div class="codecard bad reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">pakai interface — duplikasi di mana-mana</span><span class="codecard__verdict">SMELL</span></div>
+<pre class="code"><span class="k">interface</span> <span class="t">Flyable</span>   { <span class="k">void</span> <span class="f">fly</span>(); }
+<span class="k">interface</span> <span class="t">Quackable</span> { <span class="k">void</span> <span class="f">quack</span>(); }
+
+<span class="k">class</span> <span class="t">MallardDuck</span> <span class="k">extends</span> <span class="t">Duck</span> <span class="k">implements</span> <span class="t">Flyable</span>, <span class="t">Quackable</span> {
+    <span class="k">public void</span> <span class="f">fly</span>()   { <span class="c">/* kode terbang ditulis ULANG */</span> }
+    <span class="k">public void</span> <span class="f">quack</span>() { <span class="c">/* kode quack ditulis ULANG */</span> }
+}
+<span class="c">// 48 subclass bebek? tulis ulang fly() di tiap yang terbang.</span>
+<span class="c">// mau ubah cara terbang? edit 48 file. interface = nol reuse kode.</span></pre>
+      </div>
+
+      <p class="body reveal d2">Interface ngilangin masalah "bebek karet terbang" (cuma yang perlu yang implement), <strong>tapi ngebunuh reuse kode</strong>: tiap bebek nulis ulang <code>fly()</code> sendiri. Mau ganti perilaku terbang buat semua? Sentuh puluhan file. Joe stuck di antara dua jalan jelek.</p>
+
+      <p class="body reveal d2">Di sinilah pelajaran pertama Head First. Lihat apa yang sebenarnya jadi sumber masalah: <strong>perilaku yang berubah-ubah</strong> (cara terbang, cara bersuara) ditempel ke hierarki yang kaku.</p>
+
+      <div class="sticky reveal d3">
+        <span class="tag">◆ Design Principle</span>
+        <p>Kenali bagian aplikasi yang <em>berubah-ubah</em>, lalu pisahkan dari yang tetap. <br>— <i>Encapsulate what varies.</i></p>
+      </div>
+
+      <p class="body reveal d3">Artinya: cabut <code>fly()</code> dan <code>quack()</code> keluar dari <code>Duck</code>. Jadikan mereka keluarga perilaku yang berdiri sendiri. Itu langsung nuntun kita ke pattern pertama.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 STRATEGY ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 01 · Strategy <span class="gof">· "family of algorithms"</span></div>
+        <h2>Strategy — perilaku jadi komponen yang bisa dicolok</h2>
+      </div>
+      <p class="lead reveal">Cabut yang berubah-ubah. <code>fly()</code> jadi keluarga <code>FlyBehavior</code>; <code>quack()</code> jadi keluarga <code>QuackBehavior</code>. Tiap varian = satu class kecil. Lalu <code>Duck</code> <strong>punya</strong> (HAS-A) sebuah perilaku, bukan mewarisinya.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">FlyBehavior.java — keluarga algoritma</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">FlyBehavior</span> { <span class="k">void</span> <span class="f">fly</span>(); }
+
+<span class="k">public class</span> <span class="t">FlyWithWings</span> <span class="k">implements</span> <span class="t">FlyBehavior</span> {
+    <span class="k">public void</span> <span class="f">fly</span>() { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Terbang pakai sayap"</span>); }
+}
+<span class="k">public class</span> <span class="t">FlyNoWay</span> <span class="k">implements</span> <span class="t">FlyBehavior</span> {
+    <span class="k">public void</span> <span class="f">fly</span>() { <span class="c">/* diam — nggak bisa terbang */</span> }
+}
+<span class="c">// QuackBehavior: Quack, Squeak, MuteQuack — pola yang sama.</span></pre>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Duck.java — komposisi, bukan warisan</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">Duck</span> {
+    <span class="k">protected</span> <span class="t">FlyBehavior</span> flyBehavior;        <span class="c">// HAS-A, bukan IS-A</span>
+    <span class="k">protected</span> <span class="t">QuackBehavior</span> quackBehavior;
+
+    <span class="k">public void</span> <span class="f">performFly</span>() { flyBehavior.<span class="f">fly</span>(); }   <span class="c">// delegasi</span>
+    <span class="k">public void</span> <span class="f">setFlyBehavior</span>(<span class="t">FlyBehavior</span> fb) { flyBehavior = fb; }  <span class="c">// ganti saat runtime!</span>
+}
+
+<span class="k">public class</span> <span class="t">RubberDuck</span> <span class="k">extends</span> <span class="t">Duck</span> {
+    <span class="k">public</span> <span class="f">RubberDuck</span>() {
+        flyBehavior   = <span class="k">new</span> <span class="t">FlyNoWay</span>();   <span class="c">// karet: nggak terbang</span>
+        quackBehavior = <span class="k">new</span> <span class="t">Squeak</span>();     <span class="c">// karet: nyicit</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Bebek baru? Rakit dari perilaku yang udah ada. Cara terbang baru (mis. <code>FlyWithRocket</code>)? Bikin satu class, colok ke bebek mana pun—bahkan <code>duck.setFlyBehavior(new FlyWithRocket())</code> di tengah jalan. Nol file lama disentuh.</p>
+
+      <div class="sticky alt reveal d3">
+        <span class="tag">◆ Design Principle</span>
+        <p>Program ke <em>interface</em>, bukan ke implementasi. Dan: <em>favor composition over inheritance</em>.</p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Strategy Pattern</div>
+        <p>Mendefinisikan <b>sekeluarga algoritma</b>, membungkus tiap satunya, dan membuatnya <b>bisa ditukar-tukar</b>. Strategy bikin algoritma berubah independen dari klien yang memakainya.</p>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Nyambung ke deck OOP kita</div>
+          <p>Inilah payoff dari pilar <b>"composition &gt; inheritance"</b> di deck OOP. Notifikasi yang "meledak jadi subclass" di sana, dan SimUDuck di sini, masalahnya sama—dan Strategy adalah obat resminya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 02 · Observer <span class="gof">· "one-to-many"</span></div>
+        <h2>Observer — satu sumber data, banyak yang ikut update</h2>
+      </div>
+      <p class="lead reveal">Studi kasus baru: <strong>Weather Station</strong>. Ada objek <code>WeatherData</code> yang nyimpen tiga pengukuran—suhu, kelembapan, tekanan. Tiap kali stasiun cuaca baca data baru, ada banyak <strong>display</strong> yang harus ikut berubah: <code>CurrentConditionsDisplay</code>, <code>StatisticsDisplay</code>, <code>ForecastDisplay</code>. Pertanyaannya: gimana cara <code>WeatherData</code> ngasih tahu mereka semua?</p>
+
+      <div class="req reveal d1">
+        <span class="who">SPEC:</span>
+        <p>"Begitu pengukuran berubah, <em>semua</em> display di-update otomatis. Dan ke depan kita mau bisa nambah display baru kapan aja—tanpa nyentuh kode lama."</p>
+      </div>
+
+      <p class="body reveal d2">Cara naif: di method <code>measurementsChanged()</code>, panggil tiap display satu-satu. Kelihatan jalan. Tapi lihat baik-baik.</p>
+
+      <div class="codecard bad reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">WeatherData.java — panggil display hardcoded</span><span class="codecard__verdict">SMELL</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">WeatherData</span> {
+    <span class="k">public void</span> <span class="f">measurementsChanged</span>() {
+        <span class="k">float</span> t = <span class="f">getTemperature</span>();
+        <span class="k">float</span> h = <span class="f">getHumidity</span>();
+        <span class="k">float</span> p = <span class="f">getPressure</span>();
+<span class="hl-bad">        currentDisplay.<span class="f">update</span>(t, h, p);   <span class="c">// nama konkret dipanggil langsung</span></span>
+<span class="hl-bad">        statsDisplay.<span class="f">update</span>(t, h, p);     <span class="c">// nambah display = edit method ini</span></span>
+<span class="hl-bad">        forecastDisplay.<span class="f">update</span>(t, h, p);  <span class="c">// kode jadi area yang berubah terus</span></span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Tiap display di-panggil pakai nama konkretnya. Mau nambah <code>HeatIndexDisplay</code>? Buka <code>WeatherData</code>, tambah baris. Mau cabut satu display saat runtime? Nggak bisa. <code>WeatherData</code> jadi kenal semua display secara detail—<strong>coupling-nya ketat</strong>, dan bagian yang harusnya stabil malah ikut berubah tiap ada display baru.</p>
+
+      <p class="body reveal d3">Polanya udah kebaca: ini hubungan <strong>satu-ke-banyak</strong>. Satu subject (sumber data) ke banyak observer (yang nyimak). Bikin aja kontraknya eksplisit lewat dua interface.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Subject.java &amp; Observer.java — kontrak</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">Subject</span> {
+    <span class="k">void</span> <span class="f">registerObserver</span>(<span class="t">Observer</span> o);
+    <span class="k">void</span> <span class="f">removeObserver</span>(<span class="t">Observer</span> o);
+    <span class="k">void</span> <span class="f">notifyObservers</span>();
+}
+
+<span class="k">public interface</span> <span class="t">Observer</span> {
+    <span class="k">void</span> <span class="f">update</span>(<span class="k">float</span> temp, <span class="k">float</span> humidity, <span class="k">float</span> pressure);
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">WeatherData.java — implements Subject</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">WeatherData</span> <span class="k">implements</span> <span class="t">Subject</span> {
+    <span class="k">private</span> <span class="t">List</span>&lt;<span class="t">Observer</span>&gt; observers = <span class="k">new</span> <span class="t">ArrayList</span>&lt;<span class="t">Observer</span>&gt;();
+    <span class="k">private</span> <span class="k">float</span> temperature, humidity, pressure;
+
+    <span class="k">public void</span> <span class="f">registerObserver</span>(<span class="t">Observer</span> o) { observers.<span class="f">add</span>(o); }
+    <span class="k">public void</span> <span class="f">removeObserver</span>(<span class="t">Observer</span> o)   { observers.<span class="f">remove</span>(o); }
+
+    <span class="k">public void</span> <span class="f">notifyObservers</span>() {
+        <span class="k">for</span> (<span class="t">Observer</span> o : observers) {        <span class="c">// nggak kenal tipe konkretnya</span>
+            o.<span class="f">update</span>(temperature, humidity, pressure);
+        }
+    }
+
+    <span class="k">public void</span> <span class="f">measurementsChanged</span>() { <span class="f">notifyObservers</span>(); }  <span class="c">// itu aja</span>
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">CurrentConditionsDisplay.java — sebuah Observer</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">CurrentConditionsDisplay</span> <span class="k">implements</span> <span class="t">Observer</span> {
+    <span class="k">private</span> <span class="t">Subject</span> weatherData;
+    <span class="k">private</span> <span class="k">float</span> temperature, humidity;
+
+    <span class="k">public</span> <span class="f">CurrentConditionsDisplay</span>(<span class="t">Subject</span> weatherData) {
+        <span class="k">this</span>.weatherData = weatherData;
+        weatherData.<span class="f">registerObserver</span>(<span class="k">this</span>);   <span class="c">// daftar sendiri ke subject</span>
+    }
+
+    <span class="k">public void</span> <span class="f">update</span>(<span class="k">float</span> t, <span class="k">float</span> h, <span class="k">float</span> p) {
+        <span class="k">this</span>.temperature = t;
+        <span class="k">this</span>.humidity = h;
+        <span class="f">display</span>();
+    }
+    <span class="k">public void</span> <span class="f">display</span>() { <span class="c">/* tampilkan suhu &amp; kelembapan terkini */</span> }
+}
+<span class="c">// StatisticsDisplay &amp; ForecastDisplay: pola yang sama persis.</span></pre>
+      </div>
+
+      <p class="body reveal d3">Sekarang nambah display baru = bikin satu class yang <code>implements Observer</code> lalu <code>register</code> ke subject. <code>WeatherData</code> nggak disentuh sama sekali—dia cuma kenal interface <code>Observer</code>, bukan nama-nama display. Mau berhenti nyimak? Panggil <code>removeObserver(this)</code>, bahkan saat runtime.</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Usahakan desain yang <em>longgar kopling</em>-nya antar objek yang berinteraksi. <br>— <i>Strive for loosely coupled designs between objects that interact.</i></p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Observer Pattern</div>
+        <p>Mendefinisikan ketergantungan <b>satu-ke-banyak</b> antar objek: saat satu objek (<b>subject</b>) berubah state, semua tanggungannya (<b>observers</b>) <b>diberi tahu dan di-update otomatis</b>.</p>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Jangan pakai java.util.Observable</div>
+          <p>JDK punya <code>java.util.Observable</code> (class) dan <code>Observer</code>, tapi keduanya <b>deprecated</b> sejak Java 9—lagipula <code>Observable</code> itu <em>class</em>, jadi maksa kamu <code>extends</code> dan ngunci satu slot inheritance. Bikin interface <code>Subject</code> &amp; <code>Observer</code> sendiri seperti di atas: lebih fleksibel dan tetap longgar kopling-nya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 03 · Decorator <span class="gof">· "attach responsibilities dynamically"</span></div>
+        <h2>Starbuzz Coffee — menu yang meledak jadi ratusan class</h2>
+      </div>
+      <p class="lead reveal">Starbuzz tumbuh kilat. Mereka butuh sistem pemesanan. Desain awalnya gampang: satu abstract <code>Beverage</code> punya <code>cost()</code>, lalu tiap jenis kopi mewarisinya—<code>HouseBlend</code>, <code>DarkRoast</code>, <code>Espresso</code>. Sampai sini aman.</p>
+
+      <div class="codecard reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Beverage.java — desain awal</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">Beverage</span> {
+    <span class="k">protected</span> <span class="t">String</span> description = <span class="s">"Minuman tak dikenal"</span>;
+
+    <span class="k">public</span> <span class="t">String</span> <span class="f">getDescription</span>() { <span class="k">return</span> description; }
+    <span class="k">public abstract double</span> <span class="f">cost</span>();   <span class="c">// tiap kopi hitung sendiri</span>
+}
+
+<span class="k">public class</span> <span class="t">DarkRoast</span> <span class="k">extends</span> <span class="t">Beverage</span> {
+    <span class="k">public</span> <span class="f">DarkRoast</span>() { description = <span class="s">"Dark Roast"</span>; }
+    <span class="k">public double</span> <span class="f">cost</span>() { <span class="k">return</span> <span class="n">0.99</span>; }
+}</pre>
+      </div>
+
+      <div class="req reveal d2">
+        <span class="who">BOS:</span>
+        <p>"Pelanggan bisa nambah condiment: Steamed Milk, Mocha, Soy, Whip. Tiap tambahan nambah harga. Sistemnya harus ngitung total otomatis."</p>
+      </div>
+
+      <p class="body reveal d2">Joe mikir cepat: bikin subclass buat tiap kombinasi. Kan tinggal extend? Sebentar kemudian papan tulis penuh.</p>
+
+      <div class="codecard bad reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">ledakan subclass — satu class per kombinasi</span><span class="codecard__verdict">BENCANA</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">DarkRoastWithMocha</span>            <span class="k">extends</span> <span class="t">Beverage</span> { ... }
+<span class="k">class</span> <span class="t">DarkRoastWithMochaWhip</span>        <span class="k">extends</span> <span class="t">Beverage</span> { ... }
+<span class="k">class</span> <span class="t">DarkRoastWithSoyMocha</span>         <span class="k">extends</span> <span class="t">Beverage</span> { ... }
+<span class="k">class</span> <span class="t">HouseBlendWithSteamedMilkMocha</span> <span class="k">extends</span> <span class="t">Beverage</span> { ... }
+<span class="hl-bad"><span class="c">// ...3 kopi x tiap kombinasi condiment = puluhan class.</span></span>
+<span class="hl-bad"><span class="c">// mau Mocha dobel? class baru lagi. mimpi buruk maintenance.</span></span></pre>
+      </div>
+
+      <p class="body reveal d3">Tiap condiment baru = kombinasi baru meledak berlipat. Joe nyerah, coba jalan kedua: taruh semua condiment sebagai <code>boolean</code> di superclass <code>Beverage</code>, lalu <code>cost()</code> jumlahin yang aktif. Kelihatan lebih ramping... di awal.</p>
+
+      <div class="codecard bad reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Beverage.java — boolean di superclass</span><span class="codecard__verdict">SMELL</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">Beverage</span> {
+<span class="hl-bad">    <span class="k">private boolean</span> milk, soy, mocha, whip;   <span class="c">// flag tiap condiment</span></span>
+
+    <span class="k">public boolean</span> <span class="f">hasMocha</span>() { <span class="k">return</span> mocha; }
+    <span class="k">public void</span> <span class="f">setMocha</span>(<span class="k">boolean</span> m) { mocha = m; }
+    <span class="c">// ...getter/setter serupa buat milk, soy, whip</span>
+
+    <span class="k">public double</span> <span class="f">cost</span>() {           <span class="c">// dihitung di induk</span>
+        <span class="k">double</span> c = <span class="n">0.0</span>;
+<span class="hl-bad">        <span class="k">if</span> (<span class="f">hasMilk</span>())  c += <span class="n">0.10</span>;</span>
+<span class="hl-bad">        <span class="k">if</span> (<span class="f">hasSoy</span>())   c += <span class="n">0.15</span>;</span>
+<span class="hl-bad">        <span class="k">if</span> (<span class="f">hasMocha</span>()) c += <span class="n">0.20</span>;</span>
+<span class="hl-bad">        <span class="k">if</span> (<span class="f">hasWhip</span>())  c += <span class="n">0.10</span>;</span>
+        <span class="k">return</span> c;          <span class="c">// subclass nambah harga kopi dasar</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Lihat yang busuk di sini. Condiment baru (Caramel?) = <strong>edit superclass</strong>: tambah field, tambah getter/setter, tambah satu <code>if</code> lagi di <code>cost()</code>. Naik harga Soy? Edit superclass—padahal class itu udah jalan dan dipakai semua minuman. Mau dobel Mocha? <code>boolean</code> nggak bisa, ribet lagi. Dan tiap minuman mewarisi flag yang nggak relevan (teh ikut bawa <code>whip</code>).</p>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">Subclass tiap kombinasi</h4>
+          <ul class="bad-l">
+            <li>Jumlah class meledak eksponensial</li>
+            <li>Kombinasi baru = class baru terus</li>
+            <li>Dobel condiment? mustahil rapi</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">Boolean di superclass</h4>
+          <ul class="bad-l">
+            <li>Condiment baru = bedah superclass</li>
+            <li>Ubah harga = sentuh kode lama yang udah jalan</li>
+            <li>Minuman bawa flag yang nggak relevan</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Class harus <em>terbuka untuk ekstensi</em>, tapi <em>tertutup untuk modifikasi</em>. <br>— <i>Open-Closed Principle.</i></p>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Akar masalahnya</div>
+          <p>Dua-duanya gagal di prinsip yang sama: nambah perilaku (condiment) <b>memaksa ngutak-atik kode lama</b>—entah bikin subclass turunan baru, entah membedah <code>Beverage</code>. Tiap edit ke kode yang udah jalan = risiko bug baru.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d3">Yang kita mau: bisa nambah perilaku ke <code>cost()</code> sebuah objek <strong>tanpa</strong> nyentuh class <code>Beverage</code> atau kopi-kopinya. Caranya? Jangan mewarisi condiment-nya—<strong>bungkus</strong> objek minumannya. Ambil DarkRoast, balut Mocha, balut Whip; tiap pembungkus nambah harganya sendiri. Itu Decorator—dan kita rakit pelan-pelan di slide berikutnya.</p>
+    </div>
+  </section>
+
+<section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 03 · Decorator <span class="gof">· "attach responsibilities dynamically"</span></div>
+        <h2>Decorator — bungkus objek lapis demi lapis, biar tambahannya nempel saat runtime</h2>
+      </div>
+      <p class="lead reveal">Ingat ledakan subclass kopi tadi? <code>HouseBlendWithSteamedMilkAndMocha</code> dan teman-temannya yang nggak ada habisnya itu? Idenya sekarang dibalik: jangan bikin satu class buat tiap kombinasi. Mulai dari <strong>minuman polos</strong>, lalu <em>bungkus</em> dia pakai topping. Tiap topping adalah objek yang membungkus minuman di dalamnya.</p>
+
+      <p class="body reveal d2">Kuncinya: si topping itu sendiri <strong>juga sebuah</strong> <code>Beverage</code> (IS-A, biar bisa dipasang di tempat yang sama), <strong>dan</strong> dia <strong>menyimpan</strong> <code>Beverage</code> yang dibungkusnya (HAS-A, biar bisa nimpalin biaya & deskripsi). Dua hubungan itu sekaligus—itulah inti Decorator.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">CondimentDecorator.java — induk semua topping</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">Beverage</span> {
+    <span class="k">protected</span> <span class="t">String</span> description = <span class="s">"Minuman tak dikenal"</span>;
+    <span class="k">public</span> <span class="t">String</span> <span class="f">getDescription</span>() { <span class="k">return</span> description; }
+    <span class="k">public abstract double</span> <span class="f">cost</span>();
+}
+
+<span class="c">// Topping IS-A Beverage -&gt; bisa dipasang di slot Beverage mana pun.</span>
+<span class="k">public abstract class</span> <span class="t">CondimentDecorator</span> <span class="k">extends</span> <span class="t">Beverage</span> {
+    <span class="a">@Override</span> <span class="k">public abstract</span> <span class="t">String</span> <span class="f">getDescription</span>();
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Mocha.java — topping yang membungkus minuman</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">Mocha</span> <span class="k">extends</span> <span class="t">CondimentDecorator</span> {
+<span class="hl-good">    <span class="k">private</span> <span class="t">Beverage</span> beverage;        <span class="c">// HAS-A: yang dibungkus</span></span>
+
+    <span class="k">public</span> <span class="f">Mocha</span>(<span class="t">Beverage</span> beverage) {
+        <span class="k">this</span>.beverage = beverage;
+    }
+
+    <span class="a">@Override</span> <span class="k">public</span> <span class="t">String</span> <span class="f">getDescription</span>() {
+        <span class="k">return</span> beverage.<span class="f">getDescription</span>() + <span class="s">", Mocha"</span>;
+    }
+
+    <span class="a">@Override</span> <span class="k">public double</span> <span class="f">cost</span>() {
+        <span class="k">return</span> beverage.<span class="f">cost</span>() + <span class="n">0.20</span>;   <span class="c">// biaya minuman + biaya mocha</span>
+    }
+}
+<span class="c">// Whip & SoyMilk: pola yang sama, beda angka & label.</span></pre>
+      </div>
+
+      <p class="body reveal d2">Lihat <code>cost()</code>-nya: dia <strong>nggak ngitung sendirian</strong>. Dia tanya dulu ke objek di dalamnya (<code>beverage.cost()</code>), baru nambahin jatahnya. Begitu juga <code>getDescription()</code>—nyambung ke deskripsi dalam, lalu nempelin <code>", Mocha"</code>. Bungkus berlapis = panggilan yang ngalir ke dalam, lalu numpuk balik ke luar.</p>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">StarbuzzCoffee.java — racik pesanannya</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="t">Beverage</span> b = <span class="k">new</span> <span class="t">DarkRoast</span>();          <span class="c">// minuman polos, $0.99</span>
+b = <span class="k">new</span> <span class="t">Mocha</span>(b);                       <span class="c">// bungkus mocha, +$0.20</span>
+b = <span class="k">new</span> <span class="t">Whip</span>(b);                        <span class="c">// bungkus whip,  +$0.10</span>
+
+<span class="t">System</span>.out.<span class="f">println</span>(b.<span class="f">getDescription</span>());
+<span class="c">// -&gt; "Dark Roast, Mocha, Whip"</span>
+<span class="t">System</span>.out.<span class="f">println</span>(b.<span class="f">cost</span>());           <span class="c">// -&gt; 1.29</span>
+
+<span class="c">// b.cost() = Whip(0.10) + Mocha(0.20) + DarkRoast(0.99)</span></pre>
+      </div>
+
+      <p class="body reveal d3">Mau mocha dobel? <code>b = new Mocha(new Mocha(b))</code>—tumpuk aja. Tambah topping baru (mis. <code>Caramel</code>)? Bikin satu class decorator, nol class lama disentuh. Inilah yang dijanjiin <strong>Open-Closed</strong> tadi: terbuka buat perluasan, tertutup buat perubahan.</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Class harus <em>terbuka untuk diperluas</em>, tapi <em>tertutup untuk dimodifikasi</em>. <br>— <i>Open-Closed Principle.</i></p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Decorator Pattern</div>
+        <p>Decorator <b>melekatkan tanggung jawab tambahan</b> ke sebuah objek secara <b>dinamis</b> (saat runtime). Decorator memberi alternatif yang <b>fleksibel</b> untuk subclassing demi memperluas fungsionalitas.</p>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Kamu udah sering pakai ini</div>
+          <p>Buka <code>java.io</code>—seluruhnya Decorator. <code>new BufferedInputStream(new FileInputStream(f))</code>: <code>BufferedInputStream</code> membungkus <code>FileInputStream</code> dan nambahin buffering, tanpa <code>FileInputStream</code> tahu apa-apa. Persis Mocha membungkus DarkRoast. JDK udah pakai pattern ini dari dulu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 04 · Factory <span class="gof">· "instansiasi diserahkan"</span></div>
+        <h2>Factory — keputusan "class mana yang di-new" itu pindahin</h2>
+      </div>
+      <p class="lead reveal">Kita bikin <strong>PizzaStore</strong>. Pesanan masuk, kita pilih jenis pizza, panggang, potong, kotakin. Awalnya cuma sebaris dua baris. Lalu menu nambah terus—dan tiap kali menu berubah, kamu balik ngedit method yang sama.</p>
+
+      <div class="codecard bad reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">PizzaStore.java — orderPizza() ngurusin semua</span><span class="codecard__verdict">BENCANA</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">PizzaStore</span> {
+    <span class="k">public</span> <span class="t">Pizza</span> <span class="f">orderPizza</span>(<span class="t">String</span> type) {
+        <span class="t">Pizza</span> pizza;
+<span class="hl-bad">        <span class="k">if</span> (type.<span class="f">equals</span>(<span class="s">"cheese"</span>))      pizza = <span class="k">new</span> <span class="t">CheesePizza</span>();</span>
+<span class="hl-bad">        <span class="k">else if</span> (type.<span class="f">equals</span>(<span class="s">"pepperoni"</span>)) pizza = <span class="k">new</span> <span class="t">PepperoniPizza</span>();</span>
+<span class="hl-bad">        <span class="k">else if</span> (type.<span class="f">equals</span>(<span class="s">"clam"</span>))      pizza = <span class="k">new</span> <span class="t">ClamPizza</span>();</span>
+        <span class="k">else</span>                            pizza = <span class="k">new</span> <span class="t">VeggiePizza</span>();
+
+        pizza.<span class="f">prepare</span>();   pizza.<span class="f">bake</span>();
+        pizza.<span class="f">cut</span>();       pizza.<span class="f">box</span>();
+        <span class="k">return</span> pizza;
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Bagian <code>prepare/bake/cut/box</code> itu <strong>nggak pernah berubah</strong>—itu yang bikin "pizza ya pizza". Yang berubah-ubah cuma blok <code>if</code>-nya: menu hapus <code>VeggiePizza</code>, tambah <code>GreekPizza</code>, kamu wajib bedah <code>orderPizza()</code> lagi. Method ini juga <em>nempel</em> ke semua class konkret—tiap <code>new</code> bikin dia kenal nama class spesifik.</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Pisahkan bagian yang <em>berubah</em> dari yang tetap. Di sini: <em>instansiasi</em> yang berubah, ritual <code>prepare/bake/cut/box</code> yang tetap.</p>
+      </div>
+
+      <p class="body reveal d2"><strong>Langkah 1 — Simple Factory.</strong> Cabut blok <code>if</code> itu, taruh di satu objek yang kerjanya cuma bikin pizza: <code>SimplePizzaFactory</code>. <code>orderPizza()</code> tinggal nanya ke factory.</p>
+
+      <div class="codecard reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">SimplePizzaFactory.java — new dikumpulin di satu tempat</span><span class="codecard__verdict">SMELL</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">SimplePizzaFactory</span> {
+    <span class="k">public</span> <span class="t">Pizza</span> <span class="f">createPizza</span>(<span class="t">String</span> type) {
+        <span class="k">if</span> (type.<span class="f">equals</span>(<span class="s">"cheese"</span>))      <span class="k">return</span> <span class="k">new</span> <span class="t">CheesePizza</span>();
+        <span class="k">else if</span> (type.<span class="f">equals</span>(<span class="s">"pepperoni"</span>)) <span class="k">return</span> <span class="k">new</span> <span class="t">PepperoniPizza</span>();
+        <span class="k">else if</span> (type.<span class="f">equals</span>(<span class="s">"clam"</span>))      <span class="k">return</span> <span class="k">new</span> <span class="t">ClamPizza</span>();
+        <span class="k">else</span>                            <span class="k">return</span> <span class="k">new</span> <span class="t">VeggiePizza</span>();
+    }
+}
+
+<span class="c">// orderPizza() sekarang cuma minta, nggak tahu cara bikinnya:</span>
+<span class="c">//   pizza = factory.createPizza(type);</span></pre>
+      </div>
+
+      <p class="body reveal d3">Lumayan—sekarang kode "new" cuma di satu tempat, dipakai bareng <code>PizzaMenu</code>, <code>HomeDelivery</code>, dll. Tapi ini belum pattern beneran, baru idiom rapi. Masalah baru muncul pas bisnis sukses: tiap kota minta <strong>gaya pizza sendiri</strong>—New York tipis, Chicago tebal—dan tiap toko punya cara <code>cut/box</code> beda.</p>
+
+    </div>
+  </section>
+
+  <section class="chapter" id="c07b">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 04 · Factory ·2 <span class="gof">· "subclass yang mutusin"</span></div>
+        <h2>Factory Method — instansiasi diturunkan ke subclass</h2>
+      </div>
+
+      <div class="req reveal d3">
+        <span class="who">FRANCHISE:</span>
+        <p>"Aku mau buka cabang. Tapi pizza-ku harus gaya New York—dan jangan ganggu ritual proses standar perusahaan ya."</p>
+      </div>
+
+      <p class="body reveal d3"><strong>Langkah 2 — Factory Method.</strong> Daripada nyolok factory dari luar, jadikan <code>PizzaStore</code> itu <code>abstract</code> dengan satu <em>factory method</em>: <code>abstract Pizza createPizza(type)</code>. <code>orderPizza()</code> tetap di superclass, panggil <code>createPizza()</code>—tapi <strong>subclass</strong> yang mutusin class mana yang di-<code>new</code>.</p>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">PizzaStore.java — orderPizza final, createPizza diserahkan</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">PizzaStore</span> {
+    <span class="c">// ritual tetap, sama buat SEMUA cabang — nggak boleh diubah</span>
+    <span class="k">public final</span> <span class="t">Pizza</span> <span class="f">orderPizza</span>(<span class="t">String</span> type) {
+        <span class="t">Pizza</span> pizza = <span class="f">createPizza</span>(type);   <span class="c">// ← factory method</span>
+        pizza.<span class="f">prepare</span>();   pizza.<span class="f">bake</span>();
+        pizza.<span class="f">cut</span>();       pizza.<span class="f">box</span>();
+        <span class="k">return</span> pizza;
+    }
+
+    <span class="c">// subclass yang mutusin class konkret mana yang lahir:</span>
+    <span class="k">protected abstract</span> <span class="t">Pizza</span> <span class="f">createPizza</span>(<span class="t">String</span> type);
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Cabang per-region — tiap toko bikin pizza ala-nya</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">NYPizzaStore</span> <span class="k">extends</span> <span class="t">PizzaStore</span> {
+    <span class="a">@Override</span> <span class="k">protected</span> <span class="t">Pizza</span> <span class="f">createPizza</span>(<span class="t">String</span> type) {
+        <span class="k">if</span> (type.<span class="f">equals</span>(<span class="s">"cheese"</span>)) <span class="k">return</span> <span class="k">new</span> <span class="t">NYStyleCheesePizza</span>();
+        <span class="k">else</span>                          <span class="k">return</span> <span class="k">new</span> <span class="t">NYStyleClamPizza</span>();
+    }
+}
+
+<span class="k">public class</span> <span class="t">ChicagoPizzaStore</span> <span class="k">extends</span> <span class="t">PizzaStore</span> {
+    <span class="a">@Override</span> <span class="k">protected</span> <span class="t">Pizza</span> <span class="f">createPizza</span>(<span class="t">String</span> type) {
+        <span class="k">if</span> (type.<span class="f">equals</span>(<span class="s">"cheese"</span>)) <span class="k">return</span> <span class="k">new</span> <span class="t">ChicagoStyleCheesePizza</span>();
+        <span class="k">else</span>                          <span class="k">return</span> <span class="k">new</span> <span class="t">ChicagoStyleClamPizza</span>();
+    }
+}
+
+<span class="c">// Pesan: PizzaStore ny = new NYPizzaStore(); ny.orderPizza("cheese");</span></pre>
+      </div>
+
+      <p class="body reveal d3">Lihat pembagian kerjanya: superclass nulis <em>apa</em> yang terjadi ke setiap pizza (proses), subclass nulis <em>pizza mana</em> yang dibuat (produk). <code>orderPizza()</code> ngolah objek <code>Pizza</code> abstrak—dia <strong>nggak pernah tahu</strong> dapet NY atau Chicago. Buka cabang baru = bikin satu subclass, nol baris lama disentuh.</p>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">Sebelum — orderPizza() nge-new sendiri</h4>
+          <ul class="bad-l">
+            <li>Kenal tiap class konkret (<code>new CheesePizza()</code>)</li>
+            <li>Menu berubah = bedah <code>orderPizza()</code></li>
+            <li>Tambah region = if-else makin gendut</li>
+            <li>Proses &amp; instansiasi nyampur jadi satu</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Sesudah — createPizza() diserahkan ke subclass</h4>
+          <ul class="good-l">
+            <li>Cuma kenal abstraksi <code>Pizza</code></li>
+            <li>Ritual <code>orderPizza()</code> dikunci sekali (<code>final</code>)</li>
+            <li>Region baru = subclass baru, kode lama aman</li>
+            <li>Keputusan "apa" vs "mana" terpisah bersih</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sticky alt reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Depend upon abstractions. Do not depend upon concrete classes. <br>— <i>Dependency Inversion</i>: <code>PizzaStore</code> sandar ke <code>Pizza</code>, bukan ke <code>NYStyleCheesePizza</code>.</p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Factory Method Pattern</div>
+        <p>Mendefinisikan sebuah <b>interface untuk membuat objek</b>, tapi membiarkan <b>subclass</b> yang memutuskan class mana yang diinstansiasi. Factory Method membuat sebuah class menunda (defer) instansiasi ke subclass-nya.</p>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Jangan ketuker</div>
+          <p>Simple Factory itu cuma <b>idiom</b>, bukan pattern GoF—objek terpisah yang nge-<code>new</code> buat orang lain. Factory <b>Method</b> baru jadi pattern: instansiasi-nya jadi <code>abstract</code> dan diturunkan lewat <b>inheritance</b> ke subclass. Beda alat, beda kapan dipakai.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 05 · Singleton <span class="gof">· "satu instance"</span></div>
+        <h2>Singleton — cuma boleh ada satu, titik.</h2>
+      </div>
+      <p class="lead reveal">Ada barang yang emang harus tunggal: satu connection pool, satu registry, satu <code>ChocolateBoiler</code> di pabrik cokelat. Kalau sampai ada <strong>dua</strong> objek boiler yang ngira mereka masing-masing kosong, dua-duanya isi cokelat panas barengan—dan pabrikmu meledak. Jadi gimana caranya satu class dijamin cuma punya satu instance?</p>
+
+      <div class="req reveal d1">
+        <span class="who">JOE:</span>
+        <p>"Gampang, bikin variabel global aja: <code>public static ChocolateBoiler boiler</code>. Kelar."</p>
+      </div>
+
+      <p class="body reveal d1">Masalahnya, kalau objeknya mahal dibikin dan kamu langsung instansiasi di awal, kamu bayar ongkos itu walaupun nggak kepakai. Dan global variable nggak benar-benar <em>mencegah</em> orang bikin instance kedua pakai <code>new</code>. Trik klasiknya: kunci constructor-nya, dan biar class itu sendiri yang ngurus instance-nya.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">ChocolateBoiler.java — pola Singleton klasik</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">ChocolateBoiler</span> {
+    <span class="k">private static</span> <span class="t">ChocolateBoiler</span> instance;   <span class="c">// satu-satunya slot</span>
+
+    <span class="k">private</span> <span class="f">ChocolateBoiler</span>() { <span class="c">/* constructor DIKUNCI */</span> }
+
+    <span class="k">public static</span> <span class="t">ChocolateBoiler</span> <span class="f">getInstance</span>() {
+        <span class="k">if</span> (instance == <span class="k">null</span>) {          <span class="c">// lazy: bikin saat pertama dipakai</span>
+            instance = <span class="k">new</span> <span class="t">ChocolateBoiler</span>();
+        }
+        <span class="k">return</span> instance;
+    }
+
+    <span class="k">public void</span> <span class="f">fill</span>()  { <span class="c">/* isi kalau lagi kosong */</span> }
+    <span class="k">public void</span> <span class="f">boil</span>()  { <span class="c">/* didihkan campuran */</span> }
+    <span class="k">public void</span> <span class="f">drain</span>() { <span class="c">/* tiriskan cokelat matang */</span> }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Constructor <code>private</code> bikin <code>new ChocolateBoiler()</code> dari luar nggak bisa dikompilasi. Satu-satunya pintu masuk adalah <code>getInstance()</code>—dan dia cuma bikin objek sekali, sisanya ngembaliin yang itu-itu lagi. Selesai? Belum. Begitu ada dua thread, polanya bocor.</p>
+
+      <div class="req bad reveal d2">
+        <span class="who">BOS:</span>
+        <p>"Pabrik kita jalan multi-thread sekarang. Kenapa kemaren ada DUA boiler kedeteksi barengan?!"</p>
+      </div>
+
+      <div class="codecard bad reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">getInstance() — race condition</span><span class="codecard__verdict">BENCANA</span></div>
+<pre class="code"><span class="k">public static</span> <span class="t">ChocolateBoiler</span> <span class="f">getInstance</span>() {
+<span class="hl-bad">    <span class="k">if</span> (instance == <span class="k">null</span>) {        <span class="c">// Thread A &amp; B sama-sama lolos...</span></span>
+<span class="hl-bad">        instance = <span class="k">new</span> <span class="t">ChocolateBoiler</span>();  <span class="c">// ...lalu dua-dua new(). DUA!</span></span>
+    }
+    <span class="k">return</span> instance;
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Thread A masuk, lihat <code>instance == null</code>, tapi keburu di-pause sebelum sempat assign. Thread B masuk, juga lihat <code>null</code>, lalu bikin boiler. A bangun, bikin boiler lagi. Dua instance. Cara paling lugas nutupnya: bikin <code>getInstance()</code> jadi <code>synchronized</code>.</p>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">tiga cara aman thread</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="c">// 1) synchronized — paling simpel, tapi tiap panggil kena kunci</span>
+<span class="k">public static synchronized</span> <span class="t">ChocolateBoiler</span> <span class="f">getInstance</span>() {
+    <span class="k">if</span> (instance == <span class="k">null</span>) instance = <span class="k">new</span> <span class="t">ChocolateBoiler</span>();
+    <span class="k">return</span> instance;
+}
+
+<span class="c">// 2) eager init — kalau ongkos bikin nggak masalah; JVM jamin sekali</span>
+<span class="k">private static final</span> <span class="t">ChocolateBoiler</span> INSTANCE = <span class="k">new</span> <span class="t">ChocolateBoiler</span>();
+<span class="k">public static</span> <span class="t">ChocolateBoiler</span> <span class="f">getInstance</span>() { <span class="k">return</span> INSTANCE; }
+
+<span class="c">// 3) double-checked locking — volatile + kunci cuma saat pertama</span>
+<span class="k">private static volatile</span> <span class="t">ChocolateBoiler</span> instance;
+<span class="k">public static</span> <span class="t">ChocolateBoiler</span> <span class="f">getInstance</span>() {
+    <span class="k">if</span> (instance == <span class="k">null</span>) {
+        <span class="k">synchronized</span> (<span class="t">ChocolateBoiler</span>.class) {
+            <span class="k">if</span> (instance == <span class="k">null</span>) instance = <span class="k">new</span> <span class="t">ChocolateBoiler</span>();
+        }
+    }
+    <span class="k">return</span> instance;
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Pilihannya tergantung kebutuhan. <code>synchronized</code> gampang tapi tiap panggil bayar ongkos kunci—oke kalau jarang dipanggil. <strong>Eager init</strong> paling bersih kalau objeknya pasti dipakai dan nggak mahal. <strong>Double-checked locking</strong> ngunci cuma sekali pas inisialisasi; <code>volatile</code> <strong>wajib</strong>, biar half-built object nggak kelihatan dari thread lain.</p>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Singleton Pattern</div>
+        <p>Memastikan sebuah class cuma punya <b>satu instance</b>, dan menyediakan <b>satu titik akses global</b> ke instance itu.</p>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Jujur dulu: Singleton itu kontroversial</div>
+          <p>Singleton pada dasarnya <b>global state berbaju OOP</b>. Class yang diam-diam manggil <code>getInstance()</code> di dalamnya punya <b>dependency tersembunyi</b>—nggak kelihatan di constructor, susah di-mock, bikin test saling bocor lewat state yang sama. Gampang banget disalahgunakan jadi tempat naruh "barang global" sembarangan. Seringnya jawaban yang lebih sehat adalah <b>inject dependency-nya</b> (kasih lewat constructor) dan biar satu objek itu dirakit sekali di composition root—bukan dipaksa tunggal oleh class-nya sendiri. Pakai Singleton kalau emang ada batasan fisik "harus satu" (boiler, device driver), bukan cuma karena males ngoper objek.</p>
+        </div>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">Kalau dipaksa Singleton sembarangan</h4>
+          <ul class="bad-l">
+            <li>Dependency tersembunyi, nggak kebaca dari signature</li>
+            <li>Test bocor satu sama lain lewat state global</li>
+            <li>Susah di-mock / di-swap buat skenario beda</li>
+            <li>Coupling diam-diam ke seluruh codebase</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Kalau di-inject sebagai dependency</h4>
+          <ul class="good-l">
+            <li>Kebutuhan jelas dari constructor</li>
+            <li>Tinggal kasih fake/mock saat test</li>
+            <li>Tunggal-nya diatur di satu tempat rakit</li>
+            <li>Coupling eksplisit dan bisa dibalik arahnya</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 06 · Command <span class="gof">· "encapsulate a request as an object"</span></div>
+        <h2>Command — remote yang nggak kenal device-nya satu pun</h2>
+      </div>
+      <p class="lead reveal">Datang vendor remote control baru: punya tujuh slot, tiap slot ada tombol <strong>on</strong> dan <strong>off</strong>. Tugas kamu bikin remote ini bisa ngontrol apa aja—<code>Light</code>, <code>Stereo</code>, <code>GarageDoor</code>—device yang udah ada, yang akan datang, semuanya beda API.</p>
+
+      <div class="req reveal d1">
+        <span class="who">VENDOR:</span>
+        <p>"Tiap slot harus bisa di-set ke device apa pun. Kami nggak tahu device apa yang bakal kamu colok—dan kami nggak mau remote-nya tahu juga."</p>
+      </div>
+
+      <p class="body reveal d2">Masalahnya: tiap device API-nya beda total. <code>Light</code> punya <code>on()</code>/<code>off()</code>. <code>Stereo</code> punya <code>on()</code>, <code>setCD()</code>, <code>setVolume()</code>. <code>GarageDoor</code> punya <code>up()</code>/<code>down()</code>. Kalau remote-nya yang harus mikir "slot ini device apa, manggil method apa", jadinya begini:</p>
+
+      <div class="codecard bad reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">RemoteControl.java — remote kenal SEMUA device</span><span class="codecard__verdict">BENCANA</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">RemoteControl</span> {
+    <span class="k">private</span> <span class="t">Light</span> light;
+    <span class="k">private</span> <span class="t">GarageDoor</span> garage;
+    <span class="k">private</span> <span class="t">Stereo</span> stereo;
+
+    <span class="k">public void</span> <span class="f">onButtonPushed</span>(<span class="k">int</span> slot) {
+<span class="hl-bad">        <span class="k">if</span> (slot == <span class="n">1</span>)      light.<span class="f">on</span>();</span>
+<span class="hl-bad">        <span class="k">else if</span> (slot == <span class="n">2</span>) garage.<span class="f">up</span>();</span>
+<span class="hl-bad">        <span class="k">else if</span> (slot == <span class="n">3</span>) { stereo.<span class="f">on</span>(); stereo.<span class="f">setVolume</span>(<span class="n">11</span>); }</span>
+        <span class="c">// device baru? edit method ini lagi. dan lagi. dan lagi.</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Remote-nya jadi kenal <em>setiap</em> device dan API masing-masing. Tambah satu device = bongkar <code>if/else</code> raksasa ini. Itu kebalikan dari yang vendor minta. Kita butuh cara biar remote cukup tahu "ada sesuatu yang harus dieksekusi" tanpa peduli sesuatu itu apa.</p>
+
+      <div class="sticky reveal d3">
+        <span class="tag">◆ Ide intinya</span>
+        <p>Bungkus sebuah <em>permintaan</em> jadi objek. Pemicunya cukup bilang "jalankan", tanpa tahu siapa yang dipanggil. <br>— <i>Encapsulate a request as an object.</i></p>
+      </div>
+
+      <p class="body reveal d3">Caranya: bikin satu interface <code>Command</code> dengan satu method, <code>execute()</code>. Tiap "permintaan ke device" dibungkus jadi objek command sendiri. Si command <strong>punya</strong> (HAS-A) referensi ke device (kita sebut <em>receiver</em>), dan <code>execute()</code> tinggal manggil method yang benar di device itu.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Command.java — satu method, satu permintaan</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">Command</span> {
+    <span class="k">void</span> <span class="f">execute</span>();
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">LightOnCommand.java — bungkus permintaan "nyalakan lampu"</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">LightOnCommand</span> <span class="k">implements</span> <span class="t">Command</span> {
+    <span class="k">private</span> <span class="t">Light</span> light;          <span class="c">// HAS-A receiver</span>
+
+    <span class="k">public</span> <span class="f">LightOnCommand</span>(<span class="t">Light</span> light) {
+        <span class="k">this</span>.light = light;          <span class="c">// command nyimpen device-nya</span>
+    }
+
+    <span class="k">public void</span> <span class="f">execute</span>() {
+        light.<span class="f">on</span>();                  <span class="c">// delegasi ke receiver</span>
+    }
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">GarageDoorOpenCommand.java — device beda, API beda, command sama bentuknya</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">GarageDoorOpenCommand</span> <span class="k">implements</span> <span class="t">Command</span> {
+    <span class="k">private</span> <span class="t">GarageDoor</span> garage;
+
+    <span class="k">public</span> <span class="f">GarageDoorOpenCommand</span>(<span class="t">GarageDoor</span> garage) {
+        <span class="k">this</span>.garage = garage;
+    }
+
+    <span class="k">public void</span> <span class="f">execute</span>() {
+        garage.<span class="f">up</span>();                 <span class="c">// API-nya up(), tapi luar nggak peduli</span>
+    }
+}
+<span class="c">// StereoOnWithCDCommand: execute() = stereo.on(); setCD(); setVolume(11);</span></pre>
+      </div>
+
+      <p class="body reveal d3">Sekarang lihat hasilnya: dari luar, <code>LightOnCommand</code> dan <code>GarageDoorOpenCommand</code> kembar—dua-duanya cuma punya <code>execute()</code>. Bedanya disembunyiin di dalam. Si pemanggil tinggal pegang sebuah <code>Command</code> dan teriak <code>execute()</code>, tanpa tahu di baliknya itu lampu, pintu garasi, atau stereo dengan tiga langkah sekaligus.</p>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Command Pattern</div>
+        <p>Membungkus sebuah <b>permintaan sebagai objek</b>, sehingga kamu bisa memparameterkan objek lain dengan permintaan yang berbeda-beda, <b>memisahkan</b> objek yang memanggil (invoker) dari objek yang tahu cara melakukannya (receiver).</p>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Lanjut di slide berikut</div>
+          <p>Slot remote belum kita isi. Di <b>Command ·2</b> kita pasang <code>Command[]</code> ke remote (si <b>invoker</b>): tiap tombol nyimpen satu command lalu manggil <code>execute()</code>. Plus bonus yang gampang banget begitu permintaan jadi objek—tombol <b>undo</b>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 06 · Command <span class="gof">· "encapsulate a request"</span></div>
+        <h2>Remote Control — satu invoker, tujuh slot, dan tombol undo</h2>
+      </div>
+      <p class="lead reveal">Di bagian sebelumnya kita udah bungkus tiap permintaan jadi objek <code>Command</code>. Sekarang kita rakit <strong>invoker</strong>-nya: sebuah remote control dengan tujuh slot ON/OFF. Tiap slot nyimpen satu <code>Command</code>. Pencet tombol, remote tinggal panggil <code>execute()</code>—dia nggak peduli yang dieksekusi itu lampu, kipas, atau pintu garasi.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">RemoteControl.java — sang INVOKER</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">RemoteControl</span> {
+    <span class="t">Command</span>[] onCommands;            <span class="c">// satu per slot</span>
+    <span class="t">Command</span>[] offCommands;
+
+    <span class="k">public</span> <span class="f">RemoteControl</span>() {
+        onCommands  = <span class="k">new</span> <span class="t">Command</span>[<span class="n">7</span>];
+        offCommands = <span class="k">new</span> <span class="t">Command</span>[<span class="n">7</span>];
+        <span class="t">Command</span> noCommand = <span class="k">new</span> <span class="t">NoCommand</span>();   <span class="c">// null object</span>
+        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">7</span>; i++) {
+            onCommands[i]  = noCommand;          <span class="c">// slot kosong = aman</span>
+            offCommands[i] = noCommand;
+        }
+    }
+
+    <span class="k">public void</span> <span class="f">setCommand</span>(<span class="k">int</span> slot, <span class="t">Command</span> on, <span class="t">Command</span> off) {
+        onCommands[slot]  = on;
+        offCommands[slot] = off;
+    }
+
+    <span class="k">public void</span> <span class="f">onButtonWasPushed</span>(<span class="k">int</span> slot) {
+        onCommands[slot].<span class="f">execute</span>();         <span class="c">// itu aja. nggak tahu apa-apa.</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Perhatiin <code>RemoteControl</code> nggak pernah nyebut <code>Light</code>, <code>CeilingFan</code>, atau receiver apa pun. Dia cuma kenal <code>Command</code>. Mau colok perintah baru? Panggil <code>setCommand(slot, on, off)</code>—remote-nya nggak perlu di-edit sama sekali. Itu yang bikin invoker dan receiver <strong>terlepas total</strong>.</p>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Invoker buta soal receiver</div>
+          <p>Remote (invoker) nggak tahu lampu (receiver) itu apa, gimana cara nyalainnya, atau bahkan kalau nanti dia diganti jadi mesin kopi. Semua detail itu kebungkus di dalam objek <b>Command</b>. Invoker cuma kenal satu kata kerja: <code>execute()</code>. Decoupled.</p>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Tadi sempet ngeganjel: slot yang belum di-set itu gimana? Kalau dibiarin <code>null</code>, pencet tombolnya langsung <code>NullPointerException</code>. Daripada nyebar cek <code>if (cmd != null)</code> di mana-mana, kita pasang <strong>NoCommand</strong>—sebuah Command yang sengaja nggak ngapa-ngapain. Ini namanya pola <em>null object</em>.</p>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">NoCommand.java — null object</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">NoCommand</span> <span class="k">implements</span> <span class="t">Command</span> {
+    <span class="k">public void</span> <span class="f">execute</span>() { <span class="c">/* sengaja diam */</span> }
+    <span class="k">public void</span> <span class="f">undo</span>()    { <span class="c">/* sengaja diam */</span> }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Sekarang bos balik lagi—pasti dong.</p>
+
+      <div class="req reveal d3">
+        <span class="who">BOS:</span>
+        <p>"Bagus. Tambahin satu tombol <em>undo</em> di remote. Kalau aku nyalain lampu terus nyesel, sekali pencet harus balik mati. Berlaku buat semua tombol."</p>
+      </div>
+
+      <p class="body reveal d3">Karena tiap perintah udah jadi objek, undo gampang banget. Kita tambah satu method <code>undo()</code> di interface <code>Command</code>—kebalikan dari <code>execute()</code>. <code>LightOnCommand.undo()</code> ya tinggal matiin lampu. Remote cukup nyimpen <strong>perintah terakhir</strong> yang dijalanin.</p>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Command + LightOnCommand — undo lahir</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">Command</span> {
+    <span class="k">void</span> <span class="f">execute</span>();
+    <span class="k">void</span> <span class="f">undo</span>();                 <span class="c">// kebalikan dari execute()</span>
+}
+
+<span class="k">public class</span> <span class="t">LightOnCommand</span> <span class="k">implements</span> <span class="t">Command</span> {
+    <span class="t">Light</span> light;
+    <span class="k">public</span> <span class="f">LightOnCommand</span>(<span class="t">Light</span> light) { <span class="k">this</span>.light = light; }
+
+    <span class="k">public void</span> <span class="f">execute</span>() { light.<span class="f">on</span>();  }
+    <span class="k">public void</span> <span class="f">undo</span>()    { light.<span class="f">off</span>(); }   <span class="c">// nyalain → undo = matiin</span>
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">RemoteControl — ingat perintah terakhir</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">RemoteControl</span> {
+    <span class="t">Command</span>[] onCommands;
+    <span class="t">Command</span>[] offCommands;
+    <span class="t">Command</span> undoCommand;            <span class="c">// yang terakhir dipencet</span>
+
+    <span class="k">public</span> <span class="f">RemoteControl</span>() {
+        <span class="c">// ...isi semua slot dengan NoCommand spt sebelumnya...</span>
+        undoCommand = <span class="k">new</span> <span class="t">NoCommand</span>();   <span class="c">// belum ada apa-apa = aman</span>
+    }
+
+    <span class="k">public void</span> <span class="f">onButtonWasPushed</span>(<span class="k">int</span> slot) {
+        onCommands[slot].<span class="f">execute</span>();
+        undoCommand = onCommands[slot];      <span class="c">// catat buat undo</span>
+    }
+
+    <span class="k">public void</span> <span class="f">undoButtonWasPushed</span>() {
+        undoCommand.<span class="f">undo</span>();              <span class="c">// putar balik!</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Pencet slot 0 ON → lampu nyala, <code>undoCommand</code> nyimpen <code>LightOnCommand</code>. Pencet UNDO → <code>undoCommand.undo()</code> jalan → lampu mati. Mau undo bertingkat (riwayat panjang)? Ganti satu variabel jadi <code>Stack&lt;Command&gt;</code>—struktur invoker-nya nggak berubah. Itulah kekuatan "permintaan jadi objek".</p>
+
+      <div class="sticky reveal d3">
+        <span class="tag">◆ Design Principle</span>
+        <p>Bungkus permintaan jadi objek, dan invoker cukup tahu satu hal: cara memanggil <code>execute()</code>. <br>— <i>Encapsulate the request.</i></p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Command Pattern</div>
+        <p>Command <b>mengenkapsulasi sebuah permintaan sebagai objek</b>, sehingga kamu bisa memparameterkan klien dengan permintaan yang berbeda, <b>mengantre atau mencatat (log) permintaan</b>, dan mendukung <b>operasi undo</b>.</p>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 07 · Adapter <span class="gof">· "ubah satu interface jadi interface lain"</span></div>
+        <h2>Adapter — colokan beda, tinggal kasih sambungan</h2>
+      </div>
+      <p class="lead reveal">Kamu punya kode klien yang ngerti <code>Duck</code>. Tapi sekarang stok bebekmu habis, yang ada cuma kalkun. Kalkun punya interface beda: dia <code>gobble()</code>, bukan <code>quack()</code>. Mau ngubah klien? Banyak yang harus disentuh. Mau ngubah <code>Turkey</code>? Itu kode pihak ketiga. Jalan tengahnya: bikin <strong>adapter</strong>.</p>
+
+      <div class="req reveal d2">
+        <span class="who">KAMU:</span>
+        <p>"Klienku cuma mau ngomong sama <code>Duck</code>. Tapi yang tersedia <code>Turkey</code>. Aku nggak boleh ubah dua-duanya. Gimana?"</p>
+      </div>
+
+      <div class="codecard reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Duck.java &amp; Turkey.java — dua colokan beda</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">Duck</span> {
+    <span class="k">void</span> <span class="f">quack</span>();
+    <span class="k">void</span> <span class="f">fly</span>();
+}
+
+<span class="k">public interface</span> <span class="t">Turkey</span> {
+    <span class="k">void</span> <span class="f">gobble</span>();          <span class="c">// kalkun "gobble", bukan "quack"</span>
+    <span class="k">void</span> <span class="f">fly</span>();             <span class="c">// kalkun terbang, tapi cuma pendek</span>
+}
+
+<span class="k">public class</span> <span class="t">WildTurkey</span> <span class="k">implements</span> <span class="t">Turkey</span> {
+    <span class="k">public void</span> <span class="f">gobble</span>() { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Gobble gobble"</span>); }
+    <span class="k">public void</span> <span class="f">fly</span>()    { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Terbang pendek"</span>); }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Klien manggil <code>duck.quack()</code> dan <code>duck.fly()</code>. Kalkun nggak punya <code>quack()</code>, dan terbangnya cuma sebentar. Adapter berdiri di tengah: di luar dia <strong>kelihatan kayak <code>Duck</code></strong>, di dalam dia <strong>punya (HAS-A)</strong> sebuah <code>Turkey</code> dan nerusin tiap panggilan ke method kalkun yang cocok.</p>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">TurkeyAdapter.java — object adapter (komposisi)</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">TurkeyAdapter</span> <span class="k">implements</span> <span class="t">Duck</span> {   <span class="c">// di luar: Duck</span>
+    <span class="k">private</span> <span class="t">Turkey</span> turkey;                          <span class="c">// di dalam: HAS-A Turkey</span>
+
+    <span class="k">public</span> <span class="f">TurkeyAdapter</span>(<span class="t">Turkey</span> turkey) {
+        <span class="k">this</span>.turkey = turkey;
+    }
+
+    <span class="k">public void</span> <span class="f">quack</span>() {
+        turkey.<span class="f">gobble</span>();              <span class="c">// quack() di-terjemah ke gobble()</span>
+    }
+
+    <span class="k">public void</span> <span class="f">fly</span>() {
+        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">5</span>; i++) {   <span class="c">// kalkun terbang pendek,</span>
+            turkey.<span class="f">fly</span>();             <span class="c">// jadi diulang 5x biar setara</span>
+        }
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Klien nggak sadar apa-apa. Dia pegang <code>Duck</code>, manggil <code>quack()</code> — di belakang layar yang bunyi malah <em>gobble</em>. Dia manggil <code>fly()</code> — adapter ngelooping terbang kalkun 5x biar jaraknya kira-kira sebanding sama bebek. Nol perubahan di sisi klien, nol perubahan di <code>WildTurkey</code>.</p>
+
+      <div class="codecard reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">DuckTestDrive.java — klien tetap ngomong Duck</span></div>
+<pre class="code"><span class="t">Turkey</span> gobbler = <span class="k">new</span> <span class="t">WildTurkey</span>();
+<span class="t">Duck</span> turkeyAdapter = <span class="k">new</span> <span class="t">TurkeyAdapter</span>(gobbler);
+
+<span class="c">// klien nggak tahu ini kalkun — dia cuma lihat Duck</span>
+turkeyAdapter.<span class="f">quack</span>();   <span class="c">// → "Gobble gobble"</span>
+turkeyAdapter.<span class="f">fly</span>();     <span class="c">// → "Terbang pendek" ×5</span></pre>
+      </div>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Bungkus objek yang interfacenya beda, biar klien tetap ngomong pakai bahasa yang dia kenal. <br>— <i>Wrap, jangan ubah.</i></p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Adapter Pattern</div>
+        <p>Adapter <b>mengubah interface</b> sebuah class menjadi interface lain yang <b>diharapkan klien</b>. Adapter bikin class yang interfacenya nggak cocok jadi <b>bisa kerja bareng</b>—yang tadinya mustahil karena beda colokan.</p>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Bedanya sama Facade</div>
+          <p>Gampang ketuker. <b>Adapter</b> <em>nyocokin</em> satu interface ke interface lain—tujuannya kompatibilitas, jumlah method bisa tetap. <b>Facade</b> <em>nyederhanain</em> sekumpulan class yang ribet jadi satu pintu masuk yang gampang. Beda niat: Adapter ganti bentuk colokan, Facade kurangi jumlah tombol. Facade-nya kita bahas habis ini.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 08 · Facade <span class="gof">· "satu pintu depan"</span></div>
+        <h2>Facade — satu tombol buat nonton film</h2>
+      </div>
+      <p class="lead reveal">Kamu punya home theater keren: <code>Amplifier</code>, <code>Tuner</code>, <code>DvdPlayer</code>, <code>Projector</code>, <code>TheaterLights</code>, <code>Screen</code>, <code>PopcornPopper</code>. Tujuh subsistem. Tapi buat nonton satu film, klien harus manggil belasan method dengan urutan yang persis.</p>
+
+      <div class="req bad reveal d2">
+        <span class="who">BOS:</span>
+        <p>"Aku cuma mau pencet satu tombol terus filmnya jalan. Bukan ngapalin sembilan langkah tiap mau nonton."</p>
+      </div>
+
+      <div class="codecard bad reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Client.java — nyalain film secara manual</span><span class="codecard__verdict">SMELL</span></div>
+<pre class="code"><span class="c">// Mau nonton film? Ini ritualnya tiap kali:</span>
+<span class="hl-bad">popper.<span class="f">on</span>();</span>
+<span class="hl-bad">popper.<span class="f">pop</span>();</span>
+<span class="hl-bad">lights.<span class="f">dim</span>(<span class="n">10</span>);</span>
+<span class="hl-bad">screen.<span class="f">down</span>();</span>
+<span class="hl-bad">projector.<span class="f">on</span>();</span>
+<span class="hl-bad">projector.<span class="f">wideScreenMode</span>();</span>
+<span class="hl-bad">amp.<span class="f">on</span>();</span>
+<span class="hl-bad">amp.<span class="f">setDvd</span>(dvd);</span>
+<span class="hl-bad">amp.<span class="f">setSurroundSound</span>();</span>
+<span class="hl-bad">amp.<span class="f">setVolume</span>(<span class="n">5</span>);</span>
+<span class="hl-bad">dvd.<span class="f">on</span>();</span>
+<span class="hl-bad">dvd.<span class="f">play</span>(movie);</span>
+<span class="c">// ...dan selesai nonton? Balikin SEMUA dengan urutan kebalik. 😵</span></pre>
+      </div>
+
+      <p class="body reveal d2">Klien jadi <strong>tahu terlalu banyak</strong>: kenal tujuh subsistem, ngerti urutannya, hafal parameternya. Ganti amplifier? Tukar DVD jadi streaming box? Tiap kode klien yang nyalain film harus dibongkar. Klien dan subsistem nempel ketat (<em>tightly coupled</em>).</p>
+
+      <p class="body reveal d2">Idenya gampang: bungkus seluruh ritual itu di balik <strong>satu interface terpadu</strong> yang sederhana. Itu si <code>HomeTheaterFacade</code>. Subsistemnya nggak hilang — kalau ada yang butuh kontrol penuh masih bisa colok langsung. Facade cuma nyediain pintu depan yang gampang buat kasus umum.</p>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">HomeTheaterFacade.java — pintu depan</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">HomeTheaterFacade</span> {
+    <span class="k">private</span> <span class="t">Amplifier</span> amp;
+    <span class="k">private</span> <span class="t">DvdPlayer</span> dvd;
+    <span class="k">private</span> <span class="t">Projector</span> projector;
+    <span class="k">private</span> <span class="t">TheaterLights</span> lights;
+    <span class="k">private</span> <span class="t">Screen</span> screen;
+    <span class="k">private</span> <span class="t">PopcornPopper</span> popper;
+
+    <span class="c">// Konstruktor terima semua subsistem (di-elide).</span>
+
+    <span class="k">public void</span> <span class="f">watchMovie</span>(<span class="t">String</span> movie) {
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Siap-siap nonton film..."</span>);
+        popper.<span class="f">on</span>();
+        popper.<span class="f">pop</span>();
+        lights.<span class="f">dim</span>(<span class="n">10</span>);
+        screen.<span class="f">down</span>();
+        projector.<span class="f">on</span>();
+        projector.<span class="f">wideScreenMode</span>();
+        amp.<span class="f">on</span>();
+        amp.<span class="f">setDvd</span>(dvd);
+        amp.<span class="f">setSurroundSound</span>();
+        amp.<span class="f">setVolume</span>(<span class="n">5</span>);
+        dvd.<span class="f">on</span>();
+        dvd.<span class="f">play</span>(movie);
+    }
+
+    <span class="k">public void</span> <span class="f">endMovie</span>() {
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Mematikan home theater..."</span>);
+        popper.<span class="f">off</span>();
+        lights.<span class="f">on</span>();
+        screen.<span class="f">up</span>();
+        projector.<span class="f">off</span>();
+        amp.<span class="f">off</span>();
+        dvd.<span class="f">stop</span>();
+        dvd.<span class="f">eject</span>();
+        dvd.<span class="f">off</span>();
+    }
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">HomeTheaterTestDrive.java — klien santai</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="t">HomeTheaterFacade</span> homeTheater =
+    <span class="k">new</span> <span class="t">HomeTheaterFacade</span>(amp, tuner, dvd, projector,
+                            screen, lights, popper);
+
+<span class="hl-good">homeTheater.<span class="f">watchMovie</span>(<span class="s">"Raiders of the Lost Ark"</span>);</span>
+<span class="c">// ...nikmati filmnya...</span>
+<span class="hl-good">homeTheater.<span class="f">endMovie</span>();</span></pre>
+      </div>
+
+      <p class="body reveal d3">Selesai. Dua baris. Klien cuma ngobrol sama <strong>satu</strong> teman: si facade. Mau nambah mode lain (<code>listenToRadio()</code>, <code>watchTv()</code>)? Tambah method di facade — klien lama nggak kesentuh.</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Principle of Least Knowledge — <em>talk only to your immediate friends</em>. Si Hukum Demeter: jangan ngobrol sama "teman dari teman". Kurangi siapa saja yang dikenal sebuah objek.</p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Facade Pattern</div>
+        <p>Menyediakan sebuah <b>interface terpadu</b> ke sekumpulan interface di dalam sebuah subsistem. Facade mendefinisikan interface tingkat-lebih-tinggi yang membuat <b>subsistem lebih gampang dipakai</b>.</p>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">Tanpa Facade</h4>
+          <ul class="bad-l">
+            <li>Klien kenal 7 subsistem</li>
+            <li>Hafal urutan &amp; parameter</li>
+            <li>Coupling ketat — ganti satu part, bongkar klien</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Dengan Facade</h4>
+          <ul class="good-l">
+            <li>Klien kenal 1 teman saja</li>
+            <li><code>watchMovie()</code> / <code>endMovie()</code></li>
+            <li>Subsistem bebas berubah di balik pintu</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Facade vs Adapter</div>
+          <p>Keduanya membungkus. Bedanya niat: <b>Adapter</b> mengubah satu interface jadi interface lain yang diharapkan klien. <b>Facade</b> menyederhanakan—nyatuin banyak interface jadi satu yang lebih enak. Facade nggak menyembunyikan subsistem; klien masih boleh pakai langsung kalau perlu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 09 · Template Method <span class="gof">· "kerangka algoritma"</span></div>
+        <h2>Template Method — resepnya superclass yang pegang, langkah uniknya subclass</h2>
+      </div>
+      <p class="lead reveal">Kopi dan teh itu resepnya mirip banget: didihin air, seduh, tuang ke cangkir, kasih bumbu. Yang beda cuma dua langkah—cara <em>nyeduh</em>nya, dan <em>bumbu</em>nya. Daripada nulis dua resep yang 80% sama, taruh kerangkanya di satu tempat.</p>
+
+      <div class="req bad reveal d2">
+        <span class="who">BOS:</span>
+        <p>"Resep Kopi dan resep Teh hampir identik. Kok aku lihat <code>boilWater()</code> dan <code>pourInCup()</code> di-copy-paste di dua class? Satuin dong."</p>
+      </div>
+
+      <div class="codecard bad reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Coffee.java &amp; Tea.java — dua resep nyaris kembar</span><span class="codecard__verdict">SMELL</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">Coffee</span> {
+    <span class="k">void</span> <span class="f">prepareRecipe</span>() {
+        <span class="hl-bad"><span class="f">boilWater</span>();</span>              <span class="c">// sama persis...</span>
+        <span class="f">brewCoffeeGrinds</span>();
+        <span class="hl-bad"><span class="f">pourInCup</span>();</span>             <span class="c">// ...dengan Tea</span>
+        <span class="f">addSugarAndMilk</span>();
+    }
+}
+<span class="k">public class</span> <span class="t">Tea</span> {
+    <span class="k">void</span> <span class="f">prepareRecipe</span>() {
+        <span class="hl-bad"><span class="f">boilWater</span>();</span>              <span class="c">// duplikat lagi</span>
+        <span class="f">steepTeaBag</span>();
+        <span class="hl-bad"><span class="f">pourInCup</span>();</span>
+        <span class="f">addLemon</span>();
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Lihat strukturnya: empat langkah, urutan sama, dua langkah identik (<code>boilWater</code> + <code>pourInCup</code>), dua langkah beda (seduh &amp; bumbu). Itu pola yang minta diabstraksi. Naikkan kerangkanya ke superclass, jadiin langkah-yang-beda <strong>abstract</strong>.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">CaffeineBeverage.java — kerangka yang final</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">CaffeineBeverage</span> {
+
+    <span class="hl-good"><span class="k">final void</span> <span class="f">prepareRecipe</span>() {</span>      <span class="c">// template — gak boleh di-override</span>
+        <span class="f">boilWater</span>();
+        <span class="f">brew</span>();                       <span class="c">// langkah subclass</span>
+        <span class="f">pourInCup</span>();
+        <span class="k">if</span> (<span class="f">customerWantsCondiments</span>()) { <span class="c">// hook</span>
+            <span class="f">addCondiments</span>();             <span class="c">// langkah subclass</span>
+        }
+    }
+
+    <span class="k">abstract void</span> <span class="f">brew</span>();             <span class="c">// diisi Coffee / Tea</span>
+    <span class="k">abstract void</span> <span class="f">addCondiments</span>();
+
+    <span class="k">void</span> <span class="f">boilWater</span>()  { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Mendidihkan air"</span>); }
+    <span class="k">void</span> <span class="f">pourInCup</span>() { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Menuang ke cangkir"</span>); }
+
+    <span class="k">boolean</span> <span class="f">customerWantsCondiments</span>() { <span class="k">return</span> <span class="k">true</span>; } <span class="c">// hook, default ya</span>
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Perhatiin <code>prepareRecipe()</code> ditandai <code>final</code>—itu si <strong>template method</strong>. Dia yang memegang urutan algoritma; subclass nggak boleh ngubah strukturnya. <code>boilWater()</code> &amp; <code>pourInCup()</code> konkret (sama buat semua). <code>brew()</code> &amp; <code>addCondiments()</code> abstract—wajib diisi subclass.</p>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Coffee.java &amp; Tea.java — tinggal isi yang beda</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">Coffee</span> <span class="k">extends</span> <span class="t">CaffeineBeverage</span> {
+    <span class="k">public void</span> <span class="f">brew</span>() {
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Menyeduh bubuk kopi"</span>);
+    }
+    <span class="k">public void</span> <span class="f">addCondiments</span>() {
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Menambahkan gula dan susu"</span>);
+    }
+}
+
+<span class="k">public class</span> <span class="t">Tea</span> <span class="k">extends</span> <span class="t">CaffeineBeverage</span> {
+    <span class="k">public void</span> <span class="f">brew</span>() {
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Mencelup teh celup"</span>);
+    }
+    <span class="k">public void</span> <span class="f">addCondiments</span>() {
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Menambahkan lemon"</span>);
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Nol duplikasi. Kerangka resep cuma ada di satu tempat. Mau bikin <code>HotChocolate</code>? <code>extends CaffeineBeverage</code>, isi <code>brew()</code> &amp; <code>addCondiments()</code>, selesai—kamu nggak akan pernah salah urutan, karena urutannya bukan urusanmu.</p>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">TeaWithHook.java — override si hook</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">TeaWithHook</span> <span class="k">extends</span> <span class="t">CaffeineBeverage</span> {
+    <span class="k">public void</span> <span class="f">brew</span>()         { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Mencelup teh"</span>); }
+    <span class="k">public void</span> <span class="f">addCondiments</span>() { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Tambah lemon"</span>); }
+
+    <span class="hl-good"><span class="k">public boolean</span> <span class="f">customerWantsCondiments</span>() {</span>  <span class="c">// override hook</span>
+        <span class="k">return</span> <span class="f">getUserInput</span>().<span class="f">toLowerCase</span>().<span class="f">startsWith</span>(<span class="s">"y"</span>);
+    }
+    <span class="k">private</span> <span class="t">String</span> <span class="f">getUserInput</span>() {
+        <span class="c">// ...tanya user "Mau lemon? (y/n)" lalu baca jawaban</span>
+        <span class="k">return</span> <span class="s">"yes"</span>;
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Itu yang namanya <strong>hook</strong>: method konkret di superclass yang isinya kosong atau default, ada cuma supaya subclass <em>boleh</em> nyangkut ke titik tertentu dalam algoritma. Kalau nggak di-override, ya jalan default. Beda dari <code>abstract</code> yang <em>wajib</em> diisi.</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>The Hollywood Principle: <em>"Don't call us, we'll call you."</em> Superclass yang manggil method subclass, bukan sebaliknya. Komponen low-level boleh ikut, tapi nggak nentuin kapan dia dipanggil.</p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Template Method Pattern</div>
+        <p>Mendefinisikan <b>kerangka sebuah algoritma</b> di dalam sebuah method, menunda beberapa langkahnya ke subclass. Template Method bikin subclass <b>meredefinisi langkah tertentu</b> sebuah algoritma tanpa mengubah struktur algoritmanya.</p>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">Strategy</h4>
+          <ul class="bad-l">
+            <li>Bungkus <em>seluruh</em> algoritma, ditukar via komposisi (HAS-A)</li>
+            <li>Flexibel saat runtime—ganti objek strategi</li>
+            <li>Tiap varian = class lengkap berdiri sendiri</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Template Method</h4>
+          <ul class="good-l">
+            <li>Bungkus <em>kerangka</em>nya, subclass isi langkah lewat warisan (IS-A)</li>
+            <li>Ditentukan saat compile—subclass override langkah</li>
+            <li>Pakai ulang banyak langkah konkret yang sama</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Hati-hati</div>
+          <p>Jangan jadiin semua langkah <code>abstract</code>—semakin banyak yang wajib diisi, semakin berat bikin subclass baru. Sebaliknya kalau terlalu sedikit, polanya jadi nggak fleksibel. Tandai <code>prepareRecipe()</code> <b>final</b> biar subclass nggak diam-diam mengganti urutan resepnya.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 10 · Iterator <span class="gof">· "jelajah tanpa bongkar isi"</span></div>
+        <h2>Iterator — keliling koleksi tanpa tahu isi dalemnya</h2>
+      </div>
+      <p class="lead reveal">Dua kafe merger jadi satu diner. <code>PancakeHouseMenu</code> nyimpen item di <code>ArrayList</code>, <code>DinerMenu</code> nyimpen di <code>MenuItem[]</code> biasa. Si <code>Waitress</code> mau cetak semua menu—tapi dia kepaksa tahu dua cara nyimpen yang beda.</p>
+
+      <div class="req bad reveal d2">
+        <span class="who">BOS:</span>
+        <p>"Gabungin menu kedua kafe. Waitress harus bisa cetak <em>semua</em> item—jangan suruh pelanggan nanya dua kali."</p>
+      </div>
+
+      <p class="body reveal d2">Masalahnya: tiap menu balikin koleksi dengan bentuk beda. Satu <code>getMenuItems()</code> ngasih <code>ArrayList</code>, satu lagi ngasih array. Waitress kepaksa nulis dua loop beda—dan kalau besok ada menu ketiga (pakai <code>HashMap</code>?), nambah cabang <code>if</code> lagi.</p>
+
+      <div class="codecard bad reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Waitress.java — tahu DUA representasi</span><span class="codecard__verdict">BENCANA</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">Waitress</span> {
+    <span class="k">public void</span> <span class="f">printMenu</span>() {
+        <span class="t">ArrayList</span>&lt;<span class="t">MenuItem</span>&gt; pancakes = pancakeMenu.<span class="f">getMenuItems</span>();
+        <span class="t">MenuItem</span>[] diner = dinerMenu.<span class="f">getMenuItems</span>();
+<span class="hl-bad">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; pancakes.<span class="f">size</span>(); i++) { ... }  <span class="c">// ArrayList</span></span>
+<span class="hl-bad">        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; diner.length; i++)    { ... }  <span class="c">// array</span></span>
+        <span class="c">// menu ketiga? tambah loop lagi. Waitress kebanjiran.</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Akar masalahnya: <code>printMenu()</code> nge-loop dengan cara yang <strong>bocor</strong> ke detail penyimpanan tiap menu. Yang berubah-ubah di sini bukan menunya, tapi <em>cara iterasi</em>-nya. Cabut itu, bungkus jadi objek sendiri: sebuah <strong>Iterator</strong>.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Iterator.java — kontrak jalan-jalan</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">Iterator</span> {
+    <span class="k">boolean</span> <span class="f">hasNext</span>();   <span class="c">// masih ada elemen lagi?</span>
+    <span class="t">Object</span>  <span class="f">next</span>();      <span class="c">// kasih yang berikutnya</span>
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">DinerMenuIterator.java — jalan di atas array</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">DinerMenuIterator</span> <span class="k">implements</span> <span class="t">Iterator</span> {
+    <span class="t">MenuItem</span>[] items;
+    <span class="k">int</span> position = <span class="n">0</span>;
+
+    <span class="k">public</span> <span class="f">DinerMenuIterator</span>(<span class="t">MenuItem</span>[] items) {
+        <span class="k">this</span>.items = items;
+    }
+    <span class="k">public boolean</span> <span class="f">hasNext</span>() {
+        <span class="k">return</span> position &lt; items.length &amp;&amp; items[position] != <span class="k">null</span>;
+    }
+    <span class="k">public</span> <span class="t">Object</span> <span class="f">next</span>() {
+        <span class="t">MenuItem</span> item = items[position];
+        position = position + <span class="n">1</span>;
+        <span class="k">return</span> item;
+    }
+}
+<span class="c">// PancakeHouseMenuIterator: sama, tapi pakai ArrayList di dalam.</span></pre>
+      </div>
+
+      <p class="body reveal d2">Tiap menu sekarang nyediain <code>createIterator()</code> yang balikin Iterator versinya sendiri. Detail "array vs ArrayList" terkubur di dalam masing-masing iterator—Waitress nggak peduli lagi.</p>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">DinerMenu.java — bikin iterator-nya sendiri</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">DinerMenu</span> {
+    <span class="t">MenuItem</span>[] menuItems;   <span class="c">// disimpan sebagai array</span>
+
+    <span class="k">public</span> <span class="t">Iterator</span> <span class="f">createIterator</span>() {
+        <span class="k">return new</span> <span class="t">DinerMenuIterator</span>(menuItems);
+    }
+}
+<span class="c">// PancakeHouseMenu.createIterator() balikin iterator versi ArrayList.</span></pre>
+      </div>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Sebuah class semestinya cuma punya <em>satu alasan untuk berubah</em> (Single Responsibility). Koleksi tugasnya nyimpen data; urusan iterasi diserahin ke iterator terpisah.</p>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Waitress.java — cuma pegang Iterator</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">Waitress</span> {
+    <span class="k">public void</span> <span class="f">printMenu</span>() {
+        <span class="t">Iterator</span> pancakeIt = pancakeMenu.<span class="f">createIterator</span>();
+        <span class="t">Iterator</span> dinerIt   = dinerMenu.<span class="f">createIterator</span>();
+<span class="hl-good">        <span class="f">printMenu</span>(pancakeIt);   <span class="c">// satu loop, dipakai ulang</span></span>
+<span class="hl-good">        <span class="f">printMenu</span>(dinerIt);</span>
+    }
+    <span class="k">private void</span> <span class="f">printMenu</span>(<span class="t">Iterator</span> it) {
+        <span class="k">while</span> (it.<span class="f">hasNext</span>()) {
+            <span class="t">MenuItem</span> item = (<span class="t">MenuItem</span>) it.<span class="f">next</span>();
+            <span class="t">System</span>.out.<span class="f">println</span>(item.<span class="f">getName</span>());
+        }
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Satu <code>while (it.hasNext())</code>, dipakai buat semua menu. Menu ketiga muncul pakai <code>HashMap</code>? Bikin iterator-nya, kasih <code>createIterator()</code>—Waitress nol disentuh.</p>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">Tanpa Iterator</h4>
+          <ul class="bad-l">
+            <li>Waitress tahu array <em>dan</em> ArrayList</li>
+            <li>Tiap menu baru = cabang <code>if</code> baru</li>
+            <li>Loop iterasi nyebar, di-copy ke mana-mana</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Dengan Iterator</h4>
+          <ul class="good-l">
+            <li>Waitress cuma kenal interface <code>Iterator</code></li>
+            <li>Menu baru = satu iterator baru, klien diam</li>
+            <li>Iterasi terkumpul rapi di satu objek</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Iterator Pattern</div>
+        <p>Menyediakan cara untuk <b>mengakses elemen sebuah agregat secara berurutan</b>, tanpa membuka <b>representasi dalamnya</b>.</p>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Kamu udah pakai ini tiap hari</div>
+          <p><code>java.util.Iterator</code> itu persis pola ini—lengkap dengan <code>hasNext()</code> dan <code>next()</code>. Tiap kali kamu nge-loop <code>List</code>, <code>Set</code>, atau koleksi lain di JDK, kamu lagi pakai Iterator pattern.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 11 · Composite <span class="gof">· "pohon: daun &amp; ranting diperlakukan sama"</span></div>
+        <h2>Composite — menu di dalam menu, dan klien nggak peduli yang mana</h2>
+      </div>
+      <p class="lead reveal">Iterator tadi rapi: satu cara jalan-jalan ke semua menu. Tapi lalu kafe kasih kabar—mereka mau nambah <strong>menu dessert di dalam menu makan siang</strong>. Submenu. Menu di dalam menu. Iterator doang nggak nutup ini.</p>
+
+      <div class="req bad reveal d2">
+        <span class="who">BOS:</span>
+        <p>"DinerMenu butuh submenu Dessert. Dan nanti bakal ada submenu di dalam submenu. Klien tetap mau satu cara aja buat <em>print semua</em>—jangan ribet."</p>
+      </div>
+
+      <p class="body reveal d2">Masalahnya: <code>Iterator</code> jago buat koleksi <em>datar</em>. Begitu strukturnya <strong>bersarang</strong>—menu punya menu item <em>dan</em> menu lain—klien harus tahu "ini menu atau item?" di tiap langkah. Loop di dalam loop di dalam loop. Kode klien jadi kenal seluruh bentuk pohonnya. Itu rapuh.</p>
+
+      <p class="body reveal d2">Yang kita mau: perlakukan <strong>satu item</strong> dan <strong>sekumpulan item (yang mungkin berisi item lagi)</strong> lewat tipe yang <em>sama</em>. Itu inti Composite.</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Satu antarmuka untuk daun <em>dan</em> ranting. Klien manggil <em>print()</em> tanpa nanya "kamu menu atau item?". <br>— <i>Perlakukan objek tunggal &amp; komposisi secara seragam.</i></p>
+      </div>
+
+      <p class="body reveal d3">Caranya: bikin satu superclass abstrak <code>MenuComponent</code> yang punya semua operasi umum—<code>getName()</code>, <code>print()</code>, sampai <code>add()</code>. Lalu ada dua peran yang mewarisinya: <strong>MenuItem</strong> (daun) dan <strong>Menu</strong> (komposit yang nyimpan anak).</p>
+
+      <div class="codecard reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">MenuComponent.java — superclass abstrak untuk semua</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public abstract class</span> <span class="t">MenuComponent</span> {
+    <span class="c">// default: lempar. tiap peran override yang relevan.</span>
+    <span class="k">public void</span> <span class="f">add</span>(<span class="t">MenuComponent</span> c) {
+        <span class="k">throw new</span> <span class="t">UnsupportedOperationException</span>();
+    }
+    <span class="k">public void</span> <span class="f">remove</span>(<span class="t">MenuComponent</span> c) {
+        <span class="k">throw new</span> <span class="t">UnsupportedOperationException</span>();
+    }
+    <span class="k">public</span> <span class="t">MenuComponent</span> <span class="f">getChild</span>(<span class="k">int</span> i) {
+        <span class="k">throw new</span> <span class="t">UnsupportedOperationException</span>();
+    }
+
+    <span class="k">public</span> <span class="t">String</span> <span class="f">getName</span>() {
+        <span class="k">throw new</span> <span class="t">UnsupportedOperationException</span>();
+    }
+    <span class="k">public void</span> <span class="f">print</span>() {
+        <span class="k">throw new</span> <span class="t">UnsupportedOperationException</span>();
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2"><strong>MenuItem</strong> = daun. Dia ujung pohon: nggak punya anak, <code>print()</code> cuma cetak dirinya sendiri.</p>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">MenuItem.java — LEAF (cetak dirinya)</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">MenuItem</span> <span class="k">extends</span> <span class="t">MenuComponent</span> {
+    <span class="k">private</span> <span class="t">String</span> name;
+    <span class="k">private boolean</span> vegetarian;
+    <span class="k">private double</span> price;
+
+    <span class="k">public</span> <span class="f">MenuItem</span>(<span class="t">String</span> name, <span class="k">boolean</span> veg, <span class="k">double</span> price) {
+        <span class="k">this</span>.name = name; <span class="k">this</span>.vegetarian = veg; <span class="k">this</span>.price = price;
+    }
+
+    <span class="a">@Override</span> <span class="k">public</span> <span class="t">String</span> <span class="f">getName</span>() { <span class="k">return</span> name; }
+
+    <span class="a">@Override</span> <span class="k">public void</span> <span class="f">print</span>() {
+        <span class="t">System</span>.out.<span class="f">print</span>(<span class="s">"  "</span> + name);
+        <span class="k">if</span> (vegetarian) <span class="t">System</span>.out.<span class="f">print</span>(<span class="s">" (v)"</span>);
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">", "</span> + price);   <span class="c">// daun: cuma dirinya</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2"><strong>Menu</strong> = komposit. Dia simpan <code>List&lt;MenuComponent&gt;</code> anak. Anaknya bisa <code>MenuItem</code>, bisa <code>Menu</code> lain—Menu nggak peduli. <code>print()</code>-nya cetak header, lalu <strong>loop ke tiap anak dan panggil <code>print()</code> mereka</strong>. Karena anak juga <code>MenuComponent</code>, kalau anaknya Menu lagi, dia bakal print isinya sendiri—<strong>rekursif</strong>, turun ke seluruh pohon.</p>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Menu.java — COMPOSITE (punya anak, print rekursif)</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">Menu</span> <span class="k">extends</span> <span class="t">MenuComponent</span> {
+    <span class="k">private</span> <span class="t">List</span>&lt;<span class="t">MenuComponent</span>&gt; children = <span class="k">new</span> <span class="t">ArrayList</span>&lt;<span class="t">MenuComponent</span>&gt;();
+    <span class="k">private</span> <span class="t">String</span> name;
+
+    <span class="k">public</span> <span class="f">Menu</span>(<span class="t">String</span> name) { <span class="k">this</span>.name = name; }
+
+    <span class="a">@Override</span> <span class="k">public void</span> <span class="f">add</span>(<span class="t">MenuComponent</span> c) { children.<span class="f">add</span>(c); }
+    <span class="a">@Override</span> <span class="k">public</span> <span class="t">String</span> <span class="f">getName</span>() { <span class="k">return</span> name; }
+
+    <span class="a">@Override</span> <span class="k">public void</span> <span class="f">print</span>() {
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"\n"</span> + name);          <span class="c">// header menu ini</span>
+<span class="hl-good">        <span class="k">for</span> (<span class="t">MenuComponent</span> c : children) {       <span class="c">// item ATAU submenu</span>
+            c.<span class="f">print</span>();                            <span class="c">// rekursi turun pohon</span>
+        }</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Sekarang lihat sisi klien. Dessert dibikin <code>Menu</code> biasa, lalu <code>dinerMenu.add(dessertMenu)</code>—submenu masuk persis kayak item biasa. Untuk cetak <em>seluruhnya</em>, klien cukup pegang menu paling atas dan panggil <strong>satu</strong> method:</p>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">Waitress.java — klien cuma kenal MenuComponent</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">Waitress</span> {
+    <span class="k">private</span> <span class="t">MenuComponent</span> allMenus;   <span class="c">// tipe yang SAMA buat semua</span>
+
+    <span class="k">public</span> <span class="f">Waitress</span>(<span class="t">MenuComponent</span> allMenus) { <span class="k">this</span>.allMenus = allMenus; }
+
+    <span class="k">public void</span> <span class="f">printMenu</span>() { allMenus.<span class="f">print</span>(); }  <span class="c">// satu panggilan, beres</span>
+}
+
+<span class="c">// dinerMenu.add(dessertMenu);  // submenu = anak biasa</span>
+<span class="c">// dessertMenu.add(new MenuItem("Apple Pie", true, 1.59));</span>
+<span class="c">// new Waitress(allMenus).printMenu();  // cetak SEMUA, sampai pucuk</span></pre>
+      </div>
+
+      <p class="body reveal d3">Waitress nggak pernah nanya "ini item atau menu?". Dia panggil <code>print()</code> ke <code>MenuComponent</code>—item cetak dirinya, menu cetak header lalu suruh anak-anaknya cetak. Tambah submenu di dalam submenu di dalam submenu? Kode klien <strong>nol perubahan</strong>.</p>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Composite Pattern</div>
+        <p>Composite menyusun objek ke dalam <b>struktur pohon</b> untuk merepresentasikan hierarki <b>bagian-keseluruhan</b>. Composite membuat klien bisa memperlakukan <b>objek tunggal</b> dan <b>komposisi objek</b> secara seragam.</p>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Trade-off · transparansi vs keamanan</div>
+          <p>Karena <code>add()</code>/<code>remove()</code> taruh di <b>MenuComponent</b>, daun (<code>MenuItem</code>) ikut punya method itu—itu yang bikin klien seragam (<b>transparan</b>). Harganya: <code>menuItem.add(...)</code> tetap bisa dipanggil dan baru meledak <b>saat runtime</b>. Mau lebih <b>aman</b>? Taruh <code>add()</code> cuma di <code>Menu</code>—tapi klien jadi harus cek tipe lagi. Composite sengaja pilih transparansi; ini trade-off sadar, bukan lupa.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 12 · State <span class="gof">· "objek ganti kelakuan saat state berubah"</span></div>
+        <h2>State — mesin permen yang jadi pinter sendiri</h2>
+      </div>
+      <p class="lead reveal">Ada mesin permen gumball. Empat keadaan: <strong>NoQuarter</strong> (belum ada koin), <strong>HasQuarter</strong> (koin masuk), <strong>Sold</strong> (lagi ngeluarin permen), <strong>SoldOut</strong> (habis). Empat aksi: <code>insertQuarter()</code>, <code>ejectQuarter()</code>, <code>turnCrank()</code>, <code>dispense()</code>. Apa yang boleh terjadi tergantung lagi di keadaan mana.</p>
+
+      <div class="codecard bad reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">GumballMachine.java — versi konstanta int + if/else</span><span class="codecard__verdict">SMELL</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">GumballMachine</span> {
+    <span class="k">final static int</span> SOLD_OUT    = <span class="n">0</span>;
+    <span class="k">final static int</span> NO_QUARTER  = <span class="n">1</span>;
+    <span class="k">final static int</span> HAS_QUARTER = <span class="n">2</span>;
+    <span class="k">final static int</span> SOLD        = <span class="n">3</span>;
+    <span class="k">int</span> state = SOLD_OUT;
+
+    <span class="k">public void</span> <span class="f">insertQuarter</span>() {
+<span class="hl-bad">        <span class="k">if</span> (state == HAS_QUARTER)      { ... <span class="s">"udah ada koin"</span> }</span>
+<span class="hl-bad">        <span class="k">else if</span> (state == SOLD_OUT)  { ... <span class="s">"habis"</span> }</span>
+<span class="hl-bad">        <span class="k">else if</span> (state == SOLD)      { ... <span class="s">"tunggu, lagi keluar"</span> }</span>
+<span class="hl-bad">        <span class="k">else if</span> (state == NO_QUARTER){ state = HAS_QUARTER; ... }</span>
+    }
+    <span class="c">// turnCrank(), ejectQuarter(), dispense(): if/else RAKSASA yang SAMA</span>
+}</pre>
+      </div>
+
+      <div class="req bad reveal d2">
+        <span class="who">BOS:</span>
+        <p>"Bikin seru—1 dari 10 putaran <em>menang</em>, dapat 2 permen sekaligus. Tambahin state <code>Winner</code> ya."</p>
+      </div>
+
+      <p class="body reveal d2">Kedengerannya kecil. Tapi nambah satu state berarti: tambah satu konstanta <code>int</code>, lalu bongkar <strong>tiap method</strong>—<code>insertQuarter</code>, <code>turnCrank</code>, <code>ejectQuarter</code>, <code>dispense</code>—buat nyelipin satu cabang <code>else if</code> baru di masing-masing. Empat method, empat tempat lupa, empat peluang bug. Kode yang harusnya "ketutup buat modifikasi" malah dibedah ulang tiap kali aturan berubah.</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle</span>
+        <p>Yang berubah-ubah di sini adalah <em>perilaku per-state</em>. Bungkus tiap state jadi objeknya sendiri. <br>— <i>Encapsulate what varies.</i></p>
+      </div>
+
+      <p class="body reveal d3">Balik logikanya. Daripada satu kelas raksasa yang ngecek "lagi di state mana", bikin <strong>satu class per state</strong>. Tiap state tahu sendiri gimana harus bereaksi ke keempat aksi, <em>dan</em> kemana mesin harus pindah berikutnya.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">State.java — kontrak yang sama buat semua state</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">State</span> {
+    <span class="k">void</span> <span class="f">insertQuarter</span>();
+    <span class="k">void</span> <span class="f">ejectQuarter</span>();
+    <span class="k">void</span> <span class="f">turnCrank</span>();
+    <span class="k">void</span> <span class="f">dispense</span>();
+}
+
+<span class="k">public class</span> <span class="t">NoQuarterState</span> <span class="k">implements</span> <span class="t">State</span> {
+    <span class="t">GumballMachine</span> machine;
+    <span class="k">public</span> <span class="f">NoQuarterState</span>(<span class="t">GumballMachine</span> m) { machine = m; }
+
+    <span class="k">public void</span> <span class="f">insertQuarter</span>() {
+        <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Koin masuk"</span>);
+        machine.<span class="f">setState</span>(machine.<span class="f">getHasQuarterState</span>());  <span class="c">// pindah!</span>
+    }
+    <span class="k">public void</span> <span class="f">ejectQuarter</span>() { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Belum ada koin"</span>); }
+    <span class="k">public void</span> <span class="f">turnCrank</span>()   { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Masukin koin dulu"</span>); }
+    <span class="k">public void</span> <span class="f">dispense</span>()    { <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Bayar dulu"</span>); }
+}</pre>
+      </div>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">GumballMachine.java — cuma nyimpen state + delegasi</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">GumballMachine</span> {
+    <span class="t">State</span> noQuarterState;
+    <span class="t">State</span> hasQuarterState;
+    <span class="t">State</span> soldState;
+    <span class="t">State</span> soldOutState;
+    <span class="t">State</span> state;   <span class="c">// state yang lagi aktif sekarang</span>
+    <span class="k">int</span> count = <span class="n">0</span>;
+
+    <span class="k">public</span> <span class="f">GumballMachine</span>(<span class="k">int</span> jumlah) {
+        noQuarterState  = <span class="k">new</span> <span class="t">NoQuarterState</span>(<span class="k">this</span>);
+        hasQuarterState = <span class="k">new</span> <span class="t">HasQuarterState</span>(<span class="k">this</span>);
+        <span class="c">// ...soldState, soldOutState juga</span>
+        count = jumlah;
+        state = (jumlah &gt; <span class="n">0</span>) ? noQuarterState : soldOutState;
+    }
+
+    <span class="k">public void</span> <span class="f">insertQuarter</span>() { state.<span class="f">insertQuarter</span>(); }  <span class="c">// delegasi</span>
+    <span class="k">public void</span> <span class="f">turnCrank</span>()     { state.<span class="f">turnCrank</span>();
+                                  state.<span class="f">dispense</span>(); }
+    <span class="k">public void</span> <span class="f">setState</span>(<span class="t">State</span> s) { state = s; }
+    <span class="k">public</span> <span class="t">State</span> <span class="f">getHasQuarterState</span>() { <span class="k">return</span> hasQuarterState; }
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Lihat <code>insertQuarter()</code> di mesinnya: nggak ada <code>if</code> sama sekali, cuma <code>state.insertQuarter()</code>. Mesin nggak peduli lagi di state mana—objek state-nya yang ngatur. Sekarang ke permintaan bos: state <code>Winner</code>? Bikin <strong>satu class baru</strong> <code>WinnerState</code>, colok transisinya. Empat method lama di <code>GumballMachine</code> nggak disentuh sama sekali.</p>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · State Pattern</div>
+        <p>Memungkinkan sebuah objek <b>mengubah perilakunya</b> saat <b>state internalnya berubah</b>. Objeknya seolah-olah <b>berganti class</b>.</p>
+      </div>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">if/else raksasa</h4>
+          <ul class="bad-l">
+            <li>Logika tiap state <strong>nyebar</strong> di keempat method</li>
+            <li>Nambah state = bedah semua method</li>
+            <li>Transisi state susah dilacak</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">satu class per state</h4>
+          <ul class="good-l">
+            <li>Perilaku satu state <strong>ngumpul</strong> di satu file</li>
+            <li>Nambah state = bikin class baru, mesin utuh</li>
+            <li>Transisi eksplisit: <code>machine.setState(...)</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Mirip Strategy? Strukturnya iya, niatnya beda</div>
+          <p>Diagram kelasnya kembar sama <b>Strategy</b>—objek konteks delegasi ke objek lain di balik satu interface. Bedanya di <b>niat</b>: di Strategy, <b>klien yang milih</b> algoritma dan biasanya nge-set sekali. Di State, <b>state-state itu sendiri</b> yang menentukan transisi—konteks berganti perilaku seiring waktu tanpa klien ikut campur.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Pattern 13 · Proxy <span class="gof">· "control access to an object"</span></div>
+        <h2>Proxy — pasang penjaga di depan objek aslinya</h2>
+      </div>
+      <p class="lead reveal">Mesin permen <code>GumballMachine</code> kamu udah laku ke ratusan lokasi. Sekarang bos pengin mantau stok permen dari kantor pusat—tanpa terbang ke tiap kota. Masalahnya: objek mesinnya hidup di JVM lain, di komputer lain. Kamu butuh sesuatu yang <strong>berlagak jadi mesin itu</strong> di sisimu, padahal cuma wakil.</p>
+
+      <div class="req bad reveal d2">
+        <span class="who">BOS:</span>
+        <p>"Aku mau satu layar monitor yang nampilin lokasi, stok permen, sama state tiap mesin—dari semua mesin yang udah kepasang. Real-time."</p>
+      </div>
+
+      <p class="body reveal d2">Idenya: bikin <code>GumballMonitor</code> yang manggil <code>getCount()</code>, <code>getLocation()</code>, <code>getState()</code> di objek mesin. Tapi objeknya nun jauh di sana. Trik Proxy: kasih monitor sebuah <strong>stub lokal</strong> yang antarmukanya sama persis dengan mesin asli. Monitor manggil seperti biasa; di balik layar stub-nya yang ngurus jaringan.</p>
+
+      <div class="codecard good reveal d1">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">GumballMonitor.java — nggak sadar dia ngomong ke proxy</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">GumballMonitor</span> {
+    <span class="t">GumballMachineRemote</span> machine;     <span class="c">// cuma tau interface-nya</span>
+
+    <span class="k">public</span> <span class="f">GumballMonitor</span>(<span class="t">GumballMachineRemote</span> machine) {
+        <span class="k">this</span>.machine = machine;
+    }
+
+    <span class="k">public void</span> <span class="f">report</span>() {
+        <span class="k">try</span> {
+            <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Lokasi: "</span> + machine.<span class="f">getLocation</span>());
+            <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"Stok  : "</span> + machine.<span class="f">getCount</span>());
+            <span class="t">System</span>.out.<span class="f">println</span>(<span class="s">"State : "</span> + machine.<span class="f">getState</span>());
+        } <span class="k">catch</span> (<span class="t">RemoteException</span> e) {
+            e.<span class="f">printStackTrace</span>();
+        }
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d2">Di RMI, mesin asli kamu jadikan <em>remote service</em> (implement <code>Remote</code>, method-nya <code>throws RemoteException</code>). Yang dipegang monitor cuma <strong>stub</strong>—proxy lokal yang otomatis dibikin RMI. Tiap panggilan method dibungkus, dikirim lewat soket ke JVM mesin, dijalankan di sana, hasilnya dikirim balik. Monitor nggak tau (dan nggak peduli) ada jaringan di tengah.</p>
+
+      <div class="codecard good reveal d2">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">GumballMachineRemote.java — kontrak yang dipakai dua sisi</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">public interface</span> <span class="t">GumballMachineRemote</span> <span class="k">extends</span> <span class="t">Remote</span> {
+    <span class="t">String</span> <span class="f">getLocation</span>() <span class="k">throws</span> <span class="t">RemoteException</span>;
+    <span class="k">int</span>    <span class="f">getCount</span>()    <span class="k">throws</span> <span class="t">RemoteException</span>;
+    <span class="t">State</span>  <span class="f">getState</span>()    <span class="k">throws</span> <span class="t">RemoteException</span>;
+}
+
+<span class="c">// Objek ASLI hidup di mesin permen, di JVM-nya sendiri:</span>
+<span class="k">public class</span> <span class="t">GumballMachine</span>
+        <span class="k">extends</span> <span class="t">UnicastRemoteObject</span>
+        <span class="k">implements</span> <span class="t">GumballMachineRemote</span> {
+    <span class="k">public</span> <span class="t">String</span> <span class="f">getLocation</span>() { <span class="k">return</span> location; }
+    <span class="k">public</span> <span class="k">int</span>    <span class="f">getCount</span>()    { <span class="k">return</span> count; }
+    <span class="c">// ...state machine permen jalan di sini, lokal.</span>
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Itu <strong>Remote Proxy</strong>: stub lokal mewakili objek yang ada di JVM lain. Tapi proxy nggak cuma soal jaringan. Kadang objek aslinya <em>mahal banget</em> dibikin—dan kamu pengin nundanya sampai benar-benar perlu.</p>
+
+      <p class="body reveal d3">Kasus buku: galeri sampul album musik. Tiap gambar diambil dari internet, lambat. Kamu nggak mau jendela ngehang nungguin semua gambar download. Pengennya layar langsung muncul, nampilin <code>"Loading..."</code>, lalu gambar masuk pelan-pelan begitu siap. Solusinya <strong>Virtual Proxy</strong>: proxy berdiri sebagai pengganti gambar yang berat.</p>
+
+      <div class="codecard good reveal d3">
+        <div class="codecard__bar"><div class="dots"><i></i><i></i><i></i></div><span class="codecard__name">ImageProxy.java — placeholder sampai gambar siap</span><span class="codecard__verdict">CLEAN</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">ImageProxy</span> <span class="k">implements</span> <span class="t">Icon</span> {
+    <span class="t">ImageIcon</span> imageIcon;              <span class="c">// objek ASLI, belum dibikin</span>
+    <span class="t">URL</span> imageURL;
+    <span class="k">boolean</span> retrieving = <span class="k">false</span>;
+
+    <span class="k">public</span> <span class="f">ImageProxy</span>(<span class="t">URL</span> url) { imageURL = url; }
+
+    <span class="k">public void</span> <span class="f">paintIcon</span>(<span class="t">Component</span> c, <span class="t">Graphics</span> g, <span class="k">int</span> x, <span class="k">int</span> y) {
+        <span class="k">if</span> (imageIcon != <span class="k">null</span>) {
+            imageIcon.<span class="f">paintIcon</span>(c, g, x, y);     <span class="c">// udah ada: delegasi</span>
+        } <span class="k">else</span> {
+            g.<span class="f">drawString</span>(<span class="s">"Loading album cover..."</span>, x + <span class="n">300</span>, y + <span class="n">190</span>);
+            <span class="k">if</span> (!retrieving) {
+                retrieving = <span class="k">true</span>;
+                <span class="f">loadImageInBackground</span>(c);       <span class="c">// ambil di thread lain</span>
+            }
+        }
+    }
+    <span class="c">// loadImageInBackground(): new ImageIcon(imageURL), lalu repaint.</span>
+}</pre>
+      </div>
+
+      <p class="body reveal d3">Klien (galeri) kira dia megang <code>Icon</code> biasa. Selama gambar belum turun, proxy gambar tulisan "Loading...". Begitu <code>ImageIcon</code> asli jadi, panggilan berikutnya <strong>diteruskan</strong> ke objek asli. Antarmuka sama, kontrol bertambah.</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Inti Proxy</span>
+        <p>Proxy <em>implements interface yang sama</em> dengan objek asli, megang referensi ke objek itu (atau bikin saat perlu), lalu nyelipin kontrol—akses, lazy-load, jaringan—<strong>sebelum mendelegasikan</strong>.</p>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Proxy Pattern</div>
+        <p>Menyediakan sebuah <b>surrogate</b> atau <b>placeholder</b> bagi objek lain, demi <b>mengontrol akses</b> ke objek itu. Klien ngomong ke proxy persis seperti ke objek asli; proxy yang nentuin kapan dan gimana panggilan diteruskan.</p>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Tiga rasa Proxy yang sering kepakai</div>
+          <p><b>Remote proxy</b> — wakil lokal objek di JVM/mesin lain (RMI, monitor GumballMachine). <b>Virtual proxy</b> — nunda bikin objek mahal sampai dibutuhkan (ImageProxy "Loading..."). <b>Protection proxy</b> — kontrol akses berdasar hak; teruskan panggilan cuma kalau penelepon boleh. Beda niat, struktur sama.</p>
+        </div>
+      </div>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Proxy vs Decorator vs Adapter</div>
+          <p>Bentuk-nya mirip (semua membungkus lewat interface yang sama), tapi niatnya beda: <b>Adapter</b> <em>mengubah</em> antarmuka, <b>Decorator</b> <em>menambah</em> tanggung jawab, <b>Proxy</b> <em>mengontrol akses</em> ke objek—tanpa mengubah apa yang objek itu lakukan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup · Bukan pattern baru <span class="gof">· "shared vocabulary"</span></div>
+        <h2>Pattern itu kosakata, bukan agama.</h2>
+      </div>
+      <p class="lead reveal">Kita udah keliling belasan pattern. Tapi nilai terbesarnya bukan kode yang bisa kamu reuse. Yang paling kepakai tiap hari adalah <strong>kosakata bersama</strong>. Bilang ke tim <em>"pakai Strategy di sini"</em>—dan semua orang langsung ngerti: perilaku dicabut jadi keluarga yang bisa dicolok. Satu kata, satu kalimat, ngewakilin satu paragraf desain plus semua trade-off-nya.</p>
+
+      <p class="body reveal d1">Bandingin dua review ini. Yang satu jelasin pelan-pelan; yang satu sebut nama pattern. Maksudnya sama persis—tapi yang kedua nyampe dalam sedetik.</p>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">Tanpa kosakata</h4>
+          <ul class="bad-l">
+            <li>"Bikin interface buat tiap algoritma terus simpan satu di field, jadi bisa ditukar pas runtime…"</li>
+            <li>"Bungkus objek lama biar tampak kayak interface yang baru…"</li>
+            <li>"Satu titik akses buat objek yang cuma boleh ada satu instance…"</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">Dengan kosakata</h4>
+          <ul class="good-l">
+            <li>"Pakai <code>Strategy</code>."</li>
+            <li>"Bungkus pakai <code>Adapter</code>."</li>
+            <li>"Itu <code>Singleton</code>."</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Itu inti Head First: pattern naikin level obrolan tim. Diskusi desain pindah dari detail bit-per-bit ke level pattern—lebih cepat, lebih sedikit salah paham. Tapi di balik tiap pattern, yang sebenarnya kerja adalah <strong>prinsip desain OO</strong>. Pattern itu cuma cara prinsip-prinsip ini ketemu di lapangan. Ini dia tembok sticky-note-nya:</p>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle · 1</span>
+        <p>Kenali yang berubah-ubah, pisahkan dari yang tetap. <br>— <em>Encapsulate what varies.</em></p>
+      </div>
+
+      <div class="sticky alt reveal d2">
+        <span class="tag">◆ Design Principle · 2</span>
+        <p>Program ke <em>interface</em>, bukan ke implementasi.</p>
+      </div>
+
+      <div class="sticky reveal d2">
+        <span class="tag">◆ Design Principle · 3</span>
+        <p>Utamakan komposisi ketimbang warisan. <br>— <em>Favor composition over inheritance.</em></p>
+      </div>
+
+      <div class="sticky alt reveal d3">
+        <span class="tag">◆ Design Principle · 4</span>
+        <p>Usahakan kopling longgar antar objek yang saling kenal. <br>— <em>Strive for loosely coupled designs.</em></p>
+      </div>
+
+      <div class="sticky reveal d3">
+        <span class="tag">◆ Design Principle · 5</span>
+        <p>Terbuka buat ekstensi, tertutup buat modifikasi. <br>— <em>Open–Closed.</em></p>
+      </div>
+
+      <div class="sticky alt reveal d3">
+        <span class="tag">◆ Design Principle · 6</span>
+        <p>Bergantunglah pada abstraksi, jangan pada class konkret. <br>— <em>Dependency Inversion.</em></p>
+      </div>
+
+      <div class="sticky reveal d3">
+        <span class="tag">◆ Design Principle · 7</span>
+        <p>Ngobrol cuma sama teman dekat. <br>— <em>Least Knowledge (Demeter).</em></p>
+      </div>
+
+      <div class="sticky alt reveal d3">
+        <span class="tag">◆ Design Principle · 8</span>
+        <p>Jangan telepon kami, kami yang telepon kamu. <br>— <em>The Hollywood Principle.</em></p>
+      </div>
+
+      <div class="sticky reveal d3">
+        <span class="tag">◆ Design Principle · 9</span>
+        <p>Satu class, satu alasan buat berubah. <br>— <em>Single Responsibility.</em></p>
+      </div>
+
+      <p class="body reveal d3">Hafal sembilan ini, dan tiap pattern berasa wajar—karena tinggal kombinasi dari prinsip yang udah kamu pahami. Tapi sekarang bagian yang paling penting, dan paling sering kelupaan.</p>
+
+      <div class="req bad reveal d3">
+        <span class="who">JUNIOR:</span>
+        <p>"Aku abis belajar Visitor. Bagian login kita kayaknya bisa direfactor pakai Visitor + Factory + Strategy biar lebih 'proper'."</p>
+      </div>
+
+      <p class="body reveal d3">Ini jebakan klasik. Begitu kenal palu, semua kelihatan kayak paku. Pattern itu <strong>alat</strong>, bukan tujuan. Maksa pattern ke masalah yang nggak butuh = over-engineering: kamu nambah class, indireksi, dan beban mental—buat masalah yang sebenarnya cukup satu <code>if</code>.</p>
+
+      <div class="note warn reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Anti-dogma</div>
+          <p>Pattern punya ongkos: kompleksitas tambahan. Bayar ongkos itu cuma kalau masalahnya beneran cocok—kalau ada perilaku yang berubah-ubah, ada titik ekstensi yang nyata, ada kopling yang bikin sakit. Kalau belum kerasa sakitnya, jangan dibungkus pattern. <strong>Pattern terbaik kadang justru TANPA pattern.</strong></p>
+        </div>
+      </div>
+
+      <div class="defn reveal d3">
+        <div class="t-lbl">Definisi · Kapan pakai pattern</div>
+        <p>Pakai pattern saat <b>masalahnya cocok</b>, bukan saat patternnya keren. Awali dari kode paling sederhana yang jalan; biarkan pattern <b>muncul saat rasa sakitnya nyata</b> (YAGNI). Pattern adalah jawaban atas masalah yang berulang—bukan dekorasi buat masalah yang belum ada.</p>
+      </div>
+
+      <ul class="creed reveal d3">
+        <li><b>Pelajari</b> prinsipnya, bukan cuma hafal nama pattern.</li>
+        <li><b>Pakai</b> kosakata pattern biar tim ngobrol di level yang sama.</li>
+        <li><b>Tahan diri:</b> pattern itu solusi buat masalah yang ada—bukan buat masalah yang dibayangin.</li>
+        <li><b>Mulai simpel.</b> Biarkan desain berkembang; refactor ke pattern saat sudah perlu.</li>
+      </ul>
+
+      <p class="body reveal d3" style="font-family:var(--mono);color:var(--blue)">"Kuasai prinsipnya, kenali kosakatanya, lalu lupakan aturannya sampai masalahnya datang menjemput." 🐤</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>The Whiteboard</b> · Design Patterns ala Head First, untuk tim · contoh asli buku · Java · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) { i = Math.max(0, Math.min(total - 1, i)); sections[i].scrollIntoView({ behavior: "smooth", block: "start" }); }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") { ev.preventDefault(); goTo(current + 1); }
+    else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") { ev.preventDefault(); goTo(current - 1); }
+    else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+
+  // theme toggle (terang / gelap)
+  var tbtn = document.getElementById("themeToggle");
+  if (tbtn) tbtn.addEventListener("click", function () {
+    var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("dp-theme", next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

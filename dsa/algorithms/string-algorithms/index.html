@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>String Algorithms — Mencari & Mengolah Teks Secara Efisien</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home {
+    color: var(--muted); text-decoration: none; letter-spacing: .02em;
+    white-space: nowrap; transition: color .18s;
+    border-right: 1px solid var(--line); padding-right: 14px;
+  }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- steps (best practice) ---------- */
+  .steps { max-width: 74ch; margin: 24px 0 6px; counter-reset: stepnum; }
+  .steps li {
+    list-style: none; counter-increment: stepnum; position: relative;
+    padding: 14px 0 14px 46px; border-bottom: 1px solid var(--line-soft);
+    color: var(--ink); font-size: 15.5px;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(stepnum); position: absolute; left: 0; top: 12px;
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--cyan-dim); background: rgba(69,212,222,.08);
+    color: var(--cyan); font-family: var(--mono); font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .tiers { grid-template-columns:1fr; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../../index.html">← Data Structures &amp; Algorithms</a>
+  <div class="topbar__file">docs/learning/dsa/algorithms/string-algorithms/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa string butuh algoritma khusus</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Immutable, StringBuilder & naive matching</a>
+    <a href="#c03"><span class="yr">03</span> KMP — hindari mundur ulang</a>
+
+    <div class="rail__part">III · Praktik</div>
+    <a href="#c04"><span class="yr">◆</span> Best practice</a>
+    <a href="#c05"><span class="yr">◆</span> Tier belajar</a>
+
+    <div class="rail__part">IV · Untung &amp; harga</div>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+
+    <div class="rail__part">V · Dunia nyata</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools &amp; referensi</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// DSA — Algorithms · algoritma khusus untuk mengolah teks</div>
+      <h1 class="reveal d1">Mencari <span class="accent">kalimat di dalam buku tebal</span>, tanpa membaca ulang dari awal tiap kali gagal.</h1>
+      <p class="sub reveal d2">
+        String terlihat seperti array karakter biasa, tapi punya karakteristik unik: di banyak bahasa
+        (termasuk <b>Java</b>) ia <b>immutable</b>, dan pola pencarian naif bisa jadi lambat begitu teksnya
+        panjang. <b>String algorithms</b> adalah kumpulan teknik yang mengeksploitasi pola berulang di dalam
+        teks untuk membuat pencarian &amp; manipulasi jauh lebih cepat. Deck ini buat pemula: dari <b>kenapa</b>
+        string butuh perlakuan khusus, <b>KMP</b> yang menghindari mundur ulang, sampai <b>kapan</b> semua ini
+        dipakai di dunia nyata — diselingi kalimat dari sumber rujukan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Naive matching lambat</b> <span>— O(n×m), banyak backtrack di teks panjang</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Manfaatkan info yang sudah diketahui</b> <span>— jangan mundur & mengulang dari awal</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>KMP / Rabin-Karp — O(n+m)</b> <span>— linear, tanpa backtrack berulang</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Setup lebih rumit</b> <span>— butuh prefix table / rolling hash</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Find & replace, plagiarism, DNA matching</b> <span>— teks panjang, pattern berulang</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="why" style="margin:32px clamp(22px,5vw,78px)">
+    <div class="tag">◆ Buat apa ini? Kenapa pakai ini?</div>
+    <p><b>Given</b> — kamu punya mesin pencari plagiarisme / log server / genome sequencer yang harus mencari satu <code>pattern</code> (kalimat, ID error, urutan DNA) di dalam <code>text</code> berukuran jutaan karakter, dan implementasinya masih pencocokan naif huruf-demi-huruf.</p>
+    <p><b>When</b> — pattern-nya punya karakter berulang (mis. <code>"ACGTACGTT"</code> di DNA, atau <code>"aaaab"</code>) sehingga tiap kali ketemu mismatch di tengah, pencarian mundur total dan mulai lagi dari posisi berikutnya — plus tiap concat string di loop pakai <code>+=</code> biasa, bukan <code>StringBuilder</code>.</p>
+    <p><b>Then</b> — pencarian jadi <code>O(n×m)</code> alih-alih linear, dan pembangunan string di loop diam-diam jadi <code>O(n²)</code> karena tiap <code>+=</code> membuat objek <code>String</code> baru — pada teks panjang (log produksi, genom, dokumen tebal) ini terasa lambat bahkan untuk satu query.</p>
+    <p>→ makanya kita pakai <b>String Algorithms</b> (KMP, Rabin-Karp, <code>StringBuilder</code>) — memanfaatkan info yang sudah diketahui dari pencocokan sebelumnya supaya pencarian &amp; manipulasi teks jadi <code>O(n+m)</code>, tanpa mundur ulang dan tanpa buang-buang objek.</p>
+  </div>
+
+  <!-- ============ 01 KENAPA STRING BUTUH ALGORITMA KHUSUS ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Karakteristik unik string</div>
+        <h2>String bukan sekadar array karakter biasa</h2>
+      </div>
+      <p class="lead reveal">Secara teknis, string memang array karakter — tapi ia punya kebiasaan yang bisa menjebak pemula. Di <strong>Java</strong>, <code>String</code> itu <strong>immutable</strong>: setiap kali kamu "mengubah" isinya (misalnya <code>+=</code> di dalam loop), sebenarnya Java membuat <strong>objek string baru</strong> di memori, bukan menimpa yang lama. Kalau ceroboh dilakukan berulang-ulang di dalam loop, ini bisa diam-diam jadi <code>O(n²)</code>. Di sisi lain, mencari satu kata di dalam dokumen panjang secara naif juga bisa lambat kalau teksnya besar.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — mencari kalimat di dalam buku tebal</div>
+        <p>Bayangkan mencari satu kalimat spesifik di dalam buku setebal seribu halaman, tanpa indeks. Cara paling naif: baca dari kata pertama, cocokkan huruf demi huruf, begitu gagal di tengah — <em>tutup buku, mulai lagi dari halaman satu</em>. Itulah yang terjadi kalau kamu mencocokkan string secara naif tanpa strategi: setiap mismatch, pencarian mundur dan mengulang dari awal, padahal sebagian informasi yang sudah dibaca sebenarnya masih berguna.</p>
+      </div>
+
+      <p class="body reveal d2">Dua masalah inilah yang membuat string layak punya "algoritma sendiri": <strong>manipulasi</strong> (concat, build, ubah) butuh struktur yang tidak membuang-buang objek baru tiap langkah, dan <strong>pencarian pattern</strong> butuh strategi yang tidak mengulang kerja yang sudah dilakukan.</p>
+
+      <div class="quote reveal d2">
+        <p>String, meskipun terlihat seperti sekadar array karakter, membutuhkan algoritma khusus karena pola-pola berulang di dalamnya — baik di teks maupun pattern yang dicari — bisa dieksploitasi untuk mempercepat pencarian jauh melampaui pendekatan naive.</p>
+        <cite>— diparafrasakan dari gagasan Robert Sedgewick &amp; Kevin Wayne, <i>Algorithms</i></cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP INTI — IMMUTABLE, STRINGBUILDER, NAIVE MATCHING ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Immutability & pencarian naif</div>
+        <h2>Immutable string, StringBuilder, dan naive matching</h2>
+      </div>
+      <p class="lead reveal">Di Java, <code>String</code> bersifat <strong>immutable</strong> — sekali dibuat, isinya tidak pernah berubah. Operasi seperti <code>s = s + "x"</code> sebenarnya membuat objek <code>String</code> baru dan membuang yang lama. Dilakukan sekali dua kali tidak masalah, tapi di dalam loop yang berjalan ribuan kali, ini membuang banyak memori & waktu — makin panjang string, makin mahal tiap penyalinan.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">NaiveMatch.java — pencarian pattern paling dasar</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">NaiveMatch</span> {
+
+    <span class="c">// cari indeks pertama pattern muncul di text, -1 kalau tidak ada</span>
+    <span class="k">static int</span> <span class="f">search</span>(<span class="t">String</span> text, <span class="t">String</span> pattern) {
+        <span class="k">int</span> n = text.length(), m = pattern.length();
+        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt;= n - m; i++) {   <span class="c">// geser posisi awal, O(n)</span>
+            <span class="k">int</span> j = <span class="n">0</span>;
+            <span class="k">while</span> (j &lt; m &amp;&amp; text.charAt(i + j) == pattern.charAt(j)) {
+                j++;                                <span class="c">// cocokkan huruf demi huruf, O(m)</span>
+            }
+            <span class="k">if</span> (j == m) <span class="k">return</span> i;                  <span class="c">// pattern ketemu utuh</span>
+<span class="hl-bad">            <span class="c">// mismatch di tengah → i digeser satu, j direset ke 0 (mundur total!)</span></span>
+        }
+        <span class="k">return</span> -<span class="n">1</span>;
+    }
+
+    <span class="k">public static void</span> <span class="f">main</span>(<span class="t">String</span>[] args) {
+        <span class="t">System</span>.out.println(<span class="f">search</span>(<span class="s">"abcxabcdabcy"</span>, <span class="s">"abcdabcy"</span>)); <span class="c">// 4</span>
+    }
+}</pre>
+      </div>
+
+      <p class="body reveal d1">Kompleksitasnya <code>O(n×m)</code> — untuk tiap posisi <code>i</code> di teks (n posisi), pencarian bisa mencocokkan sampai <code>m</code> karakter pattern sebelum mismatch. Untuk teks pendek ini cukup cepat; untuk teks jutaan karakter dengan pattern yang panjang & berulang, ini bisa terasa lambat.</p>
+
+      <div class="code-card good reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">StringBuilder — concat berulang tanpa buang objek</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">static</span> <span class="t">String</span> <span class="f">buildCsv</span>(<span class="t">List</span>&lt;<span class="t">String</span>&gt; kata) {
+<span class="hl-bad">    <span class="c">// BURUK: tiap += membuat objek String baru → O(n²) untuk n kata</span>
+    <span class="t">String</span> hasil = <span class="s">""</span>;
+    <span class="k">for</span> (<span class="t">String</span> w : kata) hasil += w + <span class="s">","</span>;</span>
+
+<span class="hl-good">    <span class="c">// BAIK: StringBuilder pakai buffer internal yang bisa membesar, O(n) total</span>
+    <span class="t">StringBuilder</span> sb = <span class="k">new</span> <span class="t">StringBuilder</span>();
+    <span class="k">for</span> (<span class="t">String</span> w : kata) sb.append(w).append(<span class="s">","</span>);
+    <span class="k">return</span> sb.toString();</span>
+}</pre>
+      </div>
+
+      <p class="body reveal d2"><code>StringBuilder</code> penting karena ia <strong>mutable</strong> — punya buffer karakter internal yang bisa ditambah tanpa membuat objek baru tiap kali. Untuk concat sekali-dua kali, <code>String</code> biasa sudah cukup; begitu ada loop yang membangun string sedikit demi sedikit, <code>StringBuilder</code> mengubah kerja yang berpotensi <code>O(n²)</code> jadi <code>O(n)</code>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 KMP ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Teknik inti</span> · Knuth-Morris-Pratt</div>
+        <h2>KMP: jangan mundur, manfaatkan yang sudah kamu tahu</h2>
+      </div>
+      <p class="lead reveal"><strong>KMP (Knuth-Morris-Pratt)</strong> mencari pattern dalam teks dengan kompleksitas <code>O(n+m)</code> — linear, tanpa backtrack berulang. Intuisinya: saat mismatch terjadi di tengah pencocokan, kamu <strong>sudah tahu</strong> sebagian teks yang baru saja cocok dengan awal pattern. Alih-alih membuang informasi itu & mengulang dari awal, KMP memakai informasi itu untuk langsung melompat ke posisi yang masuk akal — tanpa pernah mundur di teks.</p>
+
+      <div class="quote reveal d1">
+        <p>Ketika mismatch terjadi di tengah pencarian pattern, sebagian teks yang baru saja cocok sebenarnya sudah memberi informasi berharga — informasi itu bisa dipakai untuk menghindari mundur & mengulang perbandingan dari awal, sehingga pencarian tetap berjalan linear meski pattern-nya punya banyak pengulangan internal.</p>
+        <cite>— parafrase dari Donald Knuth, James H. Morris, Vaughan Pratt, "Fast Pattern Matching in Strings" (1977)</cite>
+      </div>
+
+      <p class="body reveal d2">Caranya: KMP membangun <strong>failure function</strong> (disebut juga prefix table) dari pattern-nya sendiri — sebuah tabel yang untuk tiap posisi menyimpan "seberapa panjang awalan pattern yang juga jadi akhiran dari bagian yang sudah dicocokkan sejauh ini". Saat mismatch, tabel ini langsung memberitahu ke posisi mana di pattern pencocokan harus dilanjutkan, tanpa perlu mengecek ulang karakter teks yang sudah pasti cocok.</p>
+
+      <div class="diptych reveal d2">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">naive matching — banyak backtrack</span><span class="lang">Java</span></div>
+<pre class="code"><span class="c">// text = "aaaaaaaab", pattern = "aaaab"</span>
+<span class="c">// tiap mismatch di posisi ke-4, i digeser 1, j direset ke 0</span>
+<span class="hl-bad">i=0: aaaa[a] vs aaaa[b] → mismatch, mundur total, i=1
+i=1: aaaa[a] vs aaaa[b] → mismatch, mundur total, i=2
+i=2: aaaa[a] vs aaaa[b] → mismatch, mundur total, i=3
+i=3: aaaa[a] vs aaaa[b] → mismatch, mundur total, i=4</span>
+<span class="c">// setiap kegagalan mengulang perbandingan 4 huruf "a" dari nol lagi</span>
+<span class="c">// worst case: O(n * m)</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">KMP — tanpa mundur, pakai failure function</span><span class="lang">Java</span></div>
+<pre class="code"><span class="c">// pattern = "aaaab" → failure function: [0,1,2,3,0]</span>
+<span class="c">// text tidak pernah dibaca mundur; hanya index pattern (j) yang disesuaikan</span>
+<span class="hl-good">i=0..3: cocok terus sampai j=4, mismatch di 'b'
+        → failure[3]=3, lanjut dari j=3, TANPA mundurkan i
+i lanjut maju terus, j mengikuti tabel</span>
+<span class="c">// tiap karakter teks dibaca (relatif) sekali → O(n + m)</span></pre>
+        </div>
+      </div>
+
+      <div class="code-card reveal d3">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">KMP.java — failure function & pencarian</span><span class="lang">Java</span></div>
+<pre class="code"><span class="k">public class</span> <span class="t">KMP</span> {
+
+    <span class="c">// bangun failure function / prefix table dari pattern</span>
+    <span class="k">static int</span>[] <span class="f">buildFailure</span>(<span class="t">String</span> pattern) {
+        <span class="k">int</span> m = pattern.length();
+        <span class="k">int</span>[] fail = <span class="k">new</span> <span class="k">int</span>[m];
+        <span class="k">int</span> len = <span class="n">0</span>;
+        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">1</span>; i &lt; m; ) {
+            <span class="k">if</span> (pattern.charAt(i) == pattern.charAt(len)) {
+                fail[i++] = ++len;                 <span class="c">// perpanjang awalan yang cocok</span>
+            } <span class="k">else if</span> (len &gt; <span class="n">0</span>) {
+                len = fail[len - <span class="n">1</span>];               <span class="c">// mundur di TABEL, bukan di teks</span>
+            } <span class="k">else</span> {
+                fail[i++] = <span class="n">0</span>;
+            }
+        }
+        <span class="k">return</span> fail;
+    }
+
+    <span class="k">static int</span> <span class="f">search</span>(<span class="t">String</span> text, <span class="t">String</span> pattern) {
+        <span class="k">int</span>[] fail = <span class="f">buildFailure</span>(pattern);
+        <span class="k">int</span> n = text.length(), m = pattern.length(), j = <span class="n">0</span>;
+        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; n; i++) {
+            <span class="k">while</span> (j &gt; <span class="n">0</span> &amp;&amp; text.charAt(i) != pattern.charAt(j)) {
+                j = fail[j - <span class="n">1</span>];                   <span class="c">// lompat pakai info yang sudah diketahui</span>
+            }
+            <span class="k">if</span> (text.charAt(i) == pattern.charAt(j)) j++;
+            <span class="k">if</span> (j == m) <span class="k">return</span> i - m + <span class="n">1</span>;      <span class="c">// pattern ketemu</span>
+        }
+        <span class="k">return</span> -<span class="n">1</span>;
+    }
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Kebiasaan aman mengolah string</div>
+        <h2>Best practice string di Java</h2>
+      </div>
+      <p class="lead reveal">Kebanyakan bug performa string bukan dari algoritma yang salah, tapi dari kebiasaan kecil yang diulang ribuan kali. Beberapa kebiasaan ini menyelamatkanmu dari jebakan paling umum.</p>
+
+      <ol class="steps reveal d1">
+        <li><b>Pakai <code>StringBuilder</code> untuk concat di dalam loop</b> — hindari <code>s += x</code> berulang, karena tiap operasi membuat objek <code>String</code> baru dan bisa jadi <code>O(n²)</code>.</li>
+        <li><b>Gunakan library built-in seperti <code>String.indexOf()</code></b> untuk kasus pencarian umum sehari-hari — implementasinya sudah teruji &amp; cukup cepat untuk kebanyakan kebutuhan. Tulis KMP/Rabin-Karp sendiri hanya kalau memang butuh optimasi ekstrem atau kontrol penuh atas algoritmanya.</li>
+        <li><b>Hati-hati perbandingan string pakai <code>==</code> vs <code>.equals()</code></b> — <code>==</code> membandingkan referensi objek, bukan isi. Dua string dengan isi sama bisa jadi objek berbeda di memori; selalu pakai <code>.equals()</code> untuk membandingkan isi.</li>
+        <li><b>Ingat string itu immutable</b> — method seperti <code>substring()</code>, <code>replace()</code>, <code>toUpperCase()</code> selalu mengembalikan objek baru, tidak pernah mengubah string aslinya. Jangan lupa menampung hasilnya.</li>
+        <li><b>Pilih struktur data yang tepat untuk pencarian berulang</b> — kalau pattern yang sama dicari di banyak teks berbeda (atau sebaliknya), pertimbangkan pre-processing seperti Trie atau suffix structure, bukan mengulang naive search tiap kali.</li>
+        <li><b>Uji dengan kasus tepi</b> — string kosong, pattern lebih panjang dari teks, karakter berulang penuh (<code>"aaaa..."</code>), dan karakter unicode/multi-byte yang kadang meleset dari asumsi <code>charAt()</code> sederhana.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Roadmap · Bertahap sesuai levelmu</div>
+        <h2>Tier belajar string algorithms</h2>
+      </div>
+      <p class="lead reveal">String algorithms punya jalur belajar yang jelas — dari operasi dasar yang hampir selalu dipakai, sampai teknik pencarian pattern yang jadi fondasi banyak alat produksi.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Beginner</span>
+          <h4>Operasi string dasar</h4>
+          <p>Latihan paling umum untuk memahami cara berpikir dengan karakter &amp; indeks di dalam string.</p>
+          <ul>
+            <li>Palindrome check</li>
+            <li>Anagram check</li>
+            <li>Reverse string</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Middle</span>
+          <h4>Pencarian & efisiensi dasar</h4>
+          <p>Mulai peduli pada kompleksitas — kapan cara naif cukup, kapan mulai terasa lambat.</p>
+          <ul>
+            <li>String matching naive (brute-force)</li>
+            <li>StringBuilder untuk efisiensi concat</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Advance</span>
+          <h4>Algoritma pencarian pattern linear</h4>
+          <p>Teknik yang dipakai library &amp; tool production untuk mencari pattern secara efisien di teks besar.</p>
+          <ul>
+            <li>KMP algorithm (failure function)</li>
+            <li>Rabin-Karp (rolling hash) untuk multiple pattern matching</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Simpel vs efisien</div>
+        <h2>Trade-off: naive matching vs KMP/Rabin-Karp</h2>
+      </div>
+      <p class="lead reveal">Algoritma pencarian pattern yang lebih cepat tidak datang gratis — ia menukar kesederhanaan dengan setup yang lebih rumit. Pilih sesuai kebutuhan, bukan karena "yang lebih canggih pasti lebih baik".</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Naive matching</h4>
+          <ul class="good-l">
+            <li>Kode sangat sederhana, mudah dibaca &amp; dipahami.</li>
+            <li>Tidak butuh struktur data tambahan (prefix table, hash).</li>
+            <li>Cukup cepat untuk teks &amp; pattern pendek.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// KMP / Rabin-Karp</h4>
+          <ul class="bad-l">
+            <li>Setup lebih kompleks — perlu bangun failure function / rolling hash.</li>
+            <li>Kode lebih panjang &amp; lebih mudah salah implementasi.</li>
+            <li>Manfaat kecepatannya baru terasa di teks/pattern yang besar.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Soal kompleksitas waktu</div>
+          <p>Naive matching berjalan <code>O(n×m)</code> di kasus terburuk — teks panjang <code>n</code> dikali panjang pattern <code>m</code>. KMP dan Rabin-Karp menurunkan ini jadi <code>O(n+m)</code> — linear terhadap total ukuran input. Untuk teks pendek, perbedaan ini nyaris tak terasa; untuk teks jutaan karakter (log server, genom, dokumen besar), perbedaannya jadi signifikan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai algoritma pattern matching khusus</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>naive matching cukup untuk teks pendek atau pencarian sekali pakai. Algoritma khusus seperti KMP/Rabin-Karp jadi penting untuk teks sangat panjang atau pencarian yang dilakukan berulang-ulang.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Naive matching cukup saat…</h4>
+          <ul class="good-l">
+            <li>Teks &amp; pattern relatif pendek (mis. validasi form, teks UI).</li>
+            <li>Pencarian hanya dilakukan sesekali, bukan berulang.</li>
+            <li>Kejelasan kode lebih penting daripada mikro-optimasi.</li>
+            <li>Sudah ada <code>String.indexOf()</code> bawaan yang cukup cepat.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Butuh KMP/Rabin-Karp saat…</h4>
+          <ul class="bad-l">
+            <li>Teks sangat panjang (log, dokumen besar, genom).</li>
+            <li>Pattern yang sama dicari berulang kali di banyak teks.</li>
+            <li>Pattern punya banyak pengulangan internal (naive jadi lambat).</li>
+            <li>Butuh mencari banyak pattern sekaligus (Rabin-Karp cocok).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan ke kasusmu: <strong>"Seberapa besar teksnya, dan seberapa sering pencarian ini dijalankan?"</strong> Kalau sekali jalan di teks kecil, naive matching (atau <code>String.indexOf()</code>) sudah cukup. Kalau berulang di teks besar, biaya setup KMP/Rabin-Karp terbayar lunas oleh kecepatan linear-nya.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Di mana string matching efisien benar-benar dipakai</h2>
+      </div>
+      <p class="lead reveal">Tiga contoh nyata di mana pencarian pattern yang efisien bukan sekadar latihan akademik, tapi fondasi langsung dari fitur yang dipakai jutaan orang.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// editor / IDE</div><h4>Find & replace</h4><p><b>Kasus:</b> mencari &amp; mengganti kata di dalam file kode/dokumen yang bisa berukuran besar, seringkali berulang saat kamu mengetik query pencarian. <b>Kenapa perlu efisien:</b> pencarian dijalankan berkali-kali secara real-time saat kamu mengetik — pattern matching yang lambat akan langsung terasa sebagai lag di editor.</p></div>
+        <div class="card up"><div class="ic">// akademik / konten</div><h4>Plagiarism detector</h4><p><b>Kasus:</b> membandingkan kemiripan teks antara satu dokumen dengan ribuan dokumen lain untuk mendeteksi bagian yang disalin. <b>Kenapa perlu efisien:</b> intinya adalah mencari banyak potongan teks (pattern) di dalam kumpulan dokumen besar — pencarian pattern yang lambat membuat proses deteksi tidak praktis untuk skala besar.</p></div>
+        <div class="card up"><div class="ic">// bioinformatika</div><h4>DNA sequence matching</h4><p><b>Kasus:</b> mencari kemunculan suatu urutan gen (pattern) di dalam untai DNA yang sangat panjang. <b>Kenapa perlu efisien:</b> fundamentalnya adalah string matching di alfabet terbatas (A, C, G, T) pada teks yang bisa mencapai jutaan karakter — kompleksitas linear jadi krusial di skala ini.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di ketiga kasus di atas, kesamaannya adalah <strong>skala teks yang besar</strong> dan/atau <strong>pencarian yang dilakukan berulang-ulang</strong>. Semakin besar &amp; semakin sering, semakin terasa perbedaan antara pencarian <code>O(n×m)</code> dan <code>O(n+m)</code> — inilah kenapa algoritma pattern matching khusus punya tempatnya sendiri di luar buku teks.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS & REFERENSI ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat &amp; topik lanjutan</div>
+        <h2>Tools & referensi lanjutan</h2>
+      </div>
+      <p class="lead reveal">Setelah paham dasar string matching, tiga hal ini akan sering kamu temui — baik sebagai alat sehari-hari maupun sebagai topik lanjutan di situs ini.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// alat sehari-hari</div><h4>StringBuilder (Java)</h4><p>Kelas bawaan Java untuk membangun string secara efisien lewat buffer mutable. Jadi pilihan default setiap kali kamu perlu concat string berulang di dalam loop, tanpa harus menulis struktur data sendiri.</p></div>
+        <div class="card up"><div class="ic">// pattern matching tingkat tinggi</div><h4>Regular Expression (regex)</h4><p>Bahasa pola tingkat tinggi untuk pencarian &amp; validasi teks yang lebih fleksibel dari sekadar mencari substring persis — dibangun di atas konsep automata &amp; pattern matching yang sama.</p></div>
+        <div class="card up"><div class="ic">// topik lanjutan</div><h4>Trie</h4><p>Struktur data pohon yang dioptimalkan untuk pencarian berdasarkan prefix — cocok untuk autocomplete &amp; pencarian kata berulang pada kumpulan string besar, melanjutkan langsung dari ide efisiensi pencarian di bab ini.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Jangan mundur & mengulang — manfaatkan yang sudah kamu tahu</h2>
+      </div>
+      <p class="lead reveal">String terlihat sederhana, tapi menyimpan jebakan performa yang mudah luput: concat naif yang diam-diam kuadratik, dan pencarian yang mengulang kerja yang sudah dilakukan. String algorithms — dari <code>StringBuilder</code> sampai KMP — semuanya berputar pada satu ide: jangan buang informasi yang sudah kamu punya.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>String immutable di Java</b> — tiap modifikasi bikin objek baru.</li>
+          <li><b>StringBuilder untuk concat berulang</b> — hindari <code>O(n²)</code> diam-diam.</li>
+          <li><b>Naive matching</b> — simpel, <code>O(n×m)</code>, banyak backtrack.</li>
+          <li><b>KMP</b> — manfaatkan failure function, <code>O(n+m)</code>, tanpa mundur.</li>
+          <li><b><code>==</code> vs <code>.equals()</code></b> — referensi vs isi, jangan tertukar.</li>
+          <li><b>Pilih dari skala &amp; frekuensi</b> — bukan karena algoritma yang "lebih canggih".</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Untuk manipulasi string berulang, pakai <strong>StringBuilder</strong>. Untuk pencarian pattern sehari-hari, <strong>library built-in</strong> (<code>indexOf()</code>) sudah cukup. Baru saat teksnya besar &amp; pencariannya berulang-ulang, algoritma seperti <strong>KMP</strong> atau <strong>Rabin-Karp</strong> terbayar — karena keduanya menghindari kerja yang sama diulang berkali-kali, persis seperti tidak perlu menutup buku &amp; mulai dari halaman satu setiap kali gagal.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // Lanjut ke topik berikutnya: "Tree Algorithms"
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>String Algorithms</b> · Immutability, StringBuilder, naive matching, KMP, &amp; studi kasus · untuk pemula · rujukan: Knuth, Morris &amp; Pratt "Fast Pattern Matching in Strings" (1977), Sedgewick &amp; Wayne "Algorithms" · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../../index.html">← kembali ke Data Structures &amp; Algorithms</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

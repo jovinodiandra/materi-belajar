@@ -1,0 +1,2092 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DDD &amp; Clean Architecture — Buku Panduan Lapangan</title>
+<style>
+  :root {
+    --paper: #f1f0ea;
+    --paper-raised: #fbfaf6;
+    --paper-sunken: #e7e5dc;
+    --ink: #1c2b2e;
+    --ink-soft: #4b5f61;
+    --ink-faint: #7c8c8b;
+    --line: #cdd0c6;
+    --line-strong: #a9ad9f;
+    --accent: #b4702e;
+    --accent-text: #8a5220;
+    --accent-soft: rgba(180, 112, 46, 0.12);
+    --structure: #2e5f66;
+    --structure-soft: rgba(46, 95, 102, 0.1);
+    --warn: #8b3a3a;
+    --warn-soft: rgba(139, 58, 58, 0.1);
+    --good: #3f6b4a;
+    --good-soft: rgba(63, 107, 74, 0.1);
+    --shadow: 0 1px 2px rgba(28, 43, 46, 0.06), 0 8px 24px -12px rgba(28, 43, 46, 0.18);
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --font-body: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10161a;
+      --paper-raised: #161e23;
+      --paper-sunken: #0b1013;
+      --ink: #e4e9e6;
+      --ink-soft: #9fb0ac;
+      --ink-faint: #5f7370;
+      --line: #29343a;
+      --line-strong: #3c4a4f;
+      --accent: #d3934f;
+      --accent-text: #e8b37c;
+      --accent-soft: rgba(211, 147, 79, 0.14);
+      --structure: #6fa8ae;
+      --structure-soft: rgba(111, 168, 174, 0.12);
+      --warn: #d38a8a;
+      --warn-soft: rgba(211, 138, 138, 0.12);
+      --good: #83c091;
+      --good-soft: rgba(131, 192, 145, 0.12);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px -14px rgba(0, 0, 0, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10161a;
+    --paper-raised: #161e23;
+    --paper-sunken: #0b1013;
+    --ink: #e4e9e6;
+    --ink-soft: #9fb0ac;
+    --ink-faint: #5f7370;
+    --line: #29343a;
+    --line-strong: #3c4a4f;
+    --accent: #d3934f;
+    --accent-text: #e8b37c;
+    --accent-soft: rgba(211, 147, 79, 0.14);
+    --structure: #6fa8ae;
+    --structure-soft: rgba(111, 168, 174, 0.12);
+    --warn: #d38a8a;
+    --warn-soft: rgba(211, 138, 138, 0.12);
+    --good: #83c091;
+    --good-soft: rgba(131, 192, 145, 0.12);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px -14px rgba(0, 0, 0, 0.6);
+  }
+  :root[data-theme="light"] {
+    --paper: #f1f0ea;
+    --paper-raised: #fbfaf6;
+    --paper-sunken: #e7e5dc;
+    --ink: #1c2b2e;
+    --ink-soft: #4b5f61;
+    --ink-faint: #7c8c8b;
+    --line: #cdd0c6;
+    --line-strong: #a9ad9f;
+    --accent: #b4702e;
+    --accent-text: #8a5220;
+    --accent-soft: rgba(180, 112, 46, 0.12);
+    --structure: #2e5f66;
+    --structure-soft: rgba(46, 95, 102, 0.1);
+    --warn: #8b3a3a;
+    --warn-soft: rgba(139, 58, 58, 0.1);
+    --good: #3f6b4a;
+    --good-soft: rgba(63, 107, 74, 0.1);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.65;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 34px 34px;
+    background-attachment: local;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  a { color: var(--accent-text); }
+  a:focus-visible, button:focus-visible, .toc a:focus-visible {
+    outline: 2px solid var(--structure);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-weight: 700;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  code, pre { font-family: var(--font-mono); }
+
+  /* ---------- shell layout ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 272px minmax(0, 1fr);
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+  @media (max-width: 940px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- sidebar / index rail ---------- */
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    padding: 28px 18px 40px;
+    border-right: 1px solid var(--line);
+    background: var(--paper-raised);
+  }
+  @media (max-width: 940px) {
+    .rail {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: min(320px, 84vw);
+      z-index: 40;
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      box-shadow: var(--shadow);
+    }
+    .rail.open { transform: translateX(0); }
+  }
+
+  .rail-brand {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .rail-brand strong {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+  }
+  .rail-close {
+    display: none;
+    background: none;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  @media (max-width: 940px) { .rail-close { display: inline-block; } }
+
+  .rail-sub {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    margin-bottom: 22px;
+  }
+
+  .toc { list-style: none; margin: 0; padding: 0; }
+  .toc-group {
+    margin: 0 0 4px;
+    padding: 10px 8px 4px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--structure);
+    border-top: 1px solid var(--line);
+  }
+  .toc-group:first-child { border-top: none; margin-top: 0; }
+  .toc li { margin: 0; }
+  .toc a {
+    display: flex;
+    gap: 9px;
+    align-items: baseline;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.86rem;
+    text-decoration: none;
+    color: var(--ink-soft);
+    border-left: 2px solid transparent;
+  }
+  .toc a:hover { background: var(--accent-soft); color: var(--ink); }
+  .toc a.active {
+    color: var(--ink);
+    border-left-color: var(--accent);
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+  .toc a .code {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+    min-width: 3.6em;
+  }
+
+  .rail-toggle {
+    display: none;
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    z-index: 30;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 999px;
+    padding: 11px 18px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+  }
+  @media (max-width: 940px) { .rail-toggle { display: inline-block; } }
+  .rail-backdrop {
+    display: none;
+    position: fixed; inset: 0; z-index: 39;
+    background: rgba(10, 14, 16, 0.45);
+  }
+  .rail-backdrop.open { display: block; }
+
+  /* ---------- main sheet ---------- */
+  main { min-width: 0; padding: 0 0 80px; }
+
+  .titleblock {
+    border-bottom: 1px solid var(--line-strong);
+    padding: 40px clamp(20px, 4vw, 56px) 30px;
+    background: var(--paper-raised);
+  }
+  .titleblock .eyebrow { margin-bottom: 10px; }
+  .titleblock h1 {
+    font-size: clamp(1.5rem, 3.2vw, 2.15rem);
+    line-height: 1.2;
+    max-width: 20ch;
+  }
+  .titleblock .lede {
+    font-family: var(--font-body);
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin-top: 14px;
+    font-size: 1rem;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line-strong);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--ink-faint);
+  }
+  .meta-row b { color: var(--ink-soft); font-weight: 600; }
+
+  section.sheet {
+    padding: 44px clamp(20px, 4vw, 56px);
+    border-bottom: 1px solid var(--line);
+    max-width: 880px;
+  }
+  section.sheet.wide { max-width: none; }
+
+  .sheet-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .sheet-head h2 { font-size: 1.28rem; max-width: 26ch; }
+  .sheet-code { font-family: var(--font-mono); color: var(--structure); font-size: 0.78rem; }
+
+  .level {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+  .level-track {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .level-track i {
+    display: block;
+    width: 12px;
+    height: 6px;
+    background: var(--line-strong);
+    border-radius: 1px;
+  }
+  .level-track i.on { background: var(--accent); }
+
+  .sheet p { margin: 0 0 15px; max-width: 68ch; }
+  .sheet p:last-child { margin-bottom: 0; }
+  .sheet ul, .sheet ol { margin: 0 0 15px; padding-left: 1.3em; max-width: 66ch; }
+  .sheet li { margin-bottom: 6px; }
+  .sheet h3 { font-size: 0.98rem; margin: 26px 0 10px; color: var(--ink); }
+  .sheet h3:first-child { margin-top: 0; }
+  .sheet strong { color: var(--ink); }
+
+  .callout {
+    border: 1px solid var(--line-strong);
+    border-left: 3px solid var(--structure);
+    background: var(--structure-soft);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin: 18px 0;
+    font-size: 0.92rem;
+    max-width: 64ch;
+  }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+  .callout.good { border-left-color: var(--good); background: var(--good-soft); }
+  .callout .eyebrow { margin-bottom: 6px; }
+  .callout.warn .eyebrow { color: var(--warn); }
+  .callout.good .eyebrow { color: var(--good); }
+  .callout.structure-eyebrow .eyebrow { color: var(--structure); }
+
+  /* code blocks */
+  .codeblock {
+    position: relative;
+    margin: 18px 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    background: var(--paper-sunken);
+    overflow: hidden;
+  }
+  .codeblock .cb-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+  }
+  .codeblock .copy-btn {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    background: none;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-soft);
+    border-radius: 3px;
+    padding: 2px 8px;
+    cursor: pointer;
+  }
+  .codeblock .copy-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+  .codeblock pre {
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+  .tok-kw { color: var(--structure); }
+  .tok-str { color: var(--good); }
+  .tok-cm { color: var(--ink-faint); font-style: italic; }
+  .tok-fn { color: var(--accent-text); }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; margin: 18px 0; border: 1px solid var(--line-strong); border-radius: 5px; }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 0.86rem; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--paper-raised);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--accent-soft); }
+
+  /* diagrams */
+  .diagram {
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--paper-raised);
+    padding: 18px;
+    margin: 20px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .diagram svg { width: 100%; height: auto; display: block; }
+  .diagram-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+  }
+  .diagram-legend .item { display: flex; gap: 8px; align-items: flex-start; font-size: 0.82rem; max-width: 30ch; }
+  .diagram-legend .swatch { width: 11px; height: 11px; border-radius: 2px; margin-top: 3px; flex-shrink: 0; }
+  .diagram-legend .item b { display: block; font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.02em; color: var(--ink); }
+  .diagram-legend .item span { color: var(--ink-soft); }
+
+  /* case study sheets */
+  .casefile {
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--paper-raised);
+    margin: 4px 0 26px;
+    position: relative;
+  }
+  .casefile::before, .casefile::after,
+  .casefile .tick-br, .casefile .tick-bl {
+    content: "";
+    position: absolute;
+    width: 12px; height: 12px;
+    border: 1.5px solid var(--structure);
+  }
+  .casefile::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .casefile::after { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+  .casefile .tick-bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+  .casefile .tick-br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+  .casefile-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1px;
+    background: var(--line-strong);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .casefile-header .cell {
+    background: var(--paper-raised);
+    padding: 10px 14px;
+  }
+  .casefile-header .cell .k {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: 3px;
+  }
+  .casefile-header .cell .v { font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink); }
+  .casefile-body { padding: 22px 24px 26px; }
+  .casefile-body p, .casefile-body ul { max-width: 66ch; }
+
+  .checklist { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 8px; max-width: 66ch; }
+  .checklist li {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 9px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-raised);
+    font-size: 0.9rem;
+  }
+  .checklist li .mark { font-family: var(--font-mono); color: var(--warn); flex-shrink: 0; }
+  .checklist.good li .mark { color: var(--good); }
+
+  .foot {
+    padding: 30px clamp(20px, 4vw, 56px) 60px;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+  }
+
+  /* ---------- word annotation feature ---------- */
+  .wd {
+    cursor: pointer;
+    border-radius: 2px;
+    padding: 0 1px;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .wd.selecting { background: var(--accent-soft); }
+  .wd.has-note { border-bottom: 1.5px dotted var(--accent); }
+  .wd.has-note:hover { background: var(--accent-soft); }
+
+  .note-tooltip {
+    position: fixed;
+    z-index: 80;
+    max-width: 260px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line-strong);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 9px 11px;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+  }
+  .note-tooltip.show { opacity: 1; }
+  .note-tooltip .lbl {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+    margin-bottom: 4px;
+  }
+  .note-tooltip .body {
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+
+  .note-popover {
+    position: fixed;
+    z-index: 90;
+    width: min(300px, 90vw);
+    background: var(--paper-raised);
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: var(--shadow);
+    display: none;
+  }
+  .note-popover.show { display: block; }
+  .note-popover .np-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+  .note-popover .np-word {
+    color: var(--accent-text);
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .note-popover textarea {
+    width: 100%;
+    min-height: 76px;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    line-height: 1.4;
+    padding: 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: var(--paper);
+    color: var(--ink);
+    resize: vertical;
+  }
+  .note-popover textarea:focus-visible { outline: 2px solid var(--structure); outline-offset: 1px; }
+  .note-popover .np-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .np-btn {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    border: 1px solid var(--line-strong);
+    background: none;
+    color: var(--ink-soft);
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .np-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--paper-raised); }
+  .np-btn.danger { color: var(--warn); border-color: var(--warn); }
+  .np-btn:hover { filter: brightness(0.96); }
+
+  .notes-toggle {
+    position: fixed;
+    bottom: 18px;
+    left: 18px;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 999px;
+    padding: 11px 16px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+  }
+  .notes-toggle .notes-count {
+    background: var(--accent);
+    color: var(--paper-raised);
+    border-radius: 999px;
+    font-size: 0.68rem;
+    padding: 1px 7px;
+    min-width: 1.4em;
+    text-align: center;
+  }
+
+  .notes-panel {
+    position: fixed;
+    top: 0; bottom: 0; right: 0;
+    width: min(360px, 92vw);
+    background: var(--paper-raised);
+    border-left: 1px solid var(--line-strong);
+    box-shadow: var(--shadow);
+    z-index: 85;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.22s ease;
+  }
+  .notes-panel.open { transform: translateX(0); }
+  .notes-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .notes-panel-head h3 { font-size: 0.95rem; }
+  .notes-panel-list { flex: 1; overflow-y: auto; padding: 10px 14px; }
+  .notes-empty { color: var(--ink-faint); font-size: 0.86rem; padding: 18px 4px; max-width: 30ch; }
+  .note-entry {
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .note-entry .ne-word {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent-text);
+    text-transform: capitalize;
+    margin-bottom: 4px;
+  }
+  .note-entry .ne-text {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+    margin-bottom: 8px;
+  }
+  .note-entry .ne-actions { display: flex; gap: 6px; }
+  .notes-panel-foot {
+    padding: 14px 18px 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+<a id="__exitbtn" href="../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">← Materi DDD</a>
+
+<div class="rail-backdrop" id="backdrop"></div>
+<button class="rail-toggle" id="railToggle" type="button" aria-label="Buka daftar isi">Index ▸</button>
+
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Daftar isi">
+    <div class="rail-brand">
+      <strong>DDD · CA</strong>
+      <button class="rail-close" id="railClose" type="button" aria-label="Tutup daftar isi">Tutup ✕</button>
+    </div>
+    <div class="rail-sub">Buku panduan lapangan — 22 sheet</div>
+
+    <ul class="toc">
+      <li class="toc-group">Mulai di sini</li>
+      <li><a href="#foreword"><span class="code">00</span>Cara pakai dokumen ini</a></li>
+
+      <li class="toc-group">Fundamental — DDD</li>
+      <li><a href="#ddd-01"><span class="code">DDD·01</span>Masalah yang diselesaikan DDD</a></li>
+      <li><a href="#ddd-02"><span class="code">DDD·02</span>Ubiquitous Language</a></li>
+      <li><a href="#ddd-03"><span class="code">DDD·03</span>Entity</a></li>
+      <li><a href="#ddd-04"><span class="code">DDD·04</span>Value Object</a></li>
+      <li><a href="#ddd-05"><span class="code">DDD·05</span>Aggregate &amp; Aggregate Root</a></li>
+      <li><a href="#ddd-06"><span class="code">DDD·06</span>Domain Event</a></li>
+      <li><a href="#ddd-07"><span class="code">DDD·07</span>Domain &amp; Application Service</a></li>
+      <li><a href="#ddd-08"><span class="code">DDD·08</span>Repository &amp; Factory</a></li>
+
+      <li class="toc-group">Strategic Design</li>
+      <li><a href="#ddd-09"><span class="code">DDD·09</span>Bounded Context</a></li>
+      <li><a href="#ddd-10"><span class="code">DDD·10</span>Context Mapping</a></li>
+      <li><a href="#ddd-11"><span class="code">DDD·11</span>Subdomain: Core/Supporting/Generic</a></li>
+
+      <li class="toc-group">Clean Architecture</li>
+      <li><a href="#ca-01"><span class="code">CA·01</span>The Dependency Rule</a></li>
+      <li><a href="#ca-02"><span class="code">CA·02</span>Empat Lapisan</a></li>
+      <li><a href="#ca-03"><span class="code">CA·03</span>Hexagonal vs Onion vs Clean</a></li>
+      <li><a href="#ca-04"><span class="code">CA·04</span>Menyatukan DDD + CA</a></li>
+
+      <li class="toc-group">Advanced</li>
+      <li><a href="#adv-01"><span class="code">ADV·01</span>CQRS</a></li>
+      <li><a href="#adv-02"><span class="code">ADV·02</span>Event Sourcing</a></li>
+      <li><a href="#adv-03"><span class="code">ADV·03</span>Saga / Process Manager</a></li>
+      <li><a href="#adv-04"><span class="code">ADV·04</span>Anti-Corruption Layer</a></li>
+      <li><a href="#adv-05"><span class="code">ADV·05</span>Aturan desain aggregate</a></li>
+
+      <li class="toc-group">Studi Kasus</li>
+      <li><a href="#cs-01"><span class="code">CS·01</span>E-Commerce Order</a></li>
+      <li><a href="#cs-02"><span class="code">CS·02</span>Ledger / Perbankan</a></li>
+      <li><a href="#cs-03"><span class="code">CS·03</span>Ride-Hailing Dispatch</a></li>
+
+      <li class="toc-group">Referensi</li>
+      <li><a href="#appendix"><span class="code">APP</span>Daftar anti-pattern</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <header class="titleblock">
+      <div class="eyebrow">Field manual · Software Architecture</div>
+      <h1>Domain-Driven Design &amp; Clean Architecture</h1>
+      <p class="lede">Kumpulan catatan terstruktur — dari building block dasar DDD, strategic design, prinsip Clean Architecture, sampai topik lanjutan (CQRS, Event Sourcing, Saga) — ditutup dengan tiga studi kasus yang dikerjakan penuh dengan kode.</p>
+      <div class="meta-row">
+        <span><b>Sheet:</b> 22</span>
+        <span><b>Level:</b> Fundamental → Advanced</span>
+        <span><b>Bahasa kode:</b> Java (agnostik konsep)</span>
+        <span><b>Format:</b> referensi, bukan tutorial linear</span>
+      </div>
+    </header>
+
+    <section class="sheet" id="foreword">
+      <div class="sheet-head">
+        <div><span class="sheet-code">SHEET 00</span><h2>Cara pakai dokumen ini</h2></div>
+      </div>
+      <p>Dokumen ini disusun seperti satu set gambar kerja arsitek: setiap topik adalah satu <em>sheet</em> bernomor, bukan bab yang harus dibaca berurutan. Gunakan panel di kiri untuk lompat langsung ke topik yang dibutuhkan.</p>
+      <p>Setiap sheet punya penanda level seperti ini:</p>
+      <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i></i></span> Menengah</div>
+      <p>Tiga contoh kasus di bagian akhir (<a href="#cs-01">CS·01</a>–<a href="#cs-03">CS·03</a>) memakai satu domain yang sama secara bertahap — <strong>e-commerce order</strong> — supaya konsep yang dipelajari di sheet fundamental langsung terlihat dipakai nyata, sebelum masuk ke dua kasus tambahan (ledger &amp; ride-hailing) untuk pola yang tidak muncul di kasus pertama.</p>
+      <div class="callout good">
+        <div class="eyebrow">✎ Catatan kata milikmu sendiri</div>
+        Setiap kata di seluruh teks (kecuali di dalam blok kode) bisa dicatat. Nemu istilah asing (mis. <em>invariant</em>, <em>idempotent</em>)? <strong>Klik kata itu</strong> untuk menulis penjelasan versimu sendiri. Butuh mencatat frasa lebih dari satu kata (mis. <em>upstream context</em>)? <strong>Klik-tahan lalu geser (drag)</strong> melewati kata-kata itu, baru lepas. Teks aslinya <strong>tidak pernah diubah</strong> — proses ini cuma menandai kata yang sudah ada, tidak memotong atau menyisipkan apa pun. Kata/frasa yang sudah dicatat akan bergaris bawah putus-putus; <strong>arahkan kursor (hover)</strong> ke situ kapan saja untuk memunculkan catatanmu lagi, di mana pun kata/frasa yang sama itu muncul lagi di dokumen. Semua catatan tersimpan otomatis di browser ini — buka tombol <strong>"✎ Catatanku"</strong> di pojok kiri bawah untuk melihat semua catatan sekaligus, atau meng-export/import-nya sebagai file JSON untuk cadangan.
+      </div>
+    </section>
+
+    <!-- ================= DDD-01 ================= -->
+    <section class="sheet" id="ddd-01">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 01</span><h2>Masalah yang diselesaikan DDD</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i></i><i></i></span> Dasar</div>
+      </div>
+      <p>Domain-Driven Design (Eric Evans, 2003) bukan tentang pola kode tertentu — ia adalah cara berpikir untuk sistem dengan <strong>kompleksitas bisnis</strong> yang tinggi, bukan sekadar kompleksitas teknis. Masalah yang dijawab: aplikasi besar perlahan berubah jadi "big ball of mud" karena logika bisnis tersebar di controller, service, dan query SQL, sementara istilah yang dipakai developer tidak lagi sama dengan istilah yang dipakai orang bisnis.</p>
+      <h3>Dua sisi DDD</h3>
+      <ul>
+        <li><strong>Strategic design</strong> — cara membagi sistem besar menjadi <em>bounded context</em> yang masing-masing punya model dan bahasa sendiri (lihat <a href="#ddd-09">DDD·09</a>).</li>
+        <li><strong>Tactical design</strong> — building block untuk memodelkan satu bounded context: Entity, Value Object, Aggregate, Domain Event, Repository (lihat <a href="#ddd-03">DDD·03</a>–<a href="#ddd-08">DDD·08</a>).</li>
+      </ul>
+      <div class="callout">
+        <div class="eyebrow">Kapan DDD layak dipakai</div>
+        Cocok untuk domain dengan aturan bisnis kompleks dan sering berubah (order management, perbankan, insurance, logistik). Untuk CRUD sederhana tanpa banyak invariant, DDD penuh biasanya <em>overkill</em> — cukup pakai transaction script.
+      </div>
+    </section>
+
+    <!-- ================= DDD-02 ================= -->
+    <section class="sheet" id="ddd-02">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 02</span><h2>Ubiquitous Language</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i></i><i></i></span> Dasar</div>
+      </div>
+      <p>Bahasa yang sama, dipakai konsisten oleh domain expert, product manager, dan developer — di percakapan, di dokumentasi, <em>dan</em> di kode (nama class, method, variabel). Kalau tim bisnis bicara "submit order" tapi kode menulis <code>process()</code>, setiap terjemahan bolak-balik itu adalah celah tempat bug dan kesalahpahaman bersembunyi.</p>
+      <div class="callout good">
+        <div class="eyebrow">Praktik</div>
+        Ubiquitous language tidak global untuk seluruh perusahaan — ia berlaku <em>per bounded context</em>. Kata "Customer" di Sales context bisa punya atribut dan makna berbeda dari "Customer" di Billing context. Ini bukan inkonsistensi, ini justru inti dari <a href="#ddd-09">bounded context</a>.
+      </div>
+    </section>
+
+    <!-- ================= DDD-03 ================= -->
+    <section class="sheet" id="ddd-03">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 03</span><h2>Entity</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i></i><i></i></span> Dasar</div>
+      </div>
+      <p>Objek yang punya <strong>identitas</strong> yang bertahan sepanjang waktu, terlepas dari perubahan atributnya. Dua <code>Order</code> dengan isi field yang sama persis tetap dianggap berbeda kalau <code>id</code>-nya berbeda; sebaliknya satu <code>Order</code> yang atributnya berubah (status, total) tetap dianggap "entity yang sama".</p>
+      <div class="codeblock">
+        <div class="cb-head"><span>OrderLine.java</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public class</span> <span class="tok-fn">OrderLine</span> {
+  <span class="tok-kw">private final</span> ProductId productId;
+  <span class="tok-kw">private int</span> quantity;
+  <span class="tok-kw">private final</span> Money unitPrice;
+
+  <span class="tok-kw">public</span> <span class="tok-fn">OrderLine</span>(ProductId productId, <span class="tok-kw">int</span> quantity, Money unitPrice) {
+    <span class="tok-kw">this</span>.productId = productId;
+    <span class="tok-kw">this</span>.quantity = quantity;
+    <span class="tok-kw">this</span>.unitPrice = unitPrice;
+  }
+
+  <span class="tok-kw">public</span> Money <span class="tok-fn">getSubtotal</span>() {
+    <span class="tok-kw">return</span> unitPrice.multiply(quantity);
+  }
+
+  <span class="tok-kw">public void</span> <span class="tok-fn">changeQuantity</span>(<span class="tok-kw">int</span> next) {
+    <span class="tok-kw">if</span> (next &lt;= <span class="tok-kw">0</span>) {
+      <span class="tok-kw">throw new</span> <span class="tok-fn">IllegalArgumentException</span>(<span class="tok-str">"Kuantitas harus lebih dari 0"</span>);
+    }
+    <span class="tok-kw">this</span>.quantity = next;
+  }
+}</code></pre>
+      </div>
+      <p><code>OrderLine</code> di sini adalah entity <em>lokal</em> — identitasnya hanya bermakna di dalam aggregate <code>Order</code>, tidak punya repository sendiri. Entity yang jadi pintu masuk aggregate disebut Aggregate Root (<a href="#ddd-05">DDD·05</a>).</p>
+    </section>
+
+    <!-- ================= DDD-04 ================= -->
+    <section class="sheet" id="ddd-04">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 04</span><h2>Value Object</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i></i><i></i></span> Dasar</div>
+      </div>
+      <p>Objek yang didefinisikan sepenuhnya oleh <strong>nilai</strong> atributnya, tanpa identitas. Dua <code>Money</code> senilai 50000 IDR dianggap sama persis. Value object bersifat <strong>immutable</strong> — operasi yang "mengubah" selalu mengembalikan instance baru — dan idealnya melindungi invariant-nya sendiri di constructor, sehingga objek yang sudah dibuat pasti valid.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span>Money.java</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public final class</span> <span class="tok-fn">Money</span> {
+  <span class="tok-kw">private final long</span> amount;
+  <span class="tok-kw">private final</span> String currency;
+
+  <span class="tok-kw">private</span> <span class="tok-fn">Money</span>(<span class="tok-kw">long</span> amount, String currency) {
+    <span class="tok-kw">if</span> (amount &lt; <span class="tok-kw">0</span>) {
+      <span class="tok-kw">throw new</span> <span class="tok-fn">IllegalArgumentException</span>(<span class="tok-str">"Money tidak boleh negatif"</span>);
+    }
+    <span class="tok-kw">if</span> (!currency.matches(<span class="tok-str">"[A-Z]{3}"</span>)) {
+      <span class="tok-kw">throw new</span> <span class="tok-fn">IllegalArgumentException</span>(<span class="tok-str">"Kode currency tidak valid"</span>);
+    }
+    <span class="tok-kw">this</span>.amount = amount;
+    <span class="tok-kw">this</span>.currency = currency;
+  }
+
+  <span class="tok-kw">public static</span> Money <span class="tok-fn">of</span>(<span class="tok-kw">long</span> amount, String currency) {
+    <span class="tok-kw">return new</span> <span class="tok-fn">Money</span>(amount, currency);
+  }
+
+  <span class="tok-kw">public</span> Money <span class="tok-fn">add</span>(Money other) {
+    assertSameCurrency(other);
+    <span class="tok-kw">return</span> Money.of(<span class="tok-kw">this</span>.amount + other.amount, <span class="tok-kw">this</span>.currency);
+  }
+
+  <span class="tok-kw">@Override</span>
+  <span class="tok-kw">public boolean</span> <span class="tok-fn">equals</span>(Object obj) {
+    <span class="tok-kw">if</span> (!(obj <span class="tok-kw">instanceof</span> Money other)) <span class="tok-kw">return false</span>;
+    <span class="tok-kw">return this</span>.amount == other.amount &amp;&amp; <span class="tok-kw">this</span>.currency.equals(other.currency);
+  }
+
+  <span class="tok-kw">private void</span> <span class="tok-fn">assertSameCurrency</span>(Money other) {
+    <span class="tok-kw">if</span> (!<span class="tok-kw">this</span>.currency.equals(other.currency)) {
+      <span class="tok-kw">throw new</span> <span class="tok-fn">IllegalStateException</span>(
+        <span class="tok-str">"Tidak bisa menjumlahkan "</span> + <span class="tok-kw">this</span>.currency + <span class="tok-str">" dengan "</span> + other.currency);
+    }
+  }
+}</code></pre>
+      </div>
+      <div class="callout structure-eyebrow">
+        <div class="eyebrow">Kenapa ini penting</div>
+        Tanpa <code>Money</code> sebagai value object, aturan "jangan campur currency" akan diulang-ulang di setiap tempat yang menjumlahkan angka — dan cepat atau lambat ada satu tempat yang lupa memvalidasinya.
+      </div>
+    </section>
+
+    <!-- ================= DDD-05 ================= -->
+    <section class="sheet" id="ddd-05">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 05</span><h2>Aggregate &amp; Aggregate Root</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i></i></span> Menengah</div>
+      </div>
+      <p>Aggregate adalah klaster entity dan value object yang diperlakukan sebagai <strong>satu unit konsistensi transaksional</strong>. Hanya <strong>Aggregate Root</strong> yang punya identitas global dan boleh diakses dari luar; semua perubahan pada objek di dalam aggregate wajib lewat root, supaya invariant selalu terjaga.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 560 300" style="min-width:420px" role="img" aria-label="Diagram batas aggregate Order">
+          <rect x="30" y="24" width="330" height="252" rx="10" fill="none" stroke-dasharray="6 5" stroke-width="1.6" stroke="var(--structure)"/>
+          <text x="44" y="16" font-family="var(--font-mono)" font-size="11" fill="var(--structure)">AGGREGATE BOUNDARY</text>
+
+          <rect x="70" y="46" width="180" height="46" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="160" y="65" text-anchor="middle" font-family="var(--font-mono)" font-size="12" fill="var(--ink)">Order</text>
+          <text x="160" y="80" text-anchor="middle" font-family="var(--font-mono)" font-size="9.5" fill="var(--ink-faint)">(Aggregate Root)</text>
+
+          <line x1="130" y1="92" x2="90" y2="140" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <line x1="190" y1="92" x2="230" y2="140" stroke="var(--line-strong)" stroke-width="1.4"/>
+
+          <rect x="50" y="140" width="150" height="40" rx="5" fill="var(--paper-raised)" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <text x="125" y="164" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">OrderLine #1</text>
+
+          <rect x="210" y="140" width="150" height="40" rx="5" fill="var(--paper-raised)" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <text x="285" y="164" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">OrderLine #2</text>
+
+          <line x1="125" y1="180" x2="125" y2="212" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <line x1="285" y1="180" x2="285" y2="212" stroke="var(--line-strong)" stroke-width="1.4"/>
+
+          <rect x="65" y="212" width="120" height="34" rx="5" fill="var(--good-soft)" stroke="var(--good)" stroke-width="1.4"/>
+          <text x="125" y="233" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" fill="var(--ink)">Money (VO)</text>
+
+          <rect x="225" y="212" width="120" height="34" rx="5" fill="var(--good-soft)" stroke="var(--good)" stroke-width="1.4"/>
+          <text x="285" y="233" text-anchor="middle" font-family="var(--font-mono)" font-size="10.5" fill="var(--ink)">Money (VO)</text>
+
+          <rect x="420" y="120" width="120" height="46" rx="5" fill="var(--paper-sunken)" stroke="var(--line-strong)" stroke-width="1.4" stroke-dasharray="4 4"/>
+          <text x="480" y="139" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">Customer</text>
+          <text x="480" y="153" text-anchor="middle" font-family="var(--font-mono)" font-size="9" fill="var(--ink-faint)">(aggregate lain)</text>
+
+          <line x1="250" y1="65" x2="418" y2="130" stroke="var(--warn)" stroke-width="1.4" stroke-dasharray="3 4" marker-end="url(#arrow)"/>
+          <text x="330" y="90" font-family="var(--font-mono)" font-size="9.5" fill="var(--warn)">by reference: CustomerId</text>
+
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 z" fill="var(--warn)"/>
+            </marker>
+          </defs>
+        </svg>
+        <div class="diagram-legend">
+          <div class="item"><span class="swatch" style="background:var(--accent)"></span><div><b>ROOT</b><span>Satu-satunya pintu masuk publik ke aggregate.</span></div></div>
+          <div class="item"><span class="swatch" style="background:var(--line-strong)"></span><div><b>INTERNAL ENTITY</b><span>Punya identitas lokal, tak boleh diakses langsung dari luar.</span></div></div>
+          <div class="item"><span class="swatch" style="background:var(--good)"></span><div><b>VALUE OBJECT</b><span>Bagian dari state internal, tanpa identitas sendiri.</span></div></div>
+          <div class="item"><span class="swatch" style="background:var(--warn)"></span><div><b>REFERENCE BY ID</b><span>Aggregate lain hanya disimpan sebagai ID, bukan objek penuh.</span></div></div>
+        </div>
+      </div>
+      <div class="codeblock">
+        <div class="cb-head"><span>Order.java</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public class</span> <span class="tok-fn">Order</span> {
+  <span class="tok-kw">private final</span> OrderId id;
+  <span class="tok-kw">private final</span> CustomerId customerId;
+  <span class="tok-kw">private final</span> List&lt;OrderLine&gt; lines = <span class="tok-kw">new</span> <span class="tok-fn">ArrayList</span>&lt;&gt;();
+  <span class="tok-kw">private</span> OrderStatus status = OrderStatus.DRAFT;
+  <span class="tok-kw">private final</span> List&lt;DomainEvent&gt; events = <span class="tok-kw">new</span> <span class="tok-fn">ArrayList</span>&lt;&gt;();
+
+  <span class="tok-kw">private</span> <span class="tok-fn">Order</span>(OrderId id, CustomerId customerId) {
+    <span class="tok-kw">this</span>.id = id;
+    <span class="tok-kw">this</span>.customerId = customerId;
+  }
+
+  <span class="tok-kw">public static</span> Order <span class="tok-fn">start</span>(OrderId id, CustomerId customerId) {
+    <span class="tok-kw">return new</span> <span class="tok-fn">Order</span>(id, customerId);
+  }
+
+  <span class="tok-kw">public void</span> <span class="tok-fn">addLine</span>(ProductId productId, <span class="tok-kw">int</span> quantity, Money unitPrice) {
+    assertDraft();
+    lines.add(<span class="tok-kw">new</span> <span class="tok-fn">OrderLine</span>(productId, quantity, unitPrice));
+  }
+
+  <span class="tok-kw">public void</span> <span class="tok-fn">submit</span>() {
+    assertDraft();
+    <span class="tok-kw">if</span> (lines.isEmpty()) {
+      <span class="tok-kw">throw new</span> <span class="tok-fn">IllegalStateException</span>(<span class="tok-str">"Order tidak boleh disubmit tanpa item"</span>);
+    }
+    <span class="tok-kw">this</span>.status = OrderStatus.SUBMITTED;
+    events.add(<span class="tok-kw">new</span> <span class="tok-fn">OrderSubmitted</span>(<span class="tok-kw">this</span>.id, total()));
+  }
+
+  <span class="tok-kw">public</span> Money <span class="tok-fn">total</span>() {
+    <span class="tok-kw">return</span> lines.stream()
+      .map(OrderLine::getSubtotal)
+      .reduce(Money.of(<span class="tok-kw">0</span>, <span class="tok-str">"IDR"</span>), Money::add);
+  }
+
+  <span class="tok-kw">public</span> List&lt;DomainEvent&gt; <span class="tok-fn">pullEvents</span>() {
+    List&lt;DomainEvent&gt; pending = <span class="tok-kw">new</span> <span class="tok-fn">ArrayList</span>&lt;&gt;(events);
+    events.clear();
+    <span class="tok-kw">return</span> pending;
+  }
+
+  <span class="tok-kw">private void</span> <span class="tok-fn">assertDraft</span>() {
+    <span class="tok-kw">if</span> (status != OrderStatus.DRAFT) {
+      <span class="tok-kw">throw new</span> <span class="tok-fn">IllegalStateException</span>(<span class="tok-str">"Order yang sudah disubmit tidak bisa diubah"</span>);
+    }
+  }
+}</code></pre>
+      </div>
+      <div class="callout warn">
+        <div class="eyebrow">Aturan emas</div>
+        Satu transaksi database = satu aggregate. Kalau terasa perlu mengubah dua aggregate sekaligus secara atomik, itu sinyal aggregate-nya salah digambar — lihat <a href="#adv-05">ADV·05</a>.
+      </div>
+    </section>
+
+    <!-- ================= DDD-06 ================= -->
+    <section class="sheet" id="ddd-06">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 06</span><h2>Domain Event</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i></i></span> Menengah</div>
+      </div>
+      <p>Fakta yang telah terjadi di domain, dinyatakan dalam bentuk lampau: <code>OrderSubmitted</code>, bukan <code>SubmitOrder</code> (itu command). Aggregate root mengumpulkan event yang terjadi selama satu operasi, lalu memublikasikannya setelah state berhasil disimpan — sehingga bounded context lain, atau bagian lain dari sistem yang sama, bisa bereaksi tanpa aggregate asal perlu tahu siapa yang mendengarkan.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span>DomainEvent.java + OrderSubmitted.java</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public interface</span> <span class="tok-fn">DomainEvent</span> {
+  Instant occurredAt();
+}
+
+<span class="tok-kw">public record</span> <span class="tok-fn">OrderSubmitted</span>(OrderId orderId, Money total, Instant occurredAt)
+    <span class="tok-kw">implements</span> DomainEvent {
+
+  <span class="tok-kw">public</span> <span class="tok-fn">OrderSubmitted</span>(OrderId orderId, Money total) {
+    <span class="tok-kw">this</span>(orderId, total, Instant.now());
+  }
+}</code></pre>
+      </div>
+      <div class="callout">
+        <div class="eyebrow">Domain event vs integration event</div>
+        Domain event beredar <em>di dalam</em> satu bounded context (in-process, sinkron). Kalau event yang sama perlu diketahui bounded context lain, ia biasanya diterjemahkan jadi <strong>integration event</strong> yang dikirim lewat message broker — dengan skema yang stabil dan sengaja dipisahkan dari model internal, supaya perubahan model domain tidak langsung mematahkan konsumer eksternal.
+      </div>
+    </section>
+
+    <!-- ================= DDD-07 ================= -->
+    <section class="sheet" id="ddd-07">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 07</span><h2>Domain Service &amp; Application Service</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i></i></span> Menengah</div>
+      </div>
+      <p>Dua jenis "service" yang sering tertukar:</p>
+      <ul>
+        <li><strong>Domain service</strong> — logika bisnis yang secara alami tidak milik satu entity/VO saja, misalnya <code>PricingPolicy.calculateDiscount(order, customer)</code> yang butuh dua aggregate. Tetap murni domain, tanpa I/O.</li>
+        <li><strong>Application service (use case)</strong> — mengorkestrasi satu skenario: ambil aggregate dari repository, panggil method domain, simpan lagi, publikasikan event. Tidak berisi aturan bisnis, hanya alur.</li>
+      </ul>
+      <div class="codeblock">
+        <div class="cb-head"><span>SubmitOrderUseCase.java</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public class</span> <span class="tok-fn">SubmitOrderUseCase</span> {
+  <span class="tok-kw">private final</span> OrderRepository orders;
+  <span class="tok-kw">private final</span> DomainEventBus bus;
+
+  <span class="tok-kw">public</span> <span class="tok-fn">SubmitOrderUseCase</span>(OrderRepository orders, DomainEventBus bus) {
+    <span class="tok-kw">this</span>.orders = orders;
+    <span class="tok-kw">this</span>.bus = bus;
+  }
+
+  <span class="tok-kw">public void</span> <span class="tok-fn">execute</span>(SubmitOrderCommand command) {
+    Order order = orders.findById(command.orderId())
+        .orElseThrow(() -&gt; <span class="tok-kw">new</span> <span class="tok-fn">OrderNotFoundException</span>(command.orderId()));
+
+    order.submit();
+    orders.save(order);
+
+    <span class="tok-kw">for</span> (DomainEvent event : order.pullEvents()) {
+      bus.publish(event);
+    }
+  }
+}</code></pre>
+      </div>
+    </section>
+
+    <!-- ================= DDD-08 ================= -->
+    <section class="sheet" id="ddd-08">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 08</span><h2>Repository &amp; Factory</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i></i></span> Menengah</div>
+      </div>
+      <p><strong>Repository</strong> memberi ilusi koleksi in-memory untuk aggregate — <code>findById</code>, <code>save</code> — sambil menyembunyikan detail penyimpanan. Selalu satu repository per aggregate root, bukan per tabel. Interface-nya didefinisikan di layer domain (ia adalah sebuah <em>port</em>); implementasinya ada di infrastructure (<em>adapter</em>) — lihat <a href="#ca-01">CA·01</a>.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span>OrderRepository.java — port (domain layer)</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public interface</span> <span class="tok-fn">OrderRepository</span> {
+  OrderId nextId();
+  Optional&lt;Order&gt; findById(OrderId id);
+  <span class="tok-kw">void</span> save(Order order);
+}</code></pre>
+      </div>
+      <p><strong>Factory</strong> dipakai saat pembuatan aggregate cukup rumit sehingga tidak pantas ditaruh di constructor biasa — misalnya butuh menggabungkan beberapa parameter dan invariant lintas objek sebelum aggregate boleh "lahir" dalam keadaan valid.</p>
+    </section>
+
+    <!-- ================= DDD-09 ================= -->
+    <section class="sheet" id="ddd-09">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 09</span><h2>Bounded Context</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i></i></span> Menengah</div>
+      </div>
+      <p>Batas eksplisit (biasanya = batas layanan/deploy unit) di mana satu model domain dan satu ubiquitous language berlaku konsisten. Di luar batas ini, istilah yang sama boleh berarti lain. Bounded context adalah alat <strong>membelah kompleksitas</strong>, bukan alat membelah database secara sembarangan — pembelahannya mengikuti perbedaan model dan bahasa bisnis, bukan tabel.</p>
+      <div class="callout">
+        <div class="eyebrow">Sinyal butuh bounded context baru</div>
+        Tim mulai menambahkan flag <code>if (context === 'x')</code> di model yang sama untuk menangani makna berbeda, atau satu entity punya lebih dari 20 atribut karena melayani beberapa "kepentingan" sekaligus.
+      </div>
+    </section>
+
+    <!-- ================= DDD-10 ================= -->
+    <section class="sheet wide" id="ddd-10">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 10</span><h2>Context Mapping</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i class="on"></i></span> Lanjut</div>
+      </div>
+      <p>Context map menggambarkan <strong>relasi kekuasaan dan integrasi</strong> antar bounded context — siapa mengikuti model siapa, dan lewat mekanisme apa.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 700 400" style="min-width:520px" role="img" aria-label="Diagram context map order management">
+          <line x1="350" y1="200" x2="125" y2="80" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <line x1="350" y1="200" x2="575" y2="80" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <line x1="350" y1="200" x2="575" y2="330" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <line x1="350" y1="200" x2="125" y2="330" stroke="var(--line-strong)" stroke-width="1.4"/>
+
+          <text x="200" y="128" font-family="var(--font-mono)" font-size="10" fill="var(--structure)">Conformist</text>
+          <text x="470" y="128" font-family="var(--font-mono)" font-size="10" fill="var(--warn)">ACL</text>
+          <text x="470" y="278" font-family="var(--font-mono)" font-size="10" fill="var(--good)">OHS / PL</text>
+          <text x="185" y="278" font-family="var(--font-mono)" font-size="10" fill="var(--structure)">Customer–Supplier</text>
+
+          <rect x="260" y="160" width="180" height="80" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+          <text x="350" y="196" text-anchor="middle" font-family="var(--font-mono)" font-size="12" fill="var(--ink)">Ordering</text>
+          <text x="350" y="212" text-anchor="middle" font-family="var(--font-mono)" font-size="9" fill="var(--ink-faint)">core domain</text>
+
+          <rect x="40" y="40" width="170" height="70" rx="6" fill="var(--paper-raised)" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <text x="125" y="80" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">Catalog</text>
+
+          <rect x="490" y="40" width="170" height="70" rx="6" fill="var(--paper-raised)" stroke="var(--line-strong)" stroke-width="1.4" stroke-dasharray="4 4"/>
+          <text x="575" y="80" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">Payment (3rd-party)</text>
+
+          <rect x="490" y="295" width="170" height="70" rx="6" fill="var(--paper-raised)" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <text x="575" y="335" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">Shipping</text>
+
+          <rect x="40" y="295" width="170" height="70" rx="6" fill="var(--paper-raised)" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <text x="125" y="335" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">Identity/Customer</text>
+        </svg>
+        <div class="diagram-legend">
+          <div class="item"><span class="swatch" style="background:var(--accent)"></span><div><b>ORDERING</b><span>Core domain — tempat keunggulan kompetitif dimodelkan paling detail.</span></div></div>
+          <div class="item"><span class="swatch" style="background:var(--structure)"></span><div><b>CONFORMIST / CUSTOMER-SUPPLIER</b><span>Ordering mengikuti model upstream apa adanya, atau upstream menyesuaikan demi downstream.</span></div></div>
+          <div class="item"><span class="swatch" style="background:var(--warn)"></span><div><b>ANTI-CORRUPTION LAYER</b><span>Payment eksternal diterjemahkan lewat lapisan penerjemah — lihat <a href="#adv-04">ADV·04</a>.</span></div></div>
+          <div class="item"><span class="swatch" style="background:var(--good)"></span><div><b>OHS / PUBLISHED LANGUAGE</b><span>Shipping mengekspos API stabil + skema publik untuk dikonsumsi banyak context.</span></div></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pola</th><th>Kapan dipakai</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Partnership</strong></td><td>Dua tim bergantung erat, sukses/gagal bersama; koordinasi rilis dilakukan manual bersama.</td></tr>
+            <tr><td><strong>Shared Kernel</strong></td><td>Dua context sengaja berbagi sebagian kecil model/kode; perubahan butuh koordinasi eksplisit — dipakai hemat-hemat.</td></tr>
+            <tr><td><strong>Customer–Supplier</strong></td><td>Downstream punya suara dalam roadmap upstream; upstream mempertimbangkan kebutuhan downstream.</td></tr>
+            <tr><td><strong>Conformist</strong></td><td>Downstream tidak punya daya tawar, terima model upstream apa adanya — lebih murah daripada bikin ACL kalau relasinya tidak kritikal.</td></tr>
+            <tr><td><strong>Anti-Corruption Layer</strong></td><td>Model upstream (terutama legacy/eksternal) tidak boleh "mengotori" model internal; wajib untuk integrasi ke sistem pihak ketiga.</td></tr>
+            <tr><td><strong>Open Host Service + Published Language</strong></td><td>Satu context melayani banyak konsumen; ekspos protokol/skema publik yang stabil, bukan API ad-hoc per konsumen.</td></tr>
+            <tr><td><strong>Separate Ways</strong></td><td>Integrasi lebih mahal daripada manfaatnya — biarkan dua context tidak saling tahu.</td></tr>
+            <tr><td><strong>Big Ball of Mud</strong> <em>(anti-pattern)</em></td><td>Bukan pola yang dipilih, tapi kondisi yang dikenali: batas tidak jelas, model campur aduk — tandai untuk dipisah bertahap.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= DDD-11 ================= -->
+    <section class="sheet" id="ddd-11">
+      <div class="sheet-head">
+        <div><span class="sheet-code">DDD · 11</span><h2>Subdomain: Core, Supporting, Generic</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i></i></span> Menengah</div>
+      </div>
+      <p>Klasifikasi ini menentukan <strong>ke mana effort tim dialokasikan</strong> — jangan investasi tactical design penuh di tempat yang tidak butuh.</p>
+      <ul>
+        <li><strong>Core domain</strong> — sumber keunggulan kompetitif; layak dimodelkan detail, dibangun in-house, terus dirawat (mis. algoritma pricing/matching).</li>
+        <li><strong>Supporting subdomain</strong> — perlu ada, spesifik untuk bisnis ini, tapi bukan diferensiator (mis. manajemen katalog internal).</li>
+        <li><strong>Generic subdomain</strong> — masalah yang sudah dipecahkan industri; beli/pakai off-the-shelf, jangan dibangun sendiri (mis. autentikasi, pengiriman email).</li>
+      </ul>
+    </section>
+
+    <!-- ================= CA-01 ================= -->
+    <section class="sheet" id="ca-01">
+      <div class="sheet-head">
+        <div><span class="sheet-code">CA · 01</span><h2>The Dependency Rule</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i></i><i></i></span> Dasar</div>
+      </div>
+      <p>Inti Clean Architecture (Robert C. Martin) dalam satu kalimat: <strong>source code dependency hanya boleh menunjuk ke dalam</strong> — ke arah kebijakan yang lebih abstrak dan lebih stabil. Lapisan luar (framework, database, UI) boleh tahu tentang lapisan dalam (aturan bisnis); lapisan dalam tidak boleh tahu apa-apa tentang lapisan luar.</p>
+      <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:14px 18px;margin:20px 0;border-radius:0 10px 10px 0;max-width:70ch">
+        <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:8px">◆ Buat apa ini? Kenapa pakai ini?</p>
+        <p style="margin:5px 0"><b>Given</b> — business logic bercampur langsung dengan kode framework/database (query SQL & aturan diskon jadi satu file, atau entity meng-import ORM).</p>
+        <p style="margin:5px 0"><b>When</b> — framework atau database itu perlu diganti/di-upgrade (misalnya pindah ORM, ganti provider cloud, atau migrasi versi framework besar).</p>
+        <p style="margin:5px 0"><b>Then</b> — business logic ikut rusak & harus ditulis ulang, padahal aturan bisnisnya sendiri tidak berubah sama sekali.</p>
+        <p style="margin:8px 0 0">→ makanya kita pakai <b>Clean Architecture</b>: pisahkan logika bisnis dari detail teknis, supaya detail boleh berganti tanpa menyentuh aturan bisnis.</p>
+      </div>
+      <div class="diagram">
+        <svg viewBox="0 0 480 300" style="min-width:360px" role="img" aria-label="Diagram lingkaran konsentris Clean Architecture">
+          <circle cx="200" cy="150" r="130" fill="none" stroke="var(--line-strong)" stroke-width="1.6"/>
+          <circle cx="200" cy="150" r="98" fill="none" stroke="var(--line-strong)" stroke-width="1.6"/>
+          <circle cx="200" cy="150" r="64" fill="var(--structure-soft)" stroke="var(--structure)" stroke-width="1.6"/>
+          <circle cx="200" cy="150" r="32" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+          <text x="200" y="154" text-anchor="middle" font-family="var(--font-mono)" font-size="10" fill="var(--ink)">ENTITIES</text>
+
+          <path d="M 420 90 A 150 150 0 0 0 420 210" fill="none" stroke="var(--warn)" stroke-width="2" marker-end="url(#arrow2)"/>
+          <text x="430" y="154" font-family="var(--font-mono)" font-size="10" fill="var(--warn)" writing-mode="vertical-rl">DEPENDENCY RULE — points inward only</text>
+          <defs>
+            <marker id="arrow2" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 z" fill="var(--warn)"/>
+            </marker>
+          </defs>
+        </svg>
+        <div class="diagram-legend">
+          <div class="item"><span class="swatch" style="background:var(--accent)"></span><div><b>ENTITIES</b><span>Aturan bisnis paling umum &amp; stabil — setara "domain layer" di DDD.</span></div></div>
+          <div class="item"><span class="swatch" style="background:var(--structure)"></span><div><b>USE CASES</b><span>Aturan bisnis spesifik aplikasi — application service / orchestration.</span></div></div>
+          <div class="item"><span class="swatch" style="background:var(--line-strong)"></span><div><b>INTERFACE ADAPTERS</b><span>Controller, presenter, gateway — menerjemahkan data ke/dari use case.</span></div></div>
+          <div class="item"><span class="swatch" style="background:transparent;border:1.4px solid var(--line-strong)"></span><div><b>FRAMEWORKS &amp; DRIVERS</b><span>Web framework, DB, UI — detail yang paling mudah diganti.</span></div></div>
+        </div>
+      </div>
+      <div class="callout warn">
+        <div class="eyebrow">Konsekuensi praktis</div>
+        Kalau file di layer <code>domain/</code> meng-<code>import</code> package ORM, HTTP framework, atau SDK cloud provider manapun — Dependency Rule sudah dilanggar, walau testnya masih hijau.
+      </div>
+    </section>
+
+    <!-- ================= CA-02 ================= -->
+    <section class="sheet" id="ca-02">
+      <div class="sheet-head">
+        <div><span class="sheet-code">CA · 02</span><h2>Empat Lapisan</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i></i></span> Menengah</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Lapisan</th><th>Isi</th><th>Padanan di DDD</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Entities</strong></td><td>Aturan bisnis inti, tidak berubah walau aplikasi/UI berubah.</td><td>Aggregate, Entity, Value Object</td></tr>
+            <tr><td><strong>Use Cases</strong></td><td>Alur aplikasi spesifik: apa yang terjadi saat user melakukan X.</td><td>Application Service</td></tr>
+            <tr><td><strong>Interface Adapters</strong></td><td>Controller, presenter, mapper — mengubah bentuk data antar dunia luar &amp; use case.</td><td>Anti-Corruption Layer, DTO mapper</td></tr>
+            <tr><td><strong>Frameworks &amp; Drivers</strong></td><td>Web framework, driver DB, message broker client, UI.</td><td>Infrastructure adapter (implementasi port)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Data yang menyeberang batas lapisan sebaiknya berupa struktur data sederhana (DTO/plain object), bukan objek domain yang dibawa mentah — supaya lapisan luar tidak diam-diam bergantung pada bentuk internal aggregate.</p>
+    </section>
+
+    <!-- ================= CA-03 ================= -->
+    <section class="sheet wide" id="ca-03">
+      <div class="sheet-head">
+        <div><span class="sheet-code">CA · 03</span><h2>Hexagonal vs Onion vs Clean Architecture</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i class="on"></i></span> Lanjut</div>
+      </div>
+      <p>Tiga nama, satu prinsip inti yang sama: pisahkan logika bisnis dari detail teknis, dan pastikan dependency menunjuk ke arah logika bisnis. Bedanya hanya penekanan istilah.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nama</th><th>Diperkenalkan</th><th>Penekanan istilah</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Hexagonal (Ports &amp; Adapters)</strong></td><td>Alistair Cockburn</td><td>"Port" (interface) di dalam, "adapter" (implementasi) di luar. Sisi hexagon melambangkan banyaknya jenis adapter (HTTP, CLI, test) yang setara — bukan angka enam yang penting.</td></tr>
+            <tr><td><strong>Onion Architecture</strong></td><td>Jeffrey Palermo</td><td>Menekankan lapisan konsentris eksplisit dan bahwa domain model ada di pusat, tanpa dependency keluar sama sekali.</td></tr>
+            <tr><td><strong>Clean Architecture</strong></td><td>Robert C. Martin</td><td>Merangkum keduanya + menambahkan Use Case sebagai lapisan eksplisit, dan menamai aturan intinya "The Dependency Rule".</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Praktiknya: <strong>Port</strong> (istilah hexagonal) di kode Clean Architecture adalah interface repository/gateway yang didefinisikan di layer domain/use case — persis <code>OrderRepository</code> di <a href="#ddd-08">DDD·08</a>. <strong>Adapter</strong> adalah implementasi konkretnya di layer infrastructure.</p>
+    </section>
+
+    <!-- ================= CA-04 ================= -->
+    <section class="sheet" id="ca-04">
+      <div class="sheet-head">
+        <div><span class="sheet-code">CA · 04</span><h2>Menyatukan DDD + Clean Architecture</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i class="on"></i></span> Lanjut</div>
+      </div>
+      <p>DDD menjawab <strong>apa</strong> yang dimodelkan (bounded context, aggregate, ubiquitous language). Clean Architecture menjawab <strong>di mana</strong> kode itu ditaruh dan <strong>ke arah mana</strong> ia boleh bergantung. Keduanya saling melengkapi, bukan bersaing — satu bounded context biasanya jadi satu modul/service dengan struktur folder Clean Architecture di dalamnya.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span>struktur package — satu bounded context</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code>src/main/java/com/shop/order/
+  domain/                       <span class="tok-cm">// Entities — zero framework import</span>
+    Order.java
+    OrderLine.java
+    Money.java
+    OrderRepository.java        <span class="tok-cm">// port (interface saja)</span>
+    events/
+      OrderSubmitted.java
+  application/                  <span class="tok-cm">// Use cases</span>
+    SubmitOrderUseCase.java
+    SubmitOrderCommand.java
+  infrastructure/                <span class="tok-cm">// Adapters</span>
+    PostgresOrderRepository.java
+    OrderMapper.java
+  interfaces/                   <span class="tok-cm">// Controllers/HTTP</span>
+    OrderController.java</code></pre>
+      </div>
+      <div class="codeblock">
+        <div class="cb-head"><span>PostgresOrderRepository.java — adapter</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public class</span> <span class="tok-fn">PostgresOrderRepository</span> <span class="tok-kw">implements</span> OrderRepository {
+  <span class="tok-kw">private final</span> JdbcClient db;
+
+  <span class="tok-kw">public</span> <span class="tok-fn">PostgresOrderRepository</span>(JdbcClient db) {
+    <span class="tok-kw">this</span>.db = db;
+  }
+
+  <span class="tok-kw">@Override</span>
+  <span class="tok-kw">public</span> OrderId <span class="tok-fn">nextId</span>() {
+    <span class="tok-kw">return</span> OrderId.newId();
+  }
+
+  <span class="tok-kw">@Override</span>
+  <span class="tok-kw">public</span> Optional&lt;Order&gt; <span class="tok-fn">findById</span>(OrderId id) {
+    <span class="tok-kw">return</span> db.query(<span class="tok-str">"select * from orders where id = ?"</span>, id.value())
+        .map(OrderMapper::toDomain);
+  }
+
+  <span class="tok-kw">@Override</span>
+  <span class="tok-kw">public void</span> <span class="tok-fn">save</span>(Order order) {
+    <span class="tok-kw">var</span> row = OrderMapper.toRow(order);
+    db.upsert(<span class="tok-str">"orders"</span>, row);
+  }
+}</code></pre>
+      </div>
+      <div class="callout good">
+        <div class="eyebrow">Cara verifikasi cepat</div>
+        Aturan ini bisa ditegakkan otomatis di Java memakai <strong>ArchUnit</strong>: <code>noClasses().that().resideInAPackage("..domain..").should().dependOnClassesThat().resideInAnyPackage("..infrastructure..", "..interfaces..")</code>. Kalau package <code>domain</code> mengimpor Spring, JPA, atau SDK cloud provider manapun, build gagal di CI — Dependency Rule benar-benar terjaga, bukan sekadar konvensi di kepala tim.
+      </div>
+    </section>
+
+    <!-- ================= ADV-01 ================= -->
+    <section class="sheet" id="adv-01">
+      <div class="sheet-head">
+        <div><span class="sheet-code">ADV · 01</span><h2>CQRS</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i class="on"></i></span> Lanjut</div>
+      </div>
+      <p>Command Query Responsibility Segregation: pisahkan jalur <strong>tulis</strong> (lewat aggregate, menegakkan invariant) dari jalur <strong>baca</strong> (query langsung ke model baca yang dioptimalkan, boleh berupa view/proyeksi denormalisasi). Aggregate dirancang untuk konsistensi menulis, bukan untuk melayani laporan lintas-aggregate yang butuh join berat — memaksakan keduanya lewat model yang sama biasanya berujung pada aggregate yang gemuk oleh method read-only.</p>
+      <div class="callout">
+        <div class="eyebrow">Bukan wajib all-or-nothing</div>
+        CQRS bisa diterapkan ringan (query langsung ke DB read-only tanpa lewat repository aggregate) sampai berat (model baca terpisah di database berbeda, disinkron lewat domain event). Mulai dari versi ringan; tingkatkan hanya kalau ada bukti kebutuhan skala/performa.
+      </div>
+    </section>
+
+    <!-- ================= ADV-02 ================= -->
+    <section class="sheet" id="adv-02">
+      <div class="sheet-head">
+        <div><span class="sheet-code">ADV · 02</span><h2>Event Sourcing</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i class="on"></i></span> Lanjut</div>
+      </div>
+      <p>Alih-alih menyimpan state akhir aggregate, simpan <strong>urutan event</strong> yang menyebabkan state itu terjadi. State saat ini didapat dengan me-replay semua event dari awal (atau dari snapshot terakhir). Cocok untuk domain yang butuh audit trail lengkap dan sering perlu menjawab "kenapa angka ini jadi begini" — akuntansi, ledger, perbankan.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span>Account.java — event-sourced aggregate</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public class</span> <span class="tok-fn">Account</span> {
+  <span class="tok-kw">private</span> Money balance = Money.of(<span class="tok-kw">0</span>, <span class="tok-str">"IDR"</span>);
+  <span class="tok-kw">private int</span> version = <span class="tok-kw">0</span>;
+
+  <span class="tok-kw">public static</span> Account <span class="tok-fn">rehydrate</span>(List&lt;DomainEvent&gt; events) {
+    Account account = <span class="tok-kw">new</span> <span class="tok-fn">Account</span>();
+    <span class="tok-kw">for</span> (DomainEvent e : events) {
+      account.apply(e);
+    }
+    <span class="tok-kw">return</span> account;
+  }
+
+  <span class="tok-kw">private void</span> <span class="tok-fn">apply</span>(DomainEvent event) {
+    <span class="tok-kw">if</span> (event <span class="tok-kw">instanceof</span> FundsDeposited e) {
+      <span class="tok-kw">this</span>.balance = <span class="tok-kw">this</span>.balance.add(e.amount());
+    }
+    <span class="tok-kw">if</span> (event <span class="tok-kw">instanceof</span> FundsWithdrawn e) {
+      <span class="tok-kw">this</span>.balance = <span class="tok-kw">this</span>.balance.subtract(e.amount());
+    }
+    <span class="tok-kw">this</span>.version++;
+  }
+
+  <span class="tok-kw">public</span> FundsWithdrawn <span class="tok-fn">withdraw</span>(Money amount) {
+    <span class="tok-kw">if</span> (<span class="tok-kw">this</span>.balance.lessThan(amount)) {
+      <span class="tok-kw">throw new</span> <span class="tok-fn">IllegalStateException</span>(<span class="tok-str">"Saldo tidak mencukupi"</span>);
+    }
+    FundsWithdrawn event = <span class="tok-kw">new</span> <span class="tok-fn">FundsWithdrawn</span>(amount);
+    apply(event);
+    <span class="tok-kw">return</span> event;
+  }
+}</code></pre>
+      </div>
+      <div class="callout warn">
+        <div class="eyebrow">Biaya tersembunyi</div>
+        Event sourcing menambah kompleksitas nyata: skema event harus dijaga backward-compatible selamanya, butuh strategi snapshot untuk aggregate berumur panjang, dan query "state saat ini" jadi tidak trivial tanpa proyeksi baca terpisah (lihat <a href="#adv-01">CQRS</a>). Jangan pilih ini hanya karena terdengar canggih.
+      </div>
+    </section>
+
+    <!-- ================= ADV-03 ================= -->
+    <section class="sheet" id="adv-03">
+      <div class="sheet-head">
+        <div><span class="sheet-code">ADV · 03</span><h2>Saga / Process Manager</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i class="on"></i></span> Lanjut</div>
+      </div>
+      <p>Karena satu transaksi hanya boleh menyentuh satu aggregate (<a href="#ddd-05">DDD·05</a>), alur bisnis yang melibatkan beberapa aggregate/bounded context — mis. reservasi driver → otorisasi pembayaran → konfirmasi ride — dikoordinasikan lewat <strong>saga</strong>: rangkaian langkah lokal, masing-masing dengan <em>compensating action</em> untuk membatalkan efek langkah sebelumnya bila ada kegagalan di tengah jalan.</p>
+      <div class="codeblock">
+        <div class="cb-head"><span>RideBookingSaga.java</span><button class="copy-btn" type="button">Copy</button></div>
+        <pre><code><span class="tok-kw">public class</span> <span class="tok-fn">RideBookingSaga</span> {
+  <span class="tok-kw">private final</span> CommandBus commands;
+
+  <span class="tok-kw">public</span> <span class="tok-fn">RideBookingSaga</span>(CommandBus commands) {
+    <span class="tok-kw">this</span>.commands = commands;
+  }
+
+  <span class="tok-kw">public void</span> <span class="tok-fn">onRideRequested</span>(RideRequested event) {
+    commands.send(<span class="tok-kw">new</span> <span class="tok-fn">ReserveDriver</span>(event.rideId()));
+  }
+
+  <span class="tok-kw">public void</span> <span class="tok-fn">onDriverReserved</span>(DriverReserved event) {
+    commands.send(<span class="tok-kw">new</span> <span class="tok-fn">AuthorizePayment</span>(event.rideId()));
+  }
+
+  <span class="tok-kw">public void</span> <span class="tok-fn">onPaymentAuthorizationFailed</span>(PaymentAuthorizationFailed event) {
+    <span class="tok-cm">// compensating actions — batalkan langkah sebelumnya</span>
+    commands.send(<span class="tok-kw">new</span> <span class="tok-fn">ReleaseDriver</span>(event.rideId()));
+    commands.send(<span class="tok-kw">new</span> <span class="tok-fn">CancelRide</span>(event.rideId()));
+  }
+}</code></pre>
+      </div>
+      <p>Saga tidak menggantikan konsistensi transaksional — ia mengganti "atomik" dengan "eventually consistent, dan bisa dibatalkan dengan bersih". Ini trade-off sadar, bukan kompromi darurat.</p>
+    </section>
+
+    <!-- ================= ADV-04 ================= -->
+    <section class="sheet" id="adv-04">
+      <div class="sheet-head">
+        <div><span class="sheet-code">ADV · 04</span><h2>Anti-Corruption Layer, lebih dalam</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i class="on"></i></span> Lanjut</div>
+      </div>
+      <p>ACL adalah lapisan penerjemah di batas bounded context: mengubah model/protokol sistem eksternal menjadi model internal yang bersih, dan sebaliknya. Secara arsitektural, ACL adalah <strong>adapter</strong> (CA·02) yang isinya mostly mapping logic — ia hidup di infrastructure/interface layer, memanggil port yang didefinisikan domain, dan tidak pernah membiarkan tipe/istilah dari sistem eksternal bocor ke domain model.</p>
+      <ul>
+        <li>Tanpa ACL: nama field, enum, dan asumsi dari API pihak ketiga menyebar ke seluruh domain — setiap perubahan API eksternal jadi refactor besar.</li>
+        <li>Dengan ACL: satu titik perubahan ketika API eksternal berubah; domain model tetap stabil dan mengekspresikan ubiquitous language milik sendiri.</li>
+      </ul>
+    </section>
+
+    <!-- ================= ADV-05 ================= -->
+    <section class="sheet" id="adv-05">
+      <div class="sheet-head">
+        <div><span class="sheet-code">ADV · 05</span><h2>Aturan desain aggregate</h2></div>
+        <div class="level">Level <span class="level-track"><i class="on"></i><i class="on"></i><i class="on"></i></span> Lanjut</div>
+      </div>
+      <ul>
+        <li><strong>Rancang aggregate sekecil mungkin</strong> — hanya sertakan objek yang benar-benar butuh konsistensi <em>langsung</em> (bukan eventual) dengan root.</li>
+        <li><strong>Referensi aggregate lain hanya lewat ID</strong>, tidak pernah menyimpan objek aggregate lain secara langsung di dalam aggregate — mencegah graf objek raksasa dan transaksi yang menyentuh banyak tabel sekaligus.</li>
+        <li><strong>Konsistensi antar-aggregate bersifat eventual</strong>, dijaga lewat domain event, bukan lewat transaksi database yang dipaksa mencakup keduanya.</li>
+        <li><strong>Satu transaksi = satu aggregate.</strong> Kalau use case terasa perlu menyimpan dua aggregate root sekaligus secara atomik, itu sinyal untuk memikirkan ulang batasnya atau memakai saga.</li>
+      </ul>
+    </section>
+
+    <!-- ================= CASE STUDIES ================= -->
+    <section class="sheet wide" id="cs-01" style="border-bottom:none; padding-bottom: 8px;">
+      <div class="eyebrow" style="margin-bottom:6px;">Studi Kasus</div>
+      <h2 style="font-size:1.5rem;">Tiga sheet penutup, dikerjakan penuh</h2>
+    </section>
+
+    <section class="sheet wide" style="padding-top:0;">
+      <div class="casefile" id="cs-01-file">
+        <span class="tick-bl"></span><span class="tick-br"></span>
+        <div class="casefile-header">
+          <div class="cell"><span class="k">Sheet</span><span class="v">CS·01</span></div>
+          <div class="cell"><span class="k">Domain</span><span class="v">E-Commerce Order</span></div>
+          <div class="cell"><span class="k">Pola utama</span><span class="v">Aggregate, Repository, Domain Event</span></div>
+          <div class="cell"><span class="k">Kompleksitas</span><span class="v">Menengah</span></div>
+        </div>
+        <div class="casefile-body">
+          <p><strong>Konteks:</strong> Bounded context <em>Ordering</em> menerima permintaan submit order dari pelanggan. Order harus memiliki minimal satu item, total dihitung dari <code>OrderLine</code>, dan begitu disubmit, order tidak boleh diubah lagi (lihat <a href="#ddd-05">DDD·05</a> untuk aggregate-nya, <a href="#ca-04">CA·04</a> untuk struktur foldernya).</p>
+          <p><strong>Keputusan desain kunci:</strong></p>
+          <ul>
+            <li><code>Order</code> jadi satu-satunya aggregate root; <code>OrderLine</code> adalah entity internal, <code>Money</code> adalah value object.</li>
+            <li><code>CustomerId</code> disimpan sebagai referensi, bukan objek <code>Customer</code> penuh — <code>Customer</code> adalah aggregate root di bounded context lain (Identity).</li>
+            <li>Event <code>OrderSubmitted</code> dipublikasikan setelah <code>save()</code> berhasil, dikonsumsi context <em>Shipping</em> untuk memulai proses pengiriman — integrasi lewat OHS/PL (<a href="#ddd-10">DDD·10</a>), bukan panggilan langsung antar aggregate.</li>
+            <li>Controller HTTP (interface layer) hanya menerjemahkan request menjadi <code>SubmitOrderCommand</code> dan memanggil <code>SubmitOrderUseCase</code> — tidak ada logika bisnis di controller.</li>
+          </ul>
+          <div class="callout good">
+            <div class="eyebrow">Hasil</div>
+            Aturan "order kosong tidak boleh disubmit" hanya ada di satu tempat (<code>Order.submit()</code>), sehingga tidak mungkin dilewati lewat jalur API lain — berbeda dari desain anemic model di mana validasi ini gampang lupa ditaruh di salah satu endpoint.
+          </div>
+        </div>
+      </div>
+
+      <div class="casefile" id="cs-02-file">
+        <span class="tick-bl"></span><span class="tick-br"></span>
+        <div class="casefile-header">
+          <div class="cell"><span class="k">Sheet</span><span class="v">CS·02</span></div>
+          <div class="cell"><span class="k">Domain</span><span class="v">Ledger / Perbankan</span></div>
+          <div class="cell"><span class="k">Pola utama</span><span class="v">Event Sourcing, Invariant ketat</span></div>
+          <div class="cell"><span class="k">Kompleksitas</span><span class="v">Lanjut</span></div>
+        </div>
+        <div class="casefile-body">
+          <p><strong>Konteks:</strong> <code>Account</code> harus mempertahankan invariant "saldo tidak boleh negatif" di bawah beban transaksi konkuren, dan regulator sewaktu-waktu bisa meminta riwayat lengkap kenapa saldo berubah — bukan cuma angka akhirnya.</p>
+          <p><strong>Kenapa event sourcing di sini masuk akal</strong> (bandingkan dengan <a href="#adv-02">ADV·02</a>): audit trail adalah kebutuhan fungsional, bukan nice-to-have, dan volume event per aggregate (satu akun) cukup kecil sehingga replay tetap murah.</p>
+          <ul>
+            <li>Setiap mutasi saldo lahir sebagai event (<code>FundsDeposited</code>, <code>FundsWithdrawn</code>) sebelum diterapkan ke state in-memory — event <em>adalah</em> sumber kebenaran, state adalah proyeksinya.</li>
+            <li>Invariant "saldo tidak boleh negatif" dicek sebelum event dibuat, di dalam aggregate — bukan di application service, apalagi di database constraint saja.</li>
+            <li>Konkurensi ditangani dengan <em>optimistic concurrency</em>: setiap <code>save</code> menyertakan <code>version</code> yang diharapkan; event store menolak tulis kalau versi sudah berubah sejak <code>rehydrate</code>.</li>
+          </ul>
+          <div class="callout warn">
+            <div class="eyebrow">Jebakan umum</div>
+            Mengekspos daftar event mentah langsung sebagai API publik ke tim lain. Skema event adalah kontrak internal aggregate — kalau context lain butuh tahu perubahan saldo, publikasikan <em>integration event</em> terpisah yang stabil (lihat <a href="#ddd-06">DDD·06</a>).
+          </div>
+        </div>
+      </div>
+
+      <div class="casefile" id="cs-03-file">
+        <span class="tick-bl"></span><span class="tick-br"></span>
+        <div class="casefile-header">
+          <div class="cell"><span class="k">Sheet</span><span class="v">CS·03</span></div>
+          <div class="cell"><span class="k">Domain</span><span class="v">Ride-Hailing Dispatch</span></div>
+          <div class="cell"><span class="k">Pola utama</span><span class="v">Saga, Context Mapping</span></div>
+          <div class="cell"><span class="k">Kompleksitas</span><span class="v">Lanjut</span></div>
+        </div>
+        <div class="casefile-body">
+          <p><strong>Konteks:</strong> Satu permintaan ride menyentuh minimal tiga bounded context — <em>Dispatch</em> (cari &amp; kunci driver), <em>Payment</em> (otorisasi kartu), <em>Trip</em> (mulai perjalanan). Masing-masing punya aggregate sendiri; tidak ada satu transaksi database yang bisa mencakup ketiganya.</p>
+          <p><strong>Kenapa saga, bukan transaksi terdistribusi:</strong> two-phase commit lintas tiga service berarti mengunci resource di tiga tempat sekaligus selama proses berjalan — buruk untuk latency dan availability. Saga menerima <em>eventual consistency</em> sebagai trade-off sadar, dengan compensating action yang eksplisit (lihat <a href="#adv-03">ADV·03</a>).</p>
+          <ul>
+            <li>Kegagalan otorisasi pembayaran men-trigger <code>ReleaseDriver</code> — driver yang sudah "dikunci" harus dilepas eksplisit, tidak otomatis lewat rollback database.</li>
+            <li>Context <em>Payment</em> di sini biasanya penyedia pihak ketiga → wajib ACL (<a href="#adv-04">ADV·04</a>) supaya model <code>Trip</code> tidak tercemar istilah spesifik payment gateway.</li>
+            <li>State saga sendiri (langkah mana yang sudah selesai) disimpan sebagai aggregate tersendiri — <em>process manager</em> — bukan disebar sebagai flag di aggregate domain lain.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= APPENDIX ================= -->
+    <section class="sheet wide" id="appendix">
+      <div class="sheet-head">
+        <div><span class="sheet-code">APPENDIX</span><h2>Daftar anti-pattern</h2></div>
+      </div>
+      <ul class="checklist">
+        <li><span class="mark">✕</span><div><strong>Anemic Domain Model</strong> — entity cuma berisi getter/setter, semua logika bisnis pindah ke service. Kehilangan seluruh manfaat encapsulation DDD.</div></li>
+        <li><span class="mark">✕</span><div><strong>God Aggregate</strong> — satu aggregate mencoba menjaga konsistensi untuk separuh sistem, jadi bottleneck lock dan sulit dipahami.</div></li>
+        <li><span class="mark">✕</span><div><strong>Repository per tabel</strong>, bukan per aggregate root — membocorkan struktur database ke domain, dan memecah batas konsistensi aggregate.</div></li>
+        <li><span class="mark">✕</span><div><strong>Entity ORM = entity domain</strong> — anotasi ORM menempel langsung di kelas domain, membuat domain layer diam-diam bergantung pada framework persistence.</div></li>
+        <li><span class="mark">✕</span><div><strong>Application service gemuk</strong> — aturan bisnis (bukan sekadar orkestrasi) ditulis di use case, bukan di aggregate; aturan jadi sulit ditemukan dan mudah diduplikasi.</div></li>
+        <li><span class="mark">✕</span><div><strong>Database bersama antar bounded context</strong> — dua context menulis ke tabel yang sama, sehingga batas context di kode tidak lagi berarti apa-apa secara nyata.</div></li>
+        <li><span class="mark">✕</span><div><strong>DTO = domain object</strong> — struktur request/response API dipakai langsung sebagai objek domain, membuat kontrak eksternal dan model internal terikat erat.</div></li>
+        <li><span class="mark">✕</span><div><strong>Tidak ada ubiquitous language</strong> — istilah di kode berbeda dari istilah di rapat bisnis, setiap diskusi butuh "penerjemahan" bolak-balik.</div></li>
+      </ul>
+    </section>
+
+    <div class="foot">
+      DDD &amp; Clean Architecture Field Manual · 22 sheet · Referensi belajar pribadi
+    </div>
+  </main>
+</div>
+
+<button class="notes-toggle" id="notesToggle" type="button" aria-label="Buka daftar catatanku">✎ Catatanku <span class="notes-count" id="notesCount">0</span></button>
+
+<aside class="notes-panel" id="notesPanel" aria-label="Daftar catatan kata">
+  <div class="notes-panel-head">
+    <h3>Catatanku</h3>
+    <button class="rail-close" id="notesPanelClose" type="button" aria-label="Tutup panel catatan" style="display:inline-block;">Tutup ✕</button>
+  </div>
+  <div class="notes-panel-list" id="notesPanelList">
+    <div class="notes-empty" id="notesEmpty">Klik kata mana pun di materi untuk mulai menulis catatanmu sendiri. Kata yang sudah dicatat akan bergaris bawah putus-putus dan muncul di sini.</div>
+  </div>
+  <div class="notes-panel-foot">
+    <button class="np-btn" id="notesExport" type="button">Export JSON</button>
+    <button class="np-btn" id="notesImportBtn" type="button">Import JSON</button>
+  </div>
+</aside>
+<input type="file" id="notesImportInput" accept="application/json" hidden />
+
+<div class="note-tooltip" id="noteTooltip"><span class="lbl" id="ntLabel"></span><div class="body" id="ntBody"></div></div>
+
+<div class="note-popover" id="notePopover">
+  <div class="np-label">Catatan untuk <span class="np-word" id="npWord">kata</span></div>
+  <textarea id="npTextarea" placeholder="Tulis penjelasan versi kamu sendiri untuk kata ini..."></textarea>
+  <div class="np-actions">
+    <button class="np-btn danger" id="npDelete" type="button">Hapus</button>
+    <div style="display:flex; gap:8px;">
+      <button class="np-btn" id="npCancel" type="button">Batal</button>
+      <button class="np-btn primary" id="npSave" type="button">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var rail = document.getElementById('rail');
+    var toggle = document.getElementById('railToggle');
+    var closeBtn = document.getElementById('railClose');
+    var backdrop = document.getElementById('backdrop');
+
+    function openRail() { rail.classList.add('open'); backdrop.classList.add('open'); }
+    function closeRail() { rail.classList.remove('open'); backdrop.classList.remove('open'); }
+
+    toggle.addEventListener('click', openRail);
+    closeBtn.addEventListener('click', closeRail);
+    backdrop.addEventListener('click', closeRail);
+
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var sections = links
+      .map(function (a) {
+        var id = a.getAttribute('href').slice(1);
+        return { link: a, el: document.getElementById(id) };
+      })
+      .filter(function (s) { return s.el; });
+
+    links.forEach(function (a) {
+      a.addEventListener('click', function () {
+        if (window.matchMedia('(max-width: 940px)').matches) closeRail();
+      });
+    });
+
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            var match = sections.find(function (s) { return s.el === entry.target; });
+            if (!match) return;
+            if (entry.isIntersecting) {
+              links.forEach(function (l) { l.classList.remove('active'); });
+              match.link.classList.add('active');
+            }
+          });
+        },
+        { rootMargin: '-10% 0px -75% 0px', threshold: 0 }
+      );
+      sections.forEach(function (s) { observer.observe(s.el); });
+    }
+
+    document.querySelectorAll('.copy-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pre = btn.closest('.codeblock').querySelector('pre');
+        var text = pre.innerText;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(function () {
+            var original = btn.textContent;
+            btn.textContent = 'Copied';
+            setTimeout(function () { btn.textContent = original; }, 1400);
+          });
+        }
+      });
+    });
+  })();
+</script>
+
+<script>
+  (function () {
+    var STORAGE_KEY = 'ddd-java-personal-notes-v1';
+    var notes = {};
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) notes = JSON.parse(raw) || {};
+    } catch (e) { notes = {}; }
+
+    function cssEscape(s) { return s.replace(/["\\]/g, '\\$&'); }
+
+    var mainEl = document.querySelector('main');
+    var SKIP_TAGS = { CODE: 1, A: 1, BUTTON: 1, SCRIPT: 1, STYLE: 1, SVG: 1, PRE: 1, TEXTAREA: 1, INPUT: 1 };
+    var SKIP_CLASSES = ['sheet-code', 'level', 'cb-head', 'k', 'v'];
+
+    function hasSkipClass(el) {
+      for (var i = 0; i < SKIP_CLASSES.length; i++) {
+        if (el.classList.contains(SKIP_CLASSES[i])) return true;
+      }
+      return false;
+    }
+
+    function persist() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); } catch (e) {}
+    }
+
+    /* ---- one-time, non-destructive pass: wrap every prose word in its own span ----
+       this never edits, removes, or reorders any character of the original text —
+       it only inserts <span> boundaries around words that already exist as-is. */
+    var WORD_RE = /[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'-]*[A-Za-zÀ-ÖØ-öø-ÿ]|[A-Za-zÀ-ÖØ-öø-ÿ]/g;
+
+    function wrapTextNode(node) {
+      var text = node.nodeValue;
+      if (!/[A-Za-z]/.test(text)) return;
+      var frag = document.createDocumentFragment();
+      var lastIndex = 0, match, found = false;
+      WORD_RE.lastIndex = 0;
+      while ((match = WORD_RE.exec(text))) {
+        found = true;
+        if (match.index > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+        var word = match[0];
+        var span = document.createElement('span');
+        span.className = 'wd';
+        span.dataset.key = word.toLowerCase();
+        span.textContent = word;
+        frag.appendChild(span);
+        lastIndex = WORD_RE.lastIndex;
+      }
+      if (!found) return;
+      if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      node.parentNode.replaceChild(frag, node);
+    }
+
+    function walk(node) {
+      if (node.nodeType === 3) {
+        if (node.nodeValue && node.nodeValue.trim()) wrapTextNode(node);
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      if (SKIP_TAGS[node.tagName]) return;
+      if (hasSkipClass(node)) return;
+      var children = Array.prototype.slice.call(node.childNodes);
+      for (var i = 0; i < children.length; i++) walk(children[i]);
+    }
+    if (mainEl) walk(mainEl);
+
+    function blockAncestor(el) {
+      return el ? el.closest('p, li, td, th, h1, h2, h3, h4, .eyebrow, .lede, .callout, .casefile-body, .diagram-legend .item, .ne-text') : null;
+    }
+
+    /* ---- claim a run of existing word-spans for one note key (1 word or many) ----
+       purely relabels data-key / toggles a class on spans that already exist —
+       never inserts, deletes, or moves a single character of text. */
+    function groupPhraseGlobally(words, phraseKey) {
+      if (!mainEl || !words.length) return;
+      var all = Array.prototype.slice.call(mainEl.querySelectorAll('.wd'));
+      var n = words.length;
+      for (var i = 0; i + n <= all.length; i++) {
+        var ok = true;
+        for (var j = 0; j < n; j++) {
+          var s = all[i + j];
+          if (s.textContent.toLowerCase() !== words[j]) { ok = false; break; }
+          if (s.classList.contains('has-note') && s.dataset.key !== phraseKey) { ok = false; break; }
+        }
+        if (!ok) continue;
+        if (n > 1) {
+          var b0 = blockAncestor(all[i]);
+          var sameBlock = !!b0;
+          for (var k = 1; sameBlock && k < n; k++) sameBlock = blockAncestor(all[i + k]) === b0;
+          if (!sameBlock) continue;
+        }
+        for (var m = 0; m < n; m++) {
+          all[i + m].dataset.key = phraseKey;
+          all[i + m].classList.add('has-note');
+        }
+      }
+    }
+
+    function unclaimKey(key) {
+      if (!mainEl) return;
+      var spans = mainEl.querySelectorAll('.wd[data-key="' + cssEscape(key) + '"]');
+      spans.forEach(function (s) {
+        s.classList.remove('has-note');
+        s.dataset.key = s.textContent.toLowerCase(); // reverts to its own word — text itself untouched
+      });
+    }
+
+    function renderAllAnnotations() {
+      var keys = Object.keys(notes)
+        .filter(function (k) { return notes[k] && notes[k].trim(); })
+        .sort(function (a, b) { return b.split(' ').length - a.split(' ').length; }); // longer phrases claim first
+      keys.forEach(function (k) { groupPhraseGlobally(k.split(' '), k); });
+    }
+    renderAllAnnotations();
+
+    function positionFloating(el, rect) {
+      el.style.left = '0px';
+      el.style.top = '0px';
+      var w = el.offsetWidth, h = el.offsetHeight;
+      var left = rect.left;
+      var maxLeft = window.innerWidth - w - 10;
+      if (left > maxLeft) left = Math.max(10, maxLeft);
+      if (left < 10) left = 10;
+      var top = rect.top - h - 10;
+      if (top < 10) top = rect.bottom + 10;
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
+    }
+    function unionRect(spans) {
+      var first = spans[0].getBoundingClientRect();
+      var last = spans[spans.length - 1].getBoundingClientRect();
+      return {
+        left: Math.min(first.left, last.left),
+        top: Math.min(first.top, last.top),
+        bottom: Math.max(first.bottom, last.bottom)
+      };
+    }
+
+    /* ---- hover tooltip on annotated word/phrase ---- */
+    var tooltip = document.getElementById('noteTooltip');
+    var ntLabel = document.getElementById('ntLabel');
+    var ntBody = document.getElementById('ntBody');
+    var tooltipEl = null;
+
+    function showTooltip(span) {
+      var text = notes[span.dataset.key];
+      if (!text) return;
+      tooltipEl = span;
+      ntLabel.textContent = span.dataset.key;
+      ntBody.textContent = text;
+      tooltip.classList.add('show');
+      positionFloating(tooltip, span.getBoundingClientRect());
+    }
+    function hideTooltip() { tooltipEl = null; tooltip.classList.remove('show'); }
+
+    document.addEventListener('mouseover', function (e) {
+      var wd = e.target.closest && e.target.closest('.wd.has-note');
+      if (wd && wd !== tooltipEl) showTooltip(wd);
+    });
+    document.addEventListener('mouseout', function (e) {
+      var wd = e.target.closest && e.target.closest('.wd.has-note');
+      if (wd && wd === tooltipEl) {
+        var to = e.relatedTarget;
+        if (!to || !wd.contains(to)) hideTooltip();
+      }
+    });
+
+    /* ---- click one word, or click-drag across several, to annotate ---- */
+    var allWdCache = [];
+    var dragStartSpan = null;
+    var dragCurrentSpans = [];
+    var isDragging = false;
+    var touchStartX = 0, touchStartY = 0, touchScrollCancelled = false;
+    var SCROLL_SLOP = 10; // px of vertical movement before a touch is treated as a page scroll
+
+    function refreshWdCache() { allWdCache = Array.prototype.slice.call(mainEl.querySelectorAll('.wd')); }
+    function clearSelecting() { dragCurrentSpans.forEach(function (s) { s.classList.remove('selecting'); }); dragCurrentSpans = []; }
+    function computeRangeSpans(spanA, spanB) {
+      var idxA = allWdCache.indexOf(spanA), idxB = allWdCache.indexOf(spanB);
+      if (idxA === -1 || idxB === -1) return [spanA];
+      var lo = Math.min(idxA, idxB), hi = Math.max(idxA, idxB);
+      return allWdCache.slice(lo, hi + 1);
+    }
+    function finishSelection() {
+      var spans = dragCurrentSpans.length ? dragCurrentSpans.slice() : (dragStartSpan ? [dragStartSpan] : []);
+      clearSelecting();
+      dragStartSpan = null;
+      if (!spans.length) return;
+      var words = spans.map(function (s) { return s.textContent.toLowerCase(); });
+      var phraseKey = words.join(' ');
+      var displayPhrase = spans.map(function (s) { return s.textContent; }).join(' ');
+      openPopover(phraseKey, displayPhrase, unionRect(spans));
+    }
+
+    function resolveEndSpan(clientX, clientY) {
+      var el = document.elementFromPoint(clientX, clientY);
+      return el && el.closest ? el.closest('.wd') : null;
+    }
+
+    document.addEventListener('mousedown', function (e) {
+      var wd = e.target.closest && e.target.closest('.wd');
+      if (!wd) return;
+      if (e.target.closest('.note-popover') || e.target.closest('.notes-panel')) return;
+      e.preventDefault(); // keep native text-selection from fighting our own drag tracking
+      isDragging = true;
+      refreshWdCache();
+      dragStartSpan = wd;
+      clearSelecting();
+      dragCurrentSpans = [wd];
+      wd.classList.add('selecting');
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!isDragging || !dragStartSpan) return;
+      var wd = e.target.closest && e.target.closest('.wd');
+      if (!wd) wd = resolveEndSpan(e.clientX, e.clientY); // fill gaps (e.g. cursor briefly over a space)
+      if (!wd) return;
+      if (blockAncestor(wd) !== blockAncestor(dragStartSpan)) return;
+      var range = computeRangeSpans(dragStartSpan, wd);
+      clearSelecting();
+      range.forEach(function (s) { s.classList.add('selecting'); });
+      dragCurrentSpans = range;
+    });
+    document.addEventListener('mouseup', function (e) {
+      if (!isDragging) return;
+      isDragging = false;
+      // authoritative: resolve the end word from the actual release point,
+      // regardless of how many (or few) mousemove events fired mid-drag
+      var endWd = resolveEndSpan(e.clientX, e.clientY);
+      if (endWd && dragStartSpan && blockAncestor(endWd) === blockAncestor(dragStartSpan)) {
+        dragCurrentSpans = computeRangeSpans(dragStartSpan, endWd);
+      }
+      e.stopPropagation();
+      hideTooltip();
+      finishSelection();
+    });
+
+    document.addEventListener('touchstart', function (e) {
+      var t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchScrollCancelled = false;
+      var wd = resolveEndSpan(t.clientX, t.clientY);
+      if (!wd) return;
+      isDragging = true;
+      refreshWdCache();
+      dragStartSpan = wd;
+      clearSelecting();
+      dragCurrentSpans = [wd];
+      wd.classList.add('selecting');
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!isDragging || !dragStartSpan) return;
+      var t = e.touches[0];
+      var dx = t.clientX - touchStartX;
+      var dy = t.clientY - touchStartY;
+      if (!touchScrollCancelled && Math.abs(dy) > SCROLL_SLOP && Math.abs(dy) > Math.abs(dx) * 1.3) {
+        // mostly-vertical movement: the user is scrolling the page, not dragging across words
+        touchScrollCancelled = true;
+        clearSelecting();
+        isDragging = false;
+        dragStartSpan = null;
+        return;
+      }
+      if (touchScrollCancelled) return;
+      var wd = resolveEndSpan(t.clientX, t.clientY);
+      if (!wd) return;
+      if (blockAncestor(wd) !== blockAncestor(dragStartSpan)) return;
+      var range = computeRangeSpans(dragStartSpan, wd);
+      clearSelecting();
+      range.forEach(function (s) { s.classList.add('selecting'); });
+      dragCurrentSpans = range;
+    }, { passive: true });
+    document.addEventListener('touchend', function (e) {
+      if (touchScrollCancelled) {
+        touchScrollCancelled = false;
+        isDragging = false;
+        dragStartSpan = null;
+        clearSelecting();
+        return;
+      }
+      if (!isDragging) return;
+      isDragging = false;
+      var t = e.changedTouches && e.changedTouches[0];
+      if (t) {
+        var endWd = resolveEndSpan(t.clientX, t.clientY);
+        if (endWd && dragStartSpan && blockAncestor(endWd) === blockAncestor(dragStartSpan)) {
+          dragCurrentSpans = computeRangeSpans(dragStartSpan, endWd);
+        }
+      }
+      hideTooltip();
+      finishSelection();
+    });
+    document.addEventListener('touchcancel', function () {
+      touchScrollCancelled = false;
+      isDragging = false;
+      dragStartSpan = null;
+      clearSelecting();
+    });
+
+    /* ---- add/edit/delete popover ---- */
+    var popover = document.getElementById('notePopover');
+    var npWord = document.getElementById('npWord');
+    var npTextarea = document.getElementById('npTextarea');
+    var npSave = document.getElementById('npSave');
+    var npDelete = document.getElementById('npDelete');
+    var npCancel = document.getElementById('npCancel');
+    var currentKey = null;
+
+    function openPopover(key, displayWord, rect) {
+      currentKey = key;
+      npWord.textContent = displayWord;
+      npTextarea.value = notes[key] || '';
+      npDelete.style.visibility = notes[key] ? 'visible' : 'hidden';
+      popover.classList.add('show');
+      positionPopoverBelow(rect);
+      setTimeout(function () { npTextarea.focus(); }, 0);
+    }
+
+    function positionPopoverBelow(rect) {
+      popover.style.left = '-9999px';
+      var w = popover.offsetWidth, h = popover.offsetHeight;
+      var left = rect.left;
+      var maxLeft = window.innerWidth - w - 10;
+      if (left > maxLeft) left = Math.max(10, maxLeft);
+      if (left < 10) left = 10;
+      var top = rect.bottom + 8;
+      if (top + h > window.innerHeight - 10) top = Math.max(10, rect.top - h - 8);
+      popover.style.left = left + 'px';
+      popover.style.top = top + 'px';
+    }
+
+    function closePopover() { popover.classList.remove('show'); currentKey = null; }
+
+    npSave.addEventListener('click', function () {
+      if (!currentKey) return;
+      var val = npTextarea.value.trim();
+      if (val) notes[currentKey] = val; else delete notes[currentKey];
+      persist();
+      if (val) groupPhraseGlobally(currentKey.split(' '), currentKey);
+      else unclaimKey(currentKey);
+      renderNotesPanel();
+      closePopover();
+    });
+    npDelete.addEventListener('click', function () {
+      if (!currentKey) return;
+      delete notes[currentKey];
+      persist();
+      unclaimKey(currentKey);
+      renderNotesPanel();
+      closePopover();
+    });
+    npCancel.addEventListener('click', closePopover);
+
+    document.addEventListener('click', function (e) {
+      if (popover.classList.contains('show') && !popover.contains(e.target) && !(e.target.closest && e.target.closest('.wd'))) closePopover();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closePopover();
+        notesPanel.classList.remove('open');
+      }
+    });
+
+    /* ---- notes management panel ---- */
+    var notesToggle = document.getElementById('notesToggle');
+    var notesPanel = document.getElementById('notesPanel');
+    var notesPanelClose = document.getElementById('notesPanelClose');
+    var notesPanelList = document.getElementById('notesPanelList');
+    var notesCount = document.getElementById('notesCount');
+    var notesExport = document.getElementById('notesExport');
+    var notesImportBtn = document.getElementById('notesImportBtn');
+    var notesImportInput = document.getElementById('notesImportInput');
+
+    notesToggle.addEventListener('click', function () { notesPanel.classList.add('open'); });
+    notesPanelClose.addEventListener('click', function () { notesPanel.classList.remove('open'); });
+
+    function renderNotesPanel() {
+      var keys = Object.keys(notes).filter(function (k) { return notes[k] && notes[k].trim(); }).sort();
+      notesCount.textContent = keys.length;
+      notesPanelList.innerHTML = '';
+      if (!keys.length) {
+        var empty = document.createElement('div');
+        empty.className = 'notes-empty';
+        empty.textContent = 'Klik satu kata, atau klik-tahan lalu geser untuk beberapa kata, di materi untuk mulai menulis catatanmu sendiri. Yang sudah dicatat akan bergaris bawah putus-putus dan muncul di sini.';
+        notesPanelList.appendChild(empty);
+        return;
+      }
+      keys.forEach(function (key) {
+        var entry = document.createElement('div');
+        entry.className = 'note-entry';
+        var w = document.createElement('div'); w.className = 'ne-word'; w.textContent = key;
+        var t = document.createElement('div'); t.className = 'ne-text'; t.textContent = notes[key];
+        var actions = document.createElement('div'); actions.className = 'ne-actions';
+        var editBtn = document.createElement('button');
+        editBtn.className = 'np-btn'; editBtn.type = 'button'; editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', function () {
+          notesPanel.classList.remove('open');
+          var anySpan = document.querySelector('.wd[data-key="' + cssEscape(key) + '"]');
+          if (anySpan) {
+            anySpan.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            setTimeout(function () { openPopover(key, key, anySpan.getBoundingClientRect()); }, 320);
+          } else {
+            openPopover(key, key, { left: window.innerWidth / 2 - 150, bottom: window.innerHeight / 2, top: window.innerHeight / 2 });
+          }
+        });
+        var delBtn = document.createElement('button');
+        delBtn.className = 'np-btn danger'; delBtn.type = 'button'; delBtn.textContent = 'Hapus';
+        delBtn.addEventListener('click', function () {
+          delete notes[key];
+          persist();
+          unclaimKey(key);
+          renderNotesPanel();
+        });
+        actions.appendChild(editBtn); actions.appendChild(delBtn);
+        entry.appendChild(w); entry.appendChild(t); entry.appendChild(actions);
+        notesPanelList.appendChild(entry);
+      });
+    }
+    renderNotesPanel();
+
+    notesExport.addEventListener('click', function () {
+      var blob = new Blob([JSON.stringify(notes, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'catatan-ddd-clean-architecture.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    notesImportBtn.addEventListener('click', function () { notesImportInput.click(); });
+    notesImportInput.addEventListener('change', function () {
+      var file = notesImportInput.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var imported = JSON.parse(reader.result);
+          Object.keys(imported).forEach(function (k) { notes[k] = imported[k]; });
+          persist();
+          renderAllAnnotations();
+          renderNotesPanel();
+        } catch (e) {
+          alert('File catatan tidak valid.');
+        }
+      };
+      reader.readAsText(file);
+      notesImportInput.value = '';
+    });
+  })();
+</script>
+
+</body>
+</html>

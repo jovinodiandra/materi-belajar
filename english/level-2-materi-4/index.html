@@ -1,0 +1,1530 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notebook Inggris — Level 2, Materi 4: Comparative &amp; Superlative</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__back { color: var(--muted); text-decoration: none; padding-right: 12px; border-right: 1px solid var(--line); white-space: nowrap; transition: color .18s; }
+  .topbar__back:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+  ul.plain, ol.plain { max-width: 72ch; padding-left: 22px; margin: 14px 0; }
+  ul.plain li, ol.plain li { margin-bottom: 8px; color: var(--ink); font-size: 15.5px; }
+  ul.plain li i, ol.plain li i { color: var(--ink-strong); font-style: italic; }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- conjugation table ---------- */
+  .ttable-wrap { overflow-x: auto; margin: 20px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); max-width: 820px; }
+  table.ttable { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14.5px; }
+  table.ttable th, table.ttable td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink); }
+  table.ttable th { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); }
+  table.ttable tr:last-child td { border-bottom: none; }
+  table.ttable td b { color: var(--ink-strong); }
+  table.ttable code { font-family: var(--mono); font-size: .9em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- quiz accordion ---------- */
+  .qa { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 4px 18px; margin: 12px 0; max-width: 78ch; }
+  .qa summary { cursor: pointer; list-style: none; padding: 13px 0; font-size: 15.5px; color: var(--ink-strong); display: flex; align-items: baseline; gap: 10px; }
+  .qa summary::-webkit-details-marker { display: none; }
+  .qa summary::before { content: "▸"; color: var(--cyan); flex: none; }
+  .qa[open] summary::before { content: "▾"; }
+  .qa .qa__a { padding: 0 0 16px 20px; border-top: 1px dashed var(--line-soft); margin-top: -2px; padding-top: 12px; color: var(--ink); font-size: 14.5px; }
+  .qa .qa__a b { color: var(--cyan); }
+  .qa .qa__a code { font-family: var(--mono); font-size: .88em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- interactive quiz ---------- */
+  .quizmeta { display:flex; align-items:center; gap:14px; margin:18px 0 22px; flex-wrap:wrap; max-width: 78ch; }
+  .quizmeta__count { font-family:var(--mono); font-size:13px; color:var(--cyan); letter-spacing:.04em; white-space:nowrap; }
+  .quizmeta__bar { flex:1; min-width:140px; height:6px; border-radius:4px; background:var(--panel-2); overflow:hidden; border:1px solid var(--line); }
+  .quizmeta__fill { height:100%; width:0%; background:linear-gradient(90deg,var(--cyan-dim),var(--cyan)); transition:width .3s ease; }
+
+  .qbox { display:flex; gap:14px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:16px 18px; margin:12px 0; max-width:78ch; transition:border-color .25s, background .25s; }
+  .qbox.correct { border-color: var(--good-line); background: linear-gradient(100deg, var(--good-bg), var(--panel) 60%); }
+  .qbox__num { flex:none; width:28px; height:28px; border-radius:50%; background:var(--panel-2); border:1px solid var(--line); color:var(--muted); font-family:var(--mono); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .qbox.correct .qbox__num { background:var(--good); border-color:var(--good); color:var(--void); }
+  .qbox__body { flex:1; min-width:0; }
+  .qbox__prompt { font-size:15.5px; color:var(--ink-strong); margin-bottom:12px; }
+  .qbox__prompt .blank { color:var(--amber); font-family:var(--mono); }
+  .qbox__options { display:flex; flex-wrap:wrap; gap:8px; }
+  .qopt {
+    font-family:var(--mono); font-size:13.5px; color:var(--ink); background:var(--panel-2);
+    border:1px solid var(--line); border-radius:7px; padding:7px 14px; cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .qopt:hover { border-color:var(--cyan-dim); color:var(--ink-strong); }
+  .qopt.is-correct { border-color:var(--good); background:var(--good-bg); color:var(--good); }
+  .qopt.is-wrong { border-color:var(--bad); background:var(--bad-bg); color:var(--bad); animation:qshake .3s; }
+  .qopt:disabled { cursor:default; opacity:.6; }
+  .qbox__input-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .qinput {
+    font-family:var(--mono); font-size:14px; color:var(--ink-strong); background:var(--void-2);
+    border:1px solid var(--line); border-radius:7px; padding:8px 12px; min-width:160px; flex:1;
+  }
+  .qinput:focus { outline:none; border-color:var(--cyan-dim); }
+  .qinput.is-wrong { border-color:var(--bad); animation:qshake .3s; }
+  .qinput.is-correct { border-color:var(--good); color:var(--good); }
+  .qbtn {
+    font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--void); background:var(--cyan);
+    border:none; border-radius:7px; padding:8px 16px; font-weight:700; cursor:pointer; transition:opacity .15s;
+  }
+  .qbtn:hover { opacity:.85; }
+  .qbtn:disabled { opacity:.5; cursor:default; }
+  .qbox__feedback { margin-top:10px; font-size:13.5px; min-height:1px; }
+  .qbox__feedback.ok { color:var(--good); }
+  .qbox__feedback.bad { color:var(--bad); }
+  .qbox__feedback b { color:inherit; }
+  @keyframes qshake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
+
+  .completebanner {
+    margin-top:24px; border:1px solid var(--good-line); border-radius:12px;
+    background:linear-gradient(160deg, var(--good-bg), var(--panel) 70%);
+    padding:20px 24px; max-width:78ch; display:none;
+  }
+  .completebanner.show { display:block; }
+  .completebanner h4 { font-family:var(--serif); color:var(--ink-strong); font-size:19px; margin-bottom:6px; }
+  .completebanner p { color:var(--ink); font-size:14.5px; }
+
+  .progresspill {
+    position:fixed; top:52px; right:14px; z-index:45; font-family:var(--mono); font-size:11.5px;
+    color:var(--muted); background:rgba(20,26,46,.92); border:1px solid var(--line); border-radius:20px;
+    padding:6px 12px; backdrop-filter:blur(6px); display:flex; align-items:center; gap:8px;
+  }
+  .progresspill b { color:var(--cyan); }
+  .progresspill.done { border-color:var(--good-line); color:var(--good); }
+  .progresspill.done b { color:var(--good); }
+  @media (max-width: 640px){ .progresspill { top:auto; bottom:14px; right:14px; } }
+
+  /* ---------- dialogue bubbles ---------- */
+  .dialogue { margin: 22px 0 6px; max-width: 640px; }
+  .brow { display: flex; margin-bottom: 12px; }
+  .brow.you { justify-content: flex-end; }
+  .bubble { max-width: 84%; padding: 11px 16px; border-radius: 14px; font-size: 14.5px; color: var(--ink); border: 1px solid var(--line); background: var(--panel); }
+  .brow.you .bubble { background: rgba(69,212,222,.08); border-color: var(--cyan-dim); border-bottom-right-radius: 4px; }
+  .brow:not(.you) .bubble { border-bottom-left-radius: 4px; }
+  .bubble .who { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .brow.you .bubble .who { color: var(--cyan); }
+  .bubble .id { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); font-style: italic; }
+
+  /* ---------- vocab card bits ---------- */
+  .vocab-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .vocab-word { font-family: var(--serif); font-weight: 600; font-size: 17px; color: var(--ink-strong); }
+  .vocab-ipa { font-family: var(--mono); font-size: 12px; color: var(--muted-2); }
+  .vocab-meaning { color: var(--cyan); font-weight: 600; font-size: 13.5px; margin-left: auto; }
+  .pos { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  .steps { counter-reset: step; max-width: 80ch; margin: 24px 0 6px; }
+  .steps li { list-style: none; position: relative; padding: 10px 0 10px 46px; border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink); }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 9px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13px; color: var(--void); font-weight: 700; background: var(--cyan); border-radius: 50%; }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--cyan); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .tiers { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__back" href="../index.html">← Belajar Inggris</a>
+  <div class="topbar__file">docs/learning/english/level-2-materi-4/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 22</div>
+</div>
+<div class="progress" id="progress"></div>
+<div class="progresspill" id="progressPill">Progress materi: <b id="progressPillCount">0/18</b></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa &amp; Konsep</div>
+    <a href="#c01"><span class="yr">01</span> Tujuan pembelajaran</a>
+    <a href="#c02"><span class="yr">02</span> Penjelasan konsep</a>
+    <a href="#c03"><span class="yr">03</span> Kenapa ini penting</a>
+
+    <div class="rail__part">II · Contoh dalam Konteks</div>
+    <a href="#c04"><span class="yr">04</span> Contoh sederhana</a>
+    <a href="#c05"><span class="yr">05</span> Contoh sehari-hari</a>
+    <a href="#c06"><span class="yr">06</span> Contoh dunia kerja</a>
+    <a href="#c07"><span class="yr">07</span> Contoh software engineering</a>
+
+    <div class="rail__part">III · Hindari Salah &amp; Ingat</div>
+    <a href="#c08"><span class="yr">08</span> Kesalahan umum</a>
+    <a href="#c09"><span class="yr">09</span> Tips mengingat</a>
+    <a href="#c10"><span class="yr">10</span> Ringkasan</a>
+
+    <div class="rail__part">IV · Latihan &amp; Praktik</div>
+    <a href="#c11"><span class="yr">11</span> Latihan</a>
+    <a href="#c12"><span class="yr">12</span> Quiz</a>
+    <a href="#c13"><span class="yr">13</span> Percakapan</a>
+    <a href="#c14"><span class="yr">14</span> Writing exercise</a>
+    <a href="#c15"><span class="yr">15</span> Speaking exercise</a>
+
+    <div class="rail__part">V · Perkaya Kemampuan</div>
+    <a href="#c16"><span class="yr">16</span> Listening</a>
+    <a href="#c17"><span class="yr">17</span> Reading</a>
+    <a href="#c18"><span class="yr">18</span> Vocabulary</a>
+    <a href="#c19"><span class="yr">19</span> Pronunciation</a>
+
+    <div class="rail__part">VI · Lanjut</div>
+    <a href="#c20"><span class="yr">20</span> Review</a>
+    <a href="#c21"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c22"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Notebook Inggris — Level 2 · Materi 4 dari banyak</div>
+      <h1 class="reveal d1">Comparative &amp; <span class="accent">Superlative</span></h1>
+      <p class="sub reveal d2">
+        Setelah Materi 3 mengajarimu <b>modal verbs</b> untuk menyampaikan nuansa (bisa, harus, sebaiknya), sekarang
+        giliran kamu belajar <b>membandingkan</b> dua hal atau lebih. Ini adalah kemampuan yang kamu pakai setiap hari
+        sebagai developer — membandingkan performa dua algoritma, memilih framework yang <b>lebih cepat</b>, atau
+        bilang bug mana yang <b>paling parah</b> di sprint ini. Tanpa comparative &amp; superlative, kamu cuma bisa
+        mendeskripsikan sesuatu berdiri sendiri — dengan materi ini, kamu bisa <b>membandingkannya</b>.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row"><div class="tl__yr">Lv 0</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Fondasi Nol</b> <span>— selesai</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 1</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Dasar Kokoh</b> <span>— selesai</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Lv 2</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Memperluas Struktur</b> <span>— Continuous, Modal Verbs, Comparative (materi ini)</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 3</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Menyambung Gagasan</b> <span>— menghubungkan kalimat jadi paragraf</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 4</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Bicara Seperti Native</b> <span>— idiom, nuansa halus</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Lv 5</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Advance</b> <span>— level terakhir</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <!-- ============ 01 TUJUAN ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">01</span> Tujuan pembelajaran</div>
+        <h2>Apa yang akan kamu kuasai</h2>
+      </div>
+      <p class="lead reveal">Setelah materi ini selesai, kamu akan bisa:</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// bandingkan dua</div><h4>Membentuk comparative</h4><p>Mengubah kata sifat jadi bentuk perbandingan dua hal — <code>-er</code> atau <code>more</code> — dan tahu kapan pakai yang mana.</p></div>
+        <div class="card up"><div class="ic">// bandingkan banyak</div><h4>Membentuk superlative</h4><p>Mengubah kata sifat jadi bentuk "paling" — <code>-est</code> atau <code>most</code> — untuk membandingkan tiga hal atau lebih.</p></div>
+        <div class="card up"><div class="ic">// tidak beraturan</div><h4>Hafal bentuk irregular</h4><p>Menguasai bentuk tidak beraturan seperti <code>good → better → best</code> yang tidak ikut pola biasa.</p></div>
+        <div class="card up"><div class="ic">// dunia kerja</div><h4>Membandingkan pilihan teknis</h4><p>Membandingkan performa, framework, atau solusi dalam bahasa Inggris — skill yang dipakai hampir tiap hari sebagai engineer.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">02</span> Konsep inti</div>
+        <h2>Dua bentuk, satu tujuan: membandingkan</h2>
+      </div>
+      <p class="lead reveal">Ada dua bentuk perbandingan dalam Bahasa Inggris, dan keduanya menjawab pertanyaan berbeda.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--ink-strong)">Comparative</strong> dipakai saat membandingkan <b>dua hal</b>. Polanya: <code>A + to be + adjective-er/more adjective + than + B</code>. Contoh: <i>"This laptop is faster than that one."</i> (Laptop ini lebih cepat daripada yang itu.) Kata kunci di sini adalah <code>than</code> — hampir selalu muncul di kalimat comparative.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--ink-strong)">Superlative</strong> dipakai saat membandingkan <b>tiga hal atau lebih</b>, untuk menunjukkan yang paling ekstrem dalam kelompok itu. Polanya: <code>A + to be + the + adjective-est/most adjective</code>. Contoh: <i>"This is the fastest laptop in the store."</i> (Ini laptop tercepat di toko ini.) Kata kunci di sini adalah <code>the</code> di depan kata sifat — superlative hampir selalu pakai "the".</p>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Cara paling gampang bedakan keduanya</div>
+        <p>Tanya diri sendiri: "Aku sedang bandingkan <b>berapa hal</b>?" Kalau jawabannya <em>dua</em> — pakai comparative + <code>than</code>. Kalau jawabannya <em>tiga atau lebih (atau seluruh kelompok)</em> — pakai superlative + <code>the</code>. "Budi lebih tinggi dari Ani" = comparative (dua orang). "Budi paling tinggi di kelas" = superlative (satu kelas penuh orang).</p>
+      </div>
+
+      <p class="body reveal d2"><strong style="color:var(--ink-strong)">Rumus pembentukan tergantung panjang kata sifatnya:</strong></p>
+      <div class="ttable-wrap reveal d3">
+        <table class="ttable">
+          <tr><th>Tipe kata sifat</th><th>Comparative</th><th>Superlative</th><th>Contoh</th></tr>
+          <tr><td>1 suku kata</td><td><code>adj + er</code></td><td><code>the + adj + est</code></td><td>fast → <b>faster</b> → the <b>fastest</b></td></tr>
+          <tr><td>1 suku kata, akhiran <code>-e</code></td><td><code>adj + r</code></td><td><code>the + adj + st</code></td><td>large → <b>larger</b> → the <b>largest</b></td></tr>
+          <tr><td>1 suku kata, pola KVK (konsonan-vokal-konsonan)</td><td>konsonan digandakan + <code>er</code></td><td>konsonan digandakan + <code>est</code></td><td>big → <b>bigger</b> → the <b>biggest</b></td></tr>
+          <tr><td>2 suku kata, akhiran <code>-y</code></td><td><code>y → i + er</code></td><td><code>y → i + est</code></td><td>happy → <b>happier</b> → the <b>happiest</b></td></tr>
+          <tr><td>2 suku kata lain, atau 3+ suku kata</td><td><code>more + adj</code></td><td><code>the most + adj</code></td><td>efficient → <b>more efficient</b> → the <b>most efficient</b></td></tr>
+        </table>
+      </div>
+      <p class="body reveal d3">Dan ada beberapa kata sifat yang <b>tidak beraturan sama sekali</b> — bentuknya berubah total, bukan sekadar tambah akhiran:</p>
+      <div class="ttable-wrap reveal d3">
+        <table class="ttable">
+          <tr><th>Kata dasar</th><th>Comparative</th><th>Superlative</th></tr>
+          <tr><td><code>good</code> (baik)</td><td><b>better</b></td><td>the <b>best</b></td></tr>
+          <tr><td><code>bad</code> (buruk)</td><td><b>worse</b></td><td>the <b>worst</b></td></tr>
+          <tr><td><code>far</code> (jauh)</td><td><b>farther</b> / <b>further</b></td><td>the <b>farthest</b> / <b>furthest</b></td></tr>
+          <tr><td><code>little</code> (sedikit, jumlah)</td><td><b>less</b></td><td>the <b>least</b></td></tr>
+          <tr><td><code>many/much</code> (banyak)</td><td><b>more</b></td><td>the <b>most</b></td></tr>
+        </table>
+      </div>
+      <p class="body reveal d3">Kalau dua hal <b>setara</b> (bukan lebih atau kurang), ada pola tambahan yang berguna: <code>as + adjective + as</code>. Contoh: <i>"This method is as fast as that one."</i> (Metode ini sama cepatnya dengan yang itu.) Bentuk negatifnya, <code>not as ... as</code>, sering dipakai untuk menghindari perbandingan yang terdengar terlalu tajam.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 KENAPA PENTING ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">03</span> Kenapa penting</div>
+        <h2>Kenapa materi ini penting</h2>
+      </div>
+      <p class="lead reveal">Sebagai developer, hidupmu penuh perbandingan — algoritma mana yang lebih efisien, library mana yang lebih ringan, solusi mana yang paling stabil. Tanpa comparative &amp; superlative, kamu terjebak cuma bisa mendeskripsikan satu hal pada satu waktu:</p>
+
+      <ul class="plain reveal d1">
+        <li>Code review: <i>"This approach is more readable than the previous one."</i></li>
+        <li>Benchmark: <i>"Algorithm B is faster than algorithm A, but algorithm C is the fastest overall."</i></li>
+        <li>Standup: <i>"This is the most critical bug we have this sprint."</i></li>
+      </ul>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kenapa ini bukan sekadar tata bahasa</div>
+        <p>Di dunia kerja internasional, kemampuan membandingkan opsi dengan jelas — bukan cuma bilang "ini bagus" atau "itu jelek" — adalah tanda komunikasi teknis yang matang. "This is better" itu opini kosong; "This is 30% faster than the old version" itu perbandingan yang meyakinkan. Materi ini adalah fondasi tata bahasanya.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 CONTOH SEDERHANA ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">04</span> Contoh</div>
+        <h2>Contoh sederhana</h2>
+      </div>
+      <p class="lead reveal">Kalimat paling dasar — bandingkan orang dan benda di sekitarmu.</p>
+      <ul class="plain reveal d1">
+        <li><code>Andi is taller than Budi.</code> — Andi lebih tinggi dari Budi. (comparative)</li>
+        <li><code>Andi is the tallest in the family.</code> — Andi paling tinggi di keluarga itu. (superlative)</li>
+        <li><code>This bag is heavier than that one.</code> — Tas ini lebih berat dari yang itu.</li>
+        <li><code>This is the heaviest bag I own.</code> — Ini tas terberat yang aku punya.</li>
+        <li><code>My cat is smaller than your dog.</code> — Kucingku lebih kecil dari anjingmu.</li>
+        <li><code>This is the smallest room in the house.</code> — Ini ruangan terkecil di rumah ini.</li>
+        <li><code>This puzzle is as difficult as the last one.</code> — Puzzle ini sama sulitnya dengan yang kemarin.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 SEHARI-HARI ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">05</span> Konteks nyata</div>
+        <h2>Contoh dalam kehidupan sehari-hari</h2>
+      </div>
+      <p class="lead reveal">Bayangkan situasi harian yang biasa kamu alami:</p>
+      <ul class="plain reveal d1">
+        <li>Bandingkan dua warung: <i>"This restaurant is more expensive than that one, but the food is better."</i></li>
+        <li>Ngobrol soal cuaca: <i>"Today is hotter than yesterday."</i></li>
+        <li>Bicara soal lalu lintas: <i>"Traffic on Mondays is the worst."</i></li>
+        <li>Belanja online: <i>"This phone has the best camera in this price range."</i></li>
+      </ul>
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Perhatikan</div>
+          <p>Kalimat comparative membandingkan dua hal (hari ini vs kemarin), sedangkan superlative membandingkan sesuatu dengan <b>seluruh kelompoknya</b> (semua hari dalam seminggu, semua HP di rentang harga itu).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 DUNIA KERJA ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">06</span> Konteks nyata</div>
+        <h2>Contoh dalam dunia kerja</h2>
+      </div>
+      <ul class="plain reveal">
+        <li>Memberi feedback laporan: <i>"This report is more detailed than the last one — good job."</i></li>
+        <li>Membandingkan kandidat: <i>"She is more experienced than the other candidates."</i></li>
+        <li>Rapat evaluasi kuartal: <i>"This quarter's numbers are better than last quarter's."</i></li>
+        <li>Negosiasi jadwal: <i>"Could we push the deadline? This task is more complex than we expected."</i></li>
+      </ul>
+      <p class="body reveal d1">Perhatikan bagaimana comparative sering dipakai untuk membandingkan performa dari waktu ke waktu — sebuah pola yang sangat umum dalam laporan kerja dan evaluasi.</p>
+    </div>
+  </section>
+
+  <!-- ============ 07 SWE ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">07</span> Konteks nyata</div>
+        <h2>Contoh dalam software engineering</h2>
+      </div>
+      <p class="lead reveal">Ini bagian intinya — comparative &amp; superlative adalah bahasa sehari-hari untuk benchmark, code review, dan diskusi arsitektur:</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">catatan benchmark / PR review</span><span class="lang">NOTES</span></div>
+<pre class="code"><span class="c">// Catatan review performa</span>
+Binary search is <b style="color:var(--cyan)">faster than</b> linear search for large datasets.
+This is the <b style="color:var(--cyan)">most efficient</b> query we have written so far.
+The new caching layer makes the API <b style="color:var(--cyan)">much faster than</b> before.
+Rust is generally <b style="color:var(--cyan)">safer than</b> C, but C is often <b style="color:var(--cyan)">simpler than</b> Rust.
+This is by far the <b style="color:var(--cyan)">worst</b> memory leak we have found this year.</pre>
+      </div>
+
+      <p class="body reveal d2">Contoh dari diskusi teknis nyata:</p>
+      <ul class="plain reveal d2">
+        <li><i>"React is more popular than Vue right now, but Vue's learning curve is gentler."</i></li>
+        <li><i>"This index makes our queries the fastest they have ever been."</i></li>
+        <li><i>"Docker images are lighter than full virtual machines."</i></li>
+        <li><i>"This is the least reliable service in our architecture."</i></li>
+      </ul>
+
+      <div class="why reveal d3">
+        <div class="tag">◆ Di daily standup / code review</div>
+        <p><em>"I refactored the loop — it's about twice as fast as the old version, and it's much easier to read."</em> Perhatikan gabungan <code>as ... as</code> dan comparative dalam satu kalimat — ini pola natural yang sering muncul saat engineer melaporkan hasil optimisasi.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 KESALAHAN ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">08</span> Awas salah</div>
+        <h2>Kesalahan yang sering dilakukan</h2>
+      </div>
+      <p class="lead reveal">Empat kesalahan paling umum pemula — kenali polanya supaya tidak terulang.</p>
+
+      <p class="body reveal d1"><strong style="color:var(--bad)">Kesalahan #1 — Double comparative.</strong> Menambahkan <code>more</code> DAN <code>-er</code> sekaligus. Ini kesalahan paling umum karena terasa "lebih meyakinkan" secara intuisi, padahal salah total.</p>
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">salah — dobel penanda comparative</span><span class="lang" style="color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)">✕ SALAH</span></div>
+<pre class="code"><span class="hl-bad">This is more faster than that one.</span>
+<span class="hl-bad">She is more smarter than him.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">benar — pilih satu penanda saja</span><span class="lang" style="color:var(--good);border-color:var(--good-line);background:var(--good-bg)">✓ BENAR</span></div>
+<pre class="code"><span class="hl-good">This is <b style="color:var(--good)">faster</b> than that one.</span>
+<span class="hl-good">She is <b style="color:var(--good)">smarter</b> than him.</span></pre>
+        </div>
+      </div>
+      <p class="body reveal d1">Pilih salah satu: <code>-er</code> ATAU <code>more</code>, tidak pernah dua-duanya sekaligus.</p>
+
+      <p class="body reveal d2"><strong style="color:var(--bad)">Kesalahan #2 — Lupa "than".</strong></p>
+      <div class="diptych reveal d2">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">salah — "than" hilang</span><span class="lang" style="color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)">✕ SALAH</span></div>
+<pre class="code"><span class="hl-bad">This algorithm is faster the old one.</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">benar — "than" wajib ada</span><span class="lang" style="color:var(--good);border-color:var(--good-line);background:var(--good-bg)">✓ BENAR</span></div>
+<pre class="code"><span class="hl-good">This algorithm is faster <b style="color:var(--good)">than</b> the old one.</span></pre>
+        </div>
+      </div>
+
+      <div class="caution reveal d3">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          <b>Kesalahan #3 — Bentuk irregular yang "diberesin" jadi beraturan.</b> <code>❌ gooder, bestest, more good, most bad</code> — kata seperti <code>good</code>, <code>bad</code>, <code>far</code> punya bentuk perubahan total, tidak bisa ditambah akhiran biasa. Wajib dihafal: <b>good → better → best</b>, <b>bad → worse → worst</b>.
+        </div>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Kesalahan #4 — Lupa "the" di superlative</div>
+          <p><code>❌ This is best solution.</code> Superlative hampir selalu butuh <code>the</code> di depannya: <code>✓ This is the best solution.</code> Pengecualian kecil: kalau superlative dipakai sebagai kata keterangan tanpa kata benda spesifik (jarang di level ini), tapi untuk sekarang anggap "the" itu wajib.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TIPS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">09</span> Cara mengingat</div>
+        <h2>Tips mengingat materi</h2>
+      </div>
+      <ul class="plain reveal d1">
+        <li><b>Hitung suku kata dulu.</b> 1 suku kata → biasanya <code>-er/-est</code> (fast, big, tall). 3+ suku kata → hampir selalu <code>more/most</code> (efficient, comfortable, difficult). 2 suku kata itu "zona abu-abu" — kalau ragu, pakai <code>more/most</code>, jarang salah besar.</li>
+        <li><b>"Than" = dua, "the" = paling.</b> Kalau kalimatmu ada kata <code>than</code>, itu comparative (dua hal). Kalau ada <code>the ... -est</code> atau <code>the most</code>, itu superlative (juara satu dari kelompok).</li>
+        <li><b>Hafal 5 irregular lewat cerita pendek:</b> "Kondisi kodenya <i>bad</i>, jadi kita <i>worse</i>-kan dulu sebelum tahu solusi <i>worst</i>-nya" — buat kalimat konyol sendiri, otak lebih ingat cerita daripada tabel kosong.</li>
+        <li>Setiap kali membandingkan dua hal di kepala (mana yang lebih baik, lebih cepat, lebih murah), coba ucapkan dalam Bahasa Inggris — latihan kecil setiap hari jauh lebih efektif daripada belajar rumus sekali lalu lupa.</li>
+      </ul>
+
+      <div class="quote reveal d2">
+        <p>Pola bahasa yang paling melekat bukan yang paling sering dihafal, tapi yang paling sering dipakai dalam konteks nyata.</p>
+        <cite>— prinsip umum dalam pembelajaran bahasa berbasis penggunaan (usage-based learning)</cite>
+      </div>
+      <p class="body reveal d2">Artinya: jangan cuma hafalkan tabel <code>-er/-est</code> — coba bandingkan dua benda nyata di sekitarmu sekarang juga, dalam Bahasa Inggris, sekeras apa pun bunyinya di kepala.</p>
+    </div>
+  </section>
+
+  <!-- ============ 10 RINGKASAN ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">10</span> Ringkasan</div>
+        <h2>Ringkasan materi</h2>
+      </div>
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Comparative</b> (bandingkan dua) = <code>adjective-er / more adjective + than</code>.</li>
+          <li><b>Superlative</b> (bandingkan tiga+) = <code>the + adjective-est / the most + adjective</code>.</li>
+          <li>Rumusnya tergantung <b>jumlah suku kata</b> — 1 suku kata pakai <code>-er/-est</code>, 3+ suku kata pakai <code>more/most</code>.</li>
+          <li><b>Irregular</b> wajib dihafal: good/better/best, bad/worse/worst, far/farther-further/farthest-furthest, little/less/least, many-much/more/most.</li>
+          <li><b>as + adjective + as</b> untuk menyatakan dua hal setara.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 LATIHAN ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">11</span> Latihan</div>
+        <h2>Latihan: bentuk comparative &amp; superlative</h2>
+      </div>
+      <p class="lead reveal">Isi titik-titik dengan bentuk comparative/superlative yang tepat dari kata dalam kurung, lalu klik <b>Cek</b>. Jawaban salah boleh dicoba lagi — kamu baru bisa lanjut ke Materi 5 kalau <b>semua</b> soal di bagian Latihan &amp; Quiz sudah benar.</p>
+
+      <div class="quizmeta reveal d1">
+        <span class="quizmeta__count" id="quizCount">0 / 18 benar</span>
+        <div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill"></div></div>
+      </div>
+
+      <div id="quizLatihan" class="reveal d1"></div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Cara pakai bagian ini</div>
+          <p>Ketik jawabanmu (satu atau dua kata, tanpa "the"), tekan <b>Enter</b> atau klik <b>Cek</b>. Kalau salah lebih dari 2-3 kali di soal yang sama, ulangi bagian "Penjelasan Konsep" (bab 02) sebelum lanjut.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 12 QUIZ ============ -->
+  <section class="chapter" id="c12">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">12</span> Uji pemahaman</div>
+        <h2>Quiz</h2>
+      </div>
+      <p class="lead reveal">Beberapa soal pertama campuran pilihan ganda &amp; isian. Setelah itu ada satu <b>soal cerita</b> (reading comprehension) — baca ceritanya, lalu jawab pertanyaannya. Semuanya menentukan materi ini <b>selesai</b> atau belum.</p>
+
+      <div class="quizmeta reveal d1">
+        <span class="quizmeta__count" id="quizCount2">0 / 18 benar</span>
+        <div class="quizmeta__bar"><div class="quizmeta__fill" id="quizFill2"></div></div>
+      </div>
+
+      <div id="quizQuiz" class="reveal d1"></div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">soal cerita — baca dulu, baru jawab di bawah</span><span class="lang">STORY</span></div>
+        <pre class="code" style="white-space:pre-wrap;font-family:var(--sans);font-size:15px;line-height:1.7;color:var(--ink-strong)">Our team is choosing a new laptop for developers. The MacBook is more expensive than the Dell laptop, but it is also faster and lighter. The Dell laptop has a bigger screen, but its battery life is worse than the MacBook's. In the end, the MacBook is the best choice for us because it is the most reliable option for long coding sessions. However, the Dell is a better choice if the budget is tighter.</pre>
+      </div>
+      <p class="body reveal d2" style="font-size:14px;color:var(--muted)"><i>(Terjemahan bebas: Tim kami sedang memilih laptop baru untuk developer. MacBook lebih mahal daripada laptop Dell, tapi juga lebih cepat dan lebih ringan. Laptop Dell punya layar yang lebih besar, tapi daya tahan baterainya lebih buruk daripada MacBook. Pada akhirnya, MacBook adalah pilihan terbaik untuk kami karena paling andal untuk sesi coding yang panjang. Namun, Dell adalah pilihan yang lebih baik kalau budget-nya lebih ketat.)</i></p>
+
+      <div id="quizStory" class="reveal d2"></div>
+
+      <div class="completebanner" id="completeBanner">
+        <h4>🎉 Materi 4 selesai!</h4>
+        <p>Semua soal Latihan &amp; Quiz sudah benar. <b>Materi 5</b> sekarang terbuka — cek halaman <a href="../index.html" style="color:var(--good)">Belajar Inggris</a> untuk lanjut.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 13 PERCAKAPAN ============ -->
+  <section class="chapter" id="c13">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">13</span> Praktik</div>
+        <h2>Percakapan — memilih tech stack</h2>
+      </div>
+      <p class="lead reveal">Situasi: diskusi tim tentang framework mana yang dipakai untuk proyek baru.</p>
+
+      <div class="dialogue reveal d1">
+        <div class="brow"><div class="bubble"><span class="who">Tech Lead</span>So, which framework should we use for the new project?<span class="id">Jadi, framework apa yang sebaiknya kita pakai untuk proyek baru?</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>I think React is more popular than Vue right now, but Vue is simpler to learn.<span class="id">Menurutku React lebih populer daripada Vue sekarang, tapi Vue lebih mudah dipelajari.</span></div></div>
+        <div class="brow"><div class="bubble"><span class="who">Teammate</span>True, but our team already knows React better than Vue.<span class="id">Betul, tapi tim kita sudah lebih menguasai React daripada Vue.</span></div></div>
+        <div class="brow you"><div class="bubble"><span class="who">Kamu</span>Good point. React is probably the safest choice for us right now.<span class="id">Betul juga. React mungkin pilihan paling aman untuk kita sekarang.</span></div></div>
+        <div class="brow"><div class="bubble"><span class="who">Tech Lead</span>Agreed. It's not the newest option, but it's the most reliable one for this team.<span class="id">Setuju. Bukan opsi paling baru, tapi paling andal untuk tim ini.</span></div></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Perhatikan</div>
+          <p>Perhatikan campuran comparative (<code>more popular</code>, <code>simpler</code>, <code>better</code>) dan superlative (<code>the safest</code>, <code>the newest</code>, <code>the most reliable</code>) dalam satu diskusi natural — ini pola percakapan teknis yang realistis.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 14 WRITING ============ -->
+  <section class="chapter" id="c14">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">14</span> Praktik</div>
+        <h2>Writing exercise</h2>
+      </div>
+      <p class="lead reveal">Tulis minimal 5 kalimat membandingkan dua hal yang kamu kenal (dua bahasa pemrograman, dua kota, dua HP, dua kebiasaan kerja) — wajib pakai minimal 3 kalimat comparative dan 2 kalimat superlative. Contoh kerangka:</p>
+
+      <ul class="plain reveal d1">
+        <li>Perkenalkan dua hal yang mau dibandingkan — <i>"I want to compare Python and JavaScript."</i></li>
+        <li>Bandingkan satu aspek — <i>"Python is easier to read than JavaScript."</i></li>
+        <li>Bandingkan aspek lain — <i>"JavaScript is faster for web development."</i></li>
+        <li>Kalimat superlative — <i>"For me, Python is the most beginner-friendly language."</i></li>
+        <li>Kesimpulan pribadi — <i>"Both are great, but Python is my favorite for scripting."</i></li>
+      </ul>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Kirimkan hasilnya</div>
+        <p>Kirimkan hasil tulisanmu di chat kapan saja — akan dikoreksi grammar, pilihan kata, dan kealamian kalimatnya sebelum kamu lanjut ke Materi 5.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 15 SPEAKING ============ -->
+  <section class="chapter" id="c15">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">15</span> Praktik</div>
+        <h2>Speaking exercise</h2>
+      </div>
+      <p class="lead reveal">Ucapkan keras-keras (boleh rekam suara sendiri untuk didengar ulang), bandingkan dua benda yang ada di sekitarmu sekarang:</p>
+
+      <ol class="steps reveal d1">
+        <li>"This [benda A] is [adjective-er/more adjective] than this [benda B]."</li>
+        <li>"But this [benda B] is [adjective-er/more adjective] than this [benda A]."</li>
+        <li>"Overall, I think [benda pilihanmu] is the best one."</li>
+        <li>"[Benda A] and [benda B] are almost as [adjective] as each other."</li>
+      </ol>
+
+      <p class="body reveal d2">Fokus pada kejelasan akhiran <code>-er</code> dan <code>-est</code> — jangan sampai bunyinya menghilang atau tertukar (lihat bagian Pronunciation berikutnya).</p>
+    </div>
+  </section>
+
+  <!-- ============ 16 LISTENING ============ -->
+  <section class="chapter" id="c16">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">16</span> Perkaya telinga</div>
+        <h2>Listening recommendation</h2>
+      </div>
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">🎧 channel</div><h4>Tech review channel (mis. MKBHD, Marques Brownlee)</h4><p>Video review gadget/laptop penuh dengan kalimat comparative &amp; superlative natural — "This is faster than the previous model", "This has the best camera in its class". Cari video "vs" atau "comparison".</p></div>
+        <div class="card up"><div class="ic">🎧 channel</div><h4>Fireship — video perbandingan framework/bahasa</h4><p>Video pendek dan cepat yang sering membandingkan tools ("X is faster than Y", "the most popular framework") — cocok untuk telinga developer yang sudah familiar dengan istilah teknis.</p></div>
+      </div>
+      <p class="body reveal d2">Kenapa direkomendasikan level ini: konten perbandingan produk/tech secara alami penuh pola comparative &amp; superlative, jadi kamu belajar grammar sambil dengar konten yang relevan dengan pekerjaanmu.</p>
+    </div>
+  </section>
+
+  <!-- ============ 17 READING ============ -->
+  <section class="chapter" id="c17">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">17</span> Perkaya bacaan</div>
+        <h2>Reading recommendation</h2>
+      </div>
+      <div class="quote reveal d1">
+        <p>"SSD storage is much faster than traditional HDD storage, especially for random read operations. However, HDDs are usually cheaper per gigabyte, which makes them a better choice for large, cold storage. For most modern laptops, SSDs are now the standard — they are more reliable, more durable, and the fastest option available for everyday use."</p>
+        <cite>Paragraf ini sengaja dipadatkan dengan pola comparative &amp; superlative supaya kamu langsung latihan mengenali polanya dalam teks teknis utuh, bukan cuma kalimat lepas.</cite>
+      </div>
+      <p class="body reveal d2">Kalau sudah lancar, coba baca bagian "Benchmarks" atau "Performance" di README project open-source apa pun di GitHub — biasanya penuh kalimat seperti <i>"This library is significantly faster than alternatives."</i></p>
+    </div>
+  </section>
+
+  <!-- ============ 18 VOCAB ============ -->
+  <section class="chapter" id="c18">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">18</span> Perkaya kosakata</div>
+        <h2>Vocabulary list (20 kata)</h2>
+      </div>
+      <p class="lead reveal">Kata-kata ini akan <b>muncul lagi</b> di materi-materi berikutnya (spaced repetition) — jadi tidak perlu dihafal mati sekarang, cukup familiar.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">than</span><span class="vocab-ipa">/ðæn/</span><span class="vocab-meaning">daripada</span></div><p><span class="pos">conjunction</span> — Contoh: <i>"Faster than before."</i> Tips: hampir selalu muncul di kalimat comparative.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">fast → faster → fastest</span><span class="vocab-ipa">/fæst/</span><span class="vocab-meaning">cepat</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This query is faster than the old one."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">expensive</span><span class="vocab-ipa">/ɪkˈspensɪv/</span><span class="vocab-meaning">mahal</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This plan is more expensive than the free tier."</i> Antonim: cheap.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">cheap</span><span class="vocab-ipa">/tʃiːp/</span><span class="vocab-meaning">murah</span></div><p><span class="pos">adjective</span> — Contoh: <i>"Cloud storage is cheaper than physical servers."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">efficient</span><span class="vocab-ipa">/ɪˈfɪʃənt/</span><span class="vocab-meaning">efisien</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This is the most efficient algorithm we found."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">reliable</span><span class="vocab-ipa">/rɪˈlaɪəbl/</span><span class="vocab-meaning">andal / dapat diandalkan</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This server is more reliable than the old one."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">popular</span><span class="vocab-ipa">/ˈpɒpjʊlər/</span><span class="vocab-meaning">populer</span></div><p><span class="pos">adjective</span> — Contoh: <i>"React is more popular than Vue in this survey."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">difficult</span><span class="vocab-ipa">/ˈdɪfɪkəlt/</span><span class="vocab-meaning">sulit</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This bug is more difficult to fix than the last one."</i> Sinonim: hard.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">easy</span><span class="vocab-ipa">/ˈiːzi/</span><span class="vocab-meaning">mudah</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This is the easiest bug we've had this week."</i> Perhatikan pola -y → -ier/-iest.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">heavy</span><span class="vocab-ipa">/ˈhevi/</span><span class="vocab-meaning">berat</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This library is heavier than that one."</i> Antonim: light.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">light</span><span class="vocab-ipa">/laɪt/</span><span class="vocab-meaning">ringan</span></div><p><span class="pos">adjective</span> — Contoh: <i>"Docker images are lighter than virtual machines."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">powerful</span><span class="vocab-ipa">/ˈpaʊərfʊl/</span><span class="vocab-meaning">kuat / bertenaga</span></div><p><span class="pos">adjective</span> — Contoh: <i>"This is the most powerful server we have."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">good → better → best</span><span class="vocab-ipa">/ɡʊd/</span><span class="vocab-meaning">baik → lebih baik → terbaik</span></div><p><span class="pos">adjective (irregular)</span> — Contoh: <i>"This solution is better than the last one."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">bad → worse → worst</span><span class="vocab-ipa">/bæd/</span><span class="vocab-meaning">buruk → lebih buruk → terburuk</span></div><p><span class="pos">adjective (irregular)</span> — Contoh: <i>"This is the worst bug we've seen."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">far → farther/further → farthest/furthest</span><span class="vocab-ipa">/fɑːr/</span><span class="vocab-meaning">jauh → lebih jauh → terjauh</span></div><p><span class="pos">adjective (irregular)</span> — Contoh: <i>"That server is further from us than this one."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">little → less → least</span><span class="vocab-ipa">/ˈlɪtl/</span><span class="vocab-meaning">sedikit → lebih sedikit → paling sedikit</span></div><p><span class="pos">adjective (irregular)</span> — Contoh: <i>"This version uses less memory."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">benchmark</span><span class="vocab-ipa">/ˈbentʃmɑːrk/</span><span class="vocab-meaning">tolok ukur performa</span></div><p><span class="pos">noun</span> — Contoh: <i>"We ran a benchmark to compare the two approaches."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">upgrade</span><span class="vocab-ipa">/ˈʌpɡreɪd/</span><span class="vocab-meaning">peningkatan / naik versi</span></div><p><span class="pos">noun / verb</span> — Contoh: <i>"After the upgrade, the app is much faster."</i></p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">as ... as</span><span class="vocab-ipa">/æz/</span><span class="vocab-meaning">sama ... dengan</span></div><p><span class="pos">phrase</span> — Contoh: <i>"This method is as fast as that one."</i> Bentuk negatif: not as ... as.</p></div>
+        <div class="card up"><div class="vocab-head"><span class="vocab-word">compare</span><span class="vocab-ipa">/kəmˈpeər/</span><span class="vocab-meaning">membandingkan</span></div><p><span class="pos">verb</span> — Contoh: <i>"Let's compare these two frameworks."</i></p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 19 PRONUNCIATION ============ -->
+  <section class="chapter" id="c19">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">19</span> Perkaya ucapan</div>
+        <h2>Pronunciation tips</h2>
+      </div>
+      <ul class="plain reveal d1">
+        <li><b>-er /ər/</b> — akhiran comparative diucapkan pendek dan tidak ditekankan, seperti "-uh" cepat. "Faster" bukan "fas-TEHR" tapi "FAS-tuhr".</li>
+        <li><b>-est /ɪst/</b> — akhiran superlative diucapkan "ist" pendek. "Fastest" jadi "FAS-tist", bukan "fas-TEST".</li>
+        <li><b>than /ðæn/ atau /ðən/</b> — dalam kalimat cepat, "than" sering diucapkan pendek dan lemah "/ðən/", hampir seperti "thn". Jangan kaget kalau terdengar sangat singkat dalam percakapan native.</li>
+        <li><b>the /ðə/ vs /ðiː/</b> — sebelum superlative yang dimulai vokal (seperti "the easiest"), "the" diucapkan "/ðiː/" (thii); sebelum konsonan (seperti "the fastest"), diucapkan "/ðə/" (thuh).</li>
+      </ul>
+      <div class="why reveal d2">
+        <div class="tag">◆ Kata sifat KVK yang konsonannya digandakan</div>
+        <p>Perhatikan ejaan yang berubah tapi bunyinya tetap sederhana: <code>big → bigger</code>, <code>hot → hotter</code>, <code>thin → thinner</code>. Konsonan terakhir digandakan supaya vokal sebelumnya tetap dibaca "pendek" — kalau tidak digandakan, bunyinya berubah total (bandingkan "biger" yang terlihat seperti kata lain).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 20 REVIEW ============ -->
+  <section class="chapter" id="c20">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">20</span> Sebelum lanjut</div>
+        <h2>Review materi sebelumnya</h2>
+      </div>
+      <p class="lead reveal">Sebelum lanjut, mari ulang sebentar <b>Materi 3 Level 2 (Modal Verbs Dasar)</b> — metode <i>spaced repetition</i> supaya polanya tidak lupa.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Recap singkat — Modal Verbs</div>
+        <p>Modal verbs (<code>can/could/should/must/may</code>) menempel di depan kata kerja dasar (tanpa "to", tanpa "-s") untuk menambahkan nuansa kemampuan, saran, atau kewajiban. Contoh: <i>"You should compare both options before deciding."</i> — perhatikan bagaimana modal verbs dan comparative sering muncul bersamaan dalam satu kalimat kerja nyata, seperti kalimat contoh tadi.</p>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Checklist sebelum lanjut ke Materi 5</div>
+        <ul class="plain" style="margin:6px 0 0;">
+          <li>Bisa membentuk comparative &amp; superlative dari kata sifat 1 suku kata tanpa ragu.</li>
+          <li>Bisa memilih antara akhiran <code>-er/-est</code> vs <code>more/most</code> berdasarkan panjang kata sifat.</li>
+          <li>Hafal 5 bentuk irregular: good/bad/far/little/many-much.</li>
+          <li>Masih ingat pola <code>Subjek + modal + kata kerja dasar</code> dari Materi 3 (Modal Verbs).</li>
+        </ul>
+      </div>
+
+      <p class="body reveal d3">Kalau salah satu poin di atas masih ragu, tidak apa — kirim saja hasil Latihan/Writing Exercise-mu, dan ulangi bagian yang belum kuat sebelum lanjut ke <b>Materi 5: Countable/Uncountable Nouns &amp; Quantifiers</b>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 21 TIER BELAJAR ============ -->
+  <section class="chapter" id="c21">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Arah belajar</div>
+        <h2>Tier belajar: dari materi ini ke depan</h2>
+      </div>
+      <p class="lead reveal">Materi ini adalah <b>Level 2 — Memperluas Struktur</b>, jadi targetnya bukan cuma hafal rumus <code>-er/-est</code>, tapi mulai terbiasa membandingkan sesuatu secara natural. Tiga tier di bawah membagi: apa yang wajib kamu kuasai dari materi ini, bagaimana mempraktikkannya di kehidupan nyata, dan ke arah mana kamu belajar setelah ini.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <div class="tier-badge">🌱 Beginner</div>
+          <h4>Kuasai dulu materi ini</h4>
+          <p>Target minimum sebelum lanjut ke Materi 5 — semua ada di checklist bab Review.</p>
+          <ul>
+            <li>Hafal aturan <code>-er/-est</code> vs <code>more/most</code> berdasarkan jumlah suku kata.</li>
+            <li>Bisa bikin kalimat comparative pola <code>A + is + adj-er + than + B</code> dari nol.</li>
+            <li>Bisa bikin kalimat superlative pola <code>A + is + the + adj-est</code> dari nol.</li>
+            <li>Kenali &amp; hindari 4 kesalahan umum di bab 08 (terutama double comparative).</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <div class="tier-badge">⚙ Middle</div>
+          <h4>Praktikkan di kehidupan nyata</h4>
+          <p>Setelah hafal rumus, pindahkan ke situasi asli — bukan cuma soal latihan.</p>
+          <ul>
+            <li>Bandingkan dua opsi teknis secara sadar saat code review atau diskusi arsitektur.</li>
+            <li>Pakai <code>as ... as</code> saat opsi yang kamu bandingkan sebenarnya setara.</li>
+            <li>Baca bagian "Benchmarks" di README project open-source dan tandai comparative/superlative-nya.</li>
+            <li>Latih dengar lewat rekomendasi di bab Listening (video review/comparison teknis).</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <div class="tier-badge">🚀 Advance</div>
+          <h4>Arah belajar lanjut</h4>
+          <p>Setelah checklist Materi 4 tuntas, ini yang menanti berikutnya di Level 2.</p>
+          <ul>
+            <li><b>Materi 5 — Countable/Uncountable Nouns &amp; Quantifiers</b> (penutup Level 2: Memperluas Struktur).</li>
+            <li>Mulai perhatikan comparative bertingkat seperti <code>much faster</code>, <code>a little slower</code>, <code>by far the best</code> di bacaan teknis.</li>
+            <li>Coba gabungkan modal verbs + comparative dalam satu kalimat kerja (mis. "We should choose the faster option").</li>
+            <li>Terus biasakan telinga dengan input Inggris ringan setiap hari (podcast/video di bab Listening).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 22 PENUTUP ============ -->
+  <section class="chapter" id="c22">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Dari sekadar mendeskripsikan, jadi membandingkan</h2>
+      </div>
+      <p class="lead reveal">Materi 4 selesai — comparative &amp; superlative kelihatan sederhana di atas kertas, tapi ini adalah alat yang akan terus kamu pakai setiap kali membandingkan solusi, performa, atau pilihan teknis. Jangan buru-buru; pastikan checklist di bab Review benar-benar tuntas.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Comparative + than</b> — membandingkan dua hal.</li>
+          <li><b>The + superlative</b> — membandingkan tiga hal atau lebih, yang paling ekstrem dalam kelompok.</li>
+          <li><b>-er/-est vs more/most</b> — dipilih berdasarkan panjang kata sifat, bukan sembarangan.</li>
+          <li><b>Irregular wajib hafal</b> — good/better/best, bad/worse/worst, dan kawan-kawannya.</li>
+          <li><b>as ... as</b> — untuk menyatakan dua hal setara, bukan salah satu lebih unggul.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Level 2 · Materi 4 dari banyak</h3>
+        <p id="endcardStatus">Materi 5 (Countable/Uncountable Nouns &amp; Quantifiers) terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar. Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // A + is + adj-er/more adj + than + B — dan the + adj-est/most adj untuk yang paling unggul.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Notebook Inggris — Level 2, Materi 4</b> · Comparative &amp; Superlative · untuk developer yang memperluas struktur · <a href="../index.html">← kembali ke Belajar Inggris</a> · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var MATERI_KEY = "english::level-2-materi-4";
+  var STATE_KEY = "materi-answers::" + MATERI_KEY;
+  var DONE_KEY = "materi-progress::" + MATERI_KEY;
+
+  var QUESTIONS = [
+    { id: "l1", type: "fill", prompt: "This laptop is <span class=\"blank\">___</span> (fast) than my old one.", answer: ["faster"], explain: "“Fast” = 1 suku kata → tambah <b>-er</b>: <b>faster</b>." },
+    { id: "l2", type: "fill", prompt: "She is the <span class=\"blank\">___</span> (smart) student in the class.", answer: ["smartest"], explain: "“Smart” = 1 suku kata, superlative → <b>the smartest</b> (jawab tanpa “the”)." },
+    { id: "l3", type: "fill", prompt: "Docker is <span class=\"blank\">___</span> (easy) to set up than Kubernetes.", answer: ["easier"], explain: "“Easy” berakhiran -y → ubah jadi <b>i</b> lalu tambah -er: <b>easier</b>." },
+    { id: "l4", type: "fill", prompt: "This is the <span class=\"blank\">___</span> (good) solution we have found. (irregular!)", answer: ["best"], explain: "“Good” itu irregular: good → better → <b>best</b>." },
+    { id: "l5", type: "fill", prompt: "My code is <span class=\"blank\">___</span> (bad) than yours. (irregular!)", answer: ["worse"], explain: "“Bad” itu irregular: bad → <b>worse</b> → worst." },
+    { id: "l6", type: "fill", prompt: "This API is <span class=\"blank\">___</span> (efficient) than the old one.", answer: ["more efficient"], explain: "“Efficient” = 3 suku kata → pakai <b>more efficient</b>, bukan “efficienter”." },
+    { id: "l7", type: "fill", prompt: "This is the <span class=\"blank\">___</span> (efficient) algorithm in the benchmark.", answer: ["most efficient"], explain: "Superlative untuk kata sifat panjang → <b>the most efficient</b> (jawab tanpa “the”)." },
+    { id: "l8", type: "fill", prompt: "This solution uses <span class=\"blank\">___</span> (little) memory than the previous one. (irregular!)", answer: ["less"], explain: "“Little” (jumlah) itu irregular: little → <b>less</b> → least." },
+    { id: "l9", type: "fill", prompt: "This bug is the <span class=\"blank\">___</span> (bad) issue we've seen this month. (irregular!)", answer: ["worst"], explain: "Superlative dari “bad” itu irregular: bad → worse → <b>worst</b> (jawab tanpa “the”)." },
+    { id: "q1", type: "mc", prompt: "Mana yang benar?", options: ["more faster", "faster", "fastest more"], answer: "faster", explain: "Pilih satu penanda saja — <code>more faster</code> adalah double comparative, jelas salah." },
+    { id: "q2", type: "mc", prompt: "“Python is ___ readable than assembly.”", options: ["more", "most", "much more readable"], answer: "more", explain: "“Readable” = 2 suku kata, tidak berakhiran -y → pakai <b>more readable</b>." },
+    { id: "q3", type: "mc", prompt: "Mana ejaan yang benar untuk comparative dari “big”?", options: ["biger", "bigger", "more big"], answer: "bigger", explain: "“Big” pola KVK (konsonan-vokal-konsonan) → konsonan terakhir digandakan: <b>bigger</b>." },
+    { id: "q4", type: "fill", prompt: "Betulkan kalimat ini: “This algorithm is faster the old one.”", answer: ["this algorithm is faster than the old one"], explain: "Kata <b>than</b> hilang — wajib ditambahkan sebelum objek pembanding." },
+    { id: "q5", type: "mc", prompt: "“This method is not as fast as that one.” Artinya kira-kira?", options: ["Metode ini lebih cepat dari yang itu", "Metode ini kurang cepat dibanding yang itu", "Metode ini sama persis cepatnya"], answer: "Metode ini kurang cepat dibanding yang itu", explain: "<code>not as ... as</code> artinya “tidak sama level-nya”, di sini berarti metode ini lebih lambat." },
+    { id: "s1", type: "mc", prompt: "Soal cerita — Laptop mana yang lebih mahal?", options: ["MacBook", "Dell", "Sama-sama mahal"], answer: "MacBook", explain: "Ceritanya bilang: “The MacBook is more expensive than the Dell laptop.”" },
+    { id: "s2", type: "fill", prompt: "Soal cerita — “The Dell laptop has a ___ (big) screen.” (isi bentuk comparative yang tepat)", answer: ["bigger"], explain: "“Big” pola KVK → konsonan digandakan: <b>bigger</b>. Cek lagi kalimat di ceritanya." },
+    { id: "s3", type: "mc", prompt: "Soal cerita — Menurut tim, laptop mana pilihan terbaik untuk sesi coding panjang?", options: ["MacBook", "Dell", "Keduanya sama baiknya"], answer: "MacBook", explain: "Ceritanya bilang: “the MacBook is the best choice for us because it is the most reliable option for long coding sessions.”" },
+    { id: "s4", type: "fill", prompt: "Soal cerita — Lengkapi: “The Dell is a ___ (good) choice if the budget is tighter.” (isi bentuk comparative)", answer: ["better"], explain: "“Good” itu irregular: good → <b>better</b> → best. Cek lagi kalimat terakhir di ceritanya." }
+  ];
+
+  function normalize(s) {
+    return String(s || "").trim().toLowerCase().replace(/[.!?]+$/, "").replace(/^the\s+/, "").replace(/\s+/g, " ");
+  }
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveState(state) {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var state = loadState();
+
+  function countDone() {
+    return QUESTIONS.filter(function (q) { return state[q.id] === true; }).length;
+  }
+
+  function renderProgress() {
+    var done = countDone();
+    var total = QUESTIONS.length;
+    var pct = Math.round((done / total) * 100);
+    ["quizCount", "quizCount2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = done + " / " + total + " benar";
+    });
+    ["quizFill", "quizFill2"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.width = pct + "%";
+    });
+    var pill = document.getElementById("progressPill");
+    var pillCount = document.getElementById("progressPillCount");
+    if (pillCount) pillCount.textContent = done + "/" + total;
+    if (pill) pill.classList.toggle("done", done === total);
+
+    var banner = document.getElementById("completeBanner");
+    if (banner) banner.classList.toggle("show", done === total);
+
+    var endcardStatus = document.getElementById("endcardStatus");
+    if (endcardStatus) {
+      endcardStatus.innerHTML = done === total
+        ? "✅ Semua soal Latihan &amp; Quiz sudah benar — <b style=\"color:var(--good)\">Materi 5</b> sudah terbuka. Kirim hasil Writing Exercise-mu kapan saja untuk dikoreksi."
+        : "Materi 5 (Countable/Uncountable Nouns &amp; Quantifiers) terkunci sampai semua soal Latihan &amp; Quiz di bab 11-12 benar (" + done + "/" + total + " saat ini). Kirim hasil Writing Exercise-mu kapan saja — bagian yang belum kuat akan diulang dulu sebelum lanjut.";
+    }
+
+    try { localStorage.setItem(DONE_KEY, done === total ? "true" : "false"); } catch (e) {}
+  }
+
+  function markCorrect(id) {
+    state[id] = true;
+    saveState(state);
+    renderProgress();
+  }
+
+  function buildFillBox(q, index) {
+    var box = document.createElement("div");
+    box.className = "qbox";
+    box.setAttribute("data-qid", q.id);
+
+    var num = document.createElement("div");
+    num.className = "qbox__num";
+    num.textContent = String(index);
+    box.appendChild(num);
+
+    var body = document.createElement("div");
+    body.className = "qbox__body";
+
+    var prompt = document.createElement("p");
+    prompt.className = "qbox__prompt";
+    prompt.innerHTML = q.prompt;
+    body.appendChild(prompt);
+
+    var row = document.createElement("div");
+    row.className = "qbox__input-row";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "qinput";
+    input.placeholder = "ketik jawabanmu…";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "qbtn";
+    btn.textContent = "Cek";
+
+    row.appendChild(input);
+    row.appendChild(btn);
+    body.appendChild(row);
+
+    var feedback = document.createElement("div");
+    feedback.className = "qbox__feedback";
+    body.appendChild(feedback);
+
+    box.appendChild(body);
+
+    var isDone = state[q.id] === true;
+    if (isDone) {
+      box.classList.add("correct");
+      input.value = q.answer[0];
+      input.disabled = true;
+      input.classList.add("is-correct");
+      btn.disabled = true;
+      feedback.className = "qbox__feedback ok";
+      feedback.innerHTML = "✓ Benar! " + q.explain;
+    }
+
+    function check() {
+      var val = normalize(input.value);
+      var ok = q.answer.some(function (a) { return normalize(a) === val; });
+      if (!val) return;
+      if (ok) {
+        box.classList.add("correct");
+        input.disabled = true;
+        input.classList.remove("is-wrong");
+        input.classList.add("is-correct");
+        btn.disabled = true;
+        feedback.className = "qbox__feedback ok";
+        feedback.innerHTML = "✓ Benar! " + q.explain;
+        markCorrect(q.id);
+      } else {
+        input.classList.remove("is-wrong");
+        void input.offsetWidth;
+        input.classList.add("is-wrong");
+        feedback.className = "qbox__feedback bad";
+        feedback.innerHTML = "✕ Belum tepat, coba lagi.";
+      }
+    }
+
+    btn.addEventListener("click", check);
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); check(); }
+    });
+
+    return box;
+  }
+
+  function buildMcBox(q, index) {
+    var box = document.createElement("div");
+    box.className = "qbox";
+    box.setAttribute("data-qid", q.id);
+
+    var num = document.createElement("div");
+    num.className = "qbox__num";
+    num.textContent = String(index);
+    box.appendChild(num);
+
+    var body = document.createElement("div");
+    body.className = "qbox__body";
+
+    var prompt = document.createElement("p");
+    prompt.className = "qbox__prompt";
+    prompt.innerHTML = q.prompt;
+    body.appendChild(prompt);
+
+    var opts = document.createElement("div");
+    opts.className = "qbox__options";
+
+    var feedback = document.createElement("div");
+    feedback.className = "qbox__feedback";
+
+    var isDone = state[q.id] === true;
+    var buttons = [];
+
+    q.options.forEach(function (optVal) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "qopt";
+      b.textContent = optVal;
+      b.setAttribute("data-value", optVal);
+      buttons.push(b);
+
+      if (isDone) {
+        b.disabled = true;
+        if (optVal === q.answer) b.classList.add("is-correct");
+      }
+
+      b.addEventListener("click", function () {
+        if (box.classList.contains("correct")) return;
+        if (optVal === q.answer) {
+          b.classList.add("is-correct");
+          buttons.forEach(function (o) { o.disabled = true; });
+          box.classList.add("correct");
+          feedback.className = "qbox__feedback ok";
+          feedback.innerHTML = "✓ Benar! " + q.explain;
+          markCorrect(q.id);
+        } else {
+          b.classList.remove("is-wrong");
+          void b.offsetWidth;
+          b.classList.add("is-wrong");
+          feedback.className = "qbox__feedback bad";
+          feedback.innerHTML = "✕ Belum tepat, coba lagi.";
+          setTimeout(function () { b.classList.remove("is-wrong"); }, 500);
+        }
+      });
+
+      opts.appendChild(b);
+    });
+
+    body.appendChild(opts);
+    body.appendChild(feedback);
+    box.appendChild(body);
+
+    if (isDone) {
+      box.classList.add("correct");
+      feedback.className = "qbox__feedback ok";
+      feedback.innerHTML = "✓ Benar! " + q.explain;
+    }
+
+    return box;
+  }
+
+  var latihanHost = document.getElementById("quizLatihan");
+  var quizHost = document.getElementById("quizQuiz");
+  var storyHost = document.getElementById("quizStory");
+  var qNum = 0;
+
+  QUESTIONS.forEach(function (q) {
+    qNum++;
+    var box = q.type === "mc" ? buildMcBox(q, qNum) : buildFillBox(q, qNum);
+    var host = latihanHost;
+    if (q.id.indexOf("l") === 0) host = latihanHost;
+    else if (q.id.indexOf("s") === 0) host = storyHost;
+    else host = quizHost;
+    if (host) host.appendChild(box);
+  });
+
+  renderProgress();
+})();
+</script>
+</body>
+</html>

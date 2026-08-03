@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Problem Solving — Peta Belajar</title>
+<meta name="description" content="Dari kerangka berpikir Polya sampai strategi interview & competitive programming: bagaimana cara sampai bisa solve masalah, bukan cuma tahu teorinya.">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  :root{
+    --void:#0b0e1a; --void-2:#0d1120; --panel:#141a2e; --panel-2:#19203a;
+    --line:#283047; --line-soft:#1c2338;
+    --ink:#c3cbe0; --ink-strong:#eef1f8; --muted:#7e88a3; --muted-2:#5d6680;
+    --cyan:#45d4de; --cyan-dim:#2b8a90;
+    --amber:#f5b14c; --amber-dim:#9c712a;
+    --good:#56d364; --good-bg:rgba(86,211,100,.08);
+    --muted-bg:rgba(255,255,255,.03);
+    --serif:"Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,serif;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono: "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --maxw: 1180px;
+  }
+  body{background:var(--void);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:17px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 clamp(18px,5vw,60px)}
+  header.top{position:sticky;top:0;z-index:40;background:rgba(11,14,26,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px clamp(18px,5vw,60px);max-width:var(--maxw);margin:0 auto;font-family:var(--mono);font-size:12.5px}
+  .topbar a.home{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px}
+  .topbar a.home:hover{color:var(--ink-strong);border-color:var(--cyan-dim)}
+  .topbar .path{color:var(--muted-2)}
+  .topbar .path b{color:var(--ink-strong)}
+  .hero{padding:clamp(44px,7vw,80px) 0 clamp(26px,4vw,40px)}
+  .hero .eyebrow{font-family:var(--mono);color:var(--cyan);font-size:13px;margin-bottom:18px}
+  .hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(30px,5.4vw,58px);line-height:1.1;letter-spacing:-.01em;color:var(--ink-strong);max-width:22ch}
+  .hero h1 em{color:var(--cyan);font-style:italic}
+  .hero p.sub{margin-top:20px;max-width:70ch;font-size:18px;color:var(--ink)}
+  .hero p.sub b{color:var(--ink-strong)}
+  .stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:110px}
+  .stat .n{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--cyan)}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+  main{padding-bottom:60px}
+  .pathline{position:relative;margin:36px 0 0;padding-left:26px}
+  .pathline::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--line)}
+  .group{margin-top:10px;padding:26px 0;border-top:1px solid var(--line-soft);position:relative}
+  .group:first-of-type{border-top:none}
+  .group::before{content:"";position:absolute;left:-26px;top:34px;width:11px;height:11px;border-radius:50%;background:var(--void);border:2px solid var(--cyan-dim)}
+  .grouphead{margin-bottom:16px}
+  .grouphead .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+  .grouphead h2{font-family:var(--serif);font-weight:600;font-size:clamp(20px,2.8vw,27px);color:var(--ink-strong)}
+  .grouphead p{color:var(--muted);font-size:14.5px;margin-top:6px;max-width:70ch}
+  .topicgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:16px}
+  .topic{position:relative;display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:15px 17px;transition:border-color .18s,transform .18s}
+  .topic.ready:hover{border-color:var(--cyan-dim);transform:translateY(-3px)}
+  .topic .num{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px}
+  .topic .ttl{font-size:15.5px;font-weight:600;color:var(--ink-strong)}
+  .topic .desc{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .badge{display:inline-block;margin-top:9px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;border-radius:6px;padding:2px 7px}
+  .badge.ready{color:var(--good);background:var(--good-bg)}
+  footer{border-top:1px solid var(--line);padding:26px clamp(18px,5vw,60px);font-family:var(--mono);font-size:12px;color:var(--muted-2);text-align:center}
+  footer a{color:var(--cyan);text-decoration:none}
+  @media (max-width:640px){ .topicgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))} .pathline{padding-left:18px} .group::before{left:-18px} }
+  a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:4px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="topbar">
+    <a class="home" href="../index.html">← Semua Materi</a>
+    <span class="path">docs/learning/<b>problem-solving/</b></span>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div class="eyebrow">// Kategori — Problem Solving</div>
+    <h1>Bukan katalog teknik. Ini <em>caranya kamu bisa solve.</em></h1>
+    <p class="sub">Beda dari folder <b>dsa/algorithms</b> yang membahas teknik spesifik (DP, greedy, backtracking) — kategori ini membahas <b>proses berpikir</b> yang dipakai SEBELUM kamu tahu teknik mana yang cocok: memahami soal, mengenali pola, mulai dari brute force, sampai strategi khusus interview &amp; lomba. Ada halaman <b>Worked Walkthroughs</b> yang membedah 2 soal utuh dari nol sampai solve — kalau kamu cuma punya waktu baca satu halaman, mulai dari situ.</p>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statReady">12</div><div class="l">topik tersedia</div></div>
+      <div class="stat"><div class="n">12</div><div class="l">total topik</div></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="pathline">
+
+      <section class="group">
+        <div class="grouphead">
+          <div class="kicker">I · Fundamental</div>
+          <h2>Kerangka berpikir</h2>
+          <p>Mulai dari sini kalau baru pertama kali. Ini fondasi yang dipakai di semua bab selanjutnya.</p>
+        </div>
+        <div class="topicgrid">
+          <a class="topic ready" href="problem-solving-framework/index.html"><div class="num">01</div><div class="ttl">Problem-Solving Framework</div><div class="desc">Polya's 4 steps &amp; UMPIRE — kerangka dasar tiap soal</div><span class="badge ready">✓ tersedia</span></a>
+          <a class="topic ready" href="understanding-the-problem/index.html"><div class="num">02</div><div class="ttl">Understanding the Problem</div><div class="desc">Input, output, constraint, dan asumsi tersembunyi</div><span class="badge ready">✓ tersedia</span></a>
+          <a class="topic ready" href="pattern-recognition/index.html"><div class="num">03</div><div class="ttl">Pattern Recognition</div><div class="desc">Sinyal kata kunci → keluarga teknik yang cocok</div><span class="badge ready">✓ tersedia</span></a>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="grouphead">
+          <div class="kicker">II · Middle</div>
+          <h2>Proses menuju solusi</h2>
+          <p>Bagaimana benar-benar sampai ke kode yang jalan &amp; benar.</p>
+        </div>
+        <div class="topicgrid">
+          <a class="topic ready" href="brute-force-to-optimal/index.html"><div class="num">04</div><div class="ttl">Brute Force to Optimal</div><div class="desc">Mulai naif, temukan redundant work, optimasi bertahap</div><span class="badge ready">✓ tersedia</span></a>
+          <a class="topic ready" href="complexity-thinking/index.html"><div class="num">05</div><div class="ttl">Complexity Thinking</div><div class="desc">Baca constraint soal, tebak kompleksitas yang aman</div><span class="badge ready">✓ tersedia</span></a>
+          <a class="topic ready" href="edge-case-testing/index.html"><div class="num">06</div><div class="ttl">Edge Case &amp; Testing</div><div class="desc">Dry run manual sebelum submit/deploy</div><span class="badge ready">✓ tersedia</span></a>
+          <a class="topic ready" href="debugging-strategy/index.html"><div class="num">07</div><div class="ttl">Debugging Strategy</div><div class="desc">Sistematis, bukan shotgun debugging</div><span class="badge ready">✓ tersedia</span></a>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="grouphead">
+          <div class="kicker">★ Wajib baca</div>
+          <h2>Worked Walkthroughs</h2>
+          <p>Dua soal dibedah utuh dari nol sampai solve — proses berpikir lengkap, bukan cuma jawaban akhir.</p>
+        </div>
+        <div class="topicgrid">
+          <a class="topic ready" href="worked-walkthroughs/index.html"><div class="num">08</div><div class="ttl">Worked Walkthroughs</div><div class="desc">Bagaimana caranya aku sampai bisa solve — dibedah step-by-step</div><span class="badge ready">✓ tersedia</span></a>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="grouphead">
+          <div class="kicker">III · Advance</div>
+          <h2>Konteks bertekanan tinggi</h2>
+          <p>Menerapkan proses yang sama di bawah batasan waktu &amp; format khusus.</p>
+        </div>
+        <div class="topicgrid">
+          <a class="topic ready" href="interview-problem-solving/index.html"><div class="num">09</div><div class="ttl">Interview Problem Solving</div><div class="desc">Think aloud, kelola waktu 45 menit</div><span class="badge ready">✓ tersedia</span></a>
+          <a class="topic ready" href="competitive-programming-tactics/index.html"><div class="num">10</div><div class="ttl">Competitive Programming Tactics</div><div class="desc">Triase soal, manajemen waktu kontes</div><span class="badge ready">✓ tersedia</span></a>
+          <a class="topic ready" href="system-design-thinking/index.html"><div class="num">11</div><div class="ttl">System Design Thinking</div><div class="desc">Problem solving untuk soal open-ended</div><span class="badge ready">✓ tersedia</span></a>
+          <a class="topic ready" href="deliberate-practice/index.html"><div class="num">12</div><div class="ttl">Deliberate Practice</div><div class="desc">Bagaimana benar-benar membaik dari waktu ke waktu</div><span class="badge ready">✓ tersedia</span></a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<footer>
+  <b>Problem Solving</b> · 12 topik · <a href="../index.html">← kembali ke semua kategori</a>
+</footer>
+
+</body>
+</html>

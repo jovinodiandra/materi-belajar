@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backtracking — Coba, Kalau Buntu Mundur</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home { color: var(--muted); text-decoration: none; white-space: nowrap; padding-right: 14px; border-right: 1px solid var(--line); transition: color .18s; }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- steps ---------- */
+  .steps { counter-reset: step; margin: 26px 0 6px; max-width: 780px; list-style: none; }
+  .steps li {
+    position: relative; padding: 14px 0 14px 46px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 12px;
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--cyan-dim); color: var(--cyan);
+    font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(69,212,222,.06);
+  }
+  .steps h4 { font-size: 15.5px; color: var(--ink-strong); margin-bottom: 4px; font-weight: 600; }
+  .steps p { font-size: 14.5px; color: var(--ink); max-width: 66ch; }
+  .steps p code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+  .endcard .card__link { margin-top: 16px; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .topbar__home { display: none; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../../index.html">← Data Structures &amp; Algorithms</a>
+  <div class="topbar__file">docs/learning/dsa/algorithms/backtracking/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa backtracking ada</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Choose–explore–unchoose</a>
+    <a href="#c03"><span class="yr">03</span> Pruning</a>
+
+    <div class="rail__part">III · Praktik &amp; tingkat</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">05</span> Tier belajar</a>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+
+    <div class="rail__part">IV · Keputusan &amp; referensi</div>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools &amp; referensi</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Algorithms — coba semua jalur, mundur begitu buntu</div>
+      <h1 class="reveal d1">Coba dulu, <span class="accent">mundur kalau buntu.</span></h1>
+      <p class="sub reveal d2">
+        Backtracking adalah cara sistematis menjelajahi <b>semua kemungkinan solusi</b> lewat rekursi — bukan cuma
+        cari satu jawaban, tapi cari seluruh kandidat yang valid. Bedanya dengan brute force biasa: begitu satu
+        jalur terbukti <b>tidak mungkin</b> jadi solusi, algoritma langsung <b>mundur</b> (undo pilihan) dan coba
+        jalur lain, alih-alih terus menjelajah sampai ujung yang sudah pasti sia-sia. Dipakai untuk permutasi,
+        kombinasi, N-Queens, sampai Sudoku solver.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Butuh semua solusi</b> <span>— bukan satu, tapi seluruh kemungkinan valid</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Choose → explore → un-choose</b> <span>— pilih, rekursi, lalu batalkan pilihan</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Kunci</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Pruning</b> <span>— potong cabang yang pasti gagal sedini mungkin</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Ruang solusi tetap besar</b> <span>— worst case tetap eksponensial</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Constraint satisfaction</b> <span>— N-Queens, Sudoku, permutasi, kombinasi</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div style="padding: 36px clamp(22px, 5vw, 78px) 4px;">
+    <div class="wrap">
+      <div class="why reveal">
+        <div class="tag">◆ Buat apa ini? Kenapa pakai backtracking?</div>
+        <p><b>Given</b> — kamu punya soal yang butuh SEMUA solusi valid (mis. taruh 8 ratu di papan 8×8 tanpa saling menyerang), dan cara pertama yang kepikiran: generate semua kemungkinan susunan dulu, baru difilter belakangan (brute force).</p>
+        <p><b>When</b> — ruang kemungkinan itu tumbuh eksponensial (8-Queens saja punya <code>8^8</code> = 16.777.216 susunan), dan kombinasi yang sudah pasti gagal — misalnya dua ratu sudah saling menyerang di baris kedua — tetap dihitung sampai tuntas karena tidak ada cara untuk berhenti lebih awal.</p>
+        <p><b>Then</b> — program jadi lambat dan boros: waktu habis menjelajahi cabang-cabang yang sebenarnya sudah bisa dipastikan gagal sejak dini, dan makin besar ukuran soalnya makin parah karena pertumbuhannya eksponensial.</p>
+        <p>→ makanya kita pakai <b>backtracking</b> — begitu satu pilihan terbukti melanggar aturan, langsung <em>mundur</em> (undo) dan potong seluruh cabang di bawahnya, tanpa perlu menjelajahinya sama sekali.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 01 KENAPA BACKTRACKING ADA ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Cari semua kemungkinan</div>
+        <h2>Kadang kamu butuh SEMUA solusi, bukan cuma satu</h2>
+      </div>
+      <p class="lead reveal">Banyak soal tidak minta "satu jawaban tercepat" — tapi minta <strong>semua kombinasi valid</strong>: semua cara menyusun 8 ratu di papan catur tanpa saling menyerang, semua permutasi dari sekumpulan angka, semua cara mengisi Sudoku. Untuk soal seperti ini, kamu harus menjelajahi ruang kandidat, bukan cuma turun ke satu jalur lalu berhenti.</p>
+
+      <p class="body reveal d1">Pendekatan paling naif: <code>brute force</code> — generate <em>semua</em> kemungkinan susunan dulu (tanpa peduli valid atau tidak), baru difilter belakangan. Masalahnya, jumlah kemungkinan itu tumbuh eksponensial. Untuk 8-Queens saja ada <code>8^8</code> = 16.777.216 cara menempatkan 8 ratu di 8 baris — padahal begitu ratu pertama dan kedua sudah saling menyerang, sisa 6 ratu berikutnya tidak perlu dicoba sama sekali. Brute force tetap menghitungnya juga.</p>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — menjelajahi labirin</div>
+        <p>Bayangkan kamu di dalam labirin, mencari semua jalan keluar. Kamu coba satu lorong; kalau ternyata jalan buntu, kamu tidak perlu memetakan ulang labirin dari awal — cukup <em>mundur</em> ke persimpangan terakhir, coret lorong buntu tadi dari pilihan, lalu coba lorong lain. Itulah backtracking: jelajahi jalur, begitu <em>terbukti buntu</em>, mundur dan coba pilihan lain — bukan menjelajah semua lorong dari nol tiap kali.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 CHOOSE-EXPLORE-UNCHOOSE ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Pola umum backtracking</div>
+        <h2>Choose, explore, lalu un-choose</h2>
+      </div>
+      <p class="lead reveal">Semua algoritma backtracking mengikuti pola yang sama: <strong>choose</strong> (ambil satu pilihan dari opsi yang tersedia), <strong>explore</strong> (rekursi lebih dalam dengan pilihan itu), lalu <strong>un-choose</strong> alias backtrack (batalkan pilihan tadi supaya opsi lain bisa dicoba di iterasi berikutnya). Langkah "un-choose" inilah yang sering dilupakan pemula — tanpanya, state tercemar dan cabang lain jadi salah.</p>
+
+      <div class="quote reveal d1">
+        <p>Backtracking membangun solusi secara bertahap lewat kandidat parsial — begitu kandidat itu terbukti tidak bisa diperluas jadi solusi valid, algoritma mundur untuk mencoba pilihan lain.</p>
+        <cite>— gagasan Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein, <i>Introduction to Algorithms</i> (CLRS)</cite>
+      </div>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">Permutations.java — semua permutasi dari array kecil</span><span class="lang">JAVA</span></div>
+<pre class="code"><span class="k">import</span> java.util.ArrayList;
+<span class="k">import</span> java.util.List;
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">Permutations</span> {
+
+    <span class="k">public</span> <span class="k">static</span> <span class="k">void</span> <span class="f">main</span>(String[] args) {
+        <span class="k">int</span>[] nums = { <span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span> };
+        <span class="f">backtrack</span>(nums, <span class="k">new</span> ArrayList&lt;&gt;(), <span class="k">new</span> <span class="k">boolean</span>[nums.length]);
+    }
+
+    <span class="k">static</span> <span class="k">void</span> <span class="f">backtrack</span>(<span class="k">int</span>[] nums, List&lt;Integer&gt; current, <span class="k">boolean</span>[] used) {
+        <span class="k">if</span> (current.size() == nums.length) {
+            System.out.println(current); <span class="c">// kandidat parsial sudah lengkap → cetak</span>
+            <span class="k">return</span>;
+        }
+        <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; nums.length; i++) {
+            <span class="k">if</span> (used[i]) <span class="k">continue</span>;
+
+            current.add(nums[i]);            <span class="hl-good">// 1. choose</span>
+            used[i] = <span class="k">true</span>;
+            backtrack(nums, current, used);  <span class="hl-good">// 2. explore (rekursi)</span>
+            current.remove(current.size() - <span class="n">1</span>); <span class="hl-good">// 3. un-choose (backtrack)</span>
+            used[i] = <span class="k">false</span>;
+        }
+    }
+}
+<span class="c">// output untuk [1,2,3]: [1,2,3] [1,3,2] [2,1,3] [2,3,1] [3,1,2] [3,2,1]</span></pre>
+      </div>
+
+      <p class="body reveal d2">Perhatikan baris <code>current.remove(...)</code> dan <code>used[i] = false</code> — itu langkah <strong>un-choose</strong>. Tanpa langkah ini, angka yang sudah dipakai di satu cabang akan "nempel" ke cabang lain yang seharusnya belum menyentuhnya. Setiap <code>choose</code> wajib punya pasangan <code>un-choose</code> yang menghapus jejaknya persis.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 PRUNING ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kunci efisiensi</span> · Pruning</div>
+        <h2>Potong cabang yang jelas tidak akan berhasil</h2>
+      </div>
+      <p class="lead reveal"><strong>Pruning</strong> adalah alasan backtracking jauh lebih cepat dari brute force generate-lalu-filter: begitu kandidat parsial sudah <em>pasti</em> tidak bisa jadi solusi valid, langsung mundur — tanpa repot-repot melengkapi sisa kandidatnya dulu. Contoh klasik: N-Queens. Begitu dua ratu saling menyerang, tak ada gunanya lanjut menempatkan ratu-ratu berikutnya di baris bawah — hasilnya pasti gagal.</p>
+
+      <div class="quote reveal d1">
+        <p>Backtracking adalah cara sistematis menjelajahi seluruh ruang kandidat solusi — dan kunci efisiensinya terletak pada seberapa cepat kita bisa memangkas cabang yang sudah pasti tidak akan menghasilkan solusi valid, sehingga tidak perlu menjelajah sampai ke ujung.</p>
+        <cite>— gagasan Steven Skiena, <i>The Algorithm Design Manual</i></cite>
+      </div>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">N-Queens — TANPA pruning (brute force)</span><span class="lang">JAVA</span></div>
+<pre class="code"><span class="k">static</span> <span class="k">void</span> <span class="f">solveBad</span>(<span class="k">int</span>[] board, <span class="k">int</span> row, <span class="k">int</span> n) {
+    <span class="k">if</span> (row == n) {
+        <span class="k">if</span> (isValidBoard(board, n)) print(board); <span class="c">// dicek belakangan</span>
+        <span class="k">return</span>;
+    }
+    <span class="k">for</span> (<span class="k">int</span> col = <span class="n">0</span>; col &lt; n; col++) {
+        board[row] = col;
+<span class="hl-bad">        solveBad(board, row + 1, n); // tetap lanjut walau sudah pasti gagal</span>
+    }
+}
+<span class="c">// 🐢 selalu menjelajah n^n cabang, meski baris 0 & 1 sudah saling menyerang</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">N-Queens — DENGAN pruning</span><span class="lang">JAVA</span></div>
+<pre class="code"><span class="k">static</span> <span class="k">void</span> <span class="f">solveGood</span>(<span class="k">int</span>[] board, <span class="k">int</span> row, <span class="k">int</span> n) {
+    <span class="k">if</span> (row == n) { print(board); <span class="k">return</span>; }
+    <span class="k">for</span> (<span class="k">int</span> col = <span class="n">0</span>; col &lt; n; col++) {
+        <span class="k">if</span> (isSafe(board, row, col)) {
+            board[row] = col;                 <span class="c">// choose</span>
+<span class="hl-good">            solveGood(board, row + 1, n);     // explore</span>
+        }
+<span class="hl-good">        // !isSafe → langsung skip, backtrack tanpa turun ke row+1</span>
+    }
+}
+<span class="c">// ✅ cabang tak valid dipotong SEBELUM turun ke baris berikutnya</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Fungsi <code>isSafe</code> mengecek konflik (kolom sama, diagonal sama) dengan ratu-ratu yang sudah ditempatkan sejauh ini. Bandingkan: versi bad tetap turun ke baris berikutnya walau sudah pasti gagal, baru dicek validitasnya di akhir — versi good langsung skip kolom yang konflik, sehingga jutaan cabang percuma tidak pernah dijelajahi sama sekali.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Biar tidak salah pakai</div>
+        <h2>Best practice menulis backtracking</h2>
+      </div>
+      <p class="lead reveal">Backtracking gampang salah karena bugnya sering "diam-diam" — state tercemar, atau eksplorasi jalan terus tanpa henti. Beberapa kebiasaan berikut membantu menghindarinya.</p>
+
+      <ol class="steps reveal d1">
+        <li><h4>Selalu ada langkah "undo" yang simetris</h4><p>Setiap <code>choose</code> wajib punya <code>un-choose</code> yang membatalkannya persis — tambah elemen ↔ hapus elemen, tandai <code>used</code> ↔ lepas <code>used</code>. Kalau tidak simetris, cabang berikutnya mewarisi state yang salah.</p></li>
+        <li><h4>Pruning sedini mungkin</h4><p>Cek validitas <em>sebelum</em> turun ke rekursi berikutnya, bukan setelah kandidat lengkap. Semakin awal cabang buruk dipotong, semakin banyak eksplorasi sia-sia yang dihindari.</p></li>
+        <li><h4>Gambar decision tree di kepala dulu</h4><p>Sebelum ngoding, bayangkan: di tiap level, apa saja pilihannya? Kapan sebuah cabang dianggap "buntu"? Ini menentukan kondisi <code>base case</code> dan syarat pruning-mu.</p></li>
+        <li><h4>Base case harus jelas & tercapai</h4><p>Tentukan kapan kandidat parsial dianggap "solusi lengkap" (mis. <code>row == n</code>, <code>current.size() == target</code>). Tanpa base case yang benar, rekursi bisa tak pernah berhenti atau berhenti terlalu dini.</p></li>
+        <li><h4>Hindari mutasi struktur bersama tanpa disiplin</h4><p>Kalau memakai satu array/list yang sama di semua cabang (bukan copy tiap level), disiplin choose–explore–unchoose jadi wajib mutlak — sedikit saja lupa undo, hasil di cabang lain ikut rusak.</p></li>
+        <li><h4>Ukur ruang pencarian sebelum percaya diri</h4><p>Taksir kasar berapa banyak cabang yang mungkin dijelajahi. Kalau tetap terlalu besar walau sudah di-prune, mungkin butuh pruning tambahan (constraint lebih ketat) atau teknik lain seperti memoization.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Roadmap · Urutan belajar</div>
+        <h2>Tier belajar backtracking</h2>
+      </div>
+      <p class="lead reveal">Jangan langsung lompat ke N-Queens atau Sudoku solver kalau pola <code>choose–explore–unchoose</code> belum kebentuk di tangan. Naik bertahap dari kasus kecil yang mudah divisualisasikan.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Beginner</span>
+          <h4>Subset & permutasi kecil</h4>
+          <p>Latih pola dasarnya dulu di kasus yang gampang divisualisasikan tangan.</p>
+          <ul>
+            <li>Generate semua subset dari array kecil</li>
+            <li>Generate semua permutasi dari array kecil</li>
+            <li>Kombinasi <code>k</code> elemen dari <code>n</code> elemen</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Middle</span>
+          <h4>Constraint checking</h4>
+          <p>Mulai gabungkan pruning dengan aturan/constraint yang lebih rumit.</p>
+          <ul>
+            <li>N-Queens dengan pengecekan konflik</li>
+            <li>Sudoku solver dengan constraint baris/kolom/kotak</li>
+            <li>Word search di grid 2D</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Advance</span>
+          <h4>Branch & bound, pruning kompleks</h4>
+          <p>Gabungkan backtracking dengan teknik optimasi untuk search space besar.</p>
+          <ul>
+            <li>Backtracking + memoization (branch and bound)</li>
+            <li>Pruning berbasis batas atas/bawah (bound)</li>
+            <li>Constraint satisfaction skala besar (scheduling kompleks)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Backtracking vs brute force</div>
+        <h2>Trade-off: memangkas dini vs generate semua dulu</h2>
+      </div>
+      <p class="lead reveal">Backtracking dan brute force generate-all sebenarnya menjelajah ruang solusi yang sama — bedanya <strong>kapan</strong> validitas dicek. Backtracking mengecek di setiap langkah dan memangkas sedini mungkin; brute force generate-all menyelesaikan dulu semua kandidat, baru difilter belakangan.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Backtracking (dengan pruning)</h4>
+          <ul class="good-l">
+            <li>Cek validitas di setiap langkah, bukan di akhir.</li>
+            <li>Cabang tak valid langsung dipotong — hemat waktu.</li>
+            <li>Jauh lebih efisien saat constraint banyak & ketat.</li>
+            <li>Kompleksitas praktis bisa jauh di bawah worst case.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Brute force generate-all</h4>
+          <ul class="bad-l">
+            <li>Selesaikan dulu SEMUA kandidat, baru difilter.</li>
+            <li>Cabang yang sudah pasti gagal tetap dijelajahi penuh.</li>
+            <li>Boros waktu & memori saat ruang solusi besar.</li>
+            <li>Kompleksitas praktis mendekati worst case teoretis.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan jujur</div>
+          <p>Worst-case complexity backtracking tetap sama dengan brute force (tetap eksponensial di kasus terburuk) — bedanya di <strong>practical performance</strong>. Semakin banyak constraint yang bisa dicek dini, semakin besar penghematannya. Di soal tanpa constraint sama sekali, backtracking tidak akan lebih cepat dari brute force karena tidak ada apa pun yang bisa dipangkas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai backtracking</h2>
+      </div>
+      <p class="lead reveal">Kenali sinyal soalnya dulu. Backtracking cocok saat kamu diminta mencari <strong>semua</strong> kemungkinan yang memenuhi aturan tertentu — bukan cuma satu jawaban optimal.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai backtracking saat…</h4>
+          <ul class="good-l">
+            <li>Soal minta "semua kemungkinan/kombinasi/permutasi".</li>
+            <li><em>Constraint satisfaction</em> — N-Queens, Sudoku.</li>
+            <li>Solusi dibangun bertahap dari pilihan-pilihan kecil.</li>
+            <li>Ada aturan jelas untuk menyatakan kandidat "tidak valid".</li>
+            <li>Ruang pencarian cukup kecil setelah di-prune.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, pikirkan alternatif saat…</h4>
+          <ul class="bad-l">
+            <li>Cuma butuh SATU solusi optimal (pertimbangkan greedy/DP).</li>
+            <li>Sub-masalah yang sama dihitung berulang kali (pakai memoization/DP).</li>
+            <li>Ruang solusi tetap raksasa walau sudah di-prune.</li>
+            <li>Ada struktur matematis yang bisa dihitung langsung tanpa eksplorasi.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan: <strong>"Apakah soal ini minta SEMUA kemungkinan solusi yang valid, atau cuma satu yang terbaik?"</strong> Kalau semua kemungkinan dan ada aturan constraint yang bisa dicek dini → backtracking. Kalau cuma satu solusi optimal dan sub-masalahnya tumpang tindih → pertimbangkan dynamic programming dulu.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Di mana backtracking dipakai di production</h2>
+      </div>
+      <p class="lead reveal">Backtracking bukan cuma soal latihan algoritma — polanya muncul di sistem nyata yang harus mencoba banyak jalur dan mundur begitu satu jalur gagal.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// puzzle solver</div><h4>Solver Sudoku & puzzle game</h4><p>Aplikasi/game yang membantu menyelesaikan atau membangkitkan Sudoku, kakuro, atau puzzle logika lain menempatkan angka/simbol satu per satu, mengecek constraint baris-kolom-kotak, lalu mundur begitu terjadi bentrok — pola choose–explore–unchoose murni.</p></div>
+        <div class="card up"><div class="ic">// scheduling</div><h4>Constraint satisfaction di scheduling</h4><p>Menyusun jadwal (kelas, shift kerja, ruangan) tanpa bentrok waktu/sumber daya sering dimodelkan sebagai constraint satisfaction problem: tempatkan satu jadwal, cek konflik dengan jadwal lain, mundur & coba slot lain kalau bentrok.</p></div>
+        <div class="card up"><div class="ic">// compiler / parser</div><h4>Parsing dengan backtracking</h4><p>Sebagian parser (terutama untuk tata bahasa yang ambigu) mencoba satu aturan gramatika, mengonsumsi input, dan jika ternyata tidak cocok — mundur ke posisi input semula lalu mencoba aturan alternatif berikutnya.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di ketiga kasus itu: ada <strong>banyak pilihan di tiap langkah</strong>, ada <strong>aturan constraint</strong> yang bisa mengecek "pilihan ini valid atau tidak" lebih awal, dan kalau gagal, sistem <strong>mundur ke keadaan sebelumnya</strong> alih-alih memulai ulang dari nol.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS / REFERENSI ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Referensi · Materi lanjutan</div>
+        <h2>Lanjutkan ke topik terkait</h2>
+      </div>
+      <p class="lead reveal">Backtracking tidak berdiri sendiri — ia menumpang di atas satu fondasi dan sering dioptimasi lebih lanjut dengan satu teknik lagi.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// fondasi</div><h4>Recursion</h4><p>Backtracking pada dasarnya adalah rekursi dengan aturan tambahan: choose, explore, un-choose. Kalau pola dasar rekursi (base case, call stack, bagaimana fungsi memanggil dirinya sendiri) belum kuat, backtracking akan terasa membingungkan.</p><a class="card__link" href="../recursion/index.html">Pelajari Recursion <span>→</span></a></div>
+        <div class="card up"><div class="ic">// optimasi lanjutan</div><h4>Dynamic Programming</h4><p>Saat backtracking mulai menghitung ulang sub-masalah yang sama berkali-kali, dynamic programming (dengan memoization) menyimpan hasil sub-masalah supaya tidak dihitung ulang — sering jadi langkah optimasi setelah backtracking murni terasa lambat.</p><a class="card__link" href="../dynamic-programming/index.html">Pelajari Dynamic Programming <span>→</span></a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Jelajah sistematis, mundur tanpa ragu</h2>
+      </div>
+      <p class="lead reveal">Backtracking bukan sihir — hanya rekursi dengan disiplin: pilih, jelajahi, dan begitu terbukti buntu, batalkan pilihan itu dengan bersih lalu coba yang lain. Kunci kecepatannya bukan di algoritmanya, tapi di seberapa cepat kamu bisa mengenali cabang yang sudah pasti gagal.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Choose–explore–unchoose</b> — pola umum semua backtracking.</li>
+          <li><b>Pruning</b> — potong cabang gagal sedini mungkin, jangan tunggu sampai lengkap.</li>
+          <li><b>Undo harus simetris</b> — setiap choose wajib punya un-choose yang cocok.</li>
+          <li><b>Bukan sihir</b> — worst case tetap eksponensial, cuma jarang tersentuh berkat pruning.</li>
+          <li><b>Constraint satisfaction</b> — sinyal soal: N-Queens, Sudoku, permutasi, kombinasi.</li>
+          <li><b>Sub-masalah berulang?</b> — pertimbangkan dynamic programming di atasnya.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Tanya di tiap langkah: <strong>"Apakah kandidat parsial ini masih mungkin diperluas jadi solusi valid?"</strong> Kalau tidak, mundur secepatnya — jangan buang waktu melengkapi jalur yang sudah pasti gagal. Kalau ya, lanjut rekursi. Sesederhana itu polanya, sekuat itu efeknya pada performa.</p>
+        <a class="card__link" href="../dynamic-programming/index.html">Lanjut ke Dynamic Programming <span>→</span></a>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // choose → explore → un-choose
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Backtracking</b> · Choose–explore–unchoose, pruning, N-Queens, tier belajar, & studi kasus · rujukan: Skiena (The Algorithm Design Manual), CLRS · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../../index.html">← kembali ke Data Structures &amp; Algorithms</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

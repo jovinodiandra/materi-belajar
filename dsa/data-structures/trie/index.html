@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trie (Prefix Tree) — Struktur Data Khusus String</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home { color: var(--muted); text-decoration: none; white-space: nowrap; transition: color .18s; }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- steps (best practice list) ---------- */
+  .steps { max-width: 78ch; margin: 26px 0 6px; list-style: none; counter-reset: step; }
+  .steps li {
+    counter-increment: step; position: relative; padding: 14px 0 14px 46px;
+    border-bottom: 1px solid var(--line-soft); font-size: 15.5px; color: var(--ink);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 12px;
+    width: 27px; height: 27px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    color: var(--cyan); background: var(--panel-2); border: 1px solid var(--cyan-dim);
+  }
+  .steps li b { color: var(--ink-strong); }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tiers { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+    .topbar__home { display: none; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../../index.html">← Data Structures &amp; Algorithms</a>
+  <div class="topbar__file">docs/learning/dsa/data-structures/trie/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa ada</div>
+    <a href="#c01"><span class="yr">01</span> Kenapa trie ada</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Node, path & isEnd</a>
+    <a href="#c03"><span class="yr">03</span> Prefix search & autocomplete</a>
+
+    <div class="rail__part">III · Praktik & belajar</div>
+    <a href="#c04"><span class="yr">04</span> Best practice</a>
+    <a href="#c05"><span class="yr">05</span> Tier belajar</a>
+    <a href="#c06"><span class="yr">◆</span> Trade-off</a>
+
+    <div class="rail__part">IV · Keputusan & produksi</div>
+    <a href="#c07"><span class="yr">◆</span> Kapan pakai</a>
+    <a href="#c08"><span class="yr">!</span> Studi kasus production</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Data Structures & Algorithms — struktur khusus untuk string</div>
+      <h1 class="reveal d1">Cari kata secepat <span class="accent">membaca hurufnya</span>, bukan sebanyak jumlah katanya.</h1>
+      <p class="sub reveal d2">
+        Hash table bisa bilang "kata ini ada", tapi tidak bisa menjawab "kata apa saja yang <b>diawali</b>
+        huruf ini?" secara efisien. <b>Trie</b> (dibaca "try", dari kata <i>retrieval</i>) adalah tree khusus
+        untuk string: tiap node mewakili satu karakter, dan jalur dari root ke node itu adalah sebuah prefix.
+        Deck ini buat pemula — dari <b>kenapa</b> trie lahir, <b>konsep inti</b>-nya, <b>autocomplete</b>,
+        sampai <b>kapan dipakai di production</b>, diselingi kutipan dari buku rujukan.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Hash table buta prefix</b> <span>— tidak ada konsep "urutan" antar key</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Satu node = satu karakter</b> <span>— path root→node menyusun sebuah prefix</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Untung</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>O(L), bukan O(N)</b> <span>— waktu cari cuma tergantung panjang kata</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Batas</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Overhead memori</b> <span>— tiap karakter butuh node & referensi sendiri</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Saat butuh prefix search</b> <span>— autocomplete, spell checker, IP routing</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+
+      <div class="why reveal">
+        <div class="tag">◆ Buat apa ini? Kenapa pakai ini?</div>
+        <p><b>Given</b> — kamu punya jutaan kata tersimpan (kamus, katalog produk, daftar kontak) di hash table, dan fitur autocomplete/spell-checker harus jalan saat user mengetik.</p>
+        <p><b>When</b> — user mengetik prefix <code>"pro"</code>, lalu <code>"prod"</code>, lalu <code>"produ"</code> — tiap keystroke sistem harus menampilkan semua kata berawalan itu, secara instan.</p>
+        <p><b>Then</b> — hash table cuma bisa jawab "kata lengkap ini ada atau tidak"; ia tidak punya konsep kedekatan prefix, jadi kamu terpaksa scan seluruh dataset (O(N×L)) tiap kali huruf berubah — lambat dan tidak scalable.</p>
+        <p>→ makanya kita pakai <b>Trie</b>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 01 KENAPA TRIE ADA ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Hash table buta prefix</div>
+        <h2>Hash table tahu "ada", tapi tidak tahu "urutan"</h2>
+      </div>
+      <p class="lead reveal">Autocomplete &amp; spell-checker butuh menjawab pertanyaan: <strong>"kata apa saja yang diawali huruf ini?"</strong> Hash table mengubah key jadi angka acak lewat fungsi hash — dua string yang miripnya cuma satu huruf (<code>"halo"</code> vs <code>"halo2"</code>) bisa mendarat di slot yang jauh berbeda. Tidak ada jejak "kedekatan prefix" yang bisa ditelusuri.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — kamus tersusun per huruf awal</div>
+        <p>Kamus fisik disusun berdasarkan <em>huruf awal</em>: semua kata berawalan "ha" berdekatan halamannya. Kamu bisa buka satu halaman dan langsung lihat semua kata dengan awalan itu. Hash table itu seperti melempar tiap kata ke rak acak berdasarkan "kode rahasia" — cepat kalau tahu <em>persis</em> kata lengkapnya, tapi mustahil bilang "tunjukkan semua yang berawalan X" tanpa memeriksa <strong>seluruh rak</strong> satu per satu.</p>
+      </div>
+
+      <div class="quote reveal d1">
+        <p>Trie — namanya dari kata <span style="font-style:normal">retrieval</span> — dirancang khusus untuk string, dan waktu operasinya tidak bergantung pada berapa banyak string yang tersimpan, hanya pada panjang string yang dicari.</p>
+        <cite>— parafrase dari Robert Sedgewick &amp; Kevin Wayne, <i>Algorithms</i></cite>
+      </div>
+
+      <p class="body reveal d2">Itulah properti yang tidak dimiliki hash table maupun binary search tree: keduanya tetap terpengaruh oleh <code>N</code> (jumlah data tersimpan) — entah lewat collision, resize, atau kedalaman pohon. Trie melepaskan diri dari <code>N</code> sepenuhnya; ia hanya peduli pada <code>L</code>, panjang string yang sedang dicari.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP INTI ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Node, path & isEnd</div>
+        <h2>Tiap node = satu karakter, path = prefix</h2>
+      </div>
+      <p class="lead reveal">Trie adalah tree berakar (<em>root</em>) tanpa isi karakter. Tiap <strong>edge</strong> menuju anak diberi label satu karakter, sehingga jalur dari root ke sebuah node <strong>menyusun sebuah prefix</strong>. Setiap node juga punya flag <code>isEnd</code> — penanda "sampai di sini, ada kata utuh yang berakhir".</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Contoh — trie berisi "cat", "car", "card"</div>
+        <div class="erabox__row"><span class="erabox__lang">root</span><code>→  c</code></div>
+        <div class="erabox__row"><span class="erabox__lang">c</span><code>→  a</code></div>
+        <div class="erabox__row"><span class="erabox__lang">ca</span><code>→  t (isEnd) , r (isEnd)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">car</span><code>→  d → isEnd</code></div>
+        <p class="erabox__note">Node <code>ca-r</code> punya <b>dua</b> peran sekaligus: ia <code>isEnd = true</code> (karena "car" adalah kata utuh) <b>dan</b> punya anak <code>d</code> (menuju "card"). Ini yang bikin trie bisa menyimpan kata yang saling menjadi prefix satu sama lain.</p>
+      </div>
+
+      <div class="quote reveal d1">
+        <p>Trie adalah sebuah pohon pencarian digital <span style="font-style:normal">(digital search tree)</span> yang mengeksploitasi struktur internal dari key itu sendiri — urutan karakternya — alih-alih membandingkan key secara utuh seperti pada pohon pencarian biner.</p>
+        <cite>— parafrase dari Donald Knuth, <i>The Art of Computer Programming</i></cite>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">Trie.java — insert & search dasar</span><span class="lang">JAVA</span></div>
+<pre class="code"><span class="k">class</span> <span class="t">TrieNode</span> {
+    <span class="t">Map</span>&lt;<span class="t">Character</span>, <span class="t">TrieNode</span>&gt; children = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();
+    <span class="k">boolean</span> isEnd = <span class="k">false</span>;
+}
+
+<span class="k">class</span> <span class="t">Trie</span> {
+    <span class="k">private final</span> <span class="t">TrieNode</span> root = <span class="k">new</span> <span class="t">TrieNode</span>();
+
+    <span class="c">// insert: O(L), L = panjang kata</span>
+    <span class="k">public void</span> <span class="f">insert</span>(<span class="t">String</span> word) {
+        <span class="t">TrieNode</span> node = root;
+        <span class="k">for</span> (<span class="k">char</span> ch : word.toCharArray()) {
+            node = node.children.computeIfAbsent(ch, k -&gt; <span class="k">new</span> <span class="t">TrieNode</span>());
+        }
+        node.isEnd = <span class="k">true</span>;
+    }
+
+    <span class="c">// search: O(L) juga, tidak peduli berapa ribu kata lain tersimpan</span>
+    <span class="k">public boolean</span> <span class="f">search</span>(<span class="t">String</span> word) {
+        <span class="t">TrieNode</span> node = find(word);
+        <span class="k">return</span> node != <span class="k">null</span> &amp;&amp; node.isEnd;
+    }
+
+    <span class="k">private</span> <span class="t">TrieNode</span> <span class="f">find</span>(<span class="t">String</span> s) {
+        <span class="t">TrieNode</span> node = root;
+        <span class="k">for</span> (<span class="k">char</span> ch : s.toCharArray()) {
+            node = node.children.get(ch);
+            <span class="k">if</span> (node == <span class="k">null</span>) <span class="k">return null</span>;
+        }
+        <span class="k">return</span> node;
+    }
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 PREFIX SEARCH & AUTOCOMPLETE ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kekuatan utama</span> · startsWith & autocomplete</div>
+        <h2>Cari SEMUA kata dengan prefix tertentu</h2>
+      </div>
+      <p class="lead reveal">Di sinilah trie unggul telak dibanding hash table: tinggal jalan ke node prefix (<code>O(L)</code>), lalu <strong>DFS</strong> ke semua sub-tree di bawahnya untuk mengumpulkan tiap node yang <code>isEnd = true</code>. Hash table harus memeriksa <strong>setiap key</strong> satu per satu.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">hash table — cari kata berawalan "ca"</span><span class="lang">JAVA</span></div>
+<pre class="code"><span class="t">Set</span>&lt;<span class="t">String</span>&gt; kamus = <span class="k">new</span> <span class="t">HashSet</span>&lt;&gt;(); <span class="c">// isi ribuan kata</span>
+
+<span class="t">List</span>&lt;<span class="t">String</span>&gt; hasil = <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;();
+<span class="k">for</span> (<span class="t">String</span> kata : kamus) {
+    <span class="k">if</span> (kata.startsWith(<span class="s">"ca"</span>)) hasil.add(kata);
+}
+<span class="hl-bad">// 🐢 HARUS periksa SEMUA N kata, walau cuma 3 yang cocok</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">trie — cari kata berawalan "ca"</span><span class="lang">JAVA</span></div>
+<pre class="code"><span class="k">public</span> <span class="t">List</span>&lt;<span class="t">String</span>&gt; <span class="f">autocomplete</span>(<span class="t">String</span> prefix) {
+    <span class="t">List</span>&lt;<span class="t">String</span>&gt; hasil = <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;();
+    <span class="t">TrieNode</span> node = find(prefix);      <span class="c">// O(L)</span>
+    <span class="k">if</span> (node == <span class="k">null</span>) <span class="k">return</span> hasil;
+    collect(node, <span class="k">new</span> <span class="t">StringBuilder</span>(prefix), hasil);
+    <span class="k">return</span> hasil;
+}
+
+<span class="k">private void</span> <span class="f">collect</span>(<span class="t">TrieNode</span> n, <span class="t">StringBuilder</span> jalur, <span class="t">List</span>&lt;<span class="t">String</span>&gt; out) {
+    <span class="k">if</span> (n.isEnd) out.add(jalur.toString());
+    <span class="k">for</span> (<span class="k">var</span> e : n.children.entrySet()) {
+        jalur.append(e.getKey());
+        collect(e.getValue(), jalur, out);
+        jalur.deleteCharAt(jalur.length() - <span class="n">1</span>);
+    }
+}
+<span class="hl-good">// 🚀 cuma jelajahi sub-tree "ca", tidak sentuh cabang lain sama sekali</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d2">Bedanya makin terasa saat kamusnya besar: hash table butuh <code>O(N)</code> untuk prefix search (periksa semua key), trie hanya butuh <code>O(L + K)</code> di mana <code>K</code> adalah jumlah kata yang cocok. Karena node prefix-nya dipakai bersama (<em>shared</em>) oleh banyak kata, trie juga otomatis mengelompokkan kata-kata yang mirip — persis seperti halaman kamus.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Praktik · Cara mengimplementasi dengan benar</div>
+        <h2>Best practice implementasi trie</h2>
+      </div>
+      <p class="lead reveal">Trie sederhana untuk dipahami, tapi pilihan implementasinya berdampak besar ke performa &amp; memori. Beberapa hal yang perlu dipikirkan sebelum ngoding:</p>
+
+      <ol class="steps reveal d1">
+        <li><b>Pakai <code>array[26]</code> kalau charset-nya cuma lowercase a–z</b> dan performa penting — akses index array jauh lebih cepat &amp; hemat memori daripada <code>HashMap&lt;Character, TrieNode&gt;</code>, karena tidak ada overhead hashing/boxing.</li>
+        <li><b>Pakai <code>HashMap</code> atau <code>Map&lt;Character,·&gt;</code> kalau charset besar</b> — Unicode, emoji, atau campuran huruf besar/kecil &amp; simbol. Array 26 slot jadi tidak cukup atau boros kalau charset-nya jarang dipakai penuh.</li>
+        <li><b>Simpan jumlah kata yang lewat tiap node (<code>count</code>)</b> kalau butuh fitur seperti "berapa banyak kata berawalan X" tanpa harus DFS penuh setiap kali.</li>
+        <li><b>Kompres trie jadi <em>radix tree</em> (compressed trie)</b> untuk hemat memori — gabungkan rantai node yang cuma punya satu anak jadi satu edge berlabel string, bukan satu node per karakter.</li>
+        <li><b>Hati-hati soal case sensitivity</b> — putuskan di awal apakah "Cat" dan "cat" dianggap sama; kalau ya, normalisasi (<code>toLowerCase()</code>) sebelum insert/search, jangan di tengah jalan.</li>
+        <li><b>Pertimbangkan trade-off delete</b> — menghapus kata dari trie berarti menyusuri ulang, set <code>isEnd = false</code>, dan (opsional) membuang node yang jadi daun tak terpakai. Kalau delete jarang terjadi, sering lebih simpel biarkan node "mati" tetap ada.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Roadmap · Tingkatan belajar</div>
+        <h2>Tier Belajar</h2>
+      </div>
+      <p class="lead reveal">Trie punya jenjang belajar yang jelas — dari operasi dasar sampai varian yang dipakai di sistem production skala besar.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Beginner</span>
+          <h4>Insert & search kata dasar</h4>
+          <p>Fokus paham struktur node &amp; kenapa <code>isEnd</code> penting.</p>
+          <ul>
+            <li>Implementasi <code>TrieNode</code> + <code>insert()</code></li>
+            <li>Implementasi <code>search()</code> kata utuh</li>
+            <li>Bedakan <code>search()</code> vs <code>startsWith()</code></li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Middle</span>
+          <h4>Autocomplete & spell checker</h4>
+          <p>Mulai memanfaatkan kekuatan asli trie: prefix search.</p>
+          <ul>
+            <li>Implementasi <code>autocomplete(prefix)</code> pakai DFS</li>
+            <li>Spell checker sederhana (cek kata ada/tidak)</li>
+            <li>Ranking hasil autocomplete by frekuensi</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Advance</span>
+          <h4>Varian & aplikasi lanjutan</h4>
+          <p>Struktur trie yang dioptimasi untuk skenario nyata.</p>
+          <ul>
+            <li>Compressed trie / radix tree</li>
+            <li>Trie untuk IP routing (longest prefix match)</li>
+            <li>Aho–Corasick untuk multi-pattern string matching</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 TRADE-OFF ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Harga · Tidak ada makan siang gratis</div>
+        <h2>Trade-off: trie vs hash table</h2>
+      </div>
+      <p class="lead reveal">Trie tidak menggantikan hash table — keduanya menang di skenario berbeda. Pilih berdasarkan <strong>jenis query yang paling sering kamu lakukan</strong>.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Trie</h4>
+          <ul class="good-l">
+            <li>Prefix search super cepat & terstruktur — <code>O(L)</code>.</li>
+            <li>Node prefix dipakai bersama → hemat untuk kata-kata mirip.</li>
+            <li>Waktu operasi tidak tergantung jumlah kata tersimpan.</li>
+            <li>Cocok untuk data yang berbentuk urutan karakter.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Hash table</h4>
+          <ul class="bad-l">
+            <li>Butuh <code>O(N)</code> untuk prefix search — periksa semua key.</li>
+            <li>Tidak ada struktur "kedekatan" antar key.</li>
+            <li>Tidak cocok kalau butuh urutan / range / prefix.</li>
+            <li>Tapi lookup exact-match rata-rata <code>O(1)</code>, sering lebih ringkas.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Catatan soal memori</div>
+          <p>Harga yang dibayar trie: <strong>overhead memori per karakter</strong>. Tiap node butuh referensi ke anak-anaknya (array atau map), jadi menyimpan satu kata panjang bisa memakan lebih banyak memori dibanding satu entry hash table. Untuk dataset besar dengan banyak kata mirip, ini sering sepadan — untuk dataset kecil/acak, hash table biasanya lebih hemat.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN PAKAI ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Keputusan · Pakai atau jangan</div>
+        <h2>Kapan harus pakai trie</h2>
+      </div>
+      <p class="lead reveal">Aturan praktisnya: <strong>kalau query utamamu soal prefix — "kata apa saja yang diawali X" — pilih trie. Kalau cuma butuh "apakah X ada", hash table biasanya sudah cukup dan lebih hemat memori.</strong></p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// Pakai trie saat…</h4>
+          <ul class="good-l">
+            <li>Butuh autocomplete / suggestion berbasis prefix.</li>
+            <li>Bikin spell checker atau validasi kata.</li>
+            <li>Banyak kata berbagi prefix yang sama (efisien memori bersama).</li>
+            <li>Butuh longest-prefix-match (IP routing, dsb).</li>
+            <li>Multi-pattern string matching (Aho–Corasick).</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Jangan, pakai hash table saat…</h4>
+          <ul class="bad-l">
+            <li>Cuma butuh exact-match lookup ("apakah X ada?").</li>
+            <li>Key-nya bukan string / tidak punya struktur urutan.</li>
+            <li>Dataset kecil & random, overhead node tidak sepadan.</li>
+            <li>Memori sangat terbatas & kata-kata jarang berbagi prefix.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p>Tanyakan satu hal: <strong>"Apakah aku sering butuh SEMUA kata dengan awalan tertentu, bukan cuma satu kata spesifik?"</strong> Kalau ya → trie. Kalau kamu hanya perlu tahu satu kata itu ada atau tidak, tanpa peduli hubungan prefix-nya dengan kata lain → hash table sudah cukup dan lebih ringan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS PRODUCTION ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Di dunia nyata</div>
+        <h2>Trie (dan turunannya) di production</h2>
+      </div>
+      <p class="lead reveal">Tiga skenario nyata di mana ide dasar trie — menyusuri karakter demi karakter untuk mencocokkan prefix — jadi solusi inti.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// search & mobile</div><h4>Autocomplete & keyboard mobile</h4><p><b>Kasus:</b> search engine &amp; keyboard di HP menyarankan kata/kueri saat kamu baru mengetik beberapa huruf. <b>Kenapa trie:</b> setiap ketukan tambahan cukup turun satu level node, tidak perlu mencari ulang dari awal.</p></div>
+        <div class="card up"><div class="ic">// text editor</div><h4>Spell checker</h4><p><b>Kasus:</b> aplikasi pengolah kata &amp; editor kode menandai kata yang tidak ada di kamus. <b>Kenapa trie:</b> cek keberadaan kata &amp; cari kata terdekat (mirip) sama-sama bisa memanfaatkan struktur prefix yang sama.</p></div>
+        <div class="card up"><div class="ic">// jaringan</div><h4>IP routing table</h4><p><b>Kasus:</b> router jaringan harus memilih rute terbaik untuk sebuah alamat IP tujuan. <b>Kenapa mirip trie:</b> teknik <em>longest prefix matching</em> secara konseptual menyusuri bit/segmen alamat IP layaknya menyusuri karakter di trie, mencari kecocokan prefix terpanjang.</p></div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Ketiganya sama-sama menyusuri data <strong>karakter/segmen demi segmen</strong> dan memanfaatkan kenyataan bahwa banyak entri berbagi awalan yang sama. Begitu pola aksesnya bergeser ke "cari satu key spesifik tanpa peduli awalannya", struktur seperti hash table biasanya lebih sederhana &amp; cukup.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Ekosistem · Alat & referensi lanjutan</div>
+        <h2>Tools & referensi</h2>
+      </div>
+      <p class="lead reveal">Untuk melihat trie "bergerak" &amp; mendalami keluarga algoritma string lainnya, dua rujukan ini cukup untuk memulai.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up"><div class="ic">// visualisasi</div><h4>Trie visualizer</h4><p>Cari "trie visualizer" — banyak tool interaktif online yang menampilkan proses insert &amp; search karakter demi karakter secara visual, bagus untuk membangun intuisi awal sebelum ngoding.</p></div>
+        <div class="card up"><div class="ic">// materi lanjutan</div><h4>String Algorithms</h4><p>Trie adalah pintu masuk ke keluarga algoritma string yang lebih luas — pattern matching, suffix structures, dan Aho–Corasick.</p><a class="card__link" href="../../algorithms/string-algorithms/index.html">Lanjut ke String Algorithms <span>→</span></a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Trie: bayar memori demi kecepatan prefix</h2>
+      </div>
+      <p class="lead reveal">Trie lahir dari satu kebutuhan spesifik yang tidak bisa dijawab hash table: mencari <strong>semua</strong> string dengan prefix tertentu, secepat mungkin. Ia bersinar saat query-mu tentang prefix, dan jadi berlebihan saat kamu cuma butuh exact-match biasa.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Node = karakter</b> — path root→node menyusun sebuah prefix.</li>
+          <li><b>isEnd</b> — penanda "di sini berakhir sebuah kata utuh".</li>
+          <li><b>O(L), bukan O(N)</b> — waktu operasi lepas dari jumlah kata tersimpan.</li>
+          <li><b>Kuat di prefix search</b> — autocomplete, spell checker, longest-prefix-match.</li>
+          <li><b>Harganya memori</b> — tiap karakter butuh node & referensi sendiri.</li>
+          <li><b>Pilih dari jenis query</b> — prefix-heavy → trie, exact-match saja → hash table.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Lanjut ke Union-Find</h3>
+        <p>Trie menuntaskan soal pencarian string berbasis prefix. Struktur berikutnya, <strong>Union-Find (Disjoint Set)</strong>, menuntaskan soal yang sama sekali berbeda: melacak dengan cepat elemen mana yang "satu kelompok" dengan elemen lain — dasar dari algoritma Kruskal, deteksi cycle, dan network connectivity.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Waktu cari cuma tergantung panjang kata, bukan jumlah kata tersimpan."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Trie (Prefix Tree)</b> · Kenapa, konsep, autocomplete, trade-off, kapan, & tools-nya · untuk pemula · rujukan: Sedgewick & Wayne (Algorithms), Knuth (TAOCP) · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> · <a href="../../index.html">← kembali ke Data Structures & Algorithms</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

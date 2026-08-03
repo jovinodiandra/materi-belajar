@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Complexity Thinking — Baca Constraint, Tebak Kompleksitas</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__home { color: var(--muted); text-decoration: none; letter-spacing: .02em; white-space: nowrap; transition: color .18s; }
+  .topbar__home:hover { color: var(--cyan); }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+  .card__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 6px; padding: 5px 11px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .card__link span { transition: transform .18s; }
+  .card__link:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .card__link:hover span { transform: translateX(3px); }
+
+  /* ---------- tier belajar ---------- */
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 6px; }
+  .tier-block { border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--panel); }
+  .tier-block.beginner { border-color: rgba(86,211,100,.35); }
+  .tier-block.middle   { border-color: rgba(245,177,76,.35); }
+  .tier-block.advance  { border-color: rgba(240,116,106,.35); }
+  .tier-badge { display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; border-radius:6px; padding:3px 9px; margin-bottom:10px; }
+  .tier-block.beginner .tier-badge { color:#56d364; background:rgba(86,211,100,.1); }
+  .tier-block.middle .tier-badge   { color:#f5b14c; background:rgba(245,177,76,.1); }
+  .tier-block.advance .tier-badge  { color:#f0746a; background:rgba(240,116,106,.1); }
+  .tier-block h4 { font-size:16px; color:var(--ink-strong); margin-bottom:8px; }
+  .tier-block p { font-size:14.5px; color:var(--ink); margin-bottom:10px; }
+  .tier-block ul { list-style:none; }
+  .tier-block li { font-size:13.5px; color:var(--ink); padding:4px 0 4px 16px; position:relative; }
+  .tier-block li::before { content:"–"; position:absolute; left:0; color:var(--muted); }
+  @media (max-width: 940px){ .tiers { grid-template-columns:1fr; } }
+
+  /* ---------- steps ---------- */
+  .steps { list-style:none; max-width: 78ch; margin-top: 22px; counter-reset: step; }
+  .steps li {
+    position: relative; padding: 14px 0 14px 52px; border-bottom: 1px solid var(--line-soft);
+    font-size: 15.5px; color: var(--ink);
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li b { color: var(--ink-strong); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 12px;
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: var(--cyan); background: rgba(69,212,222,.09); border: 1px solid var(--cyan-dim);
+  }
+  .steps li code { font-family: var(--mono); font-size: .86em; color: var(--cyan); background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+  footer a { color: var(--cyan); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <a class="topbar__home" href="../index.html">← Problem Solving</a>
+  <div class="topbar__file">docs/learning/problem-solving/complexity-thinking/<b>index.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 10</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Kenapa penting</div>
+    <a href="#c01"><span class="yr">01</span> Constraint = petunjuk emas</a>
+
+    <div class="rail__part">II · Konsep inti</div>
+    <a href="#c02"><span class="yr">02</span> Tabel n → kompleksitas</a>
+    <a href="#c03"><span class="yr">03</span> Studi kasus: n ≤ 10⁵</a>
+
+    <div class="rail__part">III · Praktik & jenjang</div>
+    <a href="#c04"><span class="yr">◆</span> Best practice</a>
+    <a href="#c05"><span class="yr">◆</span> Tier belajar</a>
+    <a href="#c06"><span class="yr">!</span> Jebakan umum</a>
+    <a href="#c07"><span class="yr">?</span> Longgar vs ketat</a>
+
+    <div class="rail__part">IV · Dunia nyata</div>
+    <a href="#c08"><span class="yr">!</span> Studi kasus nyata</a>
+    <a href="#c09"><span class="yr">⚙</span> Tools & kebiasaan</a>
+    <a href="#c10"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Problem Solving — membaca angka sebelum menulis baris kode pertama</div>
+      <h1 class="reveal d1">Angka constraint <span class="accent">sudah membisikkan</span> algoritma apa yang kamu butuhkan.</h1>
+      <p class="sub reveal d2">
+        Ini bukan halaman tentang definisi <b>Big-O</b> — itu ada di halaman lain. Ini tentang kebiasaan yang lebih
+        praktis: begitu kamu lihat <b>1 ≤ n ≤ 10⁵</b> di soal, kamu harusnya langsung punya perkiraan kasar
+        "pendekatan O(n²) akan meledak, aku butuh sesuatu di sekitar O(n log n)" — <b>sebelum</b> menulis satu baris
+        kode pun. Deck ini tentang melatih intuisi itu: menerjemahkan angka batas jadi peta kasar teknik yang layak
+        dicoba.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Sakit</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Constraint diabaikan</b> <span>— langsung ngoding tanpa menaksir waktu</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Ide</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Baca n dulu</b> <span>— sebelum mikir algoritma sama sekali</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Peta</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>n → anggaran kompleksitas</b> <span>— tabel kasar yang bisa langsung dipakai</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Jebak</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Constraint bisa menipu</b> <span>— amortized, atau constraint ganda</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Pakai</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Setiap kali baca soal / spec</b> <span>— kompetisi, interview, atau production</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="why">
+      <div class="tag">◆ Buat apa ini? Kenapa pakai Complexity Thinking?</div>
+      <p><b>Given</b> — kamu baca soal atau tiket, langsung mikir "gimana cara nyelesainnya secara logis" dan mulai ngoding brute force tanpa pernah melirik baris kecil <code>1 ≤ n ≤ 10⁵</code> di spesifikasinya.</p>
+      <p><b>When</b> — solusi itu di-submit ke online judge, atau di-deploy ke production lalu datanya tumbuh dari ratusan baris jadi ratusan ribu baris dalam beberapa bulan.</p>
+      <p><b>Then</b> — loop bersarang yang tadinya "kelihatan wajar" jadi <em>Time Limit Exceeded</em> di kompetisi, atau bikin endpoint production mendadak lemot/timeout begitu <code>n</code> membesar — dan kamu baru sadar setelah ada laporan, bukan sebelum menulis baris kode pertama.</p>
+      <p>→ makanya kita pakai <b>Complexity Thinking</b>.</p>
+    </div>
+  </div>
+
+  <!-- ============ 01 KENAPA CONSTRAINT ITU PETUNJUK EMAS ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Constraint diabaikan</div>
+        <h2>Baris kecil di soal itu bukan formalitas</h2>
+      </div>
+      <p class="lead reveal">Hampir semua soal — kompetitif, technical interview, bahkan tiket JIRA di kantor — punya baris kecil semacam <strong>"1 ≤ n ≤ 10⁵"</strong>. Banyak orang melompatinya, langsung mikir "gimana cara nyelesain ini secara logis", lalu baru sadar solusinya <em>timeout</em> setelah submit. Padahal baris kecil itu <strong>sudah menjawab</strong> pertanyaan "seberapa cepat solusiku harus jalan" — kamu tinggal menerjemahkannya.</p>
+
+      <div class="quote reveal d1">
+        <p>Constraint ukuran input pada soal dunia nyata (atau kompetisi) memberi petunjuk langsung tentang kompleksitas algoritma yang dibutuhkan — problem solver yang baik selalu mengaitkan ukuran input dengan anggaran waktu <em>sebelum</em> memilih pendekatan.</p>
+        <cite>— parafrase gagasan Steven Skiena, <i>The Algorithm Design Manual</i></cite>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — rambu batas kecepatan</div>
+        <p>Rambu <code>60 km/jam</code> di jalan bukan sekadar angka — ia memberitahumu ini <em>jalan kota</em>, bukan tol. Kamu tidak perlu melihat aspalnya untuk tahu jenis jalannya; angka di rambu sudah cukup. Sama halnya, <code>n ≤ 10⁵</code> adalah rambu yang bilang "ini soal untuk solusi <em>di sekitar</em> O(n log n)". Kamu tidak perlu mencoba semua algoritma untuk tahu — angka batasnya sudah memberi tahu <em>kelas</em> solusi yang relevan, jauh sebelum kamu menulis kode.</p>
+      </div>
+
+      <p class="body reveal d2">Efeknya kalau diabaikan bisa dua arah: solusi <strong>O(n²)</strong> di kompetisi dengan <code>n ≤ 10⁵</code> akan <em>Time Limit Exceeded</em> — itu yang paling sering dibicarakan. Tapi ada juga arah sebaliknya yang jarang disorot: menghabiskan waktu membangun struktur data rumit O(log n) untuk kasus yang <code>n</code>-nya cuma puluhan, di mana solusi brute force O(n²) sebenarnya sudah lebih dari cukup dan jauh lebih cepat ditulis.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 KONSEP INTI: TABEL N -> KOMPLEKSITAS ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Konsep inti</span> · Peta cepat</div>
+        <h2>Tabel kasar: angka n → kompleksitas yang aman</h2>
+      </div>
+      <p class="lead reveal">Ini bukan hukum matematika, tapi <strong>heuristik kerja</strong> yang dipakai hampir semua competitive programmer. Asumsinya: mesin modern kira-kira sanggup menjalankan <strong>10⁸ operasi sederhana per detik</strong>, dan batas waktu tipikal soal adalah 1–2 detik.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">peta-kasar.txt — n → kompleksitas aman (asumsi ~10⁸ ops/detik, limit ~1-2 detik)</span><span class="lang">PANDUAN</span></div>
+<pre class="code"><span class="c">n ≤ 10-12        →  O(2^n) atau O(n!)        // brute force / backtracking penuh</span>
+<span class="c">n ≤ 20-25        →  O(2^n · n)               // bitmask DP, subset enumeration</span>
+<span class="c">n ≤ 100          →  O(n^4)                   // nested loop 4 lapis, DP 2D berat</span>
+<span class="c">n ≤ 500-1.000    →  O(n^3)                   // Floyd-Warshall, DP 3D</span>
+<span class="c">n ≤ 2.000-10.000 →  O(n^2)                   // nested loop 2 lapis, DP 2D ringan</span>
+<span class="c">n ≤ 10^5-10^6    →  O(n log n)               // sorting, divide & conquer, heap</span>
+<span class="c">n ≤ 10^6-10^8    →  O(n)                     // sliding window, prefix sum, satu pass</span>
+<span class="c">n ≤ 10^9         →  O(log n) atau O(√n)      // binary search, math, factorization</span>
+<span class="c">n ≤ 10^18        →  O(1) atau O(log n)       // biasanya soal matematis murni</span>
+
+<span class="hl-good">// aturan cepat: hitung operasi = f(n), lalu bandingkan dengan ~10^8</span>
+<span class="hl-good">// contoh: n = 10^5, O(n^2) = 10^10 operasi → JAUH di atas budget → TLE</span></pre>
+      </div>
+
+      <p class="body reveal d2">Cara pakainya sederhana: ambil <code>n</code> dari soal, coba masukkan ke tiap kandidat kompleksitas, lihat berapa <em>total operasi</em>-nya, lalu bandingkan dengan anggaran ~10⁸. Kalau hasilnya jauh di atas anggaran, coret kandidat itu dari daftar — <strong>sebelum</strong> kamu capek-capek mengimplementasikannya.</p>
+
+      <div class="quote reveal d2">
+        <p>Pertanyaan "seberapa besar skalanya?" harus dijawab dengan angka konkret, bukan sekadar "besar" atau "kecil" — karena solusi yang tepat untuk skala kecil bisa sangat buruk di skala besar, dan sebaliknya solusi untuk skala besar bisa berlebihan (over-engineering) untuk skala kecil.</p>
+        <cite>— parafrase gagasan Martin Kleppmann, <i>Designing Data-Intensive Applications</i>, Bab 1</cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 STUDI KASUS: N <= 10^5 ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Latihan reasoning</span> · Kasus konkret</div>
+        <h2>Menelusuri: soal dengan n ≤ 10⁵</h2>
+      </div>
+      <p class="lead reveal">Soal: <strong>"Diberi array A berisi n bilangan (1 ≤ n ≤ 10⁵). Untuk tiap pasangan indeks (i, j) di mana i &lt; j, hitung berapa pasangan yang A[i] + A[j] genap."</strong> Mari telusuri reasoning-nya seperti yang harusnya terjadi di kepala, langkah demi langkah.</p>
+
+      <ol class="steps reveal d1">
+        <li><b>Baca constraint dulu, sebelum mikir logika.</b> <code>n ≤ 10⁵</code>. Cocokkan ke tabel: ini masuk rentang yang butuh <code>O(n log n)</code> atau lebih cepat — <code>O(n)</code> jika bisa.</li>
+        <li><b>Coba pendekatan paling naif secara logika.</b> Solusi paling jelas: dua nested loop, cek semua pasangan (i, j) — ini <code>O(n²)</code>. Logikanya benar, tapi jangan langsung nulis kode.</li>
+        <li><b>Hitung estimasi operasi sebelum implementasi.</b> Dengan n = 10⁵, O(n²) = 10¹⁰ operasi. Anggaran ~10⁸ per detik → butuh ~100 detik. Limit soal biasanya 1-2 detik → <b>pasti TLE</b>. Kandidat ini gugur di atas kertas, tanpa perlu ditulis dulu.</li>
+        <li><b>Cari sifat matematis yang memangkas kompleksitas.</b> Jumlah dua bilangan genap kalau keduanya sama paritasnya (sama-sama genap atau sama-sama ganjil). Jadi cukup hitung <code>g</code> = banyak bilangan genap dan <code>j</code> = banyak bilangan ganjil — tidak perlu memeriksa tiap pasangan satu per satu.</li>
+        <li><b>Turunkan solusi O(n).</b> Satu pass untuk menghitung <code>g</code> dan <code>j</code>, lalu jawabannya adalah <code>C(g,2) + C(j,2)</code> — kombinasi memilih 2 dari tiap kelompok. Total operasi ≈ n = 10⁵, jauh di bawah anggaran → aman, bahkan longgar.</li>
+        <li><b>Cocokkan lagi ke tabel sebagai sanity check.</b> n ≤ 10⁵ menyarankan O(n log n), tapi kita justru dapat O(n) — itu bagus, berarti ada solusi yang lebih baik dari "batas aman minimal". Ini menunjukkan tabel constraint adalah <em>batas atas kompleksitas yang boleh dipakai</em>, bukan target yang harus dikejar pas-pasan.</li>
+      </ol>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Tabel constraint memberi <b>batas atas</b> (kompleksitas apa yang <em>masih lolos</em>), bukan jaminan bahwa solusi dengan kompleksitas itu <b>otomatis benar atau optimal</b>. Kamu tetap harus mencari logika yang tepat — tabel cuma menyaring pendekatan mana yang layak dicoba lebih dulu, supaya waktumu tidak habis mengimplementasikan sesuatu yang jelas-jelas akan gagal di batas waktu.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 BEST PRACTICE ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Kebiasaan · Yang harus jadi refleks</div>
+        <h2>Best practice membaca constraint</h2>
+      </div>
+      <p class="lead reveal">Beberapa kebiasaan ini murah dilakukan tapi menghemat banyak waktu — baik saat kompetisi, interview, maupun saat merancang sistem production.</p>
+
+      <ul class="steps reveal d1">
+        <li><b>Selalu baca constraint SEBELUM mikir algoritma.</b> Bukan setelah punya ide — angka <code>n</code> harus jadi filter pertama sebelum kamu mulai brainstorm pendekatan.</li>
+        <li><b>Hafal anggaran kasar ~10⁸ operasi per detik.</b> Ini bukan angka presisi (tergantung bahasa, mesin, jenis operasi), tapi cukup untuk estimasi order-of-magnitude dalam hitungan detik.</li>
+        <li><b>Hitung total operasi tiap kandidat kompleksitas sebelum menulis kode.</b> Masukkan n, kalikan, bandingkan dengan anggaran. Coret kandidat yang jelas meledak.</li>
+        <li><b>Waspada integer overflow di angka besar.</b> Kalau n bisa sampai 10⁹ dan kamu menjumlahkan/mengalikan banyak elemen, hasilnya bisa melebihi batas <code>int</code> 32-bit (~2.1 × 10⁹) — pakai tipe 64-bit atau modulo sesuai kebutuhan soal.</li>
+        <li><b>Cek apakah ada constraint kedua yang tersembunyi.</b> Soal sering punya lebih dari satu batas — misalnya <code>n ≤ 10⁵</code> tapi juga <code>q ≤ 10⁵</code> query, yang berarti kompleksitas per-query juga harus diperhitungkan (total bisa jadi O(n·q), bukan cuma O(n)).</li>
+        <li><b>Kalau constraint sangat longgar (n kecil), jangan over-engineer.</b> Solusi brute force yang jelas benar & cepat ditulis lebih baik daripada solusi rumit yang berisiko bug, kalau anggaran waktu jelas-jelas mengizinkan.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 05 TIER BELAJAR ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Jenjang · Dari hafalan ke insting</div>
+        <h2>Tier belajar: dari tabel ke intuisi</h2>
+      </div>
+      <p class="lead reveal">Kemampuan ini berkembang bertahap — dari sekadar tahu tabelnya ada, sampai bisa mengendus kapan tabel itu sendiri bisa menipu.</p>
+
+      <div class="tiers reveal d1">
+        <div class="tier-block beginner">
+          <span class="tier-badge">Beginner</span>
+          <h4>Hafal tabel dasar</h4>
+          <p>Kamu bisa menyebutkan kira-kira kompleksitas aman untuk n ≤ 10, n ≤ 1.000, n ≤ 10⁵, dan n ≤ 10⁹ tanpa harus membuka catatan.</p>
+          <ul>
+            <li>Tahu anggaran ~10⁸ operasi/detik.</li>
+            <li>Bisa membedakan O(n²) vs O(n log n) secara kasar dari n.</li>
+            <li>Mulai membiasakan diri membaca constraint di awal, bukan di akhir.</li>
+          </ul>
+        </div>
+        <div class="tier-block middle">
+          <span class="tier-badge">Middle</span>
+          <h4>Pakai untuk mempersempit pilihan</h4>
+          <p>Constraint bukan cuma dihafal, tapi jadi alat aktif untuk menyaring algoritma mana yang layak dicoba lebih dulu, secara konsisten setiap kali latihan.</p>
+          <ul>
+            <li>Menghitung estimasi operasi sebelum menulis kode, bukan setelah TLE.</li>
+            <li>Mengenali constraint ganda (n dan q sekaligus) dan menggabungkan efeknya.</li>
+            <li>Sudah refleks curiga saat melihat angka besar tanpa disertai batas waktu jelas.</li>
+          </ul>
+        </div>
+        <div class="tier-block advance">
+          <span class="tier-badge">Advance</span>
+          <h4>Kenali kapan constraint menipu</h4>
+          <p>Paham bahwa tabel constraint adalah heuristik, bukan hukum — dan tahu kasus-kasus di mana ia perlu ditafsirkan lebih hati-hati.</p>
+          <ul>
+            <li>Paham kompleksitas <em>amortized</em> bisa membuat solusi "terlihat" O(n²) tapi sebenarnya O(n) rata-rata.</li>
+            <li>Mengenali constraint tersembunyi (mis. jumlah total elemen di semua test case dibatasi, bukan tiap test case sendiri-sendiri).</li>
+            <li>Tahu konstanta tersembunyi bisa membuat O(n log n) yang "aman di atas kertas" tetap lambat kalau konstantanya besar.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 JEBAKAN UMUM ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">! Anti-pola · Kebiasaan yang menjebak</div>
+        <h2>Jebakan umum seputar constraint</h2>
+      </div>
+      <p class="lead reveal">Perbedaan antara solver yang efisien dan yang sering TLE / lambat di production biasanya bukan soal kepandaian, tapi soal <strong>kebiasaan kecil</strong> ini.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="good-h">// ✅ Kebiasaan baik</h4>
+          <ul class="good-l">
+            <li>Cek constraint <b>sebelum</b> mulai mikir algoritma.</li>
+            <li>Menaksir total operasi di kepala / kertas dulu.</li>
+            <li>Cek tipe data — apakah butuh 64-bit untuk hasil penjumlahan/perkalian.</li>
+            <li>Mencari constraint kedua atau ketiga yang tersembunyi di soal.</li>
+            <li>Menulis "target complexity" sebagai catatan sebelum ngoding.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// ❌ Kebiasaan buruk</h4>
+          <ul class="bad-l">
+            <li>Asumsi <b>"input pasti kecil"</b> tanpa mengecek angkanya.</li>
+            <li>Lupa <b>integer overflow</b> saat n atau nilainya besar.</li>
+            <li>Langsung ngoding solusi pertama yang terpikir, baru sadar TLE setelah submit / deploy.</li>
+            <li>Mengabaikan bahwa constraint di production bisa <b>tumbuh seiring waktu</b> (data user makin banyak).</li>
+            <li>Menganggap tabel n→kompleksitas berlaku mutlak, padahal ada konstanta &amp; kasus amortized.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="chead reveal d2" style="margin-top:34px;">
+        <div class="kicker">? Kalibrasi · Longgar vs ketat</div>
+        <h2 style="font-size:clamp(22px,3.2vw,32px);">Kapan constraint longgar, kapan ketat</h2>
+      </div>
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="good-h">// Constraint longgar</h4>
+          <ul class="good-l">
+            <li>n kecil (puluhan – ratusan) → banyak pendekatan valid, termasuk brute force.</li>
+            <li>Batas waktu longgar (mis. 5-10 detik) → beri ruang error estimasi.</li>
+            <li>Fokus bisa dipindah ke <em>kejelasan &amp; kebenaran</em> kode, bukan kecepatan mentah.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Constraint ketat</h4>
+          <ul class="bad-l">
+            <li>n besar (10⁶ ke atas) → sering hanya <b>satu</b> kelas kompleksitas yang lolos.</li>
+            <li>Batas waktu ketat (1 detik) + n besar → konstanta di dalam O(n) pun mulai penting.</li>
+            <li>Salah pilih struktur data (mis. list vs hash map) bisa langsung gagal walau kompleksitas "benar".</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 KAPAN (placeholder redirect - digabung ke c06) ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Ringkasan keputusan</div>
+        <h2>Satu pertanyaan penentu sebelum ngoding</h2>
+      </div>
+      <p class="lead reveal">Sebelum menulis baris kode pertama, tanyakan ke soal atau spesifikasi di depanmu satu hal ini.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Pertanyaan penentu</div>
+        <p><strong>"Kalau n paling besar yang mungkin, berapa lama solusiku ini akan jalan?"</strong> Kalau kamu tidak bisa menjawabnya dalam hitungan detik di kepala — itu tandanya kamu belum benar-benar mengaitkan constraint dengan pilihan algoritmamu. Jawab dulu pertanyaan ini, baru pilih pendekatan.</p>
+      </div>
+
+      <p class="body reveal d2">Ingat juga: constraint yang longgar bukan alasan untuk berhenti berpikir sama sekali — tetap perhatikan kebenaran logika. Dan constraint yang ketat bukan alasan untuk panik — ia justru <strong>mempersempit</strong> ruang pencarianmu, membuat lebih sedikit pendekatan yang perlu dipertimbangkan.</p>
+    </div>
+  </section>
+
+  <!-- ============ 08 STUDI KASUS NYATA ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Studi kasus</span> · Tiga konteks nyata</div>
+        <h2>Di mana kebiasaan ini benar-benar dipakai</h2>
+      </div>
+      <p class="lead reveal">Ini bukan cuma kebiasaan untuk lomba coding — pola pikir yang sama muncul di tiga konteks yang sangat berbeda.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up">
+          <div class="ic">// competitive programming</div>
+          <h4>TLE karena salah baca constraint</h4>
+          <p>Pola yang sering terjadi: solusi dengan logika benar tapi kompleksitasnya terlalu tinggi untuk <code>n</code> yang diberikan, sehingga <em>submit</em> berakhir <b>Time Limit Exceeded</b> — bukan karena logikanya salah, tapi karena kompleksitasnya tidak dicek dulu terhadap batas <code>n</code> sebelum menulis kode.</p>
+        </div>
+        <div class="card up">
+          <div class="ic">// production system</div>
+          <h4>Endpoint API melambat seiring data tumbuh</h4>
+          <p>Sebuah query atau loop yang kompleksitasnya <code>O(n²)</code> terhadap jumlah baris tabel terasa cepat saat data masih kecil di awal development. Begitu data user bertambah dari ribuan ke jutaan baris, endpoint yang sama jadi lambat — masalah yang sebenarnya sudah bisa diprediksi kalau kompleksitasnya diperhitungkan terhadap <em>proyeksi</em> pertumbuhan data, bukan cuma data uji yang kecil.</p>
+        </div>
+        <div class="card up">
+          <div class="ic">// technical interview</div>
+          <h4>Interviewer menaikkan constraint sengaja</h4>
+          <p>Setelah kandidat memberi solusi brute force yang benar, interviewer sering melanjutkan dengan pertanyaan susulan: <em>"bagaimana kalau n-nya sampai satu juta?"</em> Pertanyaan ini menguji apakah kandidat sadar bahwa constraint yang berubah menuntut pendekatan yang berbeda — bukan sekadar menguji apakah solusi awalnya benar.</p>
+        </div>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Benang merahnya</div>
+          <p>Di ketiga konteks itu, masalahnya bukan ketidaktahuan algoritma — tapi <strong>tidak mengaitkan</strong> algoritma yang dipilih dengan angka skala yang dihadapi. Kompetisi punya batas eksplisit di soal, production punya batas implisit di pertumbuhan data, interview punya batas yang sengaja digeser untuk menguji kesadaran itu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 TOOLS & KEBIASAAN ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">⚙ Praktik · Alat bantu sederhana</div>
+        <h2>Tools & kebiasaan menaksir kompleksitas</h2>
+      </div>
+      <p class="lead reveal">Tidak perlu alat canggih — ini soal kebiasaan menghitung di kepala atau di kertas, dilakukan konsisten setiap kali menghadapi soal baru.</p>
+
+      <div class="grid reveal d1">
+        <div class="card up">
+          <div class="ic">// kalkulator mental</div>
+          <h4>Estimasi runtime kasar</h4>
+          <p>Rumus sederhana: <code>operasi = f(n)</code>, lalu <code>perkiraan detik = operasi / 10^8</code>. Kalau hasilnya jauh melewati batas waktu soal (biasanya 1-2 detik), kompleksitas itu perlu diturunkan sebelum diimplementasikan.</p>
+        </div>
+        <div class="card up">
+          <div class="ic">// kebiasaan menulis</div>
+          <h4>Tulis "target complexity" di awal</h4>
+          <p>Sebelum ngoding, tulis satu baris komentar: <code>// target: O(n log n)</code>. Ini memaksa kamu memilih arah sebelum tersesat menulis solusi yang ternyata terlalu lambat — dan jadi pengingat saat solusi mulai melenceng dari target.</p>
+        </div>
+        <div class="card up">
+          <div class="ic">// kebiasaan baca</div>
+          <h4>Baca semua batas, bukan cuma n</h4>
+          <p>Selain <code>n</code>, perhatikan batas nilai elemen, jumlah query, jumlah test case per file, dan batas memori. Semuanya ikut membentuk anggaran kompleksitas yang sebenarnya diizinkan.</p>
+        </div>
+        <div class="card up">
+          <div class="ic">// kebiasaan uji</div>
+          <h4>Uji dengan n di batas maksimum</h4>
+          <p>Sebelum submit atau deploy, coba jalankan solusi dengan <code>n</code> sebesar batas maksimum yang disebutkan constraint — bukan cuma contoh kecil di soal — untuk melihat apakah waktunya masih masuk akal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 PENUTUP ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Angka batas itu petunjuk, bukan gangguan</h2>
+      </div>
+      <p class="lead reveal">Complexity thinking bukan soal menghafal notasi Big-O — itu sudah dibahas di halaman lain. Ini soal membangun refleks: setiap kali kamu melihat angka batas, kepalamu otomatis menerjemahkannya jadi kelas kompleksitas yang layak dicoba.</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Baca constraint dulu</b> — sebelum mikir algoritma sama sekali.</li>
+          <li><b>Anggaran ~10⁸ operasi/detik</b> — patokan cepat untuk menaksir.</li>
+          <li><b>Tabel n → kompleksitas</b> — batas atas, bukan target yang harus dikejar pas-pasan.</li>
+          <li><b>Waspada constraint ganda &amp; overflow</b> — angka besar sering datang berpasangan dengan jebakan lain.</li>
+          <li><b>Tabelnya heuristik, bukan hukum</b> — amortized &amp; konstanta tersembunyi bisa menipu di level advance.</li>
+          <li><b>Constraint di production ikut tumbuh</b> — desain untuk skala yang akan datang, bukan cuma data uji hari ini.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Langkah belajar berikutnya</h3>
+        <p>Tahu kompleksitas yang aman itu langkah pertama. Langkah berikutnya adalah memastikan solusimu benar <strong>di kasus-kasus ekstrem</strong> — bukan cuma cepat, tapi juga tidak gagal saat inputnya kosong, duplikat, atau berada tepat di batas constraint. Lanjut ke halaman <strong>"Edge Case & Testing"</strong> untuk melatih kebiasaan itu.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Kaitkan ukuran input dengan anggaran waktu, sebelum memilih pendekatan."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Complexity Thinking</b> · Baca constraint, tebak kompleksitas, hindari TLE · untuk pemula ·
+  rujukan: <i>The Algorithm Design Manual</i> (Skiena), <i>DDIA</i> (Kleppmann) · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b> ·
+  <a href="../index.html">← kembali ke Problem Solving</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

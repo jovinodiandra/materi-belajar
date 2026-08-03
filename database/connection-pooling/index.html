@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connection Pooling — Pinjam, Jangan Bikin Baru</title>
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; display: block; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --violet:     #8b7cf0;
+    --violet-dim: #5a4fa0;
+    --bad:        #f0746a;
+    --bad-bg:     rgba(240,116,106,.07);
+    --bad-line:   rgba(240,116,106,.30);
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.07);
+    --good-line:  rgba(86,211,100,.30);
+
+    /* syntax */
+    --t-comment:  #5f6b86;
+    --t-key:      #8b7cf0;
+    --t-type:     #45d4de;
+    --t-str:      #8fd2b0;
+    --t-num:      #f5b14c;
+    --t-fn:       #7fb6e6;
+    --t-anno:     #b08cd9;
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+
+    --rail-w: 258px;
+    --maxw: 1120px;
+  }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.66;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 44px;
+    background: rgba(11,14,26,.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;    
+  }
+  .topbar__dots { display: flex; gap: 7px; }
+  .topbar__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .topbar__dots i:nth-child(1){ background:#f0746a; }
+  .topbar__dots i:nth-child(2){ background:#f5b14c; }
+  .topbar__dots i:nth-child(3){ background:#45d4de; }
+  .topbar__file { color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__file b { color: var(--ink-strong); font-weight: 600; }
+  .topbar__counter { margin-left: auto; color: var(--cyan); letter-spacing: .12em; white-space: nowrap; }
+  .progress {
+    position: fixed; top: 44px; left: 0; height: 2px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    z-index: 51; transition: width .15s linear;
+  }
+
+  /* ---------- timeline rail ---------- */
+  .rail {
+    position: fixed; top: 44px; left: 0; bottom: 0; width: var(--rail-w);
+    border-right: 1px solid var(--line);
+    background: var(--void-2);
+    padding: 24px 0 50px;
+    overflow-y: auto; z-index: 40;
+    font-family: var(--mono);
+  }
+  .rail__head {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted-2); padding: 0 22px 6px;
+  }
+  .rail__nav { position: relative; padding-top: 8px; }
+  .rail__nav::before {
+    content: ""; position: absolute; left: 27px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--line);
+  }
+  .rail__part {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--violet); padding: 16px 22px 6px 44px; position: relative;
+  }
+  .rail a {
+    display: block; position: relative;
+    padding: 7px 18px 7px 44px; color: var(--muted);
+    text-decoration: none; font-size: 12.5px; line-height: 1.35;
+    transition: color .18s, background .18s;
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: 22px; top: 12px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void-2); border: 2px solid var(--line);
+    transition: border-color .18s, background .18s, box-shadow .18s;
+  }
+  .rail a .yr { color: var(--amber-dim); font-size: 11px; margin-right: 6px; }
+  .rail a:hover { color: var(--ink-strong); background: rgba(255,255,255,.02); }
+  .rail a.active { color: var(--ink-strong); }
+  .rail a.active::before { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 11px rgba(69,212,222,.65); }
+  .rail a.active .yr { color: var(--cyan); }
+
+  /* ---------- layout ---------- */
+  .stage { margin-left: var(--rail-w); }
+  section.chapter {
+    min-height: 100vh;
+    padding: 92px clamp(22px, 5vw, 78px) 86px;
+    border-bottom: 1px solid var(--line-soft);
+    scroll-margin-top: 44px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; }
+  .reveal.d2 { transition-delay: .16s; }
+  .reveal.d3 { transition-delay: .24s; }
+  .reveal.d4 { transition-delay: .32s; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 460px at 78% 12%, rgba(69,212,222,.10), transparent 60%),
+      radial-gradient(700px 420px at 12% 92%, rgba(139,124,240,.10), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 1; }
+  .hero .eyebrow {
+    font-family: var(--mono); color: var(--cyan);
+    font-size: 13px; letter-spacing: .04em; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(34px, 6vw, 74px);
+    line-height: 1.05; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 17ch;
+  }
+  .hero h1 .accent { color: var(--cyan); font-style: italic; }
+  .hero .sub { margin-top: 28px; max-width: 62ch; font-size: 19px; color: var(--ink); }
+  .hero .sub b { color: var(--ink-strong); }
+
+  /* ---------- hero timeline ---------- */
+  .tl { margin-top: 48px; display: flex; flex-direction: column; gap: 0; max-width: 720px; }
+  .tl__row {
+    display: grid; grid-template-columns: 78px 22px 1fr; align-items: center;
+    gap: 14px; padding: 8px 0; position: relative;
+  }
+  .tl__yr { font-family: var(--mono); font-size: 14px; color: var(--amber); text-align: right; font-weight: 600; }
+  .tl__dotcell { position: relative; height: 100%; display: flex; justify-content: center; }
+  .tl__dotcell::before { content: ""; position: absolute; top: -12px; bottom: -12px; width: 2px; background: var(--line); }
+  .tl__row:first-child .tl__dotcell::before { top: 50%; }
+  .tl__row:last-child  .tl__dotcell::before { bottom: 50%; }
+  .tl__dot { position: relative; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--void); border: 2px solid var(--cyan-dim); align-self: center; }
+  .tl__row.lit .tl__dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(69,212,222,.6); }
+  .tl__label { font-size: 15.5px; color: var(--ink); }
+  .tl__label b { color: var(--ink-strong); font-weight: 600; }
+  .tl__label span { color: var(--muted); }
+
+  .scrollcue {
+    margin-top: 48px; font-family: var(--mono); font-size: 12.5px;
+    color: var(--muted-2); letter-spacing: .14em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .scrollcue .arrow { animation: bob 1.6s ease-in-out infinite; color: var(--cyan); }
+  @keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(5px);} }
+
+  /* ---------- chapter heading ---------- */
+  .chead { margin-bottom: 16px; }
+  .chead .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chead .kicker::before { content: ""; flex: none; width: 16px; height: 2px; background: var(--cyan); }
+  .chead .kicker .era { color: var(--amber); }
+  .chead h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(26px, 4vw, 46px); line-height: 1.1; letter-spacing: -.01em;
+    color: var(--ink-strong); max-width: 20ch;
+  }
+
+  .lead { font-size: 19px; color: var(--ink); max-width: 72ch; margin: 8px 0; }
+  .lead strong { color: var(--ink-strong); font-weight: 600; }
+  p.body { max-width: 72ch; margin: 14px 0; color: var(--ink); }
+  p.body code, li code, .lead code, .why code, .note p code {
+    font-family: var(--mono); font-size: .86em; color: var(--cyan);
+    background: rgba(69,212,222,.09); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- "kenapa ada" / motivation ---------- */
+  .why {
+    border: 1px solid var(--amber-dim); border-left: 3px solid var(--amber);
+    background: linear-gradient(100deg, rgba(245,177,76,.07), transparent 75%);
+    padding: 16px 20px; margin: 24px 0; border-radius: 0 10px 10px 0;
+    max-width: 78ch;
+  }
+  .why .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  }
+  .why p { color: var(--ink); font-size: 16px; }
+  .why em { color: var(--amber); font-style: normal; font-weight: 600; }
+  .why code { background: rgba(245,177,76,.1); color: var(--amber); }
+
+  /* ---------- era flavor box ---------- */
+  .erabox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 15px 18px; margin: 22px 0 6px; max-width: 660px; }
+  .erabox__tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 11px; }
+  .erabox__row { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+  .erabox__row:last-of-type { border-bottom: none; }
+  .erabox__lang { flex: none; width: 58px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--violet); }
+  .erabox__row code { font-family: var(--mono); font-size: 13px; color: var(--ink-strong); }
+  .erabox__note { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .erabox__note b { color: var(--ink); }
+  .erabox__note code { font-family: var(--mono); font-size: .85em; color: var(--amber); background: rgba(245,177,76,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- code card ---------- */
+  .code-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--panel); margin: 22px 0 6px; max-width: 880px;
+    box-shadow: 0 16px 44px -30px rgba(0,0,0,.9);
+  }
+  .code-card.bad  { border-color: var(--bad-line); }
+  .code-card.good { border-color: var(--good-line); }
+  .code-card__bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2); font-family: var(--mono); font-size: 12px;
+  }
+  .code-card__bar .dots { display: flex; gap: 6px; }
+  .code-card__bar .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--line); }
+  .code-card__name { color: var(--muted); }
+  .lang {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; color: var(--cyan); border: 1px solid var(--cyan-dim);
+    border-radius: 5px; padding: 2px 8px; background: rgba(69,212,222,.08);
+  }
+  .lang.smalltalk { color: var(--violet); border-color: var(--violet-dim); background: rgba(139,124,240,.08); }
+  .lang.c { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.08); }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.62;
+    padding: 16px 18px; overflow-x: auto; color: var(--ink); tab-size: 4; white-space: pre;
+  }
+  pre.code::-webkit-scrollbar { height: 9px; }
+  pre.code::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .c { color: var(--t-comment); font-style: italic; }
+  .k { color: var(--t-key); }
+  .t { color: var(--t-type); }
+  .s { color: var(--t-str); }
+  .n { color: var(--t-num); }
+  .f { color: var(--t-fn); }
+  .a { color: var(--t-anno); }
+  .hl-bad  { background: var(--bad-bg);  border-left: 2px solid var(--bad-line);  display: inline-block; width: 100%; }
+  .hl-good { background: var(--good-bg); border-left: 2px solid var(--good-line); display: inline-block; width: 100%; }
+
+  /* ---------- diptych (before → after) ---------- */
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin: 22px 0 6px; max-width: var(--maxw); }
+  .diptych .code-card { margin: 0; max-width: none; min-width: 0; }
+  .diptych pre.code { font-size: 12px; line-height: 1.6; }
+  @media (max-width: 1240px) { .diptych { grid-template-columns: 1fr; } }
+
+  /* ---------- caution (anti-dogma) ---------- */
+  .caution {
+    display: flex; gap: 13px; margin: 20px 0 4px; max-width: 80ch;
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 18px;
+    background: rgba(255,255,255,.015);
+  }
+  .caution .ico { color: var(--violet); flex: none; font-size: 15px; line-height: 1.5; }
+  .caution__body { font-size: 15px; color: var(--ink); }
+  .caution__body b { color: var(--violet); }
+  .caution code { font-family: var(--mono); font-size: .86em; color: var(--violet); background: rgba(139,124,240,.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---------- two-col ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .cols h4 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+  .cols .bad-h  { color: var(--bad); }
+  .cols .good-h { color: var(--good); }
+  .cols ul { list-style: none; }
+  .cols li { padding: 6px 0 6px 24px; position: relative; font-size: 15.5px; color: var(--ink); border-bottom: 1px solid var(--line-soft); }
+  .cols li::before { position: absolute; left: 0; font-family: var(--mono); }
+  .cols .bad-l li::before  { content: "\2715"; color: var(--bad); }
+  .cols .good-l li::before { content: "\2713"; color: var(--good); }
+  .cols code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
+
+  /* ---------- pull quote ---------- */
+  .quote {
+    margin: 30px 0 8px; max-width: 80ch; padding: 8px 0 8px 26px;
+    border-left: 3px solid var(--violet);
+  }
+  .quote p { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.6vw, 27px); color: var(--ink-strong); line-height: 1.4; }
+  .quote cite { display: block; margin-top: 12px; font-family: var(--mono); font-style: normal; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+
+  /* ---------- generic note ---------- */
+  .note {
+    display: flex; gap: 16px; margin: 26px 0 4px; max-width: 80ch;
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+  }
+  .note__spine { flex: none; width: 8px; background: linear-gradient(var(--cyan), var(--cyan-dim)); }
+  .note__body { padding: 15px 20px 17px; }
+  .note__tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+  }
+  .note p { color: var(--ink); font-size: 15.5px; max-width: none; }
+
+  /* ---------- card grid (benefits / drawbacks) ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; margin-top: 26px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 11px; padding: 18px 18px 16px;
+    background: var(--panel); transition: border-color .2s, transform .2s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.up:hover   { border-color: var(--cyan-dim); }
+  .card.down:hover { border-color: var(--bad-line); }
+  .card .ic { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .card.up .ic   { color: var(--cyan); }
+  .card.down .ic { color: var(--bad); }
+  .card h4 { font-size: 16.5px; color: var(--ink-strong); margin: 7px 0 7px; font-weight: 600; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .card p code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* ---------- deep-dive link ---------- */
+  .deeplink {
+    display: inline-flex; align-items: center; gap: 8px; margin: 22px 0 4px;
+    font-family: var(--mono); font-size: 13px; letter-spacing: .03em;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--cyan-dim); border-radius: 8px; padding: 9px 16px;
+    background: rgba(69,212,222,.06); transition: background .18s, border-color .18s, transform .18s;
+  }
+  .deeplink b { color: var(--ink-strong); font-weight: 600; }
+  .deeplink .arrow2 { transition: transform .18s; }
+  .deeplink:hover { background: rgba(69,212,222,.12); border-color: var(--cyan); }
+  .deeplink:hover .arrow2 { transform: translateX(4px); }
+  .deeplink.amber { color: var(--amber); border-color: var(--amber-dim); background: rgba(245,177,76,.06); }
+  .deeplink.amber:hover { background: rgba(245,177,76,.12); border-color: var(--amber); }
+
+  /* ---------- closing ---------- */
+  .creed { max-width: 64ch; }
+  .creed li {
+    list-style: none; font-family: var(--mono); font-size: clamp(14.5px,1.9vw,17px);
+    color: var(--ink); padding: 11px 0 11px 30px; position: relative;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .creed li::before { content: "\2192"; position: absolute; left: 0; color: var(--cyan); }
+  .creed li b { color: var(--ink-strong); }
+
+  .endcard {
+    margin-top: 38px; border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(160deg, var(--panel), var(--void-2));
+    padding: 28px clamp(20px,4vw,38px); max-width: 880px;
+  }
+  .endcard h3 { font-family: var(--serif); color: var(--ink-strong); font-size: 24px; margin-bottom: 10px; }
+  .endcard p { color: var(--ink); max-width: 64ch; }
+
+  footer {
+    margin-left: var(--rail-w); padding: 32px clamp(22px,5vw,78px);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted-2);
+    border-top: 1px solid var(--line);
+  }
+  footer b { color: var(--muted); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    :root { --rail-w: 0px; }
+    .rail { display: none; }
+    .stage, footer { margin-left: 0; }
+    .cols { grid-template-columns: 1fr; }
+    .tl { max-width: 100%; }
+    body { font-size: 16px; }
+    .topbar__file { font-size: 11px; }
+  }
+  @media (max-width: 520px) {
+    section.chapter { padding-left: 18px; padding-right: 18px; }
+    .tl__row { grid-template-columns: 62px 18px 1fr; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto !important; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__dots"><i></i><i></i><i></i></div>
+  <div class="topbar__file">docs/learning/database/<b>connection-pooling.md</b></div>
+  <div class="topbar__counter" id="counter">00 / 13</div>
+</div>
+<div class="progress" id="progress"></div>
+
+<nav class="rail" aria-label="Daftar bab">
+  <div class="rail__head">// Alur belajar</div>
+  <div class="rail__nav">
+    <a href="#c00"><span class="yr">·</span> Pembuka</a>
+
+    <div class="rail__part">I · Masalahnya</div>
+    <a href="#c01"><span class="yr">01</span> Koneksi itu mahal</a>
+    <a href="#c01b"><span class="yr">02</span> Postgres lebih mahal lagi</a>
+    <a href="#c02"><span class="yr">03</span> Tiap request bikin baru</a>
+
+    <div class="rail__part">II · Solusinya</div>
+    <a href="#c03"><span class="yr">03</span> Apa itu connection pool</a>
+    <a href="#c04"><span class="yr">04</span> Pinjam → pakai → balikin</a>
+
+    <div class="rail__part">III · Anatomi pool</div>
+    <a href="#c05"><span class="yr">◆</span> Parameter kunci</a>
+    <a href="#c06"><span class="yr">◆</span> Ukuran pool yang benar</a>
+
+    <div class="rail__part">IV · Kasus nyata</div>
+    <a href="#c07"><span class="yr">!</span> Lonjakan trafik &amp; antrian</a>
+    <a href="#c08"><span class="yr">!</span> Connection leak</a>
+    <a href="#c09"><span class="yr">!</span> Serverless &amp; pooler eksternal</a>
+    <a href="#c09b"><span class="yr">◆</span> PgBouncer &amp; fitur-fiturnya</a>
+
+    <div class="rail__part">V · Praktik</div>
+    <a href="#c10"><span class="yr">×</span> Salah kaprah</a>
+    <a href="#c11"><span class="yr">·</span> Penutup</a>
+  </div>
+</nav>
+
+<main class="stage">
+
+  <!-- ============ 00 HERO ============ -->
+  <section class="chapter hero" id="c00">
+    <div class="wrap">
+      <div class="eyebrow reveal">// Database — fondasi yang sering dilupakan sampai server tumbang</div>
+      <h1 class="reveal d1">Jangan buka koneksi baru tiap kali. <span class="accent">Pinjam</span> dari kolam.</h1>
+      <p class="sub reveal d2">
+        Bikin koneksi ke database itu <b>mahal</b> — bukan soal uang, tapi soal waktu dan resource. Kalau tiap
+        request aplikasi kamu buka-tutup koneksi sendiri, di trafik kecil aman, tapi pas rame database-nya bakal
+        <b>megap-megap</b>. <b>Connection pooling</b> jawabannya: sekumpulan koneksi yang sudah siap pakai,
+        dipinjam sebentar, lalu dikembalikan. Deck ini ngebahas <b>kenapa dibutuhkan</b> dulu, baru
+        <b>cara kerjanya</b>, lengkap sama analogi dan kasus nyata yang bikin server orang beneran down.
+      </p>
+
+      <div class="tl reveal d3" aria-hidden="true">
+        <div class="tl__row lit"><div class="tl__yr">Masalah</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Buka koneksi = mahal</b> <span>— TCP + TLS + autentikasi tiap kali</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Naif</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>1 request = 1 koneksi baru</b> <span>— boros &amp; bikin DB kehabisan slot</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Solusi</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Connection pool</b> <span>— koneksi disiapkan sekali, dipakai berulang</span></div></div>
+        <div class="tl__row lit"><div class="tl__yr">Atur</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Ukuran &amp; timeout</b> <span>— terlalu kecil antri, terlalu besar DB tumbang</span></div></div>
+        <div class="tl__row"><div class="tl__yr">Skala</div><div class="tl__dotcell"><span class="tl__dot"></span></div><div class="tl__label"><b>Pooler eksternal</b> <span>— PgBouncer dkk buat serverless &amp; banyak instance</span></div></div>
+      </div>
+
+      <div class="scrollcue reveal d4"><span class="arrow">↓</span> SCROLL ATAU TEKAN <b style="color:var(--cyan)">→</b> UNTUK MULAI</div>
+    </div>
+  </section>
+
+  <div class="wrap" style="margin:32px auto 0">
+    <div class="why reveal">
+      <div class="tag">◆ Buat apa ini? Kenapa pakai Connection Pooling?</div>
+      <p><b>Given</b> — aplikasi kamu memanggil <code>connect()</code> baru setiap kali ada request yang butuh akses database, tanpa ada pool sama sekali.</p>
+      <p><b>When</b> — trafik naik ke ratusan/ribuan request per detik bersamaan (jam sibuk, promo, lonjakan traffic).</p>
+      <p><b>Then</b> — tiap request mengulang ritual mahal TCP handshake + TLS + auth (20–100ms) dari nol, database kehabisan slot <code>max_connections</code>, dan di Postgres tiap koneksi baru bahkan bikin proses OS baru yang memakan RAM sampai akhirnya database megap-megap atau menolak koneksi.</p>
+      <p>→ makanya kita pakai <b>Connection Pooling</b>.</p>
+    </div>
+  </div>
+
+  <!-- ============ 01 KONEKSI ITU MAHAL ============ -->
+  <section class="chapter" id="c01">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Akar masalah</span> · Kenapa pooling ada</div>
+        <h2>Membuka koneksi database itu pekerjaan berat</h2>
+      </div>
+      <p class="lead reveal">Buat kita, <code>connect()</code> kelihatan kayak satu baris instan. Padahal di balik layar, <strong>buka satu koneksi database itu ritual panjang</strong> — dan tiap langkahnya makan waktu.</p>
+
+      <p class="body reveal d1">Begitu aplikasi minta koneksi baru, kira-kira ini yang terjadi:</p>
+
+      <div class="erabox reveal d1">
+        <div class="erabox__tag">◆ Apa yang sebenarnya terjadi pas "buka 1 koneksi"</div>
+        <div class="erabox__row"><span class="erabox__lang">1. TCP</span><code>three-way handshake (SYN → SYN-ACK → ACK)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">2. TLS</span><code>negosiasi enkripsi + tukar sertifikat (kalau pakai SSL)</code></div>
+        <div class="erabox__row"><span class="erabox__lang">3. Auth</span><code>kirim user/password, server verifikasi</code></div>
+        <div class="erabox__row"><span class="erabox__lang">4. Sesi</span><code>DB alokasikan memori, proses/thread, set variabel sesi</code></div>
+        <p class="erabox__note">Total bisa <b>20–100 milidetik</b> hanya untuk <em>siap pakai</em> — padahal query-nya sendiri mungkin cuma 1 ms. Di Postgres, tiap koneksi bahkan bikin <b>proses OS baru</b> yang makan beberapa MB RAM. Bukan operasi yang ringan.</p>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — menelepon bank</div>
+        <p>Bayangin tiap mau tanya saldo, kamu harus: <em>tekan nomor → tunggu nada → dengerin menu → masukin PIN → verifikasi → baru ngomong</em>. Ritualnya jauh lebih lama dari pertanyaannya sendiri. Konyol kalau diulang tiap kali cuma buat nanya satu hal. Itu persis yang terjadi kalau aplikasi buka koneksi baru tiap query.</p>
+      </div>
+
+      <p class="body reveal d2">Sekali atau dua kali nggak kerasa. Tapi aplikasi web melayani <strong>ratusan sampai ribuan request per detik</strong>. Kalau tiap request mengulang ritual mahal ini dari nol, kamu membuang waktu dan resource yang sama, berulang-ulang. Di bab berikutnya kita lihat seberapa cepat ini jadi bencana.</p>
+    </div>
+  </section>
+
+  <!-- ============ 01b POSTGRES LEBIH MAHAL LAGI ============ -->
+  <section class="chapter" id="c01b">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Khusus Postgres</span> · Satu koneksi = satu proses OS</div>
+        <h2>Di PostgreSQL, koneksi jauh lebih mahal lagi</h2>
+      </div>
+      <p class="lead reveal">Semua database bayar pajak handshake. Tapi Postgres punya beban tambahan yang bikin koneksinya <strong>termasuk yang paling mahal</strong>: untuk <em>tiap</em> koneksi, server menjalankan <code>fork()</code> — membuat <strong>satu proses sistem operasi baru</strong> (disebut <em>backend process</em>). Bukan thread ringan, tapi proses penuh.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — menyewa pegawai tetap, bukan menyeret kursi</div>
+        <p>Database lain (mis. MySQL) menambah koneksi seperti <em>menyeret satu kursi ekstra</em> ke meja — ringan. Postgres menambah koneksi seperti <strong>merekrut satu pegawai tetap baru</strong>: dia butuh meja sendiri, ruang sendiri, dan tetap digaji walau lagi nganggur. Sepuluh pegawai? Boleh. Seribu pegawai untuk kerja yang sama? Kantornya jebol.</p>
+      </div>
+
+      <p class="body reveal d1">Konsekuensinya berlapis, dan inilah kenapa pooling di Postgres bukan optimasi mewah tapi nyaris <strong>wajib</strong>:</p>
+
+      <div class="grid reveal d2">
+        <div class="card down"><div class="ic">// fork() mahal</div><h4>Proses baru tiap koneksi</h4><p>Tiap <code>connect()</code> memicu <code>fork()</code> di server — bikin proses OS itu sendiri butuh waktu &amp; kerja kernel, jauh lebih berat dari sekadar handshake.</p></div>
+        <div class="card down"><div class="ic">// RAM</div><h4>~5–10 MB per koneksi</h4><p>Tiap backend process makan memori sendiri. 500 koneksi nganggur bisa menghabiskan beberapa GB RAM — sebelum satu query pun jalan.</p></div>
+        <div class="card down"><div class="ic">// work_mem</div><h4>Memori dikali-kali</h4><p><code>work_mem</code> dialokasikan <em>per operasi, per koneksi</em>. Satu query rumit bisa pakai beberapa kali <code>work_mem</code>; kalikan ratusan koneksi → ledakan memori &amp; risiko OOM.</p></div>
+        <div class="card down"><div class="ic">// shared state</div><h4>Rebutan resource bersama</h4><p>Makin banyak proses, makin sengit rebutan lock manager, shared buffer, &amp; perhatian scheduler OS. Banyak koneksi justru bikin semua <em>lebih lambat</em>.</p></div>
+      </div>
+
+      <div class="erabox reveal d2">
+        <div class="erabox__tag">◆ Kenapa <code>max_connections</code> default-nya cuma 100</div>
+        <div class="erabox__row"><span class="erabox__lang">Default</span><code>max_connections = 100</code></div>
+        <div class="erabox__row"><span class="erabox__lang">Naif</span><code>max_connections = 5000  -- "biar muat semua"</code></div>
+        <p class="erabox__note">Menaikkan angka ini <b>bukan</b> solusi gratis: tiap slot = potensi satu proses + memorinya. Naikin ke ribuan = boros RAM, scheduler keteteran, dan throughput malah <b>turun</b>. Cara yang benar bukan "perbesar batas DB", tapi <b>"perkecil jumlah koneksi nyata lewat pooling"</b>.</p>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Intinya</div>
+          <p>Karena tiap koneksi Postgres = satu proses OS yang mahal &amp; rakus memori, <strong>jumlah koneksi adalah sumber daya langka</strong> yang harus dijaga ketat. Pool koneksi (di app) + pooler eksternal seperti <strong>PgBouncer</strong> (di depan DB) adalah cara standar untuk melayani ribuan client dengan hanya segelintir koneksi nyata ke Postgres. Itu yang kita bahas di Kasus #3.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 TIAP REQUEST BIKIN BARU ============ -->
+  <section class="chapter" id="c02">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Pendekatan naif</span> · 1 request = 1 koneksi</div>
+        <h2>“Ya udah, buka koneksi pas butuh, tutup pas selesai”</h2>
+      </div>
+      <p class="lead reveal">Ini cara paling polos — dan untuk skrip kecil yang jalan sekali, <strong>nggak apa-apa</strong>. Masalahnya muncul pas pola ini dipakai di server yang melayani banyak orang sekaligus.</p>
+
+      <div class="code-card bad reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">handler.js — buka-tutup koneksi tiap request</span><span class="lang">Node.js</span></div>
+<pre class="code"><span class="k">import</span> { Client } <span class="k">from</span> <span class="s">"pg"</span>;
+
+<span class="c">// ⚠️ dipanggil di SETIAP request yang masuk</span>
+<span class="k">async function</span> <span class="f">handler</span>(req, res) {
+<span class="hl-bad">  <span class="k">const</span> client = <span class="k">new</span> <span class="t">Client</span>(DB_CONFIG);
+  <span class="k">await</span> client.<span class="f">connect</span>();      <span class="c">// 🐢 ritual mahal 20–100ms, tiap request</span></span>
+
+  <span class="k">const</span> { rows } = <span class="k">await</span> client.<span class="f">query</span>(<span class="s">"SELECT * FROM users WHERE id=$1"</span>, [req.id]);
+
+<span class="hl-bad">  <span class="k">await</span> client.<span class="f">end</span>();          <span class="c">// koneksi dibuang, sia-sia</span></span>
+  res.<span class="f">json</span>(rows);
+}</pre>
+      </div>
+
+      <p class="body reveal d1">Dua hal jelek terjadi sekaligus di sini:</p>
+
+      <div class="cols reveal d2">
+        <div>
+          <h4 class="bad-h">// Boros waktu</h4>
+          <ul class="bad-l">
+            <li>Tiap request bayar pajak 20–100ms cuma buat <em>connect</em>, sebelum query jalan.</li>
+            <li>Latensi yang dirasakan user jadi berlipat — query 1ms tapi total 80ms.</li>
+            <li>Throughput anjlok: server sibuk handshake, bukan kerja beneran.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Boros resource DB</h4>
+          <ul class="bad-l">
+            <li>Database punya <em>batas</em> koneksi (mis. Postgres default <code>max_connections=100</code>).</li>
+            <li>1.000 request bersamaan → 1.000 koneksi → DB <strong>nolak</strong> sisanya.</li>
+            <li>Tiap koneksi makan RAM; ribuan koneksi bisa bikin DB <strong>OOM / crash</strong>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Pesan error legendaris yang muncul gara-gara pola ini: <b>"FATAL: sorry, too many clients already"</b> (Postgres) atau <b>"Too many connections"</b> (MySQL). Kalau kamu pernah lihat ini di production, kemungkinan besar pelakunya: nggak ada pooling, atau poolnya salah setel.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 APA ITU CONNECTION POOL ============ -->
+  <section class="chapter" id="c03">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Inti konsep</span> · Connection pool</div>
+        <h2>Siapkan sekali, pakai berulang kali</h2>
+      </div>
+      <p class="lead reveal">Ide <strong>connection pool</strong> sederhana: daripada bikin-buang koneksi terus-menerus, <strong>buat sejumlah koneksi sekali di awal</strong>, simpan dalam "kolam" (pool), lalu pinjamkan ke siapa pun yang butuh. Selesai dipakai, koneksinya <strong>dikembalikan ke kolam</strong> — bukan ditutup.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — armada taksi di depan hotel</div>
+        <p>Bayangin hotel besar. Cara naif = tiap tamu yang mau pergi harus <em>nelpon pabrik mobil, nunggu mobil diproduksi, baru jalan</em>. Gila, kan? Cara pool = hotel menyiapkan <em>armada taksi standby</em> di lobi. Tamu datang → naik taksi yang sudah ada → balik → taksi nunggu tamu berikutnya. Mobilnya <strong>itu-itu lagi</strong>, cuma penumpangnya ganti-ganti. <em>Koneksi = taksi. Request = tamu.</em></p>
+      </div>
+
+      <p class="body reveal d2">Analogi lain yang juga pas: <strong>loket bank</strong>. Bank nggak buka loket baru tiap ada nasabah datang. Mereka buka, katakanlah, 10 loket. Nasabah dilayani lewat loket yang kosong; kalau semua penuh, nasabah <strong>antri</strong> sampai ada yang selesai. Itu persis perilaku connection pool: jumlah koneksi terbatas dan dipakai bergantian, dengan antrian saat ramai.</p>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// cepat</div><h4>Tanpa pajak handshake</h4><p>Koneksi sudah "nyala". Request langsung query — buang waktu 20–100ms per request hilang.</p></div>
+        <div class="card up"><div class="ic">// terkendali</div><h4>Jumlah dibatasi</h4><p>Pool cuma punya N koneksi. DB nggak akan pernah kebanjiran melebihi N, berapa pun request masuk.</p></div>
+        <div class="card up"><div class="ic">// efisien</div><h4>Resource dipakai ulang</h4><p>Memori &amp; proses di sisi DB stabil, nggak naik-turun liar mengikuti trafik.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 CARA KERJA ============ -->
+  <section class="chapter" id="c04">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Siklus hidup</span> · Acquire → Use → Release</div>
+        <h2>Pinjam, pakai, lalu kembalikan</h2>
+      </div>
+      <p class="lead reveal">Tiga kata kunci yang harus nempel di kepala: <strong>acquire</strong> (pinjam koneksi dari pool), <strong>use</strong> (jalankan query), <strong>release</strong> (kembalikan ke pool). Kuncinya: kamu <strong>tidak pernah benar-benar menutup</strong> koneksinya — kamu cuma meminjam dan mengembalikan.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">sebelum — Client per request</span><span class="lang">Node.js</span></div>
+<pre class="code"><span class="k">const</span> client = <span class="k">new</span> <span class="t">Client</span>(cfg);
+<span class="k">await</span> client.<span class="f">connect</span>();   <span class="c">// mahal</span>
+<span class="k">await</span> client.<span class="f">query</span>(sql);
+<span class="k">await</span> client.<span class="f">end</span>();       <span class="c">// dibuang</span>
+
+<span class="c">// tiap request ulang dari nol</span></pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">sesudah — pinjam dari Pool</span><span class="lang">Node.js</span></div>
+<pre class="code"><span class="c">// dibuat SEKALI saat app start</span>
+<span class="k">const</span> pool = <span class="k">new</span> <span class="t">Pool</span>(cfg);
+
+<span class="c">// di tiap request:</span>
+<span class="k">const</span> { rows } = <span class="k">await</span> pool.<span class="f">query</span>(sql);
+<span class="c">// pool otomatis: acquire → query → release</span></pre>
+        </div>
+      </div>
+
+      <p class="body reveal d1">Untuk query tunggal, <code>pool.query()</code> mengurus semuanya otomatis. Tapi kalau kamu butuh <strong>beberapa query dalam satu koneksi yang sama</strong> (misalnya transaksi), kamu pinjam manual — dan di sinilah <code>release</code> jadi wajib hukumnya:</p>
+
+      <div class="code-card good reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">transfer.js — pinjam manual untuk transaksi</span><span class="lang">Node.js</span></div>
+<pre class="code"><span class="k">const</span> client = <span class="k">await</span> pool.<span class="f">connect</span>();   <span class="c">// ACQUIRE — pinjam 1 koneksi dari kolam</span>
+<span class="k">try</span> {
+  <span class="k">await</span> client.<span class="f">query</span>(<span class="s">"BEGIN"</span>);
+  <span class="k">await</span> client.<span class="f">query</span>(<span class="s">"UPDATE akun SET saldo = saldo - 100 WHERE id=1"</span>);
+  <span class="k">await</span> client.<span class="f">query</span>(<span class="s">"UPDATE akun SET saldo = saldo + 100 WHERE id=2"</span>);
+  <span class="k">await</span> client.<span class="f">query</span>(<span class="s">"COMMIT"</span>);                    <span class="c">// USE — semua di koneksi yang sama</span>
+} <span class="k">catch</span> (e) {
+  <span class="k">await</span> client.<span class="f">query</span>(<span class="s">"ROLLBACK"</span>);
+  <span class="k">throw</span> e;
+} <span class="k">finally</span> {
+<span class="hl-good">  client.<span class="f">release</span>();      <span class="c">// RELEASE — WAJIB! balikin ke kolam, apa pun yang terjadi</span></span>
+}</pre>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Catatan kunci</div>
+          <p><code>release()</code> ditaruh di <code>finally</code> supaya koneksi <strong>selalu balik ke kolam</strong> — baik query sukses maupun error. Lupa <code>release()</code> = koneksi "hilang" dari kolam selamanya. Itu namanya <strong>connection leak</strong>, dan kita bahas khusus nanti karena ini penyebab insiden paling sering.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 PARAMETER KUNCI ============ -->
+  <section class="chapter" id="c05">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Anatomi · Tombol-tombol pengaturan</div>
+        <h2>Parameter yang wajib kamu mengerti</h2>
+      </div>
+      <p class="lead reveal">Tiap library pool (HikariCP di Java, <code>pg.Pool</code> di Node, SQLAlchemy di Python) punya tombol pengaturan yang mirip-mirip. Ini yang paling penting — pahami <strong>artinya</strong>, bukan cuma hafal namanya.</p>
+
+      <div class="code-card reveal d1">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">pool config — anotasi tiap parameter</span><span class="lang">Node.js</span></div>
+<pre class="code"><span class="k">const</span> pool = <span class="k">new</span> <span class="t">Pool</span>({
+  max: <span class="n">20</span>,                       <span class="c">// jumlah koneksi MAKSIMUM di kolam</span>
+  min: <span class="n">2</span>,                        <span class="c">// koneksi minimum yang selalu standby</span>
+  idleTimeoutMillis: <span class="n">30000</span>,      <span class="c">// koneksi nganggur 30s → ditutup (hemat resource)</span>
+  connectionTimeoutMillis: <span class="n">5000</span>, <span class="c">// nunggu pinjam max 5s, lewat itu → error</span>
+  maxLifetimeMillis: <span class="n">1800000</span>,    <span class="c">// koneksi diremajakan tiap 30 menit</span>
+});</pre>
+      </div>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// max (pool size)</div><h4>Batas atas koneksi</h4><p>Paling penting. Berapa koneksi maksimum yang boleh hidup. Inilah yang melindungi DB dari kebanjiran. Bab berikutnya khusus soal angka ini.</p></div>
+        <div class="card up"><div class="ic">// min (idle)</div><h4>Koneksi standby</h4><p>Jumlah koneksi yang dijaga tetap hidup walau sepi, biar request pertama saat sepi nggak kena pajak handshake.</p></div>
+        <div class="card up"><div class="ic">// connectionTimeout</div><h4>Sabar menunggu giliran</h4><p>Kalau semua koneksi lagi dipakai, request baru <em>antri</em>. Lewat batas ini → langsung error, daripada nunggu selamanya (hang).</p></div>
+        <div class="card up"><div class="ic">// idleTimeout</div><h4>Tutup yang nganggur</h4><p>Koneksi yang lama nggak dipakai ditutup, balikin resource ke DB saat trafik turun.</p></div>
+        <div class="card up"><div class="ic">// maxLifetime</div><h4>Peremajaan berkala</h4><p>Koneksi tua ditutup &amp; diganti baru. Mencegah masalah memori, koneksi basi, atau "ketinggalan" saat DB di-failover.</p></div>
+        <div class="card up"><div class="ic">// validation</div><h4>Cek sehat dulu</h4><p>Sebelum dipinjamkan, pool bisa tes koneksi (mis. <code>SELECT 1</code>) supaya kamu nggak dapat koneksi yang diam-diam sudah mati.</p></div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          <code>connectionTimeout</code> ≠ query timeout. Yang ini soal <b>"berapa lama nunggu dapat koneksi dari kolam"</b>, bukan "berapa lama query boleh jalan". Sering ketukar dan bikin pusing pas debugging.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 POOL SIZING ============ -->
+  <section class="chapter" id="c06">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Anatomi · Angka yang paling sering salah</div>
+        <h2>Sebesar apa pool seharusnya?</h2>
+      </div>
+      <p class="lead reveal">Insting orang: "biar kencang, gedein aja poolnya, kasih <code>max: 500</code>." Ini <strong>salah besar</strong> dan justru memperlambat. Pool yang kebesaran sama bahayanya dengan yang nggak ada.</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="bad-h">// Pool kekecilan</h4>
+          <ul class="bad-l">
+            <li>Banyak request <em>antri</em> nunggu koneksi kosong.</li>
+            <li>Latensi naik, request bisa kena <code>connectionTimeout</code>.</li>
+            <li>Resource DB nganggur padahal app megap-megap.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="bad-h">// Pool kebesaran</h4>
+          <ul class="bad-l">
+            <li>DB kebanjiran koneksi → rebutan CPU, disk, lock.</li>
+            <li>Context-switching makin sering → semua jadi <em>lebih lambat</em>.</li>
+            <li>Kalikan jumlah instance app → total koneksi meledak.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — kasir minimarket</div>
+        <p>Buka 50 kasir buat toko yang cuma muat 10 antrian itu konyol: kasirnya bengong, lorong sesak, malah ribet. Buka 1 kasir pas jam ramai? Antrian ngular sampai luar. Yang benar: <em>jumlah kasir pas dengan beban</em>. Pool size juga gitu — bukan "sebanyak mungkin", tapi "secukupnya untuk kerja paralel yang nyata".</p>
+      </div>
+
+      <p class="body reveal d2">Patokan klasik dari tim HikariCP (dan ini mengejutkan banyak orang): pool yang <strong>kecil tapi pas</strong> hampir selalu mengalahkan pool besar. Rumus titik awal yang sering dipakai:</p>
+
+      <div class="code-card good reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">rumus titik-awal (bukan harga mati)</span><span class="lang c">rule of thumb</span></div>
+<pre class="code"><span class="c"># Patokan untuk beban yang berat di CPU/disk DB:</span>
+koneksi = (jumlah_core_CPU_db × <span class="n">2</span>) + jumlah_disk_efektif
+
+<span class="c"># Contoh: DB dengan 4 core, 1 SSD</span>
+koneksi = (<span class="n">4</span> × <span class="n">2</span>) + <span class="n">1</span> = <span class="n">9</span>   <span class="c"># ya, cuma ~9-10, bukan 500!</span>
+
+<span class="c"># PENTING: ini total ke DB. Kalau app jalan di 10 instance,</span>
+<span class="c"># dan tiap instance max=10 → 100 koneksi ke DB. Hitung totalnya!</span></pre>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine"></div>
+        <div class="note__body">
+          <div class="note__tag">◆ Cara benar menentukan angka</div>
+          <p>Rumus cuma titik awal. Yang sahih: <strong>ukur</strong>. Pantau berapa koneksi yang benar-benar aktif saat beban puncak, lihat latensi &amp; antrian pool, lalu setel. Dan selalu ingat: <code>max_connections</code> DB harus ≥ (pool size × jumlah instance app) + koneksi lain (admin, migrasi, monitoring).</p>
+        </div>
+      </div>
+
+      <a class="deeplink amber reveal d3" href="hikaricp.html">Pengenalan lengkap <b>HikariCP</b> — pool in-app tercepat di JVM (sumber rumus ini) <span class="arrow2">→</span></a>
+    </div>
+  </section>
+
+  <!-- ============ 07 KASUS: TRAFFIC SPIKE ============ -->
+  <section class="chapter" id="c07">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kasus #1</span> · Lonjakan trafik</div>
+        <h2>Saat flash sale, pool jadi penjaga gerbang</h2>
+      </div>
+      <p class="lead reveal">Skenario nyata: aplikasi e-commerce, normalnya 100 request/detik. Jam 12 malam mulai <strong>flash sale</strong>, mendadak 5.000 request/detik. Apa yang terjadi?</p>
+
+      <div class="cols reveal d1">
+        <div>
+          <h4 class="bad-h">// Tanpa pool (atau pool tak terbatas)</h4>
+          <ul class="bad-l">
+            <li>5.000 request → coba buka 5.000 koneksi.</li>
+            <li>DB kena <code>max_connections</code> → tolak koneksi.</li>
+            <li>Error nyebar ke <em>semua</em> fitur, bahkan yang nggak ikut sale.</li>
+            <li>DB bisa crash total → <strong>seluruh situs down</strong>.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="good-h">// Dengan pool (mis. max=20)</h4>
+          <ul class="good-l">
+            <li>Max 20 query jalan paralel; sisanya <em>antri rapi</em>.</li>
+            <li>DB tetap sehat, kerja pada kapasitas optimalnya.</li>
+            <li>Request yang antri kelamaan kena timeout → bisa di-retry.</li>
+            <li>Situs <strong>melambat</strong>, tapi <strong>tidak mati</strong>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — pintu klub malam</div>
+        <p>Klub punya kapasitas aman. Pas rame, satpam di pintu nahan antrian: masuk satu kalau keluar satu. Nggak seideal "semua langsung masuk", tapi mencegah <em>desak-desakan mematikan</em> di dalam. Pool itu satpamnya database — dia rela bikin orang antri demi menjaga yang di dalam tetap hidup.</p>
+      </div>
+
+      <p class="body reveal d2">Pelajarannya: pool bukan cuma soal kecepatan, tapi <strong>perlindungan</strong>. Dia mengubah "kelebihan beban yang mematikan" jadi "antrian yang bisa dikendalikan". Ini wujud kecil dari pola <em>backpressure</em> — menahan laju masuk supaya sistem hilir nggak jebol.</p>
+    </div>
+  </section>
+
+  <!-- ============ 08 KASUS: CONNECTION LEAK ============ -->
+  <section class="chapter" id="c08">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kasus #2</span> · Connection leak</div>
+        <h2>Bug paling sering: lupa mengembalikan koneksi</h2>
+      </div>
+      <p class="lead reveal">Connection leak terjadi saat kamu <strong>meminjam koneksi tapi nggak pernah mengembalikannya</strong>. Koneksi itu "hilang" dari kolam. Lakukan beberapa kali, kolam habis, dan aplikasi <strong>hang</strong> — semua request nunggu koneksi yang nggak akan pernah balik.</p>
+
+      <div class="diptych reveal d1">
+        <div class="code-card bad">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">BOCOR — release hilang saat error</span><span class="lang">Node.js</span></div>
+<pre class="code"><span class="k">const</span> client = <span class="k">await</span> pool.<span class="f">connect</span>();
+<span class="k">const</span> r = <span class="k">await</span> client.<span class="f">query</span>(sql);
+<span class="hl-bad"><span class="c">// ⚠️ kalau query() di atas THROW,</span>
+<span class="c">// baris di bawah TAK PERNAH jalan →</span>
+<span class="c">// koneksi bocor selamanya</span></span>
+client.<span class="f">release</span>();
+<span class="k">return</span> r.rows;</pre>
+        </div>
+        <div class="code-card good">
+          <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">AMAN — finally menjamin release</span><span class="lang">Node.js</span></div>
+<pre class="code"><span class="k">const</span> client = <span class="k">await</span> pool.<span class="f">connect</span>();
+<span class="k">try</span> {
+  <span class="k">const</span> r = <span class="k">await</span> client.<span class="f">query</span>(sql);
+  <span class="k">return</span> r.rows;
+} <span class="k">finally</span> {
+<span class="hl-good">  client.<span class="f">release</span>();   <span class="c">// jalan APA PUN yang terjadi</span></span>
+}</pre>
+        </div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — buku perpustakaan</div>
+        <p>Perpustakaan punya 10 eksemplar buku populer. Tiap orang pinjam tapi <em>nggak ada yang balikin</em>. Hari ke berapa pun, rak kosong — bukan karena bukunya dibakar, tapi karena <strong>nyangkut di tangan orang</strong>. Pengunjung baru nggak kebagian, padahal bukunya "ada". Itu connection leak: koneksinya hidup, tapi nyangkut, nggak balik ke kolam.</p>
+      </div>
+
+      <div class="note reveal d2">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Gejala &amp; deteksi</div>
+          <p>Gejalanya khas: aplikasi jalan normal beberapa jam, lalu <strong>perlahan melambat</strong> dan akhirnya semua request hang / timeout saat pinjam koneksi — tanpa lonjakan trafik. Tools pool (mis. <code>leakDetectionThreshold</code> di HikariCP) bisa nge-log koneksi yang dipinjam kelamaan. Pencegahan terbaik: <strong>selalu</strong> <code>finally { release() }</code>, atau pakai pola helper/wrapper yang otomatis melepas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09 SERVERLESS & PGBOUNCER ============ -->
+  <section class="chapter" id="c09">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker"><span class="era">Kasus #3</span> · Skala &amp; serverless</div>
+        <h2>Saat pool di dalam app saja tidak cukup</h2>
+      </div>
+      <p class="lead reveal">Pool di dalam aplikasi bagus untuk satu proses yang hidup lama. Tapi ada situasi di mana dia <strong>kewalahan</strong> — dan kamu butuh <strong>pooler eksternal</strong> seperti <code>PgBouncer</code> yang duduk di antara app dan database.</p>
+
+      <p class="body reveal d1">Masalahnya muncul saat jumlah <em>proses app</em> meledak:</p>
+
+      <div class="grid reveal d1">
+        <div class="card down"><div class="ic">// banyak instance</div><h4>Auto-scaling</h4><p>App di-scale ke 100 pod, tiap pod punya pool <code>max=20</code> → 2.000 koneksi nyerbu DB yang cuma kuat 100. Tiap pool merasa "sopan", totalnya tetap membunuh DB.</p></div>
+        <div class="card down"><div class="ic">// serverless</div><h4>Functions (Lambda)</h4><p>Tiap invocation = proses baru &amp; berumur pendek. Pool dalam-app nyaris percuma — koneksi nggak sempat dipakai ulang, malah bikin badai koneksi.</p></div>
+      </div>
+
+      <div class="why reveal d2">
+        <div class="tag">◆ Analogi — resepsionis bersama</div>
+        <p>Bayangin gedung dengan 100 kantor kecil. Kalau tiap kantor punya saluran telepon langsung ke pusat, kabelnya nggak cukup. Solusinya: satu <em>resepsionis bersama</em> (PgBouncer) memegang sedikit saluran ke pusat, lalu membagikannya bergiliran ke 100 kantor. Pusat (database) cuma "kenal" segelintir saluran, padahal melayani ratusan penelepon.</p>
+      </div>
+
+      <div class="code-card reveal d2">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">pgbouncer.ini — pooler di depan Postgres</span><span class="lang c">ini</span></div>
+<pre class="code"><span class="c">; ribuan koneksi dari app boleh masuk ke sini...</span>
+max_client_conn = <span class="n">2000</span>
+
+<span class="c">; ...tapi PgBouncer cuma pegang segelintir ke DB asli</span>
+default_pool_size = <span class="n">20</span>
+
+<span class="c">; transaction = koneksi DB dipinjamkan PER TRANSAKSI (paling hemat)</span>
+pool_mode = transaction</pre>
+      </div>
+
+      <div class="caution reveal d3">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Mode <b>transaction pooling</b> sangat hemat koneksi, tapi ada syaratnya: fitur yang nempel ke <em>sesi</em> (prepared statement tertentu, <code>SET</code> level sesi, advisory lock) bisa rusak, karena koneksi DB-nya gonta-ganti tiap transaksi. Untuk serverless modern, vendor menyediakan pooler bawaan (mis. Supabase/Neon/RDS Proxy) — prinsipnya sama: <b>satu lapisan yang meredam ledakan koneksi</b>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 09b PGBOUNCER & FITUR ============ -->
+  <section class="chapter" id="c09b">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">◆ Mendalami · Pooler eksternal paling populer</div>
+        <h2>PgBouncer: penjaga koneksi yang ringan</h2>
+      </div>
+      <p class="lead reveal"><strong>PgBouncer</strong> adalah <em>connection pooler</em> eksternal khusus PostgreSQL. Dia program kecil &amp; ringan (satu proses, jejak memori cuma sekitar <strong>2 MB</strong>) yang duduk <strong>di antara aplikasi dan Postgres</strong>. Aplikasi terhubung ke PgBouncer seolah-olah itu database-nya; PgBouncer-lah yang memegang sedikit koneksi nyata ke Postgres dan membagikannya bergiliran.</p>
+
+      <div class="why reveal d1">
+        <div class="tag">◆ Analogi — resepsionis vs. saluran langsung</div>
+        <p>Tanpa PgBouncer: 2.000 aplikasi menelepon langsung ke kantor pusat (Postgres) — saluran (proses) habis, pusat kewalahan. Dengan PgBouncer: ada <strong>satu resepsionis</strong> yang menerima 2.000 penelepon, tapi cuma memegang 20 saluran ke pusat, lalu menyambungkan bergiliran. Pusat merasa cuma melayani 20 orang. <em>Ribuan client di depan, segelintir koneksi nyata di belakang.</em></p>
+      </div>
+
+      <p class="body reveal d1">Hal terpenting yang harus dimengerti dari PgBouncer adalah <strong>pool mode</strong> — seberapa "lengket" koneksi nyata dipegang oleh satu client:</p>
+
+      <div class="grid reveal d2">
+        <div class="card up"><div class="ic">// session</div><h4>Session pooling</h4><p>Koneksi DB dipegang <strong>selama client tetap terhubung</strong>. Paling aman &amp; kompatibel (semua fitur sesi jalan), tapi <strong>paling sedikit</strong> menghemat koneksi.</p></div>
+        <div class="card up"><div class="ic">// transaction ★</div><h4>Transaction pooling</h4><p>Koneksi DB dipinjam <strong>per transaksi</strong>, lalu langsung balik. Paling umum untuk web &amp; serverless — rasio penghematan terbesar. <em>Default pilihan kebanyakan orang.</em></p></div>
+        <div class="card up"><div class="ic">// statement</div><h4>Statement pooling</h4><p>Koneksi dilepas <strong>tiap selesai satu statement</strong>. Paling agresif &amp; hemat, tapi paling banyak batasan — multi-statement transaction dilarang.</p></div>
+      </div>
+
+      <div class="caution reveal d2">
+        <div class="ico">◆</div>
+        <div class="caution__body">
+          Makin agresif mode-nya, makin hemat koneksi — tapi makin banyak fitur <b>level-sesi</b> yang rusak (mis. <code>SET</code> sesi, advisory lock, beberapa prepared statement), karena koneksi nyatanya gonta-ganti. <b>Transaction pooling</b> adalah titik tengah yang paling sering dipakai. (PgBouncer versi baru sudah mendukung prepared statement di mode transaction.)
+        </div>
+      </div>
+
+      <p class="body reveal d2">Selain pool mode, fitur-fitur yang bikin PgBouncer jadi standar de-facto:</p>
+
+      <div class="grid reveal d3">
+        <div class="card up"><div class="ic">// lightweight</div><h4>Sangat ringan</h4><p>Satu proses, ~2 MB memori, mampu menangani ribuan koneksi client tanpa membebani server. Overhead-nya nyaris tak terasa.</p></div>
+        <div class="card up"><div class="ic">// limiting</div><h4>Pembatas &amp; antrian koneksi</h4><p>Membatasi koneksi nyata ke Postgres (<code>default_pool_size</code>) dan mengantrikan kelebihannya — melindungi DB dari ledakan koneksi.</p></div>
+        <div class="card up"><div class="ic">// pause/resume</div><h4>PAUSE / RESUME</h4><p>Bisa menahan sementara semua query lalu melepasnya lagi — memungkinkan <strong>restart/maintenance Postgres tanpa memutus</strong> aplikasi.</p></div>
+        <div class="card up"><div class="ic">// reload</div><h4>Reconfigure online</h4><p>Ganti konfigurasi &amp; muat ulang (<code>RELOAD</code>) tanpa menjatuhkan koneksi client yang sedang jalan.</p></div>
+        <div class="card up"><div class="ic">// SHOW</div><h4>Monitoring bawaan</h4><p>Console admin lewat perintah SQL: <code>SHOW POOLS</code>, <code>SHOW STATS</code>, <code>SHOW CLIENTS</code>, <code>SHOW SERVERS</code> untuk mengintip kondisi pool secara real-time.</p></div>
+        <div class="card up"><div class="ic">// security</div><h4>TLS &amp; autentikasi</h4><p>Dukungan SSL/TLS, beragam metode auth (scram, md5, dll.), serta pemetaan user — aman ditaruh sebagai gerbang depan.</p></div>
+        <div class="card up"><div class="ic">// multi-db</div><h4>Banyak database</h4><p>Satu instance PgBouncer bisa mem-pool ke beberapa database &amp; server berbeda lewat satu titik masuk.</p></div>
+        <div class="card up"><div class="ic">// online restart</div><h4>Restart mulus</h4><p>Bisa di-restart sambil "menyerahkan" koneksi yang ada, meminimalkan gangguan saat upgrade PgBouncer-nya sendiri.</p></div>
+      </div>
+
+      <div class="code-card reveal d3">
+        <div class="code-card__bar"><div class="dots"><i></i><i></i><i></i></div><span class="code-card__name">pgbouncer.ini — konfigurasi inti</span><span class="lang c">ini</span></div>
+<pre class="code"><span class="c">[databases]</span>
+<span class="c">; alias 'app' diteruskan ke Postgres asli</span>
+app = host=<span class="n">127.0.0.1</span> port=<span class="n">5432</span> dbname=app
+
+<span class="c">[pgbouncer]</span>
+pool_mode = transaction        <span class="c">; mode paling umum</span>
+max_client_conn = <span class="n">2000</span>        <span class="c">; ribuan client boleh nyambung ke sini...</span>
+default_pool_size = <span class="n">20</span>        <span class="c">; ...tapi cuma 20 koneksi nyata ke Postgres</span>
+reserve_pool_size = <span class="n">5</span>         <span class="c">; cadangan saat pool utama penuh</span>
+server_idle_timeout = <span class="n">600</span>     <span class="c">; tutup koneksi server yang nganggur</span>
+auth_type = scram-sha-<span class="n">256</span>      <span class="c">; metode autentikasi</span></pre>
+      </div>
+
+      <div class="note reveal d3">
+        <div class="note__spine" style="background:linear-gradient(var(--amber),var(--amber-dim))"></div>
+        <div class="note__body">
+          <div class="note__tag" style="color:var(--amber)">◆ Pool di app + PgBouncer = dua lapis</div>
+          <p>Keduanya tidak saling menggantikan, tapi <strong>saling melengkapi</strong>. Pool di aplikasi menghemat handshake untuk satu proses; PgBouncer meredam <strong>total</strong> koneksi dari <em>semua</em> proses/instance ke Postgres. Untuk serverless &amp; auto-scaling, PgBouncer (atau pooler bawaan seperti RDS Proxy, Supabase, Neon) inilah yang menyelamatkan Postgres dari badai koneksi.</p>
+        </div>
+      </div>
+
+      <a class="deeplink reveal d3" href="pgbouncer.html">Pengenalan lengkap <b>PgBouncer</b> — pool mode, config, auth, monitoring <span class="arrow2">→</span></a>
+    </div>
+  </section>
+
+  <!-- ============ 10 SALAH KAPRAH ============ -->
+  <section class="chapter" id="c10">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">× Realita · Jebakan yang umum</div>
+        <h2>Salah kaprah yang sering bikin celaka</h2>
+      </div>
+      <p class="lead reveal">Pooling itu sederhana konsepnya, tapi gampang salah praktiknya. Ini daftar jebakan yang paling sering ketemu di lapangan.</p>
+
+      <div class="grid reveal d1">
+        <div class="card down"><div class="ic">// pool per request</div><h4>Bikin pool di tiap request</h4><p>Pool harus dibuat <em>sekali</em> saat app start, lalu dipakai bersama. Bikin <code>new Pool()</code> per request = balik ke masalah awal, malah lebih parah.</p></div>
+        <div class="card down"><div class="ic">// max = 9999</div><h4>"Gedein biar kencang"</h4><p>Pool raksasa bikin DB rebutan resource &amp; <em>lebih lambat</em>. Kecil-tapi-pas hampir selalu menang.</p></div>
+        <div class="card down"><div class="ic">// lupa release</div><h4>Tak ada <code>finally</code></h4><p>Penyebab leak nomor satu. Koneksi yang dipinjam manual harus selalu dilepas di <code>finally</code>.</p></div>
+        <div class="card down"><div class="ic">// lupa hitung instance</div><h4>Abai jumlah replika</h4><p><code>max</code> dikali jumlah instance app = total ke DB. Sering kelewat sampai DB kebanjiran diam-diam.</p></div>
+        <div class="card down"><div class="ic">// query lama nahan</div><h4>Transaksi &amp; query lambat</h4><p>Satu query lama menahan koneksi dari kolam. Beberapa saja sudah bisa bikin kolam "kosong" walau pool size cukup.</p></div>
+        <div class="card down"><div class="ic">// no timeout</div><h4>Tanpa connectionTimeout</h4><p>Kalau kolam habis, request nunggu selamanya → hang senyap. Selalu set batas tunggu supaya gagal cepat &amp; jelas.</p></div>
+      </div>
+
+      <div class="quote reveal d2">
+        <p>“Pool koneksi yang lebih kecil, secara mengejutkan, sering memberi throughput yang lebih tinggi.”</p>
+        <cite>— Inti dari dokumentasi pool-sizing HikariCP</cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 PENUTUP ============ -->
+  <section class="chapter" id="c11">
+    <div class="wrap">
+      <div class="chead reveal">
+        <div class="kicker">Penutup</div>
+        <h2>Pinjam, jaga ukurannya, selalu kembalikan</h2>
+      </div>
+      <p class="lead reveal">Connection pooling lahir dari satu kenyataan: <strong>membuka koneksi itu mahal, dan database punya batas</strong>. Solusinya bukan teknologi rumit — cuma "siapkan secukupnya, pakai berulang, kembalikan dengan disiplin".</p>
+
+      <div class="creed reveal d1">
+        <ul>
+          <li><b>Koneksi itu mahal</b> — TCP + TLS + auth tiap kali; jangan diulang sia-sia.</li>
+          <li><b>Pool = kolam siap pakai</b> — pinjam (acquire), pakai (use), kembalikan (release).</li>
+          <li><b>Ukuran kecil-tapi-pas</b> — bukan "sebesar mungkin"; ukur, jangan menebak.</li>
+          <li><b>Selalu <code>finally release()</code></b> — cegah connection leak, bug paling sering.</li>
+          <li><b>Hitung total koneksi</b> — pool size × jumlah instance ≤ kapasitas DB.</li>
+          <li><b>Skala besar → pooler eksternal</b> — PgBouncer dkk untuk serverless &amp; banyak replika.</li>
+        </ul>
+      </div>
+
+      <div class="endcard reveal d2">
+        <h3>Aturan emasnya</h3>
+        <p>Pool bukan cuma soal <strong>kecepatan</strong>, tapi soal <strong>perlindungan</strong>. Dia menjaga database tetap hidup saat dunia luar mengamuk, dengan cara mengubah beban yang mematikan jadi antrian yang terkendali. Setel ukurannya dengan sadar, lepas koneksinya dengan disiplin, dan database kamu akan berterima kasih saat trafik puncak datang.</p>
+      </div>
+
+      <p class="body reveal d2" style="margin-top:30px; font-family:var(--mono); color:var(--cyan); font-size:15px;">
+        // "Sedikit koneksi yang sibuk &gt; banyak koneksi yang rebutan."
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>Database Connection Pooling</b> · Kenapa &amp; bagaimana, buat tim · contoh Node.js (pg) &amp; PgBouncer · navigasi: <b>↑ ↓ ← →</b> atau <b>j / k</b>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.chapter"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var progress = document.getElementById("progress");
+  var counter = document.getElementById("counter");
+  var total = sections.length;
+  var current = 0;
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var idx = sections.indexOf(e.target);
+      if (idx < 0) return;
+      current = idx;
+      railLinks.forEach(function (a, i) { a.classList.toggle("active", i === idx); });
+      counter.textContent = pad(idx) + " / " + pad(total - 1);
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  function updateProgress() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    progress.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    sections[i].scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "j" || k === "PageDown") {
+      ev.preventDefault(); goTo(current + 1);
+    } else if (k === "ArrowLeft" || k === "ArrowUp" || k === "k" || k === "PageUp") {
+      ev.preventDefault(); goTo(current - 1);
+    } else if (k === "Home") { ev.preventDefault(); goTo(0); }
+    else if (k === "End") { ev.preventDefault(); goTo(total - 1); }
+  });
+})();
+</script>
+</body>
+</html>

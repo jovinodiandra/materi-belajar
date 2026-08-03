@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rekap Vocabulary — Level 5</title>
+<meta name="description" content="Rekap seluruh kosakata yang sudah diajarkan di Level 5 Notebook Inggris, digabung dari semua materi.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  :root {
+    --void:       #0b0e1a;
+    --void-2:     #0d1120;
+    --panel:      #141a2e;
+    --panel-2:    #19203a;
+    --line:       #283047;
+    --line-soft:  #1c2338;
+    --ink:        #c3cbe0;
+    --ink-strong: #eef1f8;
+    --muted:      #7e88a3;
+    --muted-2:    #5d6680;
+    --cyan:       #45d4de;
+    --cyan-dim:   #2b8a90;
+    --amber:      #f5b14c;
+    --amber-dim:  #9c712a;
+    --good:       #56d364;
+    --good-bg:    rgba(86,211,100,.08);
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,"Times New Roman",serif;
+    --sans:  system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:  "SF Mono","Consolas","Liberation Mono",Menlo,"DejaVu Sans Mono",monospace;
+    --maxw: 1120px;
+  }
+  body { background: var(--void); color: var(--ink); font-family: var(--sans); line-height: 1.66; font-size: 17px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(18px,5vw,60px); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 40; background: rgba(11,14,26,.88); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar__inner { display: flex; align-items: center; gap: 14px; padding: 12px clamp(18px,5vw,60px); max-width: var(--maxw); margin: 0 auto; font-family: var(--mono); font-size: 12.5px; }
+  .topbar__inner a.home { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+  .topbar__inner a.home:hover { color: var(--ink-strong); border-color: var(--cyan-dim); }
+  .topbar__inner .path { color: var(--muted-2); }
+  .topbar__inner .path b { color: var(--ink-strong); }
+
+  .hero { padding: clamp(40px,6vw,64px) 0 clamp(20px,3vw,32px); }
+  .hero .eyebrow { font-family: var(--mono); color: var(--cyan); font-size: 13px; margin-bottom: 16px; }
+  .hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(28px,5vw,48px); line-height: 1.12; letter-spacing: -.01em; color: var(--ink-strong); max-width: 22ch; }
+  .hero h1 em { color: var(--cyan); font-style: italic; }
+  .hero p.sub { margin-top: 18px; max-width: 72ch; font-size: 17.5px; color: var(--ink); }
+  .hero p.sub b { color: var(--ink-strong); }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px; min-width: 110px; }
+  .stat .n { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--cyan); }
+  .stat .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  main { padding-bottom: 60px; }
+  .group { margin-top: 10px; padding: 30px 0; border-top: 1px solid var(--line-soft); }
+  .group:first-of-type { border-top: none; }
+  .grouphead { margin-bottom: 16px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .grouphead .kicker { font-family: var(--mono); font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--amber); }
+  .grouphead .count { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 11px; padding: 16px 18px; background: var(--panel); transition: border-color .2s, transform .2s; }
+  .card:hover { transform: translateY(-3px); border-color: var(--cyan-dim); }
+  .vocab-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .vocab-word { font-family: var(--serif); font-weight: 600; font-size: 18px; color: var(--ink-strong); }
+  .vocab-ipa { font-family: var(--mono); font-size: 12px; color: var(--muted-2); }
+  .vocab-meaning { color: var(--cyan); font-weight: 600; font-size: 13.5px; margin-left: auto; }
+  .pos { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; }
+  .card p { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .card p i { color: var(--ink); font-style: italic; }
+  .src { display: inline-block; margin-top: 8px; font-family: var(--mono); font-size: 10px; letter-spacing: .04em; color: var(--muted-2); border: 1px dashed var(--line); border-radius: 5px; padding: 2px 7px; }
+
+  .searchbox { margin: 22px 0 28px; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px; max-width: 420px; }
+  .searchbox input { flex: 1; border: none; background: transparent; outline: none; color: var(--ink-strong); font-size: 14.5px; font-family: var(--sans); }
+  .searchbox input::placeholder { color: var(--muted); }
+  .searchbox svg { color: var(--muted); flex: none; }
+  .card[hidden] { display: none; }
+
+  footer { padding: 26px clamp(18px,5vw,60px); font-family: var(--mono); font-size: 12px; color: var(--muted-2); text-align: center; border-top: 1px solid var(--line); }
+  footer a { color: var(--cyan); text-decoration: none; }
+
+  a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar__inner">
+    <a class="home" href="../index.html">← Belajar Inggris</a>
+    <span class="path">docs/learning/english/level-5-vocabulary/<b>index.md</b></span>
+  </div>
+</div>
+
+<main>
+  <div class="wrap hero">
+    <div class="eyebrow">// Level 5 · Rekap Vocabulary</div>
+    <h1>Kosakata level <em>advance</em>, dari proyeksi waktu sampai idiom kantor.</h1>
+    <p class="sub">Halaman ini menggabungkan <b>semua kosakata</b> dari 6 Materi di Level 5 — mulai dari kosakata proyeksi &amp; perencanaan kerja, nuansa spekulasi modal, register formal/retoris, hingga idiom dan collocation yang sering dipakai di lingkungan kerja profesional/software engineering. Satu daftar rujukan lengkap untuk level tertinggi notebook ini.</p>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statTotal">62</div><div class="l">total kata</div></div>
+      <div class="stat"><div class="n">6</div><div class="l">materi tergabung</div></div>
+    </div>
+    <div class="searchbox">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Cari kata… (mis. milestone, speculate, idiom)" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 1 · Future Perfect &amp; Future Continuous</span><span class="count">18 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="deadline"><div class="vocab-head"><span class="vocab-word">deadline</span><span class="vocab-ipa">/ˈdedlaɪn/</span><span class="vocab-meaning">tenggat waktu</span></div><p><span class="pos">noun</span> <i>"We will have met the deadline by Friday."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="projection"><div class="vocab-head"><span class="vocab-word">projection</span><span class="vocab-ipa">/prəˈdʒekʃn/</span><span class="vocab-meaning">proyeksi / perkiraan</span></div><p><span class="pos">noun</span> <i>"Our projection is optimistic."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="milestone"><div class="vocab-head"><span class="vocab-word">milestone</span><span class="vocab-ipa">/ˈmaɪlstoʊn/</span><span class="vocab-meaning">tonggak pencapaian</span></div><p><span class="pos">noun</span> <i>"We will have reached the first milestone by June."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="rollout"><div class="vocab-head"><span class="vocab-word">rollout</span><span class="vocab-ipa">/ˈroʊlaʊt/</span><span class="vocab-meaning">peluncuran bertahap</span></div><p><span class="pos">noun</span> <i>"The rollout will be happening in three phases."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="regression testing"><div class="vocab-head"><span class="vocab-word">regression testing</span><span class="vocab-ipa">/rɪˈɡreʃn ˈtestɪŋ/</span><span class="vocab-meaning">pengujian regresi</span></div><p><span class="pos">noun phrase</span> <i>"QA will be running regression testing all week."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="onboard"><div class="vocab-head"><span class="vocab-word">onboard</span><span class="vocab-ipa">/ˈɒnbɔːrd/</span><span class="vocab-meaning">mengintegrasikan pengguna/karyawan baru</span></div><p><span class="pos">verb</span> <i>"We will have onboarded ten new hires by then."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="stakeholder"><div class="vocab-head"><span class="vocab-word">stakeholder</span><span class="vocab-ipa">/ˈsteɪkhoʊldər/</span><span class="vocab-meaning">pemangku kepentingan</span></div><p><span class="pos">noun</span> <i>"I will be presenting to the stakeholders at 2 PM."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="refactor"><div class="vocab-head"><span class="vocab-word">refactor</span><span class="vocab-ipa">/riːˈfæktər/</span><span class="vocab-meaning">merapikan ulang struktur kode</span></div><p><span class="pos">verb/noun</span> <i>"They will have finished the refactor by Monday."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="outage"><div class="vocab-head"><span class="vocab-word">outage</span><span class="vocab-ipa">/ˈaʊtɪdʒ/</span><span class="vocab-meaning">gangguan layanan</span></div><p><span class="pos">noun</span> <i>"By the time we notice, the outage will have been ongoing for minutes."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="launch"><div class="vocab-head"><span class="vocab-word">launch</span><span class="vocab-ipa">/lɔːntʃ/</span><span class="vocab-meaning">peluncuran</span></div><p><span class="pos">noun/verb</span> <i>"We will be launching next week."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="monitor"><div class="vocab-head"><span class="vocab-word">monitor</span><span class="vocab-ipa">/ˈmɒnɪtər/</span><span class="vocab-meaning">memantau</span></div><p><span class="pos">verb</span> <i>"The on-call engineer will be monitoring the dashboards."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="provision"><div class="vocab-head"><span class="vocab-word">provision</span><span class="vocab-ipa">/prəˈvɪʒn/</span><span class="vocab-meaning">menyediakan/menyiapkan (infrastruktur)</span></div><p><span class="pos">verb</span> <i>"We will have provisioned the servers by then."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="backlog"><div class="vocab-head"><span class="vocab-word">backlog</span><span class="vocab-ipa">/ˈbæklɒɡ/</span><span class="vocab-meaning">daftar tugas tertunda</span></div><p><span class="pos">noun</span> <i>"We will have cleared the backlog by sprint end."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="code freeze"><div class="vocab-head"><span class="vocab-word">code freeze</span><span class="vocab-ipa">/koʊd friːz/</span><span class="vocab-meaning">masa pembekuan perubahan kode</span></div><p><span class="pos">noun phrase</span> <i>"By Friday, we will have entered code freeze."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="changelog"><div class="vocab-head"><span class="vocab-word">changelog</span><span class="vocab-ipa">/ˈtʃeɪndʒlɒɡ/</span><span class="vocab-meaning">catatan perubahan</span></div><p><span class="pos">noun</span> <i>"The docs team will have updated the changelog."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="reschedule"><div class="vocab-head"><span class="vocab-word">reschedule</span><span class="vocab-ipa">/ˌriːˈskedʒuːl/</span><span class="vocab-meaning">menjadwal ulang</span></div><p><span class="pos">verb</span> <i>"Can we reschedule? I will be presenting at that time."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="roadmap"><div class="vocab-head"><span class="vocab-word">roadmap</span><span class="vocab-ipa">/ˈroʊdmæp/</span><span class="vocab-meaning">peta rencana jangka panjang</span></div><p><span class="pos">noun</span> <i>"Our roadmap shows what we will have built by Q4."</i></p><span class="src">dari Materi 1</span></div>
+        <div class="card" data-word="quarter"><div class="vocab-head"><span class="vocab-word">quarter</span><span class="vocab-ipa">/ˈkwɔːrtər/</span><span class="vocab-meaning">kuartal (periode 3 bulan)</span></div><p><span class="pos">noun</span> <i>"By next quarter, we will have expanded to two more markets."</i></p><span class="src">dari Materi 1</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 2 · Advanced Modals</span><span class="count">8 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="speculate"><div class="vocab-head"><span class="vocab-word">speculate</span><span class="vocab-ipa">/ˈspɛkjʊleɪt/</span><span class="vocab-meaning">berspekulasi, menduga tanpa bukti pasti</span></div><p><span class="pos">verb</span> <i>"Analysts speculate that the outage was caused by a bad deploy."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="presumably"><div class="vocab-head"><span class="vocab-word">presumably</span><span class="vocab-ipa">/prɪˈzjuːməbli/</span><span class="vocab-meaning">agaknya, kemungkinan besar</span></div><p><span class="pos">adverb</span> <i>"Presumably, the fix will be live by tonight."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="plausible"><div class="vocab-head"><span class="vocab-word">plausible</span><span class="vocab-ipa">/ˈplɔːzɪbl/</span><span class="vocab-meaning">masuk akal, patut dipercaya</span></div><p><span class="pos">adjective</span> <i>"That explanation for the bug sounds plausible."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="inconclusive"><div class="vocab-head"><span class="vocab-word">inconclusive</span><span class="vocab-ipa">/ˌɪnkənˈkluːsɪv/</span><span class="vocab-meaning">tidak meyakinkan, belum bisa disimpulkan</span></div><p><span class="pos">adjective</span> <i>"The test results were inconclusive."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="corroborate"><div class="vocab-head"><span class="vocab-word">corroborate</span><span class="vocab-ipa">/kəˈrɒbəreɪt/</span><span class="vocab-meaning">memperkuat/mengonfirmasi dengan bukti tambahan</span></div><p><span class="pos">verb</span> <i>"The logs corroborate what the user reported."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="anomaly"><div class="vocab-head"><span class="vocab-word">anomaly</span><span class="vocab-ipa">/əˈnɒməli/</span><span class="vocab-meaning">keanehan, penyimpangan dari pola normal</span></div><p><span class="pos">noun</span> <i>"The monitoring tool flagged an anomaly in the traffic pattern."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="glitch"><div class="vocab-head"><span class="vocab-word">glitch</span><span class="vocab-ipa">/glɪtʃ/</span><span class="vocab-meaning">gangguan kecil/sesaat pada sistem</span></div><p><span class="pos">noun</span> <i>"It might have been a glitch, not a real outage."</i></p><span class="src">dari Materi 2</span></div>
+        <div class="card" data-word="deduce"><div class="vocab-head"><span class="vocab-word">deduce</span><span class="vocab-ipa">/dɪˈdjuːs/</span><span class="vocab-meaning">menyimpulkan berdasarkan bukti/logika</span></div><p><span class="pos">verb</span> <i>"From the stack trace, we can deduce where it failed."</i></p><span class="src">dari Materi 2</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 3 · Inversion &amp; Emphatic Structures</span><span class="count">8 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="underscore"><div class="vocab-head"><span class="vocab-word">underscore</span><span class="vocab-ipa">/ˌʌndərˈskɔːr/</span><span class="vocab-meaning">menggarisbawahi, menekankan pentingnya sesuatu</span></div><p><span class="pos">verb</span> <i>"This incident underscores the need for better monitoring."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="assert"><div class="vocab-head"><span class="vocab-word">assert</span><span class="vocab-ipa">/əˈsɜːrt/</span><span class="vocab-meaning">menegaskan, menyatakan dengan yakin</span></div><p><span class="pos">verb</span> <i>"She asserted that the migration was safe."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="articulate"><div class="vocab-head"><span class="vocab-word">articulate</span><span class="vocab-ipa">/ɑːrˈtɪkjʊleɪt/</span><span class="vocab-meaning">mengutarakan dengan jelas; (adj.) fasih berbicara</span></div><p><span class="pos">verb/adjective</span> <i>"He articulated his concerns clearly in the review."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="juxtapose"><div class="vocab-head"><span class="vocab-word">juxtapose</span><span class="vocab-ipa">/ˌdʒʌkstəˈpoʊz/</span><span class="vocab-meaning">menyandingkan dua hal untuk dibandingkan</span></div><p><span class="pos">verb</span> <i>"The report juxtaposes last quarter's metrics with this quarter's."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="salient"><div class="vocab-head"><span class="vocab-word">salient</span><span class="vocab-ipa">/ˈseɪliənt/</span><span class="vocab-meaning">paling menonjol, paling penting untuk diperhatikan</span></div><p><span class="pos">adjective</span> <i>"The salient point is that we missed the deadline."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="unequivocally"><div class="vocab-head"><span class="vocab-word">unequivocally</span><span class="vocab-ipa">/ˌʌnɪˈkwɪvəkli/</span><span class="vocab-meaning">secara tegas, tanpa keraguan sedikit pun</span></div><p><span class="pos">adverb</span> <i>"The data unequivocally supports the new approach."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="concede"><div class="vocab-head"><span class="vocab-word">concede</span><span class="vocab-ipa">/kənˈsiːd/</span><span class="vocab-meaning">mengakui (sesuatu yang sebelumnya dibantah)</span></div><p><span class="pos">verb</span> <i>"I concede that the estimate was too optimistic."</i></p><span class="src">dari Materi 3</span></div>
+        <div class="card" data-word="reiterate"><div class="vocab-head"><span class="vocab-word">reiterate</span><span class="vocab-ipa">/riˈɪtəreɪt/</span><span class="vocab-meaning">menegaskan kembali, mengulang untuk penekanan</span></div><p><span class="pos">verb</span> <i>"Let me reiterate: never deploy on a Friday."</i></p><span class="src">dari Materi 3</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 4 · Advanced Conditionals &amp; Subjunctive</span><span class="count">8 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="hypothetical"><div class="vocab-head"><span class="vocab-word">hypothetical</span><span class="vocab-ipa">/ˌhaɪpəˈθɛtɪkl/</span><span class="vocab-meaning">hipotetis, bersifat andaian bukan fakta</span></div><p><span class="pos">adjective</span> <i>"It's a hypothetical scenario, but worth planning for."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="counterfactual"><div class="vocab-head"><span class="vocab-word">counterfactual</span><span class="vocab-ipa">/ˌkaʊntərˈfæktʃuəl/</span><span class="vocab-meaning">berlawanan dengan fakta yang sebenarnya terjadi</span></div><p><span class="pos">adjective</span> <i>"The counterfactual question is what if we hadn't scaled up."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="mandative"><div class="vocab-head"><span class="vocab-word">mandative</span><span class="vocab-ipa">/ˈmændətɪv/</span><span class="vocab-meaning">bersifat perintah/tuntutan (istilah tata bahasa untuk subjunctive jenis ini)</span></div><p><span class="pos">adjective</span> <i>"The subjunctive here is a mandative form after 'insist that'."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="wistful"><div class="vocab-head"><span class="vocab-word">wistful</span><span class="vocab-ipa">/ˈwɪstfʊl/</span><span class="vocab-meaning">merenung dengan penuh penyesalan/kerinduan</span></div><p><span class="pos">adjective</span> <i>"She sounded wistful about the old codebase."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="futile"><div class="vocab-head"><span class="vocab-word">futile</span><span class="vocab-ipa">/ˈfjuːtaɪl/</span><span class="vocab-meaning">sia-sia, tidak membuahkan hasil</span></div><p><span class="pos">adjective</span> <i>"Arguing about tabs vs spaces feels futile."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="hindsight"><div class="vocab-head"><span class="vocab-word">hindsight</span><span class="vocab-ipa">/ˈhaɪndsaɪt/</span><span class="vocab-meaning">kebijaksanaan/pemahaman setelah kejadian berlalu</span></div><p><span class="pos">noun</span> <i>"In hindsight, we should have written more tests."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="unattainable"><div class="vocab-head"><span class="vocab-word">unattainable</span><span class="vocab-ipa">/ˌʌnəˈteɪnəbl/</span><span class="vocab-meaning">tidak bisa dicapai</span></div><p><span class="pos">adjective</span> <i>"That deadline was unattainable from the start."</i></p><span class="src">dari Materi 4</span></div>
+        <div class="card" data-word="formulaic"><div class="vocab-head"><span class="vocab-word">formulaic</span><span class="vocab-ipa">/ˌfɔːmjʊˈleɪɪk/</span><span class="vocab-meaning">mengikuti pola/rumus tetap, seperti ungkapan baku</span></div><p><span class="pos">adjective</span> <i>"The apology email felt formulaic and insincere."</i></p><span class="src">dari Materi 4</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 5 · Academic &amp; Professional Writing</span><span class="count">8 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="substantiate"><div class="vocab-head"><span class="vocab-word">substantiate</span><span class="vocab-ipa">/səbˈstænʃieɪt/</span><span class="vocab-meaning">membuktikan/mendukung klaim dengan bukti konkret</span></div><p><span class="pos">verb</span> <i>"You need data to substantiate that claim."</i></p><span class="src">dari Materi 5</span></div>
+        <div class="card" data-word="ambiguity"><div class="vocab-head"><span class="vocab-word">ambiguity</span><span class="vocab-ipa">/ˌæmbɪˈɡjuːɪti/</span><span class="vocab-meaning">ketaksaan, makna ganda yang membingungkan</span></div><p><span class="pos">noun</span> <i>"The requirements had too much ambiguity."</i></p><span class="src">dari Materi 5</span></div>
+        <div class="card" data-word="empirical"><div class="vocab-head"><span class="vocab-word">empirical</span><span class="vocab-ipa">/ɪmˈpɪrɪkl/</span><span class="vocab-meaning">berdasarkan pengamatan/data nyata, bukan teori semata</span></div><p><span class="pos">adjective</span> <i>"We need empirical evidence, not just intuition."</i></p><span class="src">dari Materi 5</span></div>
+        <div class="card" data-word="qualify"><div class="vocab-head"><span class="vocab-word">qualify (a claim)</span><span class="vocab-ipa">/ˈkwɒlɪfaɪ/</span><span class="vocab-meaning">membatasi/melengkapi sebuah klaim supaya tidak terlalu general</span></div><p><span class="pos">verb</span> <i>"Let me qualify that statement — it only applies to production."</i></p><span class="src">dari Materi 5</span></div>
+        <div class="card" data-word="redundant"><div class="vocab-head"><span class="vocab-word">redundant</span><span class="vocab-ipa">/rɪˈdʌndənt/</span><span class="vocab-meaning">berlebihan, mengulang tanpa perlu</span></div><p><span class="pos">adjective</span> <i>"That paragraph is redundant; remove it."</i></p><span class="src">dari Materi 5</span></div>
+        <div class="card" data-word="coherent"><div class="vocab-head"><span class="vocab-word">coherent</span><span class="vocab-ipa">/koʊˈhɪərənt/</span><span class="vocab-meaning">runtut, alurnya masuk akal dan tersambung logis</span></div><p><span class="pos">adjective</span> <i>"The proposal needs a more coherent structure."</i></p><span class="src">dari Materi 5</span></div>
+        <div class="card" data-word="concise"><div class="vocab-head"><span class="vocab-word">concise</span><span class="vocab-ipa">/kənˈsaɪs/</span><span class="vocab-meaning">singkat padat, tanpa bertele-tele</span></div><p><span class="pos">adjective</span> <i>"Keep the executive summary concise."</i></p><span class="src">dari Materi 5</span></div>
+        <div class="card" data-word="nuance"><div class="vocab-head"><span class="vocab-word">nuance</span><span class="vocab-ipa">/ˈnjuːɑːns/</span><span class="vocab-meaning">perbedaan halus/nuansa makna</span></div><p><span class="pos">noun</span> <i>"There's a subtle nuance between 'may' and 'might' here."</i></p><span class="src">dari Materi 5</span></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="grouphead"><span class="kicker">Materi 6 · Idiomatic Expressions &amp; Collocations</span><span class="count">12 kata</span></div>
+      <div class="grid">
+        <div class="card" data-word="hit the ground running"><div class="vocab-head"><span class="vocab-word">hit the ground running</span><span class="vocab-ipa">/hɪt ðə ɡraʊnd ˈrʌnɪŋ/</span><span class="vocab-meaning">langsung tancap gas sejak awal</span></div><p><span class="pos">idiom</span> <i>"The new hire hit the ground running on day one."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="cut corners"><div class="vocab-head"><span class="vocab-word">cut corners</span><span class="vocab-ipa">/kʌt ˈkɔːrnərz/</span><span class="vocab-meaning">mengambil jalan pintas dengan mengorbankan kualitas</span></div><p><span class="pos">idiom</span> <i>"Don't cut corners on security testing."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="back to the drawing board"><div class="vocab-head"><span class="vocab-word">back to the drawing board</span><span class="vocab-ipa">/bæk tuː ðə ˈdrɔːɪŋ bɔːrd/</span><span class="vocab-meaning">kembali merancang dari nol</span></div><p><span class="pos">idiom</span> <i>"The prototype failed, so it's back to the drawing board."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="on the same page"><div class="vocab-head"><span class="vocab-word">on the same page</span><span class="vocab-ipa">/ɒn ðə seɪm peɪdʒ/</span><span class="vocab-meaning">punya pemahaman/kesepakatan yang sama</span></div><p><span class="pos">idiom</span> <i>"Let's make sure we're all on the same page before the release."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="in the pipeline"><div class="vocab-head"><span class="vocab-word">in the pipeline</span><span class="vocab-ipa">/ɪn ðə ˈpaɪplaɪn/</span><span class="vocab-meaning">sedang dalam proses perencanaan/pengerjaan</span></div><p><span class="pos">idiom</span> <i>"Several new features are in the pipeline for next quarter."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="raise a red flag"><div class="vocab-head"><span class="vocab-word">raise a red flag</span><span class="vocab-ipa">/reɪz ə red flæɡ/</span><span class="vocab-meaning">menandai adanya potensi masalah</span></div><p><span class="pos">idiom</span> <i>"The sudden traffic spike raised a red flag for the ops team."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="under the hood"><div class="vocab-head"><span class="vocab-word">under the hood</span><span class="vocab-ipa">/ˈʌndər ðə hʊd/</span><span class="vocab-meaning">bagian internal/dalam suatu sistem</span></div><p><span class="pos">idiom</span> <i>"Under the hood, the service uses a message queue."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="low-hanging fruit"><div class="vocab-head"><span class="vocab-word">low-hanging fruit</span><span class="vocab-ipa">/loʊ ˈhæŋɪŋ fruːt/</span><span class="vocab-meaning">hal-hal mudah yang bisa segera dikerjakan dulu</span></div><p><span class="pos">idiom</span> <i>"Let's tackle the low-hanging fruit before the harder bugs."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="throw someone under the bus"><div class="vocab-head"><span class="vocab-word">throw someone under the bus</span><span class="vocab-ipa">/θroʊ ˈsʌmwʌn ˈʌndər ðə bʌs/</span><span class="vocab-meaning">menyalahkan orang lain demi menyelamatkan diri</span></div><p><span class="pos">idiom</span> <i>"He threw his teammate under the bus during the postmortem."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="reach a consensus"><div class="vocab-head"><span class="vocab-word">reach a consensus</span><span class="vocab-ipa">/riːtʃ ə kənˈsensəs/</span><span class="vocab-meaning">mencapai kesepakatan bersama</span></div><p><span class="pos">collocation</span> <i>"The team reached a consensus on the architecture."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="draw a conclusion"><div class="vocab-head"><span class="vocab-word">draw a conclusion</span><span class="vocab-ipa">/drɔː ə kənˈkluːʒn/</span><span class="vocab-meaning">menarik kesimpulan</span></div><p><span class="pos">collocation</span> <i>"We can't draw a conclusion from such limited data."</i></p><span class="src">dari Materi 6</span></div>
+        <div class="card" data-word="conduct a review"><div class="vocab-head"><span class="vocab-word">conduct a review</span><span class="vocab-ipa">/kənˈdʌkt ə rɪˈvjuː/</span><span class="vocab-meaning">melakukan peninjauan</span></div><p><span class="pos">collocation</span> <i>"Management will conduct a review of the incident next week."</i></p><span class="src">dari Materi 6</span></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <b>Rekap Vocabulary — Level 5</b> · 62 kata dari 6 materi · <a href="../index.html">← kembali ke Belajar Inggris</a>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var q = document.getElementById("q");
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card[data-word]"));
+  q.addEventListener("input", function () {
+    var term = q.value.trim().toLowerCase();
+    cards.forEach(function (c) {
+      var word = c.getAttribute("data-word");
+      var text = c.textContent.toLowerCase();
+      c.hidden = term !== "" && text.indexOf(term) === -1 && word.indexOf(term) === -1;
+    });
+    document.querySelectorAll(".group").forEach(function (g) {
+      var visible = g.querySelectorAll(".card:not([hidden])").length;
+      g.style.display = visible === 0 ? "none" : "";
+    });
+  });
+})();
+</script>
+</body>
+</html>

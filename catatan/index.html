@@ -292,6 +292,7 @@
     var titleInput = document.getElementById('titleInput');
     var descInput = document.getElementById('descInput');
     var bodyInput = document.getElementById('bodyInput');
+    var deleteNoteBtn = document.getElementById('deleteNoteBtn');
 
     function safeGetItem() {
       try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
@@ -322,7 +323,7 @@
         card.setAttribute('role', 'button');
         card.setAttribute('tabindex', '0');
         card.innerHTML =
-          '<button class="note-card__del" type="button" aria-label="Hapus catatan" data-id="' + note.id + '">✕</button>' +
+          '<button class="note-card__del" type="button" aria-label="Hapus catatan" data-id="' + escapeHtml(note.id) + '">✕</button>' +
           '<div class="note-card__title">' + (escapeHtml(note.title) || 'Tanpa judul') + '</div>' +
           '<div class="note-card__desc">' + escapeHtml(note.description) + '</div>' +
           '<div class="note-card__date">' + formatDate(note.updatedAt) + '</div>';
@@ -339,6 +340,29 @@
         notesGrid.appendChild(card);
       });
       emptyState.classList.toggle('show', sorted.length === 0);
+
+      notesGrid.querySelectorAll('.note-card__del').forEach(function (delBtn) {
+        delBtn.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          requestDelete(delBtn.getAttribute('data-id'));
+        });
+      });
+    }
+
+    function requestDelete(id) {
+      if (!window.confirm('Hapus catatan ini? Tindakan ini tidak bisa dibatalkan.')) return;
+      clearTimeout(saveTimer);
+      notes = NotesCore.removeNoteById(notes, id);
+      persist();
+      if (currentId === id) {
+        currentId = null;
+        gridView.classList.remove('hide');
+        editorView.classList.add('hide');
+        backBtn.style.display = 'none';
+        renderGrid();
+      } else {
+        renderGrid();
+      }
     }
 
     function openEditor(id) {
@@ -362,6 +386,26 @@
       renderGrid();
     }
 
+    var saveTimer = null;
+
+    function scheduleSave() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveCurrentNote, 500);
+    }
+
+    function saveCurrentNote() {
+      if (!currentId) return;
+      var note = NotesCore.findNoteById(notes, currentId);
+      if (!note) return;
+      var updated = NotesCore.applyNoteEdit(note, {
+        title: titleInput.value,
+        description: descInput.value,
+        body: bodyInput.value
+      }, new Date().toISOString());
+      notes = notes.map(function (n) { return n.id === currentId ? updated : n; });
+      persist();
+    }
+
     function createAndOpenNote() {
       var note = NotesCore.createNoteObject(NotesCore.generateId(), new Date().toISOString());
       notes.push(note);
@@ -371,7 +415,23 @@
 
     newNoteBtn.addEventListener('click', createAndOpenNote);
     emptyNewNoteBtn.addEventListener('click', createAndOpenNote);
-    backBtn.addEventListener('click', closeEditor);
+    backBtn.addEventListener('click', function () {
+      clearTimeout(saveTimer);
+      saveCurrentNote();
+      closeEditor();
+    });
+    titleInput.addEventListener('input', scheduleSave);
+    descInput.addEventListener('input', scheduleSave);
+    bodyInput.addEventListener('input', scheduleSave);
+    deleteNoteBtn.addEventListener('click', function () {
+      if (currentId) requestDelete(currentId);
+    });
+    window.addEventListener('beforeunload', function () {
+      if (currentId) {
+        clearTimeout(saveTimer);
+        saveCurrentNote();
+      }
+    });
 
     renderGrid();
 

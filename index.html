@@ -291,6 +291,26 @@
             background: rgba(226, 59, 46, .08)
         }
 
+        .notes-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            font-family: var(--sans);
+            font-size: 14.5px;
+            font-weight: 600;
+            color: #fff;
+            background: var(--accent);
+            border-radius: 10px;
+            padding: 10px 18px;
+            text-decoration: none;
+            white-space: nowrap
+        }
+
+        .notes-cta:hover {
+            background: var(--accent-dim)
+        }
+
         main {
             padding-bottom: 60px
         }
@@ -580,6 +600,8 @@
             <span class="t-advance">● Advance</span>
             <span style="color:var(--muted)">Tiap topik yang tersedia mencakup ketiga level ini.</span>
         </div>
+
+        <a class="notes-cta" href="catatan/index.html">📝 Buka Catatan Saya</a>
     </div>
 
     <div class="wrap" id="catsRoot"></div>

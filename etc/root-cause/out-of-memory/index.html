@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Gelas sudah penuh, terus dituang lagi.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — DUA JENIS ════════ -->
         <section class="slide" data-notes="Cek kubectl describe pod, cari &#x27;Reason: OOMKilled&#x27; dan exit code 137.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">dua jenis</div>
@@ -470,13 +471,25 @@
           <div class="cols" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">di dalam JVM</div><h3>OutOfMemoryError</h3><p style="color: var(--ink)">Heap Java penuh. Muncul error di log aplikasi.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">dari OS / container</div><h3>OOMKilled</h3><p style="color: var(--ink)">Proses melebihi limit memori container. Langsung dibunuh, tanpa pesan.</p></div></div>
           <div class="foot">OOMKilled sering bikin bingung: <b>tidak ada error di log</b>, pod tiba-tiba restart.</div>
         </section>
-        <!-- ════════ 3 — PENYEBAB ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: yang membunuh adalah kernel karena container melebihi limit, bukan JVM. Aplikasi tidak sempat menulis log apa pun.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Pod mati tanpa jejak di log</h2>
+          <div style="margin-top: 14px"><pre class="code">$ kubectl get pod order-7d9f
+NAME          READY  STATUS     RESTARTS
+order-7d9f    0/1    OOMKilled  7</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Log aplikasi tidak menunjukkan OutOfMemoryError. Kenapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PENYEBAB ════════ -->
         <section class="slide" data-notes="Poin terakhir penting: -Xmx 2GB di container limit 2GB = pasti OOMKilled, karena JVM butuh memori di luar heap juga.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">penyebab</div>
           <h2>Penyebab yang sering</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">penyebab</div><h3>Ambil data kebanyakan</h3><p style="color: var(--ink)">SELECT * tanpa LIMIT, 1 juta baris masuk RAM.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">penyebab</div><h3>File besar dibaca utuh</h3><p style="color: var(--ink)">Upload 2GB dibaca ke byte[].</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">penyebab</div><h3>Memory leak</h3><p style="color: var(--ink)">Memori dipegang terus, tidak pernah dilepas.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">penyebab</div><h3>Limit tidak cocok</h3><p style="color: var(--ink)">Heap JVM lebih besar dari limit container.</p></div></div>
         </section>
-        <!-- ════════ 4 — CONTOH ════════ -->
+
+        <!-- ════════ 5 — CONTOH ════════ -->
         <section class="slide" data-notes="Alternatif lain: streaming dari database pakai cursor / Stream&lt;Order&gt;.">
           <div class="lens-tag lt-green" style="align-self: flex-start">contoh</div>
           <h2>Ambil semua vs ambil per halaman</h2>
@@ -492,13 +505,51 @@ do {
           </div>
           <div class="foot">Data besar diolah <b>sedikit-sedikit</b>, jangan sekaligus.</div>
         </section>
-        <!-- ════════ 5 — PENGAMAN ════════ -->
+
+        <!-- ════════ 6 — PENGAMAN ════════ -->
         <section class="slide" data-notes="Sisakan sekitar 25% untuk memori non-heap: thread stack, metaspace, buffer.">
           <div class="lens-tag lt-red" style="align-self: flex-start">pengaman</div>
           <h2>Setting yang wajib ada</h2>
           <ul class="clean" style="margin-top: 18px"><li>Pakai <b>-XX:MaxRAMPercentage=75</b> supaya heap menyesuaikan limit container.</li><li>Pasang <b>-XX:+HeapDumpOnOutOfMemoryError</b> supaya ada bukti saat crash.</li><li>Selalu kasih <b>LIMIT</b> atau pagination di query daftar.</li><li>Pantau memori dan alert sebelum menyentuh limit.</li></ul>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — MEMORI JVM ════════ -->
+        <section class="slide" data-ext="1" data-notes="Native Memory Tracking menunjukkan rincian memori di luar heap.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">memori JVM</div>
+          <h2>Heap bukan satu-satunya pemakai memori</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">hitungan kasar</div><pre class="code">Limit container      : 1024 MB
+-Xmx (heap)          : 1024 MB   ← sama dengan limit!
++ Metaspace (class)  :  ~100 MB
++ Thread stack       :  ~200 thread × 1 MB
++ Direct buffer, JIT :  ~100 MB
+= ± 1.400 MB → OOMKilled</pre></div>
+            <div><div class="codehead ">pengaturan aman</div><pre class="code">-XX:MaxRAMPercentage=75
+<span class="cm"># heap = 75% dari limit container</span>
+<span class="cm"># sisa 25% untuk non-heap</span>
+
+<span class="cm"># cek pemakaian non-heap:</span>
+-XX:NativeMemoryTracking=summary
+jcmd 1 VM.native_memory summary</pre></div>
+          </div>
+          <div class="foot">Jangan set <b>-Xmx sama dengan limit</b> container.</div>
+        </section>
+
+        <!-- ════════ 8 — INVESTIGASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Dominator tree menunjukkan objek mana yang &#x27;menguasai&#x27; memori terbanyak.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">investigasi</div>
+          <h2>Langkah setelah OutOfMemoryError</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Ambil heap dump otomatis</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Buka di Eclipse MAT</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Leak Suspects / Dominator Tree</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Ikuti siapa yang memegang objek</div></div><ul class="clean" style="margin-top: 18px"><li>Simpan heap dump di volume yang tidak ikut hilang saat pod restart:</li><li><code>-XX:HeapDumpPath=/dumps</code></li></ul>
+        </section>
+
+        <!-- ════════ 9 — BEDAKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Baca pesan lengkapnya. Setiap jenis punya penyebab dan obat yang berbeda.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">bedakan</div>
+          <h2>OutOfMemoryError punya beberapa jenis</h2>
+          <table style="margin-top: 16px"><tr><th>Pesan</th><th>Artinya</th></tr><tr><td class="mono">Java heap space</td><td>Heap penuh</td></tr><tr><td class="mono">GC overhead limit exceeded</td><td>GC sibuk terus, hampir tidak membebaskan apa pun</td></tr><tr><td class="mono">Metaspace</td><td>Terlalu banyak class dimuat (sering karena classloader bocor)</td></tr><tr><td class="mono">unable to create native thread</td><td>Terlalu banyak thread</td></tr><tr><td class="mono">Direct buffer memory</td><td>Buffer NIO / Netty habis</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cek setting -Xmx / MaxRAMPercentage dan limit memori pod service kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -506,13 +557,14 @@ do {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ dua jenis</div><p style="font-size: 17px; color: #e2e8f0">OutOfMemoryError (JVM) dan OOMKilled (container).</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ penyebab</div><p style="font-size: 17px; color: #e2e8f0">Data kebanyakan, file besar, leak, limit tidak cocok.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pengaman</div><p style="font-size: 17px; color: #e2e8f0">Pagination, MaxRAMPercentage, heap dump otomatis.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 6</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

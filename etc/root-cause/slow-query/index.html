@@ -463,13 +463,27 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Cari satu nama di buku telepon tanpa urutan abjad.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PENYEBAB ════════ -->
         <section class="slide" data-notes="Query yang dulu cepat bisa jadi lambat seiring data tumbuh. Makanya perlu dipantau terus.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">penyebab</div>
           <h2>Kenapa query jadi lambat?</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">penyebab</div><h3>Tidak ada index</h3><p style="color: var(--ink)">Database membaca seluruh tabel (full scan).</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">penyebab</div><h3>Fungsi di kolom WHERE</h3><p style="color: var(--ink)">WHERE LOWER(email) = ... bikin index tidak terpakai.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">penyebab</div><h3>Ambil kebanyakan</h3><p style="color: var(--ink)">SELECT * dan tanpa LIMIT.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">penyebab</div><h3>Data makin besar</h3><p style="color: var(--ink)">Dulu 1.000 baris cepat, sekarang 10 juta.</p></div></div>
         </section>
-        <!-- ════════ 3 — CARA CEK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: hanya C. A membungkus kolom dengan fungsi. B diawali wildcard. Index seperti buku telepon: bisa cari &#x27;Budi…&#x27;, tidak bisa cari &#x27;…gmail&#x27;.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Index ada, kenapa tidak dipakai?</h2>
+          <div style="margin-top: 14px"><pre class="code">CREATE INDEX idx_email ON users(email);
+
+SELECT * FROM users WHERE LOWER(email) = 'budi@x.com';   <span class="cm">-- A</span>
+SELECT * FROM users WHERE email LIKE '%@gmail.com';       <span class="cm">-- B</span>
+SELECT * FROM users WHERE email = 'budi@x.com';           <span class="cm">-- C</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Mana yang bisa memakai idx_email?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CARA CEK ════════ -->
         <section class="slide" data-notes="Pakai EXPLAIN ANALYZE untuk melihat waktu sebenarnya. Hati-hati, ANALYZE benar-benar menjalankan query-nya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">cara cek</div>
           <h2>Tanya database: kamu ngapain sih?</h2>
@@ -487,13 +501,50 @@ WHERE customer_id = 42;
           </div>
           <div class="foot"><b>EXPLAIN</b> = minta database menunjukkan rencana kerjanya.</div>
         </section>
-        <!-- ════════ 4 — KEBIASAAN BAIK ════════ -->
+
+        <!-- ════════ 5 — KEBIASAAN BAIK ════════ -->
         <section class="slide" data-notes="Index itu seperti daftar isi: mempercepat baca, tapi harus di-update tiap ada tulis.">
           <div class="lens-tag lt-green" style="align-self: flex-start">kebiasaan baik</div>
           <h2>Kebiasaan supaya query tetap cepat</h2>
           <ul class="clean" style="margin-top: 18px"><li>Nyalakan <b>slow query log</b> (misal &gt; 500ms) dan cek rutin.</li><li>Index kolom yang sering ada di <b>WHERE</b>, <b>JOIN</b>, dan <b>ORDER BY</b>.</li><li>Ambil kolom yang perlu saja, dan selalu pakai <b>LIMIT</b>.</li><li>Jangan kebanyakan index: tiap index bikin INSERT/UPDATE lebih lambat.</li></ul>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — INDEX KOMPOSIT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Index (a, b, c) bisa dipakai untuk WHERE a, atau a+b, tapi tidak untuk WHERE b saja.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">index komposit</div>
+          <h2>Urutan kolom di index itu penting</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">query</div><pre class="code">SELECT * FROM orders
+WHERE customer_id = 42
+  AND status = 'PAID'
+ORDER BY created_at DESC
+LIMIT 20;</pre></div>
+            <div><div class="codehead ">index yang pas</div><pre class="code">CREATE INDEX idx_orders_cust_status_date
+  ON orders (customer_id, status, created_at DESC);
+
+<span class="cm">-- urutan: kolom '=' dulu,</span>
+<span class="cm">-- lalu kolom untuk ORDER BY</span>
+<span class="cm">-- → database langsung ke 20 baris</span>
+<span class="cm">--   tanpa mengurutkan</span></pre></div>
+          </div>
+          <div class="foot">Aturan jempol: kolom <b>sama dengan</b> di depan, kolom <b>urutan/rentang</b> di belakang.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="PostgreSQL autovacuum biasanya mengurus ANALYZE, tapi setelah bulk load sebaiknya dijalankan manual.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: query cepat tiba-tiba lambat</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Kemarin 5 ms, hari ini 3 detik</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Tidak ada perubahan kode</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">EXPLAIN: rencana berubah ke Seq Scan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Statistik tabel basi → ANALYZE</div></div><ul class="clean" style="margin-top: 18px"><li>Database memilih rencana berdasarkan <b>statistik</b> data. Setelah impor besar, statistik bisa usang.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Optimalkan query yang total waktunya terbesar (sering × lama), bukan hanya yang paling lama sekali jalan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Alat mencari query lambat</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Gunanya</th></tr><tr><td class="mono">EXPLAIN ANALYZE</td><td>Rencana + waktu sungguhan per langkah</td></tr><tr><td class="mono">pg_stat_statements</td><td>Query mana yang paling banyak makan waktu total</td></tr><tr><td class="mono">slow query log</td><td>Catat query di atas ambang waktu</td></tr><tr><td class="mono">APM / tracing</td><td>Query mana di request mana</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: ambil 1 query paling sering di service kita, jalankan EXPLAIN, lihat hasilnya.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -501,13 +552,14 @@ WHERE customer_id = 42;
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ penyebab</div><p style="font-size: 17px; color: #e2e8f0">Tanpa index, ambil kebanyakan, data tumbuh.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ cek</div><p style="font-size: 17px; color: #e2e8f0">EXPLAIN dan slow query log.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Index yang tepat, LIMIT, pilih kolom.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

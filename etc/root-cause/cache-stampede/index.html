@@ -463,13 +463,25 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kayak pintu mal dibuka pas diskon besar: semua lari bareng.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KEJADIANNYA ════════ -->
         <section class="slide" data-notes="Gambarkan di papan: satu key homepage dengan 1000 request/detik. Begitu TTL habis, boom.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kejadiannya</div>
           <h2>Urutan kejadian stampede</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Cache key populer expired</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">1000 request: "cache kosong!"</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">1000 query sama ke DB</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">DB lemot / mati</div></div><ul class="clean" style="margin-top: 18px"><li>Semua request mengerjakan <b>hal yang sama persis</b> di waktu yang sama.</li><li>Padahal cukup <b>satu</b> yang ambil ke DB, sisanya tinggal nunggu.</li></ul>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: cache diisi jam 11 dengan TTL 1 jam, habis serentak jam 12. Semua request menyerbu DB bersamaan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa database mati tepat jam 12:00:00?</h2>
+          <p class="lede">Setiap hari jam 12.00 tepat, CPU database melonjak ke 100% selama beberapa detik.</p>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// dijalankan saat deploy jam 11:00:00</span>
+cache.set("home", data, ttl = 3600)</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Apa hubungan jam deploy dengan lonjakan jam 12?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Lock ini bisa pakai Redis SETNX. Request lain menunggu sebentar lalu baca cache yang sudah terisi.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Semua ke DB vs satu yang ke DB</h2>
@@ -491,14 +503,53 @@ if (data == null) {
 }</pre></div>
           </div>
         </section>
-        <!-- ════════ 4 — CARA LAIN ════════ -->
+
+        <!-- ════════ 5 — CARA LAIN ════════ -->
         <section class="slide" data-notes="TTL acak itu disebut jitter. Paling murah dan sering cukup.">
           <div class="lens-tag lt-green" style="align-self: flex-start">cara lain</div>
           <h2>Trik lain biar tidak serentak</h2>
           <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">trik</div><h3>TTL acak</h3><p style="color: var(--ink)">Jangan semua 60 detik. Pakai 55–65 detik biar tidak habis bareng.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">trik</div><h3>Refresh sebelum habis</h3><p style="color: var(--ink)">Kalau sisa umur cache tinggal sedikit, perbarui di belakang layar.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">trik</div><h3>Sajikan data lama dulu</h3><p style="color: var(--ink)">Kasih data basi sebentar sambil satu proses ambil yang baru.</p></div></div>
           <div class="foot">Tujuannya sama: <b>jangan biarkan semua request jadi "yang pertama"</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CAFFEINE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Untuk Redis, pengamannya harus dibuat sendiri: lock dengan SET NX, atau probabilistic early refresh.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">Caffeine</div>
+          <h2>Satu loader per key, otomatis</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Java: Caffeine</div><pre class="code">LoadingCache&lt;String, Page&gt; cache = Caffeine.newBuilder()
+    .maximumSize(10_000)
+    .expireAfterWrite(Duration.ofMinutes(10))
+    .refreshAfterWrite(Duration.ofMinutes(8))
+    .build(key -&gt; db.loadPage(key));
+
+cache.get("home");</pre></div>
+            <div><div class="codehead ">yang terjadi</div><pre class="code">1000 request bersamaan untuk "home"
+→ hanya 1 yang memanggil db.loadPage
+→ 999 lainnya menunggu hasil yang sama
+
+refreshAfterWrite 8 menit:
+→ diperbarui di belakang sebelum habis
+→ user tetap dapat data lama sementara</pre></div>
+          </div>
+          <div class="foot">Cache lokal yang bagus sudah punya <b>pengaman stampede</b> bawaan.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Cold start cache adalah bentuk stampede yang paling besar: semua key sekaligus.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: restart Redis</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Redis di-restart, cache kosong</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Semua key miss bersamaan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">DB menerima 50x query normal</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">DB timeout, aplikasi ikut error</div></div><ul class="clean" style="margin-top: 18px"><li>Perbaikan: <b>pemanasan cache</b> (warm-up) sebelum menerima trafik, dan batas konkurensi ke DB.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CHECKLIST ════════ -->
+        <section class="slide" data-ext="1" data-notes="Single-flight = permintaan yang sama digabung jadi satu. Go punya paket singleflight bawaan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">checklist</div>
+          <h2>Checklist anti-stampede</h2>
+          <ul class="clean" style="margin-top: 18px"><li>TTL diberi jitter acak.</li><li>Hanya satu yang mengisi ulang per key (lock / single-flight).</li><li>Key populer diperbarui di belakang layar sebelum kedaluwarsa.</li><li>Ada rencana kalau cache kosong total (warm-up, batas query ke DB).</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tanya: key cache mana di sistem kita yang paling ramai? Apakah TTL-nya sama semua?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -506,13 +557,14 @@ if (data == null) {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ penyebab</div><p style="font-size: 17px; color: #e2e8f0">Key populer expired, semua request ke DB bareng.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat utama</div><p style="font-size: 17px; color: #e2e8f0">Lock: cuma satu yang isi ulang cache.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pencegahan</div><p style="font-size: 17px; color: #e2e8f0">TTL acak dan refresh sebelum expired.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

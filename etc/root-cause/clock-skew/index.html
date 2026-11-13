@@ -463,19 +463,32 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Jam tangan kamu dan temanmu pasti beda sedikit.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — MASALAHNYA ════════ -->
         <section class="slide" data-notes="NTP = Network Time Protocol. Selisih biasanya milidetik, tapi kadang bisa detik, apalagi di VM.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">masalahnya</div>
           <h2>Kenapa jam bisa beda?</h2>
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">⏱️</div><div><h3>Jam hardware bisa "melar"</h3><p>Tiap server jamnya maju/mundur sedikit setiap hari.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">🌐</div><div><h3>Sinkronisasi NTP tidak sempurna</h3><p>NTP = layanan yang menyamakan jam. Tapi tetap ada selisih.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">↩️</div><div><h3>Jam bisa lompat mundur</h3><p>Saat disinkron, jam bisa tiba-tiba mundur beberapa detik.</p></div></div></div>
         </section>
-        <!-- ════════ 3 — BUGNYA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: jam server B lebih maju. Untuk B, token itu sudah lewat batas. Solusi: NTP di semua server dan toleransi waktu (leeway).">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Token yang baru dibuat sudah kedaluwarsa?</h2>
+          <div style="margin-top: 14px"><pre class="code">Server A (pembuat token) : 10:00:00  → token berlaku s/d 10:05:00
+Server B (pemeriksa)     : 10:05:30  ← jamnya maju 5,5 menit
+B: "token kedaluwarsa!"</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>User baru saja login. Kenapa langsung ditolak?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BUGNYA ════════ -->
         <section class="slide" data-notes="Contoh JWT: biasanya diberi toleransi (leeway) 30–60 detik untuk ini.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">bugnya</div>
           <h2>Bug yang sering muncul</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">bug</div><h3>Urutan event salah</h3><p style="color: var(--ink)">Event B tercatat lebih dulu dari A, padahal A terjadi duluan.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">bug</div><h3>Token dianggap expired</h3><p style="color: var(--ink)">Server A bikin token, server B jamnya lebih maju → langsung expired.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">bug</div><h3>Durasi minus</h3><p style="color: var(--ink)">end - start hasilnya negatif karena jam mundur.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">bug</div><h3>Lock lepas terlalu cepat</h3><p style="color: var(--ink)">Lock berbasis waktu dianggap habis di server lain.</p></div></div>
         </section>
-        <!-- ════════ 4 — CONTOH ════════ -->
+
+        <!-- ════════ 5 — CONTOH ════════ -->
         <section class="slide" data-notes="Monotonic = selalu maju, tidak pernah mundur. Di JS ada performance.now().">
           <div class="lens-tag lt-green" style="align-self: flex-start">contoh</div>
           <h2>Ukur durasi: jam dinding vs jam monotonic</h2>
@@ -491,13 +504,48 @@ long ms = (System.nanoTime() - start) / 1_000_000;
           </div>
           <div class="foot">Jam dinding untuk <b>"jam berapa"</b>, jam monotonic untuk <b>"berapa lama"</b>.</div>
         </section>
-        <!-- ════════ 5 — CARA AMAN ════════ -->
+
+        <!-- ════════ 6 — CARA AMAN ════════ -->
         <section class="slide" data-notes="Tanya: di sistem kita, ada logika yang membandingkan waktu dari dua server berbeda?">
           <div class="lens-tag lt-red" style="align-self: flex-start">cara aman</div>
           <h2>Kebiasaan yang bikin aman</h2>
           <ul class="clean" style="margin-top: 18px"><li>Jangan andalkan jam untuk <b>urutan</b> antar server. Pakai nomor urut / version.</li><li>Beri <b>toleransi</b> waktu saat cek expired (misal ±30 detik).</li><li>Simpan waktu dalam <b>UTC</b>, dan pastikan NTP aktif di semua server.</li><li>Kalau butuh waktu yang konsisten, pakai satu sumber (misal waktu dari database).</li></ul>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — TOLERANSI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Di Kubernetes, jam ikut node. Cek NTP di node, bukan di container.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">toleransi</div>
+          <h2>Verifikasi JWT dengan leeway</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Java (jjwt)</div><pre class="code">Jwts.parser()
+    .verifyWith(publicKey)
+    .clockSkewSeconds(30)   <span class="cm">// toleransi ±30 detik</span>
+    .build()
+    .parseSignedClaims(token);</pre></div>
+            <div><div class="codehead ">cek jam server</div><pre class="code"><span class="cm"># Linux: apakah NTP aktif &amp; sinkron?</span>
+timedatectl status
+chronyc tracking
+<span class="cm"># System clock synchronized: yes</span>
+<span class="cm"># Last offset: +0.000012 seconds</span></pre></div>
+          </div>
+          <div class="foot">Toleransi kecil menutup selisih wajar. Selisih <b>menit</b> = NTP rusak, harus diperbaiki.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Sistem terdistribusi besar memakai logical clock (Lamport, vector clock) atau jam khusus (Google TrueTime).">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: urutan event kacau</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Server A catat 'dibuat' 10:00:02</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Server B catat 'dibayar' 10:00:01</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Laporan: dibayar sebelum dibuat</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Sistem rekonsiliasi bingung</div></div><ul class="clean" style="margin-top: 18px"><li>Untuk urutan, pakai <b>nomor urut</b> dari satu sumber (sequence DB, offset Kafka, version).</li><li>Timestamp antar server hanya perkiraan.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="nanoTime tidak punya arti sebagai tanggal. Hanya untuk selisih di mesin yang sama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Jam yang tepat untuk tiap kebutuhan</h2>
+          <table style="margin-top: 16px"><tr><th>Kebutuhan</th><th>Pakai</th></tr><tr><td class="mono">Ukur durasi</td><td>System.nanoTime() / performance.now()</td></tr><tr><td class="mono">Waktu kejadian untuk manusia</td><td>Instant.now() (UTC)</td></tr><tr><td class="mono">Urutan antar server</td><td>Sequence / version / offset</td></tr><tr><td class="mono">Tes yang bergantung waktu</td><td>Clock yang bisa diatur</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Penutup: kalau ketemu bug yang cuma kadang-kadang terjadi dan melibatkan waktu, curigai clock skew.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -505,13 +553,14 @@ long ms = (System.nanoTime() - start) / 1_000_000;
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ fakta</div><p style="font-size: 17px; color: #e2e8f0">Jam antar server selalu beda sedikit.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ durasi</div><p style="font-size: 17px; color: #e2e8f0">Pakai jam monotonic, bukan jam dinding.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ urutan</div><p style="font-size: 17px; color: #e2e8f0">Jangan urutkan event antar server pakai jam.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 6</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

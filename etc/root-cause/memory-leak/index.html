@@ -463,13 +463,23 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Keran bocor kecil: lama-lama ember penuh juga.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA BISA ════════ -->
         <section class="slide" data-notes="Grafik memori sehat = gergaji yang dasarnya rata. Bocor = gergaji yang dasarnya naik terus.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kenapa bisa</div>
           <h2>Ada GC, kok tetap bocor?</h2>
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">🧹</div><div><h3>GC cuma buang yang tidak dipegang</h3><p>Kalau masih ada referensi, objek dianggap masih dipakai.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">📦</div><div><h3>Kita tidak sengaja memegang</h3><p>Misal disimpan di Map static yang tidak pernah dihapus.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">📈</div><div><h3>Grafik memori seperti tangga</h3><p>Naik terus, turun sedikit setelah GC, lalu naik lagi.</p></div></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="A normal (GC bekerja). B tanda kebocoran: setelah GC, sisa memori terus bertambah. C bisa normal kalau beban kecil. Gambar di papan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Bentuk grafik memori: normal atau bocor?</h2>
+          <p class="lede">Bayangkan tiga grafik memori selama 24 jam:</p>
+          <ul class="clean" style="margin-top: 16px"><li><b>A.</b> Naik-turun seperti gigi gergaji, puncaknya selalu sama.</li><li><b>B.</b> Gigi gergaji, tapi titik terendahnya naik pelan-pelan setiap jam.</li><li><b>C.</b> Garis lurus datar.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Caffeine adalah library cache in-memory populer di Java.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Cache tanpa batas vs cache dibatasi</h2>
@@ -488,19 +498,62 @@ User get(String id) {
           </div>
           <div class="foot">Setiap tempat penyimpanan harus punya <b>batas</b> atau <b>umur</b>.</div>
         </section>
-        <!-- ════════ 4 — TERSANGKA UMUM ════════ -->
+
+        <!-- ════════ 5 — TERSANGKA UMUM ════════ -->
         <section class="slide" data-notes="Di frontend juga sama: event listener dan setInterval yang tidak dibersihkan saat komponen dilepas.">
           <div class="lens-tag lt-green" style="align-self: flex-start">tersangka umum</div>
           <h2>Penyebab bocor yang sering</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">tersangka</div><h3>Collection static</h3><p style="color: var(--ink)">List/Map global yang cuma ditambah.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">tersangka</div><h3>Listener tidak dilepas</h3><p style="color: var(--ink)">addListener tanpa removeListener.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">tersangka</div><h3>ThreadLocal</h3><p style="color: var(--ink)">Lupa remove() di thread pool.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">tersangka</div><h3>Resource tidak di-close</h3><p style="color: var(--ink)">Stream, koneksi, file.</p></div></div>
         </section>
-        <!-- ════════ 5 — CARA CARI ════════ -->
+
+        <!-- ════════ 6 — CARA CARI ════════ -->
         <section class="slide" data-notes="Heap dump = foto seluruh isi memori. Dari situ kelihatan objek apa yang paling banyak.">
           <div class="lens-tag lt-red" style="align-self: flex-start">cara cari</div>
           <h2>Langkah mencari kebocoran</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Lihat grafik memori</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Ambil heap dump</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Buka di Eclipse MAT / VisualVM</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Cari objek paling besar</div></div><ul class="clean" style="margin-top: 18px"><li>Heap dump: <b>jmap -dump:live,format=b,file=heap.hprof &lt;pid&gt;</b></li><li>Lihat siapa yang <b>memegang</b> objek itu (path to GC root).</li></ul>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — THREADLOCAL ════════ -->
+        <section class="slide" data-ext="1" data-notes="Selain memory leak, ini juga bug keamanan: request berikutnya bisa melihat data user sebelumnya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">ThreadLocal</div>
+          <h2>ThreadLocal yang lupa dibersihkan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ tidak pernah remove</div><pre class="code">static ThreadLocal&lt;UserContext&gt; CTX = new ThreadLocal&lt;&gt;();
+
+void handle(Request r) &#123;
+  CTX.set(load(r.userId()));
+  process(r);
+  <span class="cm">// ← lupa CTX.remove()</span>
+&#125;
+<span class="cm">// thread pool memakai ulang thread,</span>
+<span class="cm">// data lama menumpuk &amp; bisa bocor ke user lain</span></pre></div>
+            <div><div class="codehead good">✓ selalu remove di finally</div><pre class="code">void handle(Request r) &#123;
+  CTX.set(load(r.userId()));
+  try &#123;
+    process(r);
+  &#125; finally &#123;
+    CTX.remove();
+  &#125;
+&#125;</pre></div>
+          </div>
+          <div class="foot">Thread di pool <b>tidak pernah mati</b>. Yang ditaruh di ThreadLocal ikut hidup lama.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Di heap dump, terlihat ArrayList listener berisi jutaan objek. Itu petunjuk paling jelas.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: listener yang tidak dilepas</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Setiap WebSocket baru daftar listener</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Koneksi ditutup</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Listener tidak dihapus</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Seminggu: 2 juta listener, OOM</div></div><ul class="clean" style="margin-top: 18px"><li>Pasangan wajib: <code>addListener</code> ↔ <code>removeListener</code>, <code>subscribe</code> ↔ <code>unsubscribe</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — DI FRONTEND ════════ -->
+        <section class="slide" data-ext="1" data-notes="Chrome DevTools → Memory → Heap snapshot. Bandingkan dua snapshot untuk melihat yang bertambah.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">di frontend</div>
+          <h2>Memory leak juga ada di browser</h2>
+          <table style="margin-top: 16px"><tr><th>Penyebab</th><th>Obat</th></tr><tr><td class="mono">setInterval tidak di-clear</td><td>clearInterval di cleanup</td></tr><tr><td class="mono">addEventListener di window</td><td>removeEventListener saat unmount</td></tr><tr><td class="mono">Subscription RxJS</td><td>unsubscribe / takeUntilDestroyed</td></tr><tr><td class="mono">Cache Map global</td><td>WeakMap atau batas ukuran</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: lihat grafik memori service kita seminggu terakhir. Bentuknya gergaji rata atau tangga?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -508,13 +561,14 @@ User get(String id) {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Memori dipegang terus, tidak pernah dilepas.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ tanda</div><p style="font-size: 17px; color: #e2e8f0">Grafik memori naik seperti tangga.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Beri batas/umur, lepas listener, ambil heap dump.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 6</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,13 +463,24 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Pinjam buku perpustakaan tapi tidak pernah dikembalikan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENALAN DULU ════════ -->
         <section class="slide" data-notes="Di Linux, hampir semua hal adalah file: koneksi HTTP, koneksi DB, file log, semuanya pakai FD.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kenalan dulu</div>
           <h2>Apa itu file descriptor (FD)?</h2>
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">🎫</div><div><h3>Tiket dari OS</h3><p>Tiap buka file, socket, atau koneksi, OS kasih satu nomor tiket.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">🔢</div><div><h3>Jumlahnya dibatasi</h3><p>Biasanya 1024 atau 65535 per proses (cek: ulimit -n).</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">💥</div><div><h3>Habis = error</h3><p>Muncul error "Too many open files" dan aplikasi tidak bisa buka apa-apa.</p></div></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: bukan filenya yang hilang. Proses sudah memakai semua jatah file descriptor. Tidak bisa membuka file apa pun, termasuk socket baru.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Error yang menyesatkan</h2>
+          <div style="margin-top: 14px"><pre class="code">java.io.FileNotFoundException: /app/config.json
+    (Too many open files)</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>File config.json ada. Kenapa "tidak ditemukan"?</li><li>Petunjuk: baca bagian dalam kurung.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Di Python pakai &#x27;with open(...)&#x27;, di Go pakai &#x27;defer f.Close()&#x27;.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Lupa close vs otomatis close</h2>
@@ -489,14 +500,53 @@
           </div>
           <div class="foot">Sama seperti koneksi DB: <b>yang dibuka harus ditutup</b>.</div>
         </section>
-        <!-- ════════ 4 — CARA CEK ════════ -->
+
+        <!-- ════════ 5 — CARA CEK ════════ -->
         <section class="slide" data-notes="Tips: jalankan perintah hitung beberapa kali dengan jeda. Kalau angkanya terus naik, itu bocor.">
           <div class="lens-tag lt-green" style="align-self: flex-start">cara cek</div>
           <h2>Cara mengecek FD bocor</h2>
           <table style="margin-top: 16px"><tr><th>Perintah</th><th>Gunanya</th></tr><tr><td class="mono">ulimit -n</td><td>Lihat batas FD per proses</td></tr><tr><td class="mono">ls /proc/&lt;pid&gt;/fd | wc -l</td><td>Hitung FD yang sedang dibuka</td></tr><tr><td class="mono">lsof -p &lt;pid&gt;</td><td>Lihat detail: file apa, socket ke mana</td></tr></table>
           <div class="foot">Kalau jumlahnya <b>naik terus tanpa turun</b>, hampir pasti ada yang bocor.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — BUKAN CUMA FILE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Hal yang sama untuk OkHttp, RestTemplate, WebClient, dan Apache HttpClient.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">bukan cuma file</div>
+          <h2>Socket HTTP juga file descriptor</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ client baru tiap panggilan</div><pre class="code">String call(String url) &#123;
+  var client = HttpClient.newHttpClient();   <span class="cm">// ← tiap kali</span>
+  return client.send(req(url),
+      BodyHandlers.ofString()).body();
+&#125;
+<span class="cm">// koneksi lama menumpuk, FD habis</span></pre></div>
+            <div><div class="codehead good">✓ satu client dipakai ulang</div><pre class="code">private static final HttpClient CLIENT =
+    HttpClient.newBuilder()
+      .connectTimeout(Duration.ofSeconds(2))
+      .build();
+
+String call(String url) &#123;
+  return CLIENT.send(req(url), …).body();
+&#125;</pre></div>
+          </div>
+          <div class="foot">HTTP client, koneksi DB, dan Kafka producer: <b>buat sekali, pakai berkali-kali</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pola grafik FD yang naik terus lalu jatuh saat restart adalah tanda klasik kebocoran.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: FD naik pelan selama 3 hari</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Hari 1: 800 FD</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Hari 2: 20.000 FD</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Hari 3: 65.535 → error</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">lsof: ribuan socket CLOSE_WAIT</div></div><ul class="clean" style="margin-top: 18px"><li><b>CLOSE_WAIT</b> = pihak lain sudah menutup, tapi kode kita lupa menutup sisi kita.</li><li>Restart hanya menunda. Cari kode yang tidak menutup respons.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PANTAU ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pasang alert saat pemakaian FD di atas 70% dari batas.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pantau</div>
+          <h2>Memantau file descriptor</h2>
+          <table style="margin-top: 16px"><tr><th>Sumber</th><th>Metrik</th></tr><tr><td class="mono">JVM (Micrometer)</td><td>process_files_open_files / process_files_max_files</td></tr><tr><td class="mono">Node.js</td><td>process.getActiveResourcesInfo()</td></tr><tr><td class="mono">Linux</td><td>ls /proc/&lt;pid&gt;/fd | wc -l</td></tr><tr><td class="mono">Koneksi jaringan</td><td>ss -tan state close-wait | wc -l</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Penutup: FD leak dan connection leak itu saudara kandung. Kebiasaan sama yang menyelamatkan.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -504,13 +554,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ FD</div><p style="font-size: 17px; color: #e2e8f0">Tiket OS untuk file, socket, koneksi.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ gejala</div><p style="font-size: 17px; color: #e2e8f0">"Too many open files".</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Selalu close, pakai try-with-resources / with / defer.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

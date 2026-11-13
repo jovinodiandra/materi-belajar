@@ -463,13 +463,23 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Lift macet, semua orang pencet tombol berkali-kali.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KEJADIANNYA ════════ -->
         <section class="slide" data-notes="Hitung di papan: retry berlapis itu dikali, bukan ditambah.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kejadiannya</div>
           <h2>Retry yang bikin makin parah</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Server lambat</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Klien timeout</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Semua retry 3x</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Beban jadi 4x lipat</div></div><ul class="clean" style="margin-top: 18px"><li>Kalau ada 3 lapis service yang masing-masing retry 3x: 4 × 4 × 4 = <b>64x</b> beban.</li><li>Server yang tadinya cuma lambat, jadi <b>benar-benar mati</b>.</li></ul>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 4 × 4 = 16 panggilan ke B per klik (1 asli + 3 retry di tiap lapis). Seribu user = 16.000 panggilan ke service yang sedang sakit.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Hitung bebannya</h2>
+          <p class="lede">Gateway → service A → service B. Masing-masing retry 3 kali saat gagal.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Service B sedang error. Satu klik user menjadi berapa panggilan ke B?</li><li>Kalau ada 1.000 user aktif?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Exponential backoff = jeda dikali dua tiap gagal. Jitter = tambahan acak biar klien tidak sinkron.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Retry langsung vs backoff + jitter</h2>
@@ -491,13 +501,56 @@ throw new GagalSetelahRetry();</pre></div>
           </div>
           <div class="foot">Jeda <b>makin lama</b> (100, 200, 400ms) dan <b>sedikit acak</b> biar tidak serentak.</div>
         </section>
-        <!-- ════════ 4 — ATURAN AMAN ════════ -->
+
+        <!-- ════════ 5 — ATURAN AMAN ════════ -->
         <section class="slide" data-notes="Retry juga cuma aman untuk operasi yang idempotent. Lihat materi Idempotency.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan aman</div>
           <h2>Aturan retry yang sehat</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">aturan</div><h3>Batasi jumlah</h3><p style="color: var(--ink)">Maksimal 2–3 kali, lalu menyerah.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">aturan</div><h3>Retry di satu lapis saja</h3><p style="color: var(--ink)">Jangan semua lapis ikut retry.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">aturan</div><h3>Jangan retry error 4xx</h3><p style="color: var(--ink)">400/401/404 tidak akan sembuh dengan dicoba lagi.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">aturan</div><h3>Pakai retry budget</h3><p style="color: var(--ink)">Retry maksimal 10% dari total request.</p></div></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — RETRY BUDGET ════════ -->
+        <section class="slide" data-ext="1" data-notes="Google SRE book membahas retry budget dan adaptive throttling. Rekomendasikan untuk dibaca.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">retry budget</div>
+          <h2>Batasi retry secara keseluruhan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">ide sederhana</div><pre class="code"><span class="cm">// retry hanya boleh ≤ 10% dari request sukses</span>
+boolean canRetry() &#123;
+  return retries.get() &lt; successes.get() * 0.1;
+&#125;
+
+if (failed &amp;&amp; isRetryable(err) &amp;&amp; canRetry()) &#123;
+  retries.incrementAndGet();
+  sleep(backoffWithJitter(attempt));
+  retry();
+&#125;</pre></div>
+            <div><div class="codehead ">efeknya</div><pre class="code">Gangguan kecil (1% error):
+  retry jalan normal, user tidak sadar
+
+Gangguan besar (80% error):
+  retry otomatis berhenti
+  → server yang sakit diberi napas
+
+Envoy/Istio punya fitur retry budget.</pre></div>
+          </div>
+          <div class="foot">Retry menolong saat gangguan <b>kecil</b>. Saat gangguan <b>besar</b>, retry memperparah.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Server baru menyala sebaiknya diberi trafik pelan-pelan (slow start di load balancer).">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: server pulih lalu tumbang lagi</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Server restart setelah insiden</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Ribuan client retry di detik yang sama</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Server langsung kewalahan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Mati lagi — berulang</div></div><ul class="clean" style="margin-top: 18px"><li>Ini disebut <b>thundering herd</b>. Obatnya: jitter + server menerima trafik bertahap.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — RETRY ATAU TIDAK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Retry untuk error yang pasti gagal lagi hanya membuang tenaga dan menambah beban.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">retry atau tidak</div>
+          <h2>Error mana yang boleh di-retry?</h2>
+          <table style="margin-top: 16px"><tr><th>Error</th><th>Retry?</th></tr><tr><td class="mono">Timeout, koneksi putus</td><td>✅ Ya, kalau aksinya idempotent</td></tr><tr><td class="mono">503, 502</td><td>✅ Ya, dengan backoff</td></tr><tr><td class="mono">429 Too Many Requests</td><td>✅ Ya, ikuti Retry-After</td></tr><tr><td class="mono">400, 401, 403, 404, 422</td><td>❌ Tidak — hasilnya akan sama</td></tr><tr><td class="mono">500</td><td>🟡 Hati-hati, bisa bug yang selalu gagal</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cek konfigurasi retry di HTTP client kita. Berapa kali, ada jitter atau tidak?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -505,13 +558,14 @@ throw new GagalSetelahRetry();</pre></div>
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Semua retry bareng, beban berlipat.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Backoff + jitter, batasi jumlah.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ hati-hati</div><p style="font-size: 17px; color: #e2e8f0">Retry berlapis itu dikali, bukan ditambah.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

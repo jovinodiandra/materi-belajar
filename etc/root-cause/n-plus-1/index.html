@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Belanja 100 barang, tapi bolak-balik ke toko 100 kali.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — CONTOHNYA ════════ -->
         <section class="slide" data-notes="Lazy loading: ORM baru ambil data customer saat diakses. Makanya query-nya tersembunyi di dalam loop.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">contohnya</div>
@@ -482,20 +483,73 @@ List&lt;Order&gt; findAllWithCustomer();
           </div>
           <div class="foot">100 order = <b>101 query</b>. 10.000 order = <b>10.001 query</b>.</div>
         </section>
-        <!-- ════════ 3 — CARA DETEKSI ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 1 + 20 + 20 = 41 query. Kelihatannya kode biasa saja. Inilah kenapa N+1 sering lolos review.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Hitung query-nya</h2>
+          <div style="margin-top: 14px"><pre class="code">List&lt;Post&gt; posts = postRepo.findTop20();          <span class="cm">// ?</span>
+for (Post p : posts) &#123;
+  p.getAuthor().getName();                         <span class="cm">// ?</span>
+  p.getComments().size();                          <span class="cm">// ?</span>
+&#125;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Berapa query total untuk 20 post?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CARA DETEKSI ════════ -->
         <section class="slide" data-notes="Tanda paling jelas: query yang sama persis berulang, cuma beda id.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">cara deteksi</div>
           <h2>Gimana ketahuan?</h2>
           <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">cek</div><h3>Nyalakan log SQL</h3><p style="color: var(--ink)">spring.jpa.show-sql=true, lalu hitung query per request.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">cek</div><h3>Lihat di tracing / APM</h3><p style="color: var(--ink)">Satu request dengan puluhan query yang mirip.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">cek</div><h3>Endpoint lambat saat data banyak</h3><p style="color: var(--ink)">Cepat di lokal (data sedikit), lambat di production.</p></div></div>
         </section>
-        <!-- ════════ 4 — CARA MENGATASI ════════ -->
+
+        <!-- ════════ 5 — CARA MENGATASI ════════ -->
         <section class="slide" data-notes="DataLoader dibahas di materi GraphQL. Prinsipnya sama: batching.">
           <div class="lens-tag lt-green" style="align-self: flex-start">cara mengatasi</div>
           <h2>Pilihan solusi</h2>
           <table style="margin-top: 16px"><tr><th>Cara</th><th>Gampangnya</th></tr><tr><td class="mono">JOIN FETCH</td><td>Ambil induk + anak dalam 1 query</td></tr><tr><td class="mono">@EntityGraph</td><td>Kasih tahu JPA relasi mana yang diambil sekalian</td></tr><tr><td class="mono">Batch fetch</td><td>Ambil anak dengan WHERE id IN (...) sekali jalan</td></tr><tr><td class="mono">DataLoader</td><td>Untuk GraphQL: kumpulkan id dulu, ambil sekaligus</td></tr></table>
           <div class="foot">Prinsipnya: <b>ambil banyak sekaligus</b>, jangan satu-satu di dalam loop.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — TES OTOMATIS ════════ -->
+        <section class="slide" data-ext="1" data-notes="spring.jpa.properties.hibernate.generate_statistics=true untuk mengaktifkan statistik.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">tes otomatis</div>
+          <h2>Kunci jumlah query di test</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Hibernate statistics</div><pre class="code">@Test
+void list_posts_tidak_n_plus_1() &#123;
+  stats.clear();
+  postService.listWithAuthors();
+  assertThat(stats.getPrepareStatementCount())
+      .isLessThanOrEqualTo(2);
+&#125;</pre></div>
+            <div><div class="codehead ">kenapa penting</div><pre class="code">Hari ini: 2 query ✓
+Besok seseorang menambah
+  p.getTags() di template
+→ test merah, N+1 ketahuan di PR,
+  bukan di produksi
+
+Library: datasource-proxy,
+  hypersistence-utils</pre></div>
+          </div>
+          <div class="foot">Jumlah query adalah <b>perilaku</b> yang layak dites.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tracing APM sangat jelas memperlihatkan N+1: deretan span query yang sama berulang.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: endpoint cepat di dev, lambat di prod</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Dev: 5 order, 6 query, 20 ms</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Prod: 500 order, 501 query</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Tiap query 2 ms → 1 detik</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Trace: ratusan span SELECT mirip</div></div><ul class="clean" style="margin-top: 18px"><li>Data kecil di dev menyembunyikan N+1. Uji dengan data yang <b>mirip produksi</b>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — DI TEMPAT LAIN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Polanya selalu sama: satu panggilan per item dalam loop. Obatnya selalu sama: ambil sekaligus.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">di tempat lain</div>
+          <h2>N+1 bukan cuma di JPA</h2>
+          <ul class="clean" style="margin-top: 18px"><li><b>GraphQL</b>: resolver per item → pakai DataLoader.</li><li><b>Frontend</b>: daftar 50 item, tiap item fetch detail sendiri → buat endpoint batch.</li><li><b>Microservices</b>: panggil service user 50 kali → endpoint GET /users?ids=…</li><li><b>Template</b>: akses relasi lazy di view (Thymeleaf, JSP).</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: nyalakan log SQL di lokal, buka satu endpoint list, hitung berapa query-nya.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -503,13 +557,14 @@ List&lt;Order&gt; findAllWithCustomer();
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">1 query daftar + N query detail di dalam loop.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ deteksi</div><p style="font-size: 17px; color: #e2e8f0">Log SQL: query sama berulang beda id.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">JOIN FETCH, EntityGraph, batch fetch.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

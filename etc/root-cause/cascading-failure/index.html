@@ -463,19 +463,30 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu kartu domino jatuh, semua ikut jatuh.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KEJADIANNYA ════════ -->
         <section class="slide" data-notes="Gambar A→B→C di papan. Tunjukkan thread pool B penuh oleh request yang menunggu C.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kejadiannya</div>
           <h2>Gimana satu masalah bisa menular</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Service C lambat</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">B nunggu C, thread B habis</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">A nunggu B, thread A habis</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Semua down</div></div><ul class="clean" style="margin-top: 18px"><li>Yang rusak cuma C, tapi A dan B ikut mati karena <b>nunggu tanpa batas</b>.</li><li>Retry dari A dan B bikin C makin berat.</li></ul>
         </section>
-        <!-- ════════ 3 — PEMUTUS RANTAI ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: thread habis dipakai menunggu rekomendasi. Request login tidak kebagian thread. Inilah kenapa bulkhead (sekat) penting.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak: kenapa halaman login ikut mati?</h2>
+          <p class="lede">Service rekomendasi produk lambat. Anehnya, halaman login juga tidak bisa dibuka.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Login tidak memakai rekomendasi sama sekali.</li><li>Petunjuk: login dan halaman produk ada di aplikasi yang sama, berbagi thread pool.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PEMUTUS RANTAI ════════ -->
         <section class="slide" data-notes="Circuit breaker sudah ada materinya di Software Architecture. Bulkhead = sekat kapal, satu bocor tidak menenggelamkan semua.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">pemutus rantai</div>
           <h2>Cara memutus domino</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">wajib</div><h3>Timeout</h3><p style="color: var(--ink)">Jangan nunggu selamanya. Kasih batas, misal 2 detik.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">wajib</div><h3>Circuit breaker</h3><p style="color: var(--ink)">Kalau C sering gagal, berhenti panggil C sebentar.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">bagus</div><h3>Bulkhead</h3><p style="color: var(--ink)">Pisahkan thread pool per dependency. Satu penuh, yang lain aman.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">bagus</div><h3>Fallback</h3><p style="color: var(--ink)">Kalau C mati, tampilkan data default atau cache.</p></div></div>
         </section>
-        <!-- ════════ 4 — CONTOH ════════ -->
+
+        <!-- ════════ 5 — CONTOH ════════ -->
         <section class="slide" data-notes="Gagal cepat membebaskan thread, jadi service kita tetap bisa melayani request lain.">
           <div class="lens-tag lt-green" style="align-self: flex-start">contoh</div>
           <h2>Panggil tanpa pengaman vs dengan pengaman</h2>
@@ -492,7 +503,46 @@ price = http.get("http://pricing/item/1")
           </div>
           <div class="foot">Lebih baik <b>gagal cepat</b> daripada <b>nyangkut lama</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — RESILIENCE4J ════════ -->
+        <section class="slide" data-ext="1" data-notes="Rekomendasi kosong jauh lebih baik daripada seluruh halaman error.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">Resilience4j</div>
+          <h2>Pengaman berlapis dalam satu anotasi</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">kode</div><pre class="code">@CircuitBreaker(name = "reco", fallbackMethod = "noReco")
+@Bulkhead(name = "reco")          <span class="cm">// maks N panggilan bersamaan</span>
+@TimeLimiter(name = "reco")       <span class="cm">// batas waktu</span>
+CompletableFuture&lt;List&lt;Product&gt;&gt; recommend(long userId) &#123;
+  return CompletableFuture.supplyAsync(() -&gt; reco.get(userId));
+&#125;
+CompletableFuture&lt;List&lt;Product&gt;&gt; noReco(long id, Throwable t) &#123;
+  return completedFuture(List.of());   <span class="cm">// tampil tanpa rekomendasi</span>
+&#125;</pre></div>
+            <div><div class="codehead ">konfigurasi</div><pre class="code">resilience4j:
+  timelimiter.instances.reco.timeout-duration: 800ms
+  bulkhead.instances.reco.max-concurrent-calls: 20
+  circuitbreaker.instances.reco:
+    failure-rate-threshold: 50
+    wait-duration-in-open-state: 30s</pre></div>
+          </div>
+          <div class="foot">Fitur tambahan boleh <b>hilang</b>. Fitur inti harus tetap jalan.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Retry bertingkat (gateway, service, client) bisa melipatgandakan beban hingga puluhan kali.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: retry yang memperparah</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Payment lambat (2 detik)</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Order retry 3x tiap request</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Beban ke payment jadi 4x</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Payment tumbang total</div></div><ul class="clean" style="margin-top: 18px"><li>Retry harus pakai <b>backoff</b>, <b>batas</b>, dan berhenti saat circuit terbuka.</li><li>Retry budget: retry maksimal ±10% dari total request.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — POLA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Biasanya dipakai bersamaan. Timeout dulu, karena tanpa timeout yang lain tidak berguna.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pola</div>
+          <h2>Pola pemutus domino</h2>
+          <table style="margin-top: 16px"><tr><th>Pola</th><th>Analogi</th></tr><tr><td class="mono">Timeout</td><td>Tidak menunggu tamu yang tidak datang selamanya</td></tr><tr><td class="mono">Circuit breaker</td><td>Sekring listrik: putus sebelum kebakaran</td></tr><tr><td class="mono">Bulkhead</td><td>Sekat di kapal: satu bocor, yang lain tetap kering</td></tr><tr><td class="mono">Fallback</td><td>Menu cadangan saat bahan habis</td></tr><tr><td class="mono">Load shedding</td><td>Tolak sebagian tamu saat restoran penuh</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cek satu HTTP client di service kita. Ada timeout-nya tidak?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -500,13 +550,14 @@ price = http.get("http://pricing/item/1")
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ menular</div><p style="font-size: 17px; color: #e2e8f0">Masalah satu service menjalar lewat yang menunggu.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pemutus</div><p style="font-size: 17px; color: #e2e8f0">Timeout, circuit breaker, bulkhead.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ fallback</div><p style="font-size: 17px; color: #e2e8f0">Siapkan jawaban cadangan kalau dependency mati.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,13 +463,30 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Catatan belanja disimpan di kepala satu orang. Orangnya pulang, catatannya hilang.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — SUMBER MASALAH ════════ -->
         <section class="slide" data-notes="Masing-masing ini sering muncul sebagai bug &#x27;kadang-kadang&#x27;. Itu ciri khas bug state.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">sumber masalah</div>
           <h2>Bug state yang sering terjadi</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">bug</div><h3>State di memori server</h3><p style="color: var(--ink)">Ada 3 server, user pindah server → keranjang hilang.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">bug</div><h3>State global dibagi-bagi</h3><p style="color: var(--ink)">Variabel static diubah banyak request sekaligus.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">bug</div><h3>Status tidak valid</h3><p style="color: var(--ink)">Order jadi "SHIPPED" padahal belum "PAID".</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">bug</div><h3>State basi</h3><p style="color: var(--ink)">Data di cache/UI sudah tidak sama dengan database.</p></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: items ditimpa request lain di tengah perhitungan. User A bisa melihat total milik user B. Variabel ini harus lokal di method.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa user melihat total belanja orang lain?</h2>
+          <div style="margin-top: 14px"><pre class="code">@Service   <span class="cm">// singleton: 1 objek untuk semua request</span>
+class CartService &#123;
+  private List&lt;Item&gt; items = new ArrayList&lt;&gt;();   <span class="cm">// ← ?</span>
+  BigDecimal total(List&lt;Item&gt; userItems) &#123;
+    items = userItems;
+    return sum(items);
+  &#125;
+&#125;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Dua user memanggil total() bersamaan. Apa yang bisa terjadi?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Dua request jalan paralel, keduanya mengubah field total yang sama. Hasilnya acak.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>State di field singleton vs di dalam fungsi</h2>
@@ -495,13 +512,51 @@ class HitungService {
           </div>
           <div class="foot">Bean Spring itu <b>singleton</b>: satu objek dipakai semua request bersamaan.</div>
         </section>
-        <!-- ════════ 4 — KEBIASAAN BAIK ════════ -->
+
+        <!-- ════════ 5 — KEBIASAAN BAIK ════════ -->
         <section class="slide" data-notes="Stateless = server tidak ingat apa-apa antar request. Server mana pun bisa melayani siapa pun.">
           <div class="lens-tag lt-green" style="align-self: flex-start">kebiasaan baik</div>
           <h2>Aturan main mengelola state</h2>
           <ul class="clean" style="margin-top: 18px"><li>Buat service <b>stateless</b>: simpan state di DB/Redis, bukan di memori server.</li><li>Hindari field yang bisa berubah di class singleton.</li><li>Batasi perpindahan status pakai <b>state machine</b> (PAID baru boleh ke SHIPPED).</li><li>Satu sumber kebenaran (<b>single source of truth</b>) untuk setiap data.</li></ul>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — STATUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini state machine kecil. Lihat juga deck State Machines di frontend untuk ide yang sama.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">status</div>
+          <h2>Jaga perpindahan status</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ status bebas diubah</div><pre class="code">order.setStatus("SHIPPED");
+<span class="cm">// dari CANCELLED pun bisa jadi SHIPPED</span>
+<span class="cm">// dari mana saja, kapan saja</span></pre></div>
+            <div><div class="codehead good">✓ perpindahan yang sah saja</div><pre class="code">enum Status &#123;
+  NEW, PAID, SHIPPED, CANCELLED;
+  boolean canMoveTo(Status next) &#123;
+    return switch (this) &#123;
+      case NEW  -&gt; next == PAID || next == CANCELLED;
+      case PAID -&gt; next == SHIPPED || next == CANCELLED;
+      default   -&gt; false;
+    &#125;;
+  &#125;
+&#125;</pre></div>
+          </div>
+          <div class="foot">State yang <b>tidak mungkin</b> harus benar-benar tidak bisa terjadi di kode.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aplikasi stateless bisa ditambah, dikurangi, dan di-restart kapan saja tanpa user merasakannya.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: sesi hilang setelah scale-up</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Sesi login di memori pod</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Autoscaling: 2 → 6 pod</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Request user dibagi ke pod lain</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">User tiba-tiba logout</div></div><ul class="clean" style="margin-top: 18px"><li>Simpan sesi di <b>Redis</b> (Spring Session) atau pakai token tanpa state di server.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — DI MANA STATE TINGGAL ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aturan sederhana: kalau pod mati sekarang, apa yang hilang? Itu yang salah tempat.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">di mana state tinggal</div>
+          <h2>Tempat yang tepat untuk tiap state</h2>
+          <table style="margin-top: 16px"><tr><th>State</th><th>Tempat</th></tr><tr><td class="mono">Data bisnis</td><td>Database</td></tr><tr><td class="mono">Sesi login</td><td>Redis / token</td></tr><tr><td class="mono">Cache</td><td>Redis / cache lokal (boleh hilang)</td></tr><tr><td class="mono">Hitungan per request</td><td>Variabel lokal di method</td></tr><tr><td class="mono">File upload</td><td>Object storage (S3)</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cari field non-final di class @Service atau @Component di service kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -509,13 +564,14 @@ class HitungService {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ ciri</div><p style="font-size: 17px; color: #e2e8f0">Bug "kadang-kadang" sering karena state.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ stateless</div><p style="font-size: 17px; color: #e2e8f0">Simpan state di DB/Redis, bukan memori server.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ valid</div><p style="font-size: 17px; color: #e2e8f0">Batasi transisi status dengan state machine.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

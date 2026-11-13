@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dua orang di lorong saling minggir ke arah yang sama terus.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — BEDANYA ════════ -->
         <section class="slide" data-notes="Ketiganya masalah concurrency. Livelock jarang, tapi kalau kena bikin bingung.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">bedanya</div>
@@ -470,7 +471,16 @@
           <table style="margin-top: 16px"><tr><th>Masalah</th><th>Kelihatannya</th><th>CPU</th></tr><tr><td class="mono">Deadlock</td><td>Semua diam, saling nunggu</td><td>Rendah</td></tr><tr><td class="mono">Livelock</td><td>Semua sibuk, tapi tidak ada hasil</td><td>Tinggi</td></tr><tr><td class="mono">Starvation</td><td>Ada yang jalan, ada yang tidak pernah kebagian</td><td>Normal</td></tr></table>
           <div class="foot">Livelock lebih licik: <b>dashboard terlihat sibuk</b>, padahal tidak ada kerjaan yang selesai.</div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Biasanya salah satu tertawa lalu diam sebentar. Itulah jitter: jeda acak yang memutus kesamaan langkah.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Dua orang di lorong sempit</h2>
+          <p class="lede">Kamu dan temanmu berpapasan di lorong. Kamu geser ke kiri, dia juga ke kiri. Kamu geser ke kanan, dia juga ke kanan…</p>
+          <ul class="clean" style="margin-top: 16px"><li>Kalian berdua bergerak terus. Tapi ada yang maju?</li><li>Bagaimana biasanya ini selesai di dunia nyata?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Ini prinsip yang sama dengan jitter di retry. Lihat juga materi Retry Storm.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Retry di waktu sama vs retry dengan jeda acak</h2>
@@ -495,13 +505,50 @@
           </div>
           <div class="foot">Jeda <b>acak</b> bikin kedua pihak berhenti "saling minggir" di waktu yang sama.</div>
         </section>
-        <!-- ════════ 4 — PENCEGAHAN ════════ -->
+
+        <!-- ════════ 5 — PENCEGAHAN ════════ -->
         <section class="slide" data-notes="Tanya: di mana di sistem kita ada logika &#x27;coba lagi&#x27;? Apakah ada jeda acaknya?">
           <div class="lens-tag lt-green" style="align-self: flex-start">pencegahan</div>
           <h2>Cara menghindari livelock</h2>
           <ul class="clean" style="margin-top: 18px"><li>Tambahkan <b>jitter</b> (jeda acak) di setiap retry.</li><li>Batasi jumlah percobaan. Setelah N kali, menyerah dan laporkan.</li><li>Pakai <b>urutan kunci tetap</b> (sama seperti obat deadlock).</li><li>Pantau metrik: retry tinggi tapi throughput rendah = curigai livelock.</li></ul>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — JITTER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini juga mencegah thundering herd: ribuan client retry di milidetik yang sama.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">jitter</div>
+          <h2>Backoff dengan jitter</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">fungsi jeda</div><pre class="code">long backoff(int attempt) &#123;
+  long base = 100L * (1L &lt;&lt; attempt);   <span class="cm">// 100, 200, 400…</span>
+  long cap = Math.min(base, 5_000);
+  return ThreadLocalRandom.current()
+      .nextLong(cap / 2, cap);           <span class="cm">// acak</span>
+&#125;</pre></div>
+            <div><div class="codehead ">dipakai</div><pre class="code">for (int i = 0; i &lt; 5; i++) &#123;
+  if (tryBoth()) return true;
+  Thread.sleep(backoff(i));
+&#125;
+throw new GiveUpException("gagal 5x");
+<span class="cm">// acak → dua pihak jarang bertabrakan lagi</span></pre></div>
+          </div>
+          <div class="foot">Tanpa jitter, dua pihak yang <b>sama-sama sopan</b> bisa saling mengalah selamanya.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Livelock di antrean pesan sering muncul sebagai CPU tinggi dan log error yang sama berulang-ulang.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: dua consumer saling mengembalikan pesan</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Consumer A ambil pesan, gagal, kembalikan</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Consumer B ambil, gagal, kembalikan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Berulang ribuan kali/detik</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">CPU tinggi, nol kemajuan</div></div><ul class="clean" style="margin-top: 18px"><li>Batasi jumlah retry per pesan, lalu kirim ke dead letter queue.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — KENALI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kombinasi CPU tinggi dengan hasil nol adalah tanda khas livelock, berbeda dengan deadlock yang CPU-nya rendah.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kenali</div>
+          <h2>Tanda-tanda livelock di metrik</h2>
+          <table style="margin-top: 16px"><tr><th>Metrik</th><th>Tanda</th></tr><tr><td class="mono">CPU</td><td>Tinggi</td></tr><tr><td class="mono">Throughput (hasil per detik)</td><td>Mendekati nol</td></tr><tr><td class="mono">Jumlah retry / conflict</td><td>Sangat tinggi</td></tr><tr><td class="mono">Log</td><td>Pesan yang sama berulang cepat</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Penutup: deadlock = diam, livelock = sibuk tanpa hasil. Dua-duanya sama-sama macet.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -509,13 +556,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Sibuk terus, tapi tidak ada yang maju.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ penyebab</div><p style="font-size: 17px; color: #e2e8f0">Semua pihak mengalah dan retry di waktu yang sama.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Jitter, batasi retry, urutan kunci tetap.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

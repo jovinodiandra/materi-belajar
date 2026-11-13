@@ -463,26 +463,69 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Petugas kebersihan menutup toko sebentar buat ngepel.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENALAN DULU ════════ -->
         <section class="slide" data-notes="Stop-the-world = seluruh aplikasi dibekukan. Request yang sedang jalan ikut nunggu.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kenalan dulu</div>
           <h2>Kenapa GC perlu "stop"?</h2>
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">🧹</div><div><h3>GC membuang objek tak terpakai</h3><p>Biar memori bisa dipakai lagi tanpa kita hapus manual.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">✋</div><div><h3>Kadang harus stop-the-world</h3><p>Semua thread aplikasi dihentikan sebentar biar GC aman bekerja.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">🐢</div><div><h3>Normalnya milidetik</h3><p>Tapi bisa jadi detik kalau heap besar dan penuh sampah.</p></div></div></div>
         </section>
-        <!-- ════════ 3 — GEJALANYA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: GC pause panjang. Selama pause, semua thread berhenti, termasuk yang menjawab health check.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa pod di-restart padahal tidak crash?</h2>
+          <p class="lede">Kubernetes me-restart pod setiap beberapa jam. Log aplikasi tidak menunjukkan error apa pun.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Event: "Liveness probe failed: timeout".</li><li>Apa yang bisa membuat aplikasi tidak menjawab health check selama 10 detik?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — GEJALANYA ════════ -->
         <section class="slide" data-notes="p99 = 1% request paling lambat. GC pause sering muncul di sini dulu.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">gejalanya</div>
           <h2>Tanda-tanda GC bermasalah</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">gejala</div><h3>Latency melonjak sesaat</h3><p style="color: var(--ink)">p99 tiba-tiba tinggi, padahal traffic biasa saja.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">gejala</div><h3>CPU tinggi tapi kerja sedikit</h3><p style="color: var(--ink)">CPU habis dipakai GC, bukan logika bisnis.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">gejala</div><h3>Health check gagal</h3><p style="color: var(--ink)">Aplikasi beku → dianggap mati → di-restart.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">gejala</div><h3>Memori nyaris penuh terus</h3><p style="color: var(--ink)">GC jalan terus tapi tidak banyak yang bisa dibuang.</p></div></div>
         </section>
-        <!-- ════════ 4 — CARA MENGATASI ════════ -->
+
+        <!-- ════════ 5 — CARA MENGATASI ════════ -->
         <section class="slide" data-notes="Kebanyakan masalah GC sebenarnya masalah aplikasi yang bikin sampah terlalu banyak.">
           <div class="lens-tag lt-green" style="align-self: flex-start">cara mengatasi</div>
           <h2>Yang bisa kita lakukan</h2>
           <ul class="clean" style="margin-top: 18px"><li>Aktifkan <b>GC log</b>: -Xlog:gc* supaya tahu berapa lama pause-nya.</li><li>Kurangi bikin objek sementara di jalur yang sering dipanggil (loop besar).</li><li>Pilih GC modern: <b>G1</b> (default) atau <b>ZGC</b> untuk pause sangat kecil.</li><li>Kalau memori penuh terus, curigai <b>memory leak</b>, bukan setting GC.</li></ul>
           <div class="foot">Jangan langsung utak-atik setting GC. <b>Ukur dulu</b> dari GC log.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — BACA LOG GC ════════ -->
+        <section class="slide" data-ext="1" data-notes="Upload gc.log ke GCeasy atau pakai GCViewer untuk grafik yang mudah dibaca.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">baca log GC</div>
+          <h2>Membaca log GC</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">jalankan dengan</div><pre class="code">java -Xlog:gc*:file=gc.log:time,uptime \
+     -XX:+UseG1GC -Xmx2g -jar app.jar</pre></div>
+            <div><div class="codehead ">contoh isi log</div><pre class="code">[12.345s] GC(41) Pause Young (Normal)
+          512M-&gt;128M(2048M) 18.2ms     ← normal
+[98.765s] GC(57) Pause Full (Allocation Failure)
+          2040M-&gt;1990M(2048M) 4321.0ms  ← masalah!
+<span class="cm"># Full GC 4 detik, dan memori hampir tidak turun</span>
+<span class="cm"># → heap penuh oleh objek yang masih dipakai</span></pre></div>
+          </div>
+          <div class="foot">Full GC yang <b>lama</b> dan memori yang <b>tidak turun</b> = kemungkinan memory leak.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="GC pause mempengaruhi seluruh aplikasi, bukan hanya request yang membuat sampah.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: laporan bulanan bikin semua lambat</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Admin ekspor laporan 2 juta baris</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Semua dimuat ke List</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Heap penuh, Full GC berulang</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Semua user merasakan lambat</div></div><ul class="clean" style="margin-top: 18px"><li>Perbaikan: <b>streaming</b> ekspor, atau pindahkan ke worker terpisah.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PILIH GC ════════ -->
+        <section class="slide" data-ext="1" data-notes="Sebelum ganti GC, pastikan masalahnya bukan memory leak atau ukuran heap yang terlalu kecil.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pilih GC</div>
+          <h2>Pilihan garbage collector</h2>
+          <table style="margin-top: 16px"><tr><th>GC</th><th>Cocok untuk</th><th>Pause</th></tr><tr><td class="mono">G1 (default)</td><td>Kebanyakan aplikasi</td><td>Puluhan–ratusan ms</td></tr><tr><td class="mono">ZGC (Generational)</td><td>Latency rendah, heap besar</td><td>&lt; 1 ms</td></tr><tr><td class="mono">Parallel</td><td>Batch, throughput maksimal</td><td>Bisa lama</td></tr><tr><td class="mono">Serial</td><td>Container sangat kecil</td><td>Bisa lama</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cari tahu GC apa yang dipakai service Java kita dan apakah GC log sudah aktif.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -490,13 +533,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">GC kadang membekukan aplikasi untuk bersih-bersih.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ tanda</div><p style="font-size: 17px; color: #e2e8f0">Latency melonjak, CPU tinggi, health check gagal.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ langkah</div><p style="font-size: 17px; color: #e2e8f0">Baca GC log dulu, baru perbaiki kode atau GC.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

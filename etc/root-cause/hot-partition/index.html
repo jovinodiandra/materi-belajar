@@ -463,26 +463,75 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Supermarket buka 10 kasir, tapi semua antre di kasir nomor 1.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — BAYANGIN DULU ════════ -->
         <section class="slide" data-notes="Contoh klasik: partisi berdasarkan tanggal. Semua tulisan hari ini masuk satu partisi.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">bayangin dulu</div>
           <h2>Kenapa satu partisi bisa "panas"?</h2>
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">🔑</div><div><h3>Data dibagi pakai kunci</h3><p>Misal pakai user_id atau tanggal untuk menentukan partisi.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">⭐</div><div><h3>Ada kunci yang super populer</h3><p>Artis dengan 50 juta follower, atau tanggal hari ini.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">🔥</div><div><h3>Semua ke satu tempat</h3><p>Satu partisi kerja keras, sembilan lainnya santai.</p></div></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: satu merchant besar menghasilkan sebagian besar order, dan semua pesannya masuk partisi 7. Satu partisi hanya bisa dibaca satu consumer dalam satu group.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>12 partisi, tapi cuma satu yang sibuk</h2>
+          <div style="margin-top: 14px"><pre class="code">Topic: orders  (key = merchant_id)
+partition 0 : lag 0
+partition 1 : lag 0
+partition 7 : lag 2.450.000   ← ?
+partition 8 : lag 0</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Menambah consumer tidak membantu. Kenapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Trik &#x27;tambah angka acak&#x27; disebut salting. Saat baca, kita harus gabungkan dari semua salt.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Kunci partisi yang buruk vs lebih baik</h2>
           <table style="margin-top: 16px"><tr><th>Kunci</th><th>Masalahnya</th><th>Alternatif</th></tr><tr><td class="mono">created_date</td><td>Semua data baru ke partisi hari ini</td><td>hash(id)</td></tr><tr><td class="mono">country</td><td>Indonesia 90% traffic</td><td>country + user_id</td></tr><tr><td class="mono">celebrity_id</td><td>Satu artis = jutaan event</td><td>celebrity_id + angka acak 0–9</td></tr><tr><td class="mono">status</td><td>Cuma 3 nilai: new/paid/done</td><td>order_id</td></tr></table>
           <div class="foot">Kunci partisi yang baik: <b>banyak variasi</b> dan <b>tersebar rata</b>.</div>
         </section>
-        <!-- ════════ 4 — CARA CEK & ATASI ════════ -->
+
+        <!-- ════════ 5 — CARA CEK & ATASI ════════ -->
         <section class="slide" data-notes="Kalau rata-rata terlihat normal tapi ada satu partisi jauh lebih tinggi, itu hot partition.">
           <div class="lens-tag lt-green" style="align-self: flex-start">cara cek & atasi</div>
           <h2>Mendeteksi dan mengatasi</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">cek</div><h3>Lihat metrik per partisi</h3><p style="color: var(--ink)">Kafka: lag per partisi. DB: CPU per node.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">atasi</div><h3>Ganti kunci partisi</h3><p style="color: var(--ink)">Pilih kunci yang lebih acak/merata.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">atasi</div><h3>Salting</h3><p style="color: var(--ink)">Pecah kunci populer jadi beberapa sub-kunci.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">atasi</div><h3>Cache di depan</h3><p style="color: var(--ink)">Data panas yang sering dibaca, simpan di cache.</p></div></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALTING ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau urutan per order masih penting, salt berdasarkan orderId supaya pesan satu order tetap satu partisi.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salting</div>
+          <h2>Pecah kunci populer</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">sebelum</div><pre class="code">String key = order.merchantId();
+producer.send(new ProducerRecord&lt;&gt;(
+    "orders", key, order));
+<span class="cm">// merchant besar → selalu 1 partisi</span></pre></div>
+            <div><div class="codehead ">sesudah (salting)</div><pre class="code">String key = isBigMerchant(order.merchantId())
+    ? order.merchantId() + "#" + (order.id() % 8)
+    : order.merchantId();
+producer.send(new ProducerRecord&lt;&gt;(
+    "orders", key, order));
+<span class="cm">// merchant besar tersebar ke 8 partisi</span></pre></div>
+          </div>
+          <div class="foot">Harga salting: urutan pesan per merchant <b>tidak lagi dijamin</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pola ini juga ada di counter like, view count, dan saldo dompet perusahaan besar.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: flash sale satu produk</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Semua user beli produk #77</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Baris stok #77 dikunci bergantian</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Antrean kunci panjang</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Timeout di checkout</div></div><ul class="clean" style="margin-top: 18px"><li>Hot row di database juga hot partition versi kecil.</li><li>Solusi: stok dipecah ke beberapa "ember", atau dikurangi di Redis lalu disinkronkan.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — DESAIN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Mengganti kunci partisi setelah data besar itu mahal. Lebih baik dipikirkan di awal.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">desain</div>
+          <h2>Memilih kunci partisi sejak awal</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Kunci harus punya <b>banyak nilai</b> yang tersebar merata.</li><li>Pikirkan pelanggan terbesar: berapa porsi trafiknya?</li><li>Hindari tanggal atau waktu sebagai kunci utama.</li><li>Pantau distribusi per partisi sejak hari pertama.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tanya: Kafka topic kita pakai key apa? Apakah lag-nya rata di semua partisi?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -490,13 +539,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ masalah</div><p style="font-size: 17px; color: #e2e8f0">Traffic tidak rata, satu partisi kewalahan.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ penyebab</div><p style="font-size: 17px; color: #e2e8f0">Kunci partisi dengan sedikit variasi atau terlalu populer.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Kunci lebih acak, salting, cache.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

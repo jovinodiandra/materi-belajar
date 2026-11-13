@@ -463,13 +463,27 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Restoran dengan 10 pelayan: kalau 10-10nya nunggu dapur, tamu baru tidak dilayani.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — MASALAH UMUM ════════ -->
         <section class="slide" data-notes="Masalah ke-4 adalah race condition, sudah ada materinya sendiri.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">masalah umum</div>
           <h2>Masalah thread yang sering ketemu</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">masalah</div><h3>Thread pool habis</h3><p style="color: var(--ink)">Semua thread nunggu I/O lambat, request baru antre.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">masalah</div><h3>Thread bocor</h3><p style="color: var(--ink)">Bikin new Thread() terus tanpa batas, memori habis.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">masalah</div><h3>Thread nyangkut</h3><p style="color: var(--ink)">Nunggu lock atau network tanpa timeout.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">masalah</div><h3>Data rusak</h3><p style="color: var(--ink)">Banyak thread ubah data yang sama tanpa pengaman.</p></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: menunggu koneksi database dari pool Hikari. Kalau ratusan thread menunjukkan stack yang sama, pool database habis.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Baca status thread ini</h2>
+          <div style="margin-top: 14px"><pre class="code">"http-nio-8080-exec-37" #92 WAITING
+   at jdk.internal.misc.Unsafe.park
+   at java.util.concurrent.locks.LockSupport.park
+   at com.zaxxer.hikari.pool.HikariPool.getConnection
+   at com.toko.OrderRepository.save</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Thread ini sedang menunggu apa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Di Java 21 ada virtual thread yang jauh lebih ringan, cocok untuk tugas yang banyak menunggu I/O.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Bikin thread terus vs pakai pool</h2>
@@ -487,14 +501,48 @@ for (Email e : emails) {
           </div>
           <div class="foot">Tiap thread makan memori (±1MB stack). <b>Batasi jumlahnya</b>.</div>
         </section>
-        <!-- ════════ 4 — CARA CEK ════════ -->
+
+        <!-- ════════ 5 — CARA CEK ════════ -->
         <section class="slide" data-notes="Kalau banyak thread BLOCKED di baris yang sama, cari siapa yang memegang lock itu.">
           <div class="lens-tag lt-green" style="align-self: flex-start">cara cek</div>
           <h2>Mengintip apa yang dikerjakan thread</h2>
           <table style="margin-top: 16px"><tr><th>Perintah</th><th>Gunanya</th></tr><tr><td class="mono">jstack &lt;pid&gt;</td><td>Thread dump: semua thread sedang apa</td></tr><tr><td class="mono">jcmd &lt;pid&gt; Thread.print</td><td>Sama, cara lebih modern</td></tr><tr><td class="mono">Status BLOCKED / WAITING</td><td>Thread sedang nunggu lock atau sesuatu</td></tr><tr><td class="mono">Ambil 3x, jeda 5 detik</td><td>Thread yang stuck di baris sama = tersangka</td></tr></table>
           <div class="foot">Thread dump itu <b>foto</b>. Ambil beberapa kali untuk melihat "filmnya".</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — NAMA THREAD ════════ -->
+        <section class="slide" data-ext="1" data-notes="Spring: ThreadPoolTaskExecutor.setThreadNamePrefix(&quot;email-&quot;).">
+          <div class="lens-tag lt-red" style="align-self: flex-start">nama thread</div>
+          <h2>Beri nama thread supaya mudah dibaca</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ nama default</div><pre class="code">Executors.newFixedThreadPool(8);
+<span class="cm">// di thread dump:</span>
+<span class="cm">//   "pool-3-thread-7"   ← ini pool apa?</span></pre></div>
+            <div><div class="codehead good">✓ nama yang bercerita</div><pre class="code">ThreadFactory tf = Thread.ofPlatform()
+    .name("email-sender-", 0)
+    .factory();
+Executors.newFixedThreadPool(8, tf);
+<span class="cm">// di thread dump:</span>
+<span class="cm">//   "email-sender-7"   ← jelas</span></pre></div>
+          </div>
+          <div class="foot">Thread dump dengan nama yang jelas = <b>investigasi 10x lebih cepat</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Thread dump akan menunjukkan 200 thread dengan stack trace yang sama, berhenti di socketRead.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: semua request menggantung</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">200 thread Tomcat terpakai</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Semua menunggu API kurir</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">API kurir tanpa timeout</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Request baru antre → 503</div></div><ul class="clean" style="margin-top: 18px"><li>Perbaikan: timeout di HTTP client + bulkhead untuk API kurir.</li><li>Dengan virtual threads, menunggu jadi murah, tapi tetap butuh timeout.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — STATUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="fastthread.io bisa menganalisis thread dump dan mengelompokkan thread yang mirip.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">status</div>
+          <h2>Arti status thread</h2>
+          <table style="margin-top: 16px"><tr><th>Status</th><th>Artinya</th><th>Waspada kalau</th></tr><tr><td class="mono">RUNNABLE</td><td>Sedang bekerja (atau baca I/O)</td><td>Banyak sekali + CPU 100%</td></tr><tr><td class="mono">BLOCKED</td><td>Menunggu masuk synchronized</td><td>Banyak di kunci yang sama</td></tr><tr><td class="mono">WAITING</td><td>Menunggu sinyal tanpa batas</td><td>Menumpuk di pool / lock</td></tr><tr><td class="mono">TIMED_WAITING</td><td>Menunggu dengan batas waktu</td><td>Biasanya normal (sleep, poll)</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: ambil thread dump service kita di lokal, lihat ada berapa thread dan statusnya.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -502,13 +550,14 @@ for (Email e : emails) {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ batasi</div><p style="font-size: 17px; color: #e2e8f0">Pakai thread pool, jangan new Thread terus.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ timeout</div><p style="font-size: 17px; color: #e2e8f0">Thread yang menunggu harus punya batas waktu.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ cek</div><p style="font-size: 17px; color: #e2e8f0">Thread dump 3x untuk menemukan yang nyangkut.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

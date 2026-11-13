@@ -463,13 +463,27 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dua mobil di jembatan sempit, tidak ada yang mau mundur.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KEJADIANNYA ════════ -->
         <section class="slide" data-notes="Contoh transfer: A transfer dari 1 ke 2, B transfer dari 2 ke 1, di waktu bersamaan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kejadiannya</div>
           <h2>Gimana deadlock terjadi</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">A kunci Akun 1</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">B kunci Akun 2</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">A minta Akun 2 → nunggu</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">B minta Akun 1 → nunggu</div></div><ul class="clean" style="margin-top: 18px"><li>Tidak ada yang mau melepas kunci duluan.</li><li>Hasilnya: <b>macet selamanya</b>, sampai ada yang dipaksa berhenti.</li></ul>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="A memegang baris 1, B memegang baris 2, keduanya menunggu yang lain. Database akan membunuh salah satu transaksi dengan error deadlock detected.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Di mana deadlock-nya?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">-- Transaksi A                 -- Transaksi B</span>
+UPDATE stok SET qty=qty-1      UPDATE stok SET qty=qty-1
+  WHERE id = 1;                  WHERE id = 2;
+UPDATE stok SET qty=qty-1      UPDATE stok SET qty=qty-1
+  WHERE id = 2;  <span class="cm">-- tunggu B     WHERE id = 1;  -- tunggu A</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Deadlock tidak cuma di thread Java. Database juga bisa.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Ini trik paling ampuh: lock ordering. Berlaku juga untuk baris di database.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Urutan kunci acak vs urutan kunci tetap</h2>
@@ -493,13 +507,54 @@
           </div>
           <div class="foot">Kalau semua orang kunci dengan <b>urutan yang sama</b>, deadlock tidak bisa terjadi.</div>
         </section>
-        <!-- ════════ 4 — CARA LAIN ════════ -->
+
+        <!-- ════════ 5 — CARA LAIN ════════ -->
         <section class="slide" data-notes="Di PostgreSQL/MySQL, deadlock terdeteksi otomatis dan salah satu transaksi error. Aplikasi harus siap retry.">
           <div class="lens-tag lt-green" style="align-self: flex-start">cara lain</div>
           <h2>Pengaman lain</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">cegah</div><h3>Timeout saat ambil kunci</h3><p style="color: var(--ink)">tryLock(2 detik). Gagal? Lepas semua, coba lagi.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">cegah</div><h3>Pegang kunci sebentar saja</h3><p style="color: var(--ink)">Makin singkat dipegang, makin kecil peluang tabrakan.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">deteksi</div><h3>Thread dump</h3><p style="color: var(--ink)">jstack menunjukkan "Found one Java-level deadlock".</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">deteksi</div><h3>Log database</h3><p style="color: var(--ink)">DB biasanya mendeteksi dan membatalkan salah satu transaksi.</p></div></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — DATABASE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau tetap terjadi, retry transaksi yang dibatalkan beberapa kali dengan jeda.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">database</div>
+          <h2>Kunci baris dengan urutan yang sama</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">perbaikan</div><pre class="code"><span class="cm">// urutkan id sebelum mengunci</span>
+List&lt;Long&gt; ids = cart.productIds().stream()
+    .sorted()
+    .toList();
+
+for (Long id : ids) &#123;
+  stockRepo.decrement(id, qtyOf(id));
+&#125;
+<span class="cm">// semua transaksi mengunci 1 lalu 2 lalu 3…</span></pre></div>
+            <div><div class="codehead ">log PostgreSQL</div><pre class="code">ERROR: deadlock detected
+DETAIL: Process 812 waits for ShareLock
+  on transaction 9921; blocked by 815.
+  Process 815 waits for ShareLock
+  on transaction 9920; blocked by 812.
+
+→ transaksi yang dibatalkan boleh di-retry</pre></div>
+          </div>
+          <div class="foot">Urutan kunci yang <b>sama</b> di semua tempat = deadlock tidak mungkin terjadi.</div>
+        </section>
+
+        <!-- ════════ 7 — INVESTIGASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Di Kubernetes: kubectl exec ke pod lalu jcmd 1 Thread.print.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">investigasi</div>
+          <h2>Membaca thread dump saat aplikasi macet</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">jstack &lt;pid&gt; &gt; dump.txt</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Cari 'Found one Java-level deadlock'</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Lihat thread & kunci yang dipegang</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Temukan baris kode di stack</div></div><ul class="clean" style="margin-top: 18px"><li>Ambil 2–3 dump berjarak 5 detik. Thread yang sama di posisi yang sama = macet.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CEGAH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini disebut kondisi Coffman. Cukup satu syarat tidak terpenuhi, deadlock tidak bisa terjadi.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">cegah</div>
+          <h2>Empat syarat deadlock (cukup patahkan satu)</h2>
+          <table style="margin-top: 16px"><tr><th>Syarat</th><th>Cara mematahkan</th></tr><tr><td class="mono">Kunci eksklusif</td><td>Pakai struktur bebas kunci / immutable</td></tr><tr><td class="mono">Pegang sambil menunggu</td><td>Ambil semua kunci sekaligus</td></tr><tr><td class="mono">Tidak bisa direbut</td><td>tryLock dengan timeout</td></tr><tr><td class="mono">Saling menunggu melingkar</td><td>Urutan kunci tetap</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tanya: ada kode di sistem kita yang mengunci dua hal sekaligus?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -507,13 +562,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ definisi</div><p style="font-size: 17px; color: #e2e8f0">Dua pihak saling nunggu kunci milik yang lain.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat utama</div><p style="font-size: 17px; color: #e2e8f0">Kunci dengan urutan yang selalu sama.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pengaman</div><p style="font-size: 17px; color: #e2e8f0">Timeout kunci, pegang sebentar, siap retry.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,13 +463,27 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dua orang ambil uang dari rekening yang sama di detik yang sama.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KEJADIANNYA ════════ -->
         <section class="slide" data-notes="Pola baca-cek-tulis ini disebut check-then-act. Inilah sumber race condition paling sering.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kejadiannya</div>
           <h2>Stok 1, tapi terjual 2</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">A baca stok = 1</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">B baca stok = 1</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">A jual, stok jadi 0</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">B jual, stok jadi 0</div></div><ul class="clean" style="margin-top: 18px"><li>Dua pembeli sama-sama dapat barang, padahal stoknya cuma satu.</li><li>Masalahnya: <b>baca lalu tulis</b> dilakukan terpisah, bukan sekaligus.</li></ul>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: dua kali. Keduanya lolos pengecekan sebelum salah satunya sempat menandai. Pola &#x27;cek lalu lakukan&#x27; adalah sumber race condition.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Voucher dipakai dua kali</h2>
+          <p class="lede">Voucher HEMAT50 hanya boleh dipakai sekali. User menekan "Bayar" di HP dan laptop pada detik yang sama.</p>
+          <div style="margin-top: 14px"><pre class="code">if (!voucherRepo.isUsed(code)) &#123;   <span class="cm">// keduanya: belum dipakai</span>
+  applyDiscount(order);
+  voucherRepo.markUsed(code);
+&#125;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Berapa kali diskon diberikan?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Database menjamin satu UPDATE itu atomik, jadi tidak ada yang bisa menyelip di tengah.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Baca-lalu-tulis vs satu langkah atomik</h2>
@@ -491,13 +505,52 @@ if (rows == 0) {
           </div>
           <div class="foot">Biarkan database yang <b>cek dan ubah sekaligus</b>.</div>
         </section>
-        <!-- ════════ 4 — PILIHAN SOLUSI ════════ -->
+
+        <!-- ════════ 5 — PILIHAN SOLUSI ════════ -->
         <section class="slide" data-notes="Optimistic cocok kalau tabrakan jarang. Pessimistic cocok kalau tabrakan sering.">
           <div class="lens-tag lt-green" style="align-self: flex-start">pilihan solusi</div>
           <h2>Alat untuk mencegah balapan</h2>
           <table style="margin-top: 16px"><tr><th>Cara</th><th>Gampangnya</th><th>Contoh</th></tr><tr><td class="mono">Update atomik</td><td>Cek & ubah dalam 1 perintah</td><td>UPDATE ... WHERE stok &gt; 0</td></tr><tr><td class="mono">Optimistic lock</td><td>Pakai nomor versi, gagal kalau sudah berubah</td><td>@Version di JPA</td></tr><tr><td class="mono">Pessimistic lock</td><td>Kunci baris dulu sebelum ubah</td><td>SELECT ... FOR UPDATE</td></tr><tr><td class="mono">Atomic di kode</td><td>Variabel yang aman dipakai banyak thread</td><td>AtomicInteger</td></tr></table>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — OPTIMISTIC LOCK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Cocok saat bentrokan jarang terjadi. Kalau sering, pakai pessimistic lock (SELECT … FOR UPDATE).">
+          <div class="lens-tag lt-red" style="align-self: flex-start">optimistic lock</div>
+          <h2>Optimistic locking dengan @Version</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">entity</div><pre class="code">@Entity
+class Voucher &#123;
+  @Id String code;
+  boolean used;
+  @Version long version;   <span class="cm">// nomor versi</span>
+&#125;</pre></div>
+            <div><div class="codehead ">yang terjadi</div><pre class="code">A baca voucher (version 3)
+B baca voucher (version 3)
+A simpan → UPDATE … WHERE version=3 ✓
+           version jadi 4
+B simpan → UPDATE … WHERE version=3 ✗
+           0 baris → OptimisticLockException
+
+B memberi pesan: "Voucher sudah dipakai"</pre></div>
+          </div>
+          <div class="foot">Optimistic = <b>berharap tidak bentrok</b>, tapi tahu kalau ternyata bentrok.</div>
+        </section>
+
+        <!-- ════════ 7 — MEREPRODUKSI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau test konkurensi selalu hijau, coba tambah jumlah thread dan ulangan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">mereproduksi</div>
+          <h2>Race condition susah dilihat. Paksa terjadi.</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tulis test dengan 2+ thread</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">CountDownLatch: mulai bersamaan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Ulangi 100 kali</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Hitung hasil yang salah</div></div><ul class="clean" style="margin-top: 18px"><li>Bug yang muncul 1 dari 1.000 kali di produksi bisa muncul tiap kali di test seperti ini.</li><li>Alat bantu: jcstress (Java), <code>go test -race</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — FRONTEND JUGA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Prinsipnya sama di mana-mana: dua hal yang terjadi bersamaan menyentuh data yang sama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">frontend juga</div>
+          <h2>Race condition di sisi browser</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">dobel klik</div><h3>Tombol bayar diklik 2x</h3><p style="color: var(--ink)">Nonaktifkan tombol + idempotency key di server.</p></div><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">respons acak</div><h3>Hasil pencarian lama menimpa yang baru</h3><p style="color: var(--ink)">AbortController, abaikan respons lama.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">dua tab</div><h3>Edit data yang sama di dua tab</h3><p style="color: var(--ink)">Versi / ETag + If-Match di server.</p></div></div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cari kode &#x27;SELECT lalu UPDATE&#x27; di service kita, cek apakah bisa kena balapan.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -505,13 +558,14 @@ if (rows == 0) {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Hasil tergantung siapa lebih cepat.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pola bahaya</div><p style="font-size: 17px; color: #e2e8f0">Baca, cek, lalu tulis secara terpisah.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Update atomik, optimistic/pessimistic lock.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

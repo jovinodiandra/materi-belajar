@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kayak corong: tuang air terlalu cepat, pasti tumpah.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — BAYANGIN DULU ════════ -->
         <section class="slide" data-notes="Ceritakan analoginya pelan. Tekankan: masalahnya bukan koki lambat, tapi tidak ada yang bilang ke pelayan untuk berhenti terima pesanan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">bayangin dulu</div>
@@ -470,13 +471,23 @@
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">🧾</div><div><h3>Pelayan terima 100 pesanan/menit</h3><p>Tapi koki cuma sanggup masak 20 per menit.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">📚</div><div><h3>Kertas pesanan numpuk</h3><p>Makin lama makin tinggi. Pelanggan nunggu makin lama.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">🔥</div><div><h3>Akhirnya dapur kacau</h3><p>Pesanan hilang, koki panik, semua orang marah.</p></div></div></div>
           <div class="foot">Di sistem kita, "kertas numpuk" itu = <b>antrean di memori</b> yang terus membesar.</div>
         </section>
-        <!-- ════════ 3 — GEJALANYA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: data masuk lebih cepat dari yang bisa diproses, menumpuk di antrean di memori. Tidak ada error sampai tiba-tiba OOM.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa memori naik terus padahal tidak ada error?</h2>
+          <p class="lede">Dashboard jam 10 pagi: CPU normal, error 0%, tapi memori naik pelan dari 40% ke 95% dalam 3 jam.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Petunjuk: lihat juga grafik panjang antrean.</li><li>Apa hubungan antrean dengan memori?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — GEJALANYA ════════ -->
         <section class="slide" data-notes="Minta audiens sebut metrik mana di dashboard kita yang bisa menunjukkan gejala ini.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">gejalanya</div>
           <h2>Gimana tahu sistem kita kena?</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">gejala</div><h3>Antrean terus naik</h3><p style="color: var(--ink)">Panjang queue / lag consumer naik dan tidak pernah turun.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">gejala</div><h3>Memori naik pelan-pelan</h3><p style="color: var(--ink)">Data nunggu diproses disimpan di RAM sampai habis.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">gejala</div><h3>Latency makin parah</h3><p style="color: var(--ink)">Request baru harus nunggu yang lama selesai dulu.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">akhirnya</div><h3>OOM / crash</h3><p style="color: var(--ink)">Service mati, lalu antrean pindah ke service lain.</p></div></div>
         </section>
-        <!-- ════════ 4 — CONTOH ════════ -->
+
+        <!-- ════════ 5 — CONTOH ════════ -->
         <section class="slide" data-notes="Jelaskan 429 = Too Many Requests. Klien bisa retry nanti. Yang penting servis tetap hidup.">
           <div class="lens-tag lt-green" style="align-self: flex-start">contoh</div>
           <h2>Antrean tanpa batas vs antrean dibatasi</h2>
@@ -499,14 +510,47 @@ onRequest(req) {
           </div>
           <div class="foot">Menolak sebagian lebih baik daripada <b>mati semuanya</b>.</div>
         </section>
-        <!-- ════════ 5 — CARA MENGATASI ════════ -->
+
+        <!-- ════════ 6 — CARA MENGATASI ════════ -->
         <section class="slide" data-notes="Tanya: di sistem kita, bagian mana yang push tanpa batas?">
           <div class="lens-tag lt-red" style="align-self: flex-start">cara mengatasi</div>
           <h2>Pilihan kalau kebanjiran</h2>
           <table style="margin-top: 16px"><tr><th>Cara</th><th>Gampangnya</th><th>Kapan dipakai</th></tr><tr><td class="mono">Batasi antrean</td><td>Antrean penuh = tolak</td><td>Hampir selalu, ini dasar</td></tr><tr><td class="mono">Pull, bukan push</td><td>Consumer ambil sendiri sesuai kemampuan</td><td>Kafka, reactive stream</td></tr><tr><td class="mono">Rate limit</td><td>Batasi berapa request per detik</td><td>API publik</td></tr><tr><td class="mono">Buang yang tidak penting</td><td>Drop data lama / kurang penting</td><td>Metrik, log, sensor</td></tr></table>
           <div class="foot">Intinya: <b>yang lambat harus bisa bilang "stop"</b> ke yang cepat.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — REACTOR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Reactive stream membuat consumer meminta data sesuai kemampuan (request(n)), bukan didorong terus.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">Reactor</div>
+          <h2>Backpressure di reactive stream</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">tanpa batas</div><pre class="code">Flux.fromIterable(millionOrders)
+    .flatMap(o -&gt; callPartnerApi(o))   <span class="cm">// ← semua sekaligus</span>
+    .subscribe();</pre></div>
+            <div><div class="codehead ">dibatasi</div><pre class="code">Flux.fromIterable(millionOrders)
+    .flatMap(o -&gt; callPartnerApi(o), 16)   <span class="cm">// maks 16 paralel</span>
+    .onBackpressureBuffer(1_000,
+        dropped -&gt; log.warn("drop &#123;&#125;", dropped.id()))
+    .subscribe();</pre></div>
+          </div>
+          <div class="foot">Angka <b>16</b> = berapa banyak yang boleh dikerjakan bersamaan. Sisanya menunggu giliran.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pelajaran: antrean di memori itu rapuh. Untuk pekerjaan penting, pakai antrean yang tahan restart.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi insiden: worker email</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Promo: 500 rb email masuk antrean</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Worker cuma 50/detik</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Antrean di memori membengkak</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">OOM, semua email hilang</div></div><ul class="clean" style="margin-top: 18px"><li>Perbaikan: antrean pindah ke broker (persisten), worker ditambah, ada batas & alert lag.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — ALERT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Menolak sebagian request itu lebih baik daripada menerima semua lalu mati bersama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alert</div>
+          <h2>Metrik yang menandakan backpressure</h2>
+          <table style="margin-top: 16px"><tr><th>Metrik</th><th>Tanda bahaya</th></tr><tr><td class="mono">Panjang antrean / consumer lag</td><td>Naik terus, tidak pernah turun</td></tr><tr><td class="mono">Waktu tunggu di antrean</td><td>Makin lama dari jam ke jam</td></tr><tr><td class="mono">Thread pool queue size</td><td>Selalu penuh</td></tr><tr><td class="mono">Jumlah request ditolak (429/503)</td><td>Mulai muncul = pengaman bekerja</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas kecil: cari satu antrean di sistem kita yang belum punya batas ukuran.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -514,13 +558,14 @@ onRequest(req) {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ masalahnya</div><p style="font-size: 17px; color: #e2e8f0">Producer lebih cepat dari consumer, antrean numpuk.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ tanda</div><p style="font-size: 17px; color: #e2e8f0">Queue, memori, dan latency naik terus.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obatnya</div><p style="font-size: 17px; color: #e2e8f0">Batasi antrean, tolak dengan sopan, atau pakai pull.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 6</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

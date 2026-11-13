@@ -463,27 +463,75 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dua orang sama-sama merasa jadi ketua kelas.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KEJADIANNYA ════════ -->
         <section class="slide" data-notes="Gambarkan 3 lingkaran di papan, lalu tarik garis pemisah.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kejadiannya</div>
           <h2>Gimana otaknya bisa terbelah</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Cluster 3 node, A jadi leader</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Jaringan putus: A | B, C</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">B jadi leader baru</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">A dan B sama-sama terima tulisan</div></div><ul class="clean" style="margin-top: 18px"><li>A tidak tahu dia sudah diganti. B tidak tahu A masih hidup.</li><li>Saat jaringan pulih, ada <b>dua versi data</b> yang bertentangan.</li></ul>
         </section>
-        <!-- ════════ 3 — PENCEGAHAN ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kedua kapten memberi perintah berbeda. Di database: dua leader menerima tulisan yang bertentangan. Data jadi tidak bisa dipercaya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Dua kapten di satu kapal</h2>
+          <p class="lede">Kapal punya dua kapten. Radio antar anjungan putus.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Kapten A berpikir B pingsan, jadi dia memegang kemudi.</li><li>Kapten B berpikir A pingsan, jadi dia juga memegang kemudi.</li><li>Apa yang terjadi pada arah kapal?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PENCEGAHAN ════════ -->
         <section class="slide" data-notes="Raft dan Paxos adalah algoritma yang memakai prinsip quorum ini. etcd, Zookeeper, Kafka KRaft pakai ini.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">pencegahan</div>
           <h2>Cara mencegahnya</h2>
           <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">kunci utama</div><h3>Quorum (mayoritas)</h3><p style="color: var(--ink)">Boleh jadi leader hanya kalau didukung lebih dari setengah node.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">aturan</div><h3>Jumlah node ganjil</h3><p style="color: var(--ink)">3 atau 5 node, supaya selalu ada mayoritas.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">pengaman</div><h3>Fencing token</h3><p style="color: var(--ink)">Leader lama yang ketinggalan nomor ditolak saat menulis.</p></div></div>
           <div class="foot">Dengan 3 node, sisi yang cuma punya 1 node <b>berhenti menulis</b>. Lebih baik diam daripada bikin data kacau.</div>
         </section>
-        <!-- ════════ 4 — KENAPA GANJIL ════════ -->
+
+        <!-- ════════ 5 — KENAPA GANJIL ════════ -->
         <section class="slide" data-notes="Ini juga alasan kenapa cluster 2 node itu berbahaya.">
           <div class="lens-tag lt-green" style="align-self: flex-start">kenapa ganjil</div>
           <h2>Hitungan quorum</h2>
           <table style="margin-top: 16px"><tr><th>Jumlah node</th><th>Mayoritas</th><th>Boleh mati</th></tr><tr><td class="mono">2</td><td>2</td><td>0 — tidak tahan gangguan</td></tr><tr><td class="mono">3</td><td>2</td><td>1</td></tr><tr><td class="mono">4</td><td>3</td><td>1 — sama saja dengan 3</td></tr><tr><td class="mono">5</td><td>3</td><td>2</td></tr></table>
           <div class="foot">Node genap tidak menambah ketahanan. Makanya cluster biasanya <b>3 atau 5</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — FENCING TOKEN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanpa fencing, leader yang sempat terhenti (GC pause panjang) bisa menulis setelah posisinya diganti.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">fencing token</div>
+          <h2>Fencing token: tolak leader lama</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">ide</div><pre class="code"><span class="cm">// setiap leader baru dapat nomor lebih besar</span>
+Leader A dapat token 33
+Jaringan putus → B jadi leader, token 34
+
+<span class="cm">// storage menyimpan token tertinggi</span>
+write(data, token=34) ✓  → simpan, max=34
+write(data, token=33) ✗  → ditolak, 33 &lt; 34</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">Leader lama yang 'bangun' terlambat
+tetap bisa mencoba menulis,
+tapi storage menolaknya.
+
+Etcd, ZooKeeper menyediakan
+nomor revisi untuk ini.</pre></div>
+          </div>
+          <div class="foot">Bukan cuma memilih leader yang benar, tapi juga <b>menolak</b> leader yang salah.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="STONITH = Shoot The Other Node In The Head. Istilah ekstrem untuk mematikan paksa node yang dicurigai.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: dua primary database</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Jaringan antar zone putus</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Replika naik jadi primary</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Primary lama tetap terima tulisan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Jaringan pulih: dua versi data</div></div><ul class="clean" style="margin-top: 18px"><li>Penyelesaian sering manual: pilih satu versi, data dari sisi lain harus dicocokkan ulang.</li><li>Pencegahan: quorum + matikan paksa node lama (STONITH).</li></ul>
+        </section>
+
+        <!-- ════════ 8 — DI MANA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Developer jarang menulis algoritma ini sendiri. Tapi perlu paham kenapa cluster butuh 3 node, bukan 2.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">di mana</div>
+          <h2>Sistem yang memakai quorum</h2>
+          <table style="margin-top: 16px"><tr><th>Sistem</th><th>Mekanisme</th></tr><tr><td class="mono">etcd (Kubernetes)</td><td>Raft</td></tr><tr><td class="mono">Kafka (KRaft)</td><td>Raft untuk controller</td></tr><tr><td class="mono">ZooKeeper</td><td>ZAB</td></tr><tr><td class="mono">PostgreSQL + Patroni</td><td>Leader lock di etcd/Consul</td></tr><tr><td class="mono">Redis Sentinel</td><td>Voting sentinel</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Penutup: ketersediaan sedikit berkurang demi data tetap benar. Itu tukar-tambah yang sengaja.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -491,13 +539,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Dua bagian cluster sama-sama jadi leader.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Quorum: wajib didukung mayoritas.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ praktik</div><p style="font-size: 17px; color: #e2e8f0">Node ganjil, fencing token.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

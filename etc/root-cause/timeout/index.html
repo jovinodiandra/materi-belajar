@@ -463,13 +463,23 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Nunggu teman di kafe: kapan kamu memutuskan pulang?</p>
           </div>
         </section>
+
         <!-- ════════ 2 — JENIS TIMEOUT ════════ -->
         <section class="slide" data-notes="Banyak library default-nya tanpa batas (infinite). Itu yang berbahaya.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">jenis timeout</div>
           <h2>Timeout itu ada beberapa macam</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">jenis</div><h3>Connect timeout</h3><p style="color: var(--ink)">Berapa lama nunggu sambungan terbentuk. Biasanya pendek (1–3 dtk).</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">jenis</div><h3>Read timeout</h3><p style="color: var(--ink)">Berapa lama nunggu jawaban setelah tersambung.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">jenis</div><h3>Total / deadline</h3><p style="color: var(--ink)">Batas waktu keseluruhan, termasuk retry.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">jenis</div><h3>Idle timeout</h3><p style="color: var(--ink)">Koneksi diam terlalu lama → ditutup.</p></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: tidak tahu! Timeout hanya berarti kita berhenti menunggu. Server bisa saja sudah memproses. Cek status dulu, atau pakai idempotency key sebelum retry.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Timeout. Jadi bayarnya berhasil atau tidak?</h2>
+          <p class="lede">Aplikasi memanggil API pembayaran. Setelah 5 detik: timeout.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Apakah uang user sudah terpotong?</li><li>Boleh langsung kirim ulang?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Tanpa timeout, satu dependency lambat bisa menghabiskan semua thread kita. Lihat Cascading Failure.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Tanpa timeout vs timeout jelas</h2>
@@ -487,13 +497,54 @@ HttpRequest req = HttpRequest.newBuilder(uri)
           </div>
           <div class="foot">Setiap panggilan ke luar (HTTP, DB, Redis) <b>wajib punya timeout</b>.</div>
         </section>
-        <!-- ════════ 4 — TIMEOUT BERLAPIS ════════ -->
+
+        <!-- ════════ 5 — TIMEOUT BERLAPIS ════════ -->
         <section class="slide" data-notes="Ini disebut deadline propagation. gRPC punya fitur deadline yang otomatis diteruskan.">
           <div class="lens-tag lt-green" style="align-self: flex-start">timeout berlapis</div>
           <h2>Timeout harus mengecil ke dalam</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Gateway: 10 dtk</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Service A: 8 dtk</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Service B: 5 dtk</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Database: 3 dtk</div></div><ul class="clean" style="margin-top: 18px"><li>Lapisan luar harus <b>lebih lama</b> dari lapisan dalam.</li><li>Kalau terbalik, lapisan luar sudah menyerah, tapi lapisan dalam masih kerja sia-sia.</li></ul>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — PENGATURAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Banyak library punya default tanpa batas atau sangat panjang. Jangan percaya default.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">pengaturan</div>
+          <h2>Timeout di klien yang sering dipakai</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Spring RestClient</div><pre class="code">var factory = new JdkClientHttpRequestFactory(
+    HttpClient.newBuilder()
+      .connectTimeout(Duration.ofSeconds(2))
+      .build());
+factory.setReadTimeout(Duration.ofSeconds(5));
+
+RestClient client = RestClient.builder()
+    .requestFactory(factory).build();</pre></div>
+            <div><div class="codehead ">tempat lain</div><pre class="code"><span class="cm"># HikariCP: tunggu koneksi pool</span>
+connection-timeout: 3000
+<span class="cm"># PostgreSQL: batas lama query</span>
+SET statement_timeout = '5s';
+<span class="cm"># Kafka producer</span>
+delivery.timeout.ms=30000
+<span class="cm"># fetch di browser</span>
+AbortSignal.timeout(5000)</pre></div>
+          </div>
+          <div class="foot">Setiap panggilan yang keluar dari proses kita <b>wajib</b> punya batas waktu.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="gRPC punya deadline propagation bawaan. Di HTTP bisa pakai header kustom.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: timeout dalam lebih besar dari luar</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Gateway timeout 5 dtk</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Service timeout 30 dtk</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Gateway menyerah, user dapat error</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Service tetap kerja 25 dtk lagi, sia-sia</div></div><ul class="clean" style="margin-top: 18px"><li>Teruskan <b>deadline</b> ke bawah: sisa waktu dikirim lewat header supaya lapisan dalam tahu kapan harus berhenti.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — MEMILIH ANGKA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Angka timeout bukan tebakan. Ambil dari data latency yang sebenarnya, lalu beri sedikit ruang.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">memilih angka</div>
+          <h2>Berapa angka timeout yang pas?</h2>
+          <table style="margin-top: 16px"><tr><th>Patokan</th><th>Contoh</th></tr><tr><td class="mono">Lihat p99 normal</td><td>p99 = 400 ms → timeout ±1 detik</td></tr><tr><td class="mono">Connect lebih pendek dari read</td><td>connect 1–2 dtk, read sesuai p99</td></tr><tr><td class="mono">Lebih kecil dari lapisan luar</td><td>Luar 10 dtk → dalam 8, 5, 3</td></tr><tr><td class="mono">Sesuai kesabaran user</td><td>Halaman checkout ≤ 10 dtk total</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cek semua HTTP client, DB, dan Redis client di service kita. Berapa timeout-nya?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -501,13 +552,14 @@ HttpRequest req = HttpRequest.newBuilder(uri)
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ wajib</div><p style="font-size: 17px; color: #e2e8f0">Semua panggilan keluar harus ada timeout.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ jenis</div><p style="font-size: 17px; color: #e2e8f0">Connect, read, dan total.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ berlapis</div><p style="font-size: 17px; color: #e2e8f0">Makin ke dalam, timeout makin pendek.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

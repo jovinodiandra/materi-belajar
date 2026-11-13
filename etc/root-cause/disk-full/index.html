@@ -463,26 +463,77 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Lemari penuh: barang baru tidak bisa masuk.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PENYEBAB ════════ -->
         <section class="slide" data-notes="Log hampir selalu tersangka nomor satu.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">penyebab</div>
           <h2>Siapa yang menghabiskan disk?</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">tersangka</div><h3>Log</h3><p style="color: var(--ink)">Log debug nyala di production, tidak pernah dirotasi.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">tersangka</div><h3>File sementara</h3><p style="color: var(--ink)">Upload/export yang tidak dihapus setelah selesai.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">tersangka</div><h3>Docker</h3><p style="color: var(--ink)">Image dan container lama menumpuk.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">tersangka</div><h3>Database</h3><p style="color: var(--ink)">WAL/binlog numpuk, tabel tumbuh tanpa dibersihkan.</p></div></div>
         </section>
-        <!-- ════════ 3 — CARA CEK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kemungkinan: log DEBUG menyala dan error berulang menulis stack trace jutaan kali, atau backup/ekspor menumpuk. Ajak audiens menebak.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kejadiannya</h2>
+          <p class="lede">Jam 3 pagi semua request gagal dengan error aneh: "No space left on device". Database menolak menulis.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Kemarin disk masih 60%.</li><li>Tidak ada deploy semalam.</li><li>Apa yang mengisi 40% disk dalam semalam?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CARA CEK ════════ -->
         <section class="slide" data-notes="Inode = jatah jumlah file. Jutaan file kecil bisa bikin disk &#x27;penuh&#x27; padahal ukurannya masih sisa.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">cara cek</div>
           <h2>Perintah untuk mencari biang keroknya</h2>
           <table style="margin-top: 16px"><tr><th>Perintah</th><th>Gunanya</th></tr><tr><td class="mono">df -h</td><td>Lihat disk mana yang hampir penuh</td></tr><tr><td class="mono">du -sh /var/* | sort -h</td><td>Cari folder paling besar</td></tr><tr><td class="mono">df -i</td><td>Cek inode (jumlah file) — bisa habis duluan!</td></tr><tr><td class="mono">lsof | grep deleted</td><td>File sudah dihapus tapi masih dipegang proses</td></tr></table>
           <div class="foot">Hapus file log yang masih dibuka proses? <b>Disk tidak lega</b> sampai prosesnya restart.</div>
         </section>
-        <!-- ════════ 4 — PENCEGAHAN ════════ -->
+
+        <!-- ════════ 5 — PENCEGAHAN ════════ -->
         <section class="slide" data-notes="Alert di 80% memberi waktu buat bertindak. Di 100% sudah terlambat.">
           <div class="lens-tag lt-green" style="align-self: flex-start">pencegahan</div>
           <h2>Biar tidak kejadian lagi</h2>
           <ul class="clean" style="margin-top: 18px"><li>Pasang <b>log rotation</b> (logrotate / setting di logback) + batas ukuran.</li><li>Alert saat disk <b>&gt; 80%</b>, jangan nunggu 100%.</li><li>Hapus file sementara di blok <b>finally</b> atau pakai job pembersih.</li><li>Jadwalkan <b>docker system prune</b> dan bersihkan data lama di DB.</li></ul>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — LOGBACK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Docker juga perlu dibatasi: log-opts max-size dan max-file di daemon.json.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">logback</div>
+          <h2>Rotasi log dengan batas total</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">logback-spring.xml</div><pre class="code">&lt;appender name="FILE"
+    class="ch.qos.logback.core.rolling.RollingFileAppender"&gt;
+  &lt;rollingPolicy class="…SizeAndTimeBasedRollingPolicy"&gt;
+    &lt;fileNamePattern&gt;app.%d.%i.log.gz&lt;/fileNamePattern&gt;
+    &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+    &lt;maxHistory&gt;7&lt;/maxHistory&gt;
+    &lt;totalSizeCap&gt;2GB&lt;/totalSizeCap&gt;
+  &lt;/rollingPolicy&gt;
+&lt;/appender&gt;</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">Per file maks 100 MB
+Disimpan 7 hari
+Total semua file maks 2 GB
+Lama dikompres (.gz)
+
+Di container: tulis ke stdout saja,
+biar platform yang mengurus.</pre></div>
+          </div>
+          <div class="foot"><b>totalSizeCap</b> adalah pengaman terakhir: log tidak akan pernah melewati angka ini.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kejadian ini sangat sering membingungkan. Ingat: rm hanya menghapus nama, isinya hilang saat tidak ada yang membuka.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: file sudah dihapus, disk tetap penuh</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Disk penuh, hapus log 20 GB</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">df -h: tetap penuh!</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">lsof | grep deleted</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Proses masih memegang file → restart</div></div><ul class="clean" style="margin-top: 18px"><li>File yang dihapus tetap memakan tempat selama ada proses yang membukanya.</li><li>Alternatif tanpa restart: kosongkan isinya dengan <code>: &gt; app.log</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALERT ════════ -->
+        <section class="slide" data-ext="1" data-notes="predict_linear di Prometheus menghitung tren dan memperkirakan kapan disk penuh.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alert</div>
+          <h2>Alert disk yang berguna</h2>
+          <table style="margin-top: 16px"><tr><th>Alert</th><th>Kenapa</th></tr><tr><td class="mono">Disk > 80%</td><td>Masih ada waktu bertindak di jam kerja</td></tr><tr><td class="mono">Diperkirakan penuh dalam 4 jam</td><td>Tangkap lonjakan cepat (predict_linear)</td></tr><tr><td class="mono">Inode > 80%</td><td>Jutaan file kecil bisa habis duluan</td></tr><tr><td class="mono">Volume database</td><td>Paling berbahaya kalau penuh</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cek apakah service kita sudah punya log rotation dan alert disk.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -490,13 +541,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ tersangka</div><p style="font-size: 17px; color: #e2e8f0">Log, file sementara, Docker, database.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ cek</div><p style="font-size: 17px; color: #e2e8f0">df -h, du -sh, df -i, lsof deleted.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ cegah</div><p style="font-size: 17px; color: #e2e8f0">Rotasi log dan alert di 80%.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

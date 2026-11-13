@@ -463,19 +463,30 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kayak parkiran penuh: mobil baru muter-muter terus.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — BAYANGIN DULU ════════ -->
         <section class="slide" data-notes="Pool = kumpulan koneksi yang sudah dibuka, biar tidak buka-tutup terus (itu mahal).">
           <div class="lens-tag lt-teal" style="align-self: flex-start">bayangin dulu</div>
           <h2>Connection pool itu parkiran</h2>
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">🅿️</div><div><h3>Slotnya terbatas</h3><p>Misal pool cuma punya 10 koneksi ke database.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">🚗</div><div><h3>Tiap request pinjam satu</h3><p>Selesai query → harus dikembalikan.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">⛔</div><div><h3>Kalau tidak dikembalikan</h3><p>Slot habis. Request lain nunggu, lalu error timeout.</p></div></div></div>
         </section>
-        <!-- ════════ 3 — PENYEBAB ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 160 koneksi, melebihi batas. Pod baru gagal tersambung. Pasang pooler seperti PgBouncer atau hitung batas pod × pool.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa koneksi yang dibutuhkan?</h2>
+          <p class="lede">Database PostgreSQL maksimal 100 koneksi. Aplikasi punya pool 20 per pod.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Normal: 4 pod → 80 koneksi. Aman.</li><li>Autoscaling saat promo: 8 pod → berapa?</li><li>Apa yang terjadi?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PENYEBAB ════════ -->
         <section class="slide" data-notes="Poin terakhir sering lupa: saat autoscaling, total koneksi ke DB ikut berlipat.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">penyebab</div>
           <h2>Kenapa koneksinya habis?</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">penyebab</div><h3>Lupa close</h3><p style="color: var(--ink)">Koneksi dipinjam tapi tidak dikembalikan (bocor).</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">penyebab</div><h3>Query lambat</h3><p style="color: var(--ink)">Koneksi dipegang lama, yang lain antre.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">penyebab</div><h3>Transaksi kepanjangan</h3><p style="color: var(--ink)">Panggil API luar di tengah transaksi DB.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">penyebab</div><h3>Terlalu banyak instance</h3><p style="color: var(--ink)">20 pod × 20 koneksi = 400. DB cuma kuat 200.</p></div></div>
         </section>
-        <!-- ════════ 4 — CONTOH ════════ -->
+
+        <!-- ════════ 5 — CONTOH ════════ -->
         <section class="slide" data-notes="Di Spring biasanya sudah diurus, tapi tetap waspada kalau pakai koneksi manual.">
           <div class="lens-tag lt-green" style="align-self: flex-start">contoh</div>
           <h2>Lupa tutup vs otomatis ditutup</h2>
@@ -494,13 +505,48 @@ c.close(); <span class="cm">// ← tidak pernah sampai sini</span></pre></div>
           </div>
           <div class="foot">Pinjam di mana, <b>kembalikan otomatis</b> di situ.</div>
         </section>
-        <!-- ════════ 5 — CARA CEK ════════ -->
+
+        <!-- ════════ 6 — CARA CEK ════════ -->
         <section class="slide" data-notes="Tunjukkan dashboard pool kalau ada. Pending &gt; 0 terus-menerus = tanda bahaya.">
           <div class="lens-tag lt-red" style="align-self: flex-start">cara cek</div>
           <h2>Cara mendeteksi dan mencegah</h2>
           <ul class="clean" style="margin-top: 18px"><li>Pantau metrik pool: <b>active</b>, <b>idle</b>, <b>pending</b> (HikariCP punya semua ini).</li><li>Aktifkan <b>leak detection</b> (contoh Hikari: leakDetectionThreshold).</li><li>Jangan panggil HTTP/API luar <b>di dalam transaksi</b> database.</li><li>Hitung: jumlah instance × ukuran pool harus &lt; batas koneksi DB.</li></ul>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — HIKARICP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ukuran pool yang lebih besar tidak selalu lebih baik. Database punya batas core CPU juga.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">HikariCP</div>
+          <h2>Pengaturan pool yang membantu deteksi</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">application.yml</div><pre class="code">spring.datasource.hikari:
+  maximum-pool-size: 10
+  connection-timeout: 3000      <span class="cm"># tunggu maks 3 detik</span>
+  leak-detection-threshold: 20000
+<span class="cm">  # koneksi dipegang &gt; 20 detik → log stack trace</span></pre></div>
+            <div><div class="codehead ">log saat bocor</div><pre class="code">WARN  Connection leak detection triggered
+  for conn42, stack trace follows
+java.lang.Exception: Apparent connection leak
+  at ReportService.export(ReportService.java:88)
+  ← di sini koneksi dipinjam</pre></div>
+          </div>
+          <div class="foot">connection-timeout pendek = <b>gagal cepat</b>, bukan menggantung lama.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini penyebab connection exhaustion paling umum di aplikasi Spring.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: transaksi yang menunggu API luar</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">@Transactional dimulai, ambil koneksi</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Panggil API kurir (lambat 10 detik)</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Koneksi ditahan selama itu</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Pool habis, semua request antre</div></div><ul class="clean" style="margin-top: 18px"><li>Perbaikan: panggil API luar <b>sebelum</b> atau <b>sesudah</b> transaksi.</li><li>Transaksi hanya membungkus kerja database.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — METRIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Micrometer mengekspor metrik Hikari otomatis: hikaricp_connections_active, _pending, dll.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">metrik</div>
+          <h2>Metrik pool yang wajib dipantau</h2>
+          <table style="margin-top: 16px"><tr><th>Metrik</th><th>Artinya</th><th>Waspada kalau</th></tr><tr><td class="mono">active</td><td>Sedang dipinjam</td><td>Sering = maksimum</td></tr><tr><td class="mono">pending</td><td>Request menunggu koneksi</td><td>Lebih dari 0 terus-menerus</td></tr><tr><td class="mono">usage time</td><td>Lama koneksi dipegang</td><td>Naik tiba-tiba</td></tr><tr><td class="mono">timeout count</td><td>Gagal dapat koneksi</td><td>Lebih dari 0</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cek ukuran pool dan jumlah instance service kita, lalu hitung total koneksinya.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -508,13 +554,14 @@ c.close(); <span class="cm">// ← tidak pernah sampai sini</span></pre></div>
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ terbatas</div><p style="font-size: 17px; color: #e2e8f0">Koneksi DB itu sumber daya terbatas.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ kembalikan</div><p style="font-size: 17px; color: #e2e8f0">Selalu close, pakai try-with-resources.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ hitung</div><p style="font-size: 17px; color: #e2e8f0">Instance × pool size jangan lewat batas DB.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 6</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

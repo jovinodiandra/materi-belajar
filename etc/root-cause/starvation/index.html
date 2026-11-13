@@ -463,13 +463,23 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Antre makan, tapi selalu ada yang "VIP" nyelonong duluan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — CONTOH NYATA ════════ -->
         <section class="slide" data-notes="Tanya: di sistem kita ada job yang kadang &#x27;tidak jalan-jalan&#x27;? Mungkin itu starvation.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">contoh nyata</div>
           <h2>Di mana starvation muncul?</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">contoh</div><h3>Antrean prioritas</h3><p style="color: var(--ink)">Job prioritas tinggi terus masuk, job rendah tidak pernah jalan.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">contoh</div><h3>Thread pool penuh tugas lama</h3><p style="color: var(--ink)">Tugas cepat harus nunggu tugas berat yang tidak selesai-selesai.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">contoh</div><h3>Lock tidak adil</h3><p style="color: var(--ink)">Thread yang sama terus dapat kunci, yang lain nunggu.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">contoh</div><h3>Satu tenant rakus</h3><p style="color: var(--ink)">Satu pelanggan besar menghabiskan semua resource.</p></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: keduanya memakai thread pool yang sama. Ekspor mengambil semua thread, OTP menunggu giliran yang tidak kunjung datang.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa OTP datang 5 menit kemudian?</h2>
+          <p class="lede">Jam 1 siang, user mengeluh OTP login sangat terlambat. Jam yang sama, admin menjalankan ekspor laporan besar.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Apa hubungan ekspor laporan dengan OTP?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Ini prinsip bulkhead: pisahkan sekat, supaya satu jenis tugas tidak memakan semua.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Satu pool untuk semua vs pool dipisah</h2>
@@ -489,13 +499,55 @@ cepat.submit(kirimOtp); <span class="cm">// ← langsung jalan</span></pre></div
           </div>
           <div class="foot">Tugas berat jangan sampai <b>menghabiskan jatah</b> tugas yang cepat dan penting.</div>
         </section>
-        <!-- ════════ 4 — PENCEGAHAN ════════ -->
+
+        <!-- ════════ 5 — PENCEGAHAN ════════ -->
         <section class="slide" data-notes="Fair lock sedikit lebih lambat, tapi lebih adil. Pilih sesuai kebutuhan.">
           <div class="lens-tag lt-green" style="align-self: flex-start">pencegahan</div>
           <h2>Cara memberi semua orang giliran</h2>
           <ul class="clean" style="margin-top: 18px"><li>Pakai <b>aging</b>: makin lama nunggu, prioritasnya makin naik.</li><li>Pakai <b>fair lock</b>: new ReentrantLock(true) melayani urut kedatangan.</li><li><b>Pisahkan pool</b> untuk tugas berat dan ringan.</li><li>Batasi jatah per tenant (<b>quota</b> / rate limit per pelanggan).</li></ul>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SPRING ════════ -->
+        <section class="slide" data-ext="1" data-notes="Prinsip yang sama untuk antrean pesan: pisahkan topic/queue untuk pekerjaan prioritas tinggi.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">Spring</div>
+          <h2>Pisahkan executor per jenis tugas</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">konfigurasi</div><pre class="code">@Bean("fastExecutor")
+Executor fast() &#123;
+  var e = new ThreadPoolTaskExecutor();
+  e.setCorePoolSize(8);
+  e.setQueueCapacity(500);
+  return e;
+&#125;
+@Bean("reportExecutor")
+Executor report() &#123; /* 2 thread saja */ &#125;</pre></div>
+            <div><div class="codehead ">pemakaian</div><pre class="code">@Async("fastExecutor")
+void sendOtp(String phone) &#123; … &#125;
+
+@Async("reportExecutor")
+void exportReport(ReportRequest r) &#123; … &#125;
+
+<span class="cm">// laporan sebanyak apa pun</span>
+<span class="cm">// hanya memakai 2 thread miliknya</span></pre></div>
+          </div>
+          <div class="foot">Tugas <b>cepat dan penting</b> jangan pernah antre di belakang tugas lambat.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Starvation sering tidak menimbulkan error, hanya hal yang tidak pernah terjadi. Itu yang membuatnya susah ditemukan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Kronologi: reader-writer lock</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Banyak thread membaca terus</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Read lock selalu ada yang pegang</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Writer menunggu selamanya</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Update konfigurasi tidak pernah terjadi</div></div><ul class="clean" style="margin-top: 18px"><li>Pakai lock yang <b>fair</b> atau beri prioritas writer.</li><li>Java: <code>new ReentrantReadWriteLock(true)</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — KENALI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pantau waktu tunggu di antrean per jenis tugas, bukan hanya rata-rata keseluruhan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kenali</div>
+          <h2>Tanda-tanda starvation</h2>
+          <table style="margin-top: 16px"><tr><th>Gejala</th><th>Kemungkinan</th></tr><tr><td class="mono">Sebagian request sangat lambat, sisanya normal</td><td>Antre di pool yang sama dengan tugas berat</td></tr><tr><td class="mono">Job prioritas rendah tidak pernah selesai</td><td>Antrean prioritas tanpa aging</td></tr><tr><td class="mono">Satu consumer tidak pernah dapat pesan</td><td>Pembagian partisi tidak merata</td></tr><tr><td class="mono">Writer tidak pernah dapat kunci</td><td>Read lock tidak fair</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: lihat thread pool di service kita. Apakah tugas berat dan ringan dicampur?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -503,13 +555,14 @@ cepat.submit(kirimOtp); <span class="cm">// ← langsung jalan</span></pre></div
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Ada yang tidak pernah dapat giliran.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ penyebab</div><p style="font-size: 17px; color: #e2e8f0">Prioritas, pool campur, lock tidak adil.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ obat</div><p style="font-size: 17px; color: #e2e8f0">Aging, fair lock, pisah pool, quota.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

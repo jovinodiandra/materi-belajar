@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Banyak koki di satu dapur: cepat, asal tidak rebutan pisau.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Race condition = dua thread berlomba mengubah data yang sama, hasilnya tergantung siapa yang menang. Demokan kalau sempat.">
           <h2>Counter ditambah dari 2 thread, 1.000 kali masing-masing. Hasilnya bukan 2.000.</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini namanya race condition. Hasilnya tergantung siapa duluan, makanya acak tiap dijalankan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa hasilnya acak?</h2>
+          <div style="margin-top: 14px"><pre class="code">int count = 0;
+<span class="cm">// thread A dan B sama-sama menjalankan:</span>
+count++;   <span class="cm">// ← kelihatan 1 langkah, aslinya 3:</span>
+<span class="cm">// 1. baca count   2. tambah 1   3. tulis balik</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Bayangin dua kasir menulis di <b>satu buku</b> yang sama, di detik yang sama.</li><li>Keduanya baca angka 5, sama-sama tulis 6. Satu tambahan hilang.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="count++ terlihat satu langkah, padahal tiga: baca, tambah, tulis. Thread lain bisa menyelip di tengah. AtomicInteger membuatnya jadi satu langkah utuh.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Counter yang aman</h2>
@@ -504,7 +517,8 @@
           </div>
           <div class="foot"><code>count++</code> itu 3 langkah. Thread lain bisa menyelip di tengah.</div>
         </section>
-        <!-- ════════ 4 — ALAT ════════ -->
+
+        <!-- ════════ 5 — ALAT ════════ -->
         <section class="slide" data-notes="Java 21 punya virtual thread: thread ringan, bisa jutaan. Cocok untuk pekerjaan yang banyak menunggu, seperti memanggil HTTP dan database.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">kotak perkakas</div>
           <h2>Pilih alat yang tepat</h2>
@@ -518,7 +532,8 @@
           </table>
           <div class="foot">Java 21: <b>virtual thread</b> — ringan, cocok untuk kerja yang banyak menunggu.</div>
         </section>
-        <!-- ════════ 5 — KODE ════════ -->
+
+        <!-- ════════ 6 — KODE ════════ -->
         <section class="slide" data-notes="Waktu total = panggilan paling lambat, bukan jumlah ketiganya. Selalu tutup executor, try-with-resources membantu.">
           <div class="lens-tag lt-green" style="align-self: flex-start">contoh</div>
           <h2>Contoh: panggil 3 service bersamaan</h2>
@@ -534,7 +549,8 @@
           </div>
           <div class="foot">Waktu total ≈ panggilan <b>paling lambat</b>, bukan jumlah semuanya.</div>
         </section>
-        <!-- ════════ 6 — JEBAKAN ════════ -->
+
+        <!-- ════════ 7 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Cara paling aman: jangan berbagi data yang bisa diubah. Objek immutable aman dibaca oleh banyak thread tanpa kunci.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -546,7 +562,42 @@
           </div>
 
         </section>
-        <!-- ════════ 7 — PENUTUP ════════ -->
+
+        <!-- ════════ 8 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Java 21 punya virtual threads yang jauh lebih ringan, tapi konsep membatasi kerja paralel tetap penting.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Jangan bikin thread sendiri-sendiri</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ thread manual</div><pre class="code">for (Order o : orders) {
+  new Thread(() -&gt; send(o)).start();
+}   <span class="cm">// ← 10.000 order = 10.000 thread</span>
+    <span class="cm">// memori habis, server tumbang</span></pre></div>
+            <div><div class="codehead good">✓ thread pool</div><pre class="code">ExecutorService pool =
+    Executors.newFixedThreadPool(10);
+for (Order o : orders) {
+  pool.submit(() -&gt; send(o));
+}
+pool.shutdown();</pre></div>
+          </div>
+          <div class="foot">Thread pool itu kayak <b>tim kasir tetap</b>: 10 orang melayani antrean panjang bergantian.</div>
+        </section>
+
+        <!-- ════════ 9 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Analogi: dua mobil di jembatan sempit, saling tunggu yang lain mundur.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Deadlock: dua orang saling tunggu</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Thread 1 kunci akun A</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Thread 2 kunci akun B</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">1 tunggu B, 2 tunggu A</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Diam selamanya</div></div><ul class="clean" style="margin-top: 18px"><li>Obat paling gampang: <b>selalu kunci dengan urutan yang sama</b> (misal id terkecil dulu).</li><li>Cek dengan <code>jstack &lt;pid&gt;</code>, cari tulisan "Found one Java-level deadlock".</li></ul>
+        </section>
+
+        <!-- ════════ 10 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Urutan pilihan: pertama hindari berbagi data, kedua pakai immutable, ketiga baru pakai kunci.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Alat aman untuk data bersama</h2>
+          <table style="margin-top: 16px"><tr><th>Masalah</th><th>Pakai</th></tr><tr><td class="mono">Counter bersama</td><td>AtomicInteger / LongAdder</td></tr><tr><td class="mono">Map dibaca-tulis banyak thread</td><td>ConcurrentHashMap</td></tr><tr><td class="mono">Blok kode harus satu-satu</td><td>synchronized / ReentrantLock</td></tr><tr><td class="mono">Kerja async lalu gabung</td><td>CompletableFuture</td></tr><tr><td class="mono">Data tidak berubah</td><td>Objek immutable — paling aman</td></tr></table>
+          <div class="foot">Data yang <b>tidak pernah berubah</b> tidak butuh kunci sama sekali.</div>
+        </section>
+
+        <!-- ════════ 11 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari field static atau singleton yang diubah dari banyak request.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -558,13 +609,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 11</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

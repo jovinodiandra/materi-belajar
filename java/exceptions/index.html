@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Alarm kebakaran jangan dimatikan, tapi ditindaklanjuti.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang pernah lihat catch kosong di project kita? Hampir pasti ada.">
           <h2>Error ditangkap lalu dibiarkan. Data salah, tapi log bersih.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — JENIS ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: error ditelan. Tidak ada log, tidak ada yang tahu. Ini salah satu bug paling mahal di produksi.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Apa yang salah dari kode ini?</h2>
+          <div style="margin-top: 14px"><pre class="code">try {
+  saveOrder(order);
+} catch (Exception e) {
+  <span class="cm">// nanti dibenerin</span>
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau saveOrder gagal, siapa yang tahu?</li><li>Petunjuk: user dapat pesan "sukses", tapi order tidak tersimpan.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — JENIS ════════ -->
         <section class="slide" data-notes="Aturan praktis: buat exception bisnis sendiri sebagai turunan RuntimeException, misalnya InsufficientStockException.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Dua jenis exception</h2>
@@ -498,7 +512,8 @@
           </table>
           <div class="foot">Error bisnis sendiri: turunkan dari <b>RuntimeException</b>.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Tiga perbaikan: tangkap jenis yang spesifik, tambahkan konteks (path apa), dan simpan exception asli sebagai cause supaya stack trace lengkap.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Jangan ditelan. Beri konteks.</h2>
@@ -522,7 +537,8 @@
           </div>
           <div class="foot">Spesifik · beri konteks · simpan <b>cause</b> aslinya.</div>
         </section>
-        <!-- ════════ 5 — ATURAN ════════ -->
+
+        <!-- ════════ 6 — ATURAN ════════ -->
         <section class="slide" data-notes="Satu tempat penanganan di level controller membuat kode lain tidak perlu try-catch di mana-mana.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Aturan main exception</h2>
@@ -534,7 +550,40 @@
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Semua yang implement AutoCloseable bisa dipakai di try-with-resources: file, koneksi DB, stream.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Tutup resource dengan try-with-resources</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ lupa close</div><pre class="code">BufferedReader r =
+    new BufferedReader(new FileReader(f));
+String line = r.readLine();   <span class="cm">// kalau error di sini…</span>
+r.close();                    <span class="cm">// ← …ini tidak jalan</span></pre></div>
+            <div><div class="codehead good">✓ otomatis tertutup</div><pre class="code">try (var r = Files.newBufferedReader(f)) {
+  String line = r.readLine();
+}   <span class="cm">// close() dipanggil otomatis,</span>
+    <span class="cm">// walau ada exception</span></pre></div>
+          </div>
+          <div class="foot">Lupa close = file/koneksi <b>bocor</b>. Lama-lama aplikasi kehabisan.</div>
+        </section>
+
+        <!-- ════════ 8 — CARA BACA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Latihan: buka satu stack trace dari log produksi dan minta junior menunjuk baris yang relevan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">cara baca</div>
+          <h2>Membaca stack trace dari atas</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Baris 1: jenis + pesan</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Cari baris kode kita</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Lihat 'Caused by'</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Itu akar masalahnya</div></div><ul class="clean" style="margin-top: 18px"><li>Abaikan baris dari library (org.springframework…), cari package kita sendiri.</li><li><b>Caused by</b> paling bawah biasanya penyebab aslinya.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Exception khusus juga memudahkan handler global mengubahnya jadi HTTP 404 dan sebagainya.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Bikin exception sendiri yang jelas</h2>
+          <div class="cols" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">buruk</div><h3>throw new RuntimeException("error")</h3><p style="color: var(--ink)">Error apa? Di mana? Data apa?</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">baik</div><h3>throw new OrderNotFoundException(orderId)</h3><p style="color: var(--ink)">Namanya sudah bercerita. Id-nya ikut tercatat.</p></div></div>
+          <div class="foot">Pesan error yang baik menjawab: <b>apa</b> yang gagal dan <b>data mana</b>.</div>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: grep &#x27;catch&#x27; di project kita, cari yang isinya kosong atau cuma printStackTrace.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -546,13 +595,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

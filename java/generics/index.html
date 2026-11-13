@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kotak berlabel: kotak “apel” hanya boleh diisi apel.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Analogi: label pada toples. Toples berlabel gula tidak boleh diisi garam. Compiler adalah satpam yang membaca label itu.">
           <h2>Tanpa generics, list bisa diisi apa saja. Error baru ketahuan saat program jalan.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Generics memindahkan error dari saat jalan ke saat compile. Lebih cepat ketahuan, lebih murah.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa ini error saat jalan, bukan saat compile?</h2>
+          <div style="margin-top: 14px"><pre class="code">List list = new ArrayList();   <span class="cm">// tanpa &lt;…&gt;</span>
+list.add("halo");
+list.add(42);
+for (Object o : list) {
+  String s = (String) o;   <span class="cm">// ← ClassCastException di sini</span>
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Compiler diam saja. Error baru muncul di depan user.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Sekarang kesalahan ketahuan di editor, sebelum program jalan. Tidak perlu cast lagi.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Sebelum dan sesudah generics</h2>
@@ -506,7 +521,8 @@ String n = names.get(0); <span class="cm">// tanpa cast</span></pre></div>
           </div>
           <div class="foot">Salah tipe ketahuan <b>di editor</b>, bukan di produksi.</div>
         </section>
-        <!-- ════════ 4 — BUAT SENDIRI ════════ -->
+
+        <!-- ════════ 5 — BUAT SENDIRI ════════ -->
         <section class="slide" data-notes="Huruf T, E, K, V cuma kebiasaan. T untuk Type, E untuk Element, K dan V untuk Key dan Value di Map.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Membuat kelas dan method generik</h2>
@@ -526,7 +542,8 @@ Result&lt;Order&gt; r2 = Result.fail(&quot;stok habis&quot;);
           </div>
           <div class="foot">T, E, K, V cuma kebiasaan nama: Type, Element, Key, Value.</div>
         </section>
-        <!-- ════════ 5 — WILDCARD ════════ -->
+
+        <!-- ════════ 6 — WILDCARD ════════ -->
         <section class="slide" data-notes="Ini bagian yang paling bikin pusing. Cukup ingat PECS. Kalau ragu, mulai tanpa wildcard dulu.">
           <div class="lens-tag lt-green" style="align-self: flex-start">lanjutan</div>
           <h2>Wildcard: ? extends dan ? super</h2>
@@ -538,7 +555,44 @@ Result&lt;Order&gt; r2 = Result.fail(&quot;stok habis&quot;);
           </table>
           <div class="foot">Ingat <b>PECS</b>: baca pakai extends, tulis pakai super.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Huruf T, E, K, V hanya kebiasaan. T = Type, E = Element, K = Key, V = Value.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Method generik daripada copy-paste</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ satu method per tipe</div><pre class="code">Integer firstInt(List&lt;Integer&gt; l) {
+  return l.isEmpty() ? null : l.get(0);
+}
+String firstStr(List&lt;String&gt; l) {
+  return l.isEmpty() ? null : l.get(0);
+}   <span class="cm">// ← isinya kembar</span></pre></div>
+            <div><div class="codehead good">✓ satu untuk semua</div><pre class="code">&lt;T&gt; Optional&lt;T&gt; first(List&lt;T&gt; l) {
+  return l.isEmpty()
+      ? Optional.empty()
+      : Optional.of(l.get(0));
+}
+first(names);  first(prices);</pre></div>
+          </div>
+          <div class="foot"><b>T</b> itu kayak tempat kosong di formulir: diisi tipe apa pun saat dipakai.</div>
+        </section>
+
+        <!-- ════════ 8 — ATURAN PECS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Contoh nyata: Collections.copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src). Sumber dibaca, tujuan ditulis.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">aturan PECS</div>
+          <h2>Kapan extends, kapan super?</h2>
+          <div class="cols" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">Producer Extends</div><h3>? extends Number</h3><p style="color: var(--ink)">Kita <b>membaca</b> dari list. Isinya pasti Number atau turunannya.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">Consumer Super</div><h3>? super Integer</h3><p style="color: var(--ink)">Kita <b>menulis</b> ke list. List-nya pasti bisa menampung Integer.</p></div></div>
+          <div class="foot">Ingat: <b>baca → extends, tulis → super</b>.</div>
+        </section>
+
+        <!-- ════════ 9 — JEBAKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Type erasure = info generik dihapus setelah compile, demi kompatibilitas dengan Java lama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">jebakan</div>
+          <h2>Hal yang bikin bingung di generics</h2>
+          <ul class="clean" style="margin-top: 18px"><li><b>Type erasure</b>: saat jalan, List&lt;String&gt; dan List&lt;Integer&gt; sama-sama cuma List.</li><li>Tidak bisa <code>new T()</code> atau <code>new T[10]</code>. Tipe T sudah hilang saat jalan.</li><li>List&lt;Integer&gt; <b>bukan</b> turunan List&lt;Number&gt;. Pakai wildcard.</li><li>Hindari raw type (List tanpa &lt;&gt;). Compiler akan memberi warning, jangan diabaikan.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari raw type (List tanpa &lt;...&gt;) atau cast manual di project kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -550,13 +604,14 @@ Result&lt;Order&gt; r2 = Result.fail(&quot;stok habis&quot;);
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Resep masakan: tulis sekali, hasilnya sama di dapur mana pun.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang pernah dapat error karena versi library di laptopnya beda dengan teman?">
           <h2>“Di laptop saya jalan kok.” Tapi di laptop teman tidak.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanya audiens dulu, tunggu 1 menit. Jawabannya: LATEST mengambil versi terbaru saat build. Laptop A dan B bisa dapat versi berbeda.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak: kenapa build-nya beda?</h2>
+          <p class="lede">Kode sama persis. Di laptop A sukses, di laptop B gagal.</p>
+          <div style="margin-top: 14px"><pre class="code">&lt;dependency&gt;
+  &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+  &lt;artifactId&gt;jackson-databind&lt;/artifactId&gt;
+  &lt;version&gt;LATEST&lt;/version&gt;   &lt;!<span class="cm">-- ← hmm... --&gt;</span>
+&lt;/dependency&gt;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Petunjuk: apa arti <b>LATEST</b> kalau dijalankan bulan depan?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Isinya sama: nama grup, nama artifact, versi. Maven memakai XML, Gradle memakai kode Kotlin atau Groovy. Library diunduh otomatis dari Maven Central.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Satu dependency, dua gaya</h2>
@@ -506,7 +521,8 @@
           </div>
           <div class="foot">Library diunduh otomatis dari <b>Maven Central</b>.</div>
         </section>
-        <!-- ════════ 4 — PERINTAH ════════ -->
+
+        <!-- ════════ 5 — PERINTAH ════════ -->
         <section class="slide" data-notes="Selalu pakai wrapper (mvnw atau gradlew) yang ada di repo. Wrapper memastikan semua orang memakai versi Maven/Gradle yang sama.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">sehari-hari</div>
           <h2>Perintah yang paling sering dipakai</h2>
@@ -519,7 +535,8 @@
           </table>
           <div class="foot">Pakai <b>wrapper</b> (./mvnw, ./gradlew) supaya versinya sama untuk semua orang.</div>
         </section>
-        <!-- ════════ 5 — PILIH ════════ -->
+
+        <!-- ════════ 6 — PILIH ════════ -->
         <section class="slide" data-notes="Dua-duanya bagus. Ikuti yang sudah dipakai project. Jangan pindah tanpa alasan kuat.">
           <div class="lens-tag lt-green" style="align-self: flex-start">perbandingan</div>
           <h2>Maven atau Gradle?</h2>
@@ -532,7 +549,8 @@
           </table>
           <div class="foot">Ikuti yang sudah dipakai project-mu.</div>
         </section>
-        <!-- ════════ 6 — JEBAKAN ════════ -->
+
+        <!-- ════════ 7 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Dependency transitif = library yang ikut terbawa karena dibutuhkan library lain. Sumber konflik yang paling sering.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -544,7 +562,38 @@
           </div>
 
         </section>
-        <!-- ════════ 7 — PENUTUP ════════ -->
+
+        <!-- ════════ 8 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Versi mengambang = bom waktu. Hari ini aman, besok library rilis versi baru yang rusak, build kita ikut rusak.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Kunci versi, jangan biarkan mengambang</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ versi mengambang</div><pre class="code"><span class="cm">// build.gradle</span>
+implementation 'org.slf4j:slf4j-api:+'   <span class="cm">// ← '+' = versi apa saja</span>
+implementation 'com.google.guava:guava:latest.release'</pre></div>
+            <div><div class="codehead good">✓ versi dikunci</div><pre class="code"><span class="cm">// build.gradle</span>
+implementation 'org.slf4j:slf4j-api:2.0.13'
+implementation 'com.google.guava:guava:33.2.1-jre'
+<span class="cm">// Gradle: ./gradlew dependencies --write-locks</span></pre></div>
+          </div>
+          <div class="foot">Build yang bagus itu <b>membosankan</b>: hari ini dan tahun depan hasilnya sama.</div>
+        </section>
+
+        <!-- ════════ 9 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="BOM = Bill of Materials, daftar versi yang sudah dicek cocok satu sama lain. Spring Boot punya BOM sendiri, makanya jarang bentrok.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Dua library butuh versi berbeda. Siapa yang menang?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">A butuh jackson 2.15</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">B butuh jackson 2.12</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Maven pilih yang paling dekat</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Error NoSuchMethod saat jalan</div></div><ul class="clean" style="margin-top: 18px"><li>Cek pohon dependency: <code>mvn dependency:tree</code> atau <code>./gradlew dependencies</code>.</li><li>Perbaiki dengan menetapkan satu versi di <b>dependencyManagement</b> / platform (BOM).</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Wrapper (mvnw, gradlew) itu skrip kecil yang mengunduh versi tool yang tepat. Selalu commit wrapper-nya.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Checklist build yang sehat</h2>
+          <table style="margin-top: 16px"><tr><th>Cek</th><th>Kenapa</th></tr><tr><td class="mono">mvnw / gradlew</td><td>Semua orang pakai versi Maven/Gradle yang sama</td></tr><tr><td class="mono">Versi dikunci</td><td>Build bisa diulang kapan saja</td></tr><tr><td class="mono">Build di CI</td><td>Bukan cuma di laptop seseorang</td></tr><tr><td class="mono">Cache dependency</td><td>Build CI jadi cepat</td></tr></table>
+        </section>
+
+        <!-- ════════ 11 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: jalankan dependency tree di project kita. Ada library yang muncul dengan dua versi?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -556,13 +605,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 11</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

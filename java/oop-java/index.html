@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Objek = benda yang tahu dirinya sendiri.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Kelas yang isinya cuma getter dan setter sering disebut anemic model. Tanya: berapa banyak kelas seperti itu di project kita?">
           <h2>Data di satu tempat, aturannya tersebar di banyak tempat.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — PILAR ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: tidak ada tempat yang pasti. Encapsulation = taruh aturan di dalam objek, tutup pintunya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Siapa yang boleh mengubah saldo?</h2>
+          <div style="margin-top: 14px"><pre class="code">public class Account {
+  public long balance;   <span class="cm">// ← terbuka untuk semua</span>
+}
+<span class="cm">// di mana saja:</span>
+account.balance = -1_000_000;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau ada 30 tempat yang mengubah balance, di mana aturan "tidak boleh minus" dicek?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PILAR ════════ -->
         <section class="slide" data-notes="Jangan hafalkan definisi. Ingat analoginya: bungkus, turunan, banyak bentuk, dan sederhanakan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Empat pilar, versi gampang</h2>
@@ -497,7 +511,8 @@
           </div>
 
         </section>
-        <!-- ════════ 4 — ENCAPSULATION ════════ -->
+
+        <!-- ════════ 5 — ENCAPSULATION ════════ -->
         <section class="slide" data-notes="Tidak ada lagi setBalance. Satu-satunya cara mengurangi saldo adalah withdraw, dan withdraw selalu mengecek aturannya.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">pilar 1</div>
           <h2>Biarkan objek menjaga aturannya</h2>
@@ -523,7 +538,8 @@ acc.withdraw(amount);  <span class="cm">// aturan tidak bisa dilewati</span></pr
           </div>
           <div class="foot">Tidak ada jalan pintas: saldo hanya bisa berubah lewat <b>withdraw</b>.</div>
         </section>
-        <!-- ════════ 5 — POLYMORPHISM ════════ -->
+
+        <!-- ════════ 6 — POLYMORPHISM ════════ -->
         <section class="slide" data-notes="Polymorphism adalah obat untuk if-else panjang berdasarkan tipe. Prefer interface daripada inheritance yang dalam.">
           <div class="lens-tag lt-green" style="align-self: flex-start">pilar 3</div>
           <h2>Polymorphism: satu panggilan, banyak perilaku</h2>
@@ -544,7 +560,30 @@ long total = order.subtotal() + shipping.cost(order);
           </div>
           <div class="foot">Lebih suka <b>interface</b> daripada pewarisan bertingkat.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jangan pecah sekaligus. Pindahkan satu tugas, jalankan tes, commit, lalu ulangi.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">studi kasus</div>
+          <h2>Memecah God class: kelas yang tahu segalanya</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">OrderManager 2.000 baris</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Kelompokkan per tugas</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Pindah ke kelas kecil</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Manager tinggal merangkai</div></div><ul class="clean" style="margin-top: 18px"><li>Tanda God class: namanya Manager/Helper/Util, dan semua orang mengubahnya tiap sprint.</li><li>Pecah jadi <code>PriceCalculator</code>, <code>StockChecker</code>, <code>InvoiceSender</code>. Satu kelas, satu alasan berubah.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PILIH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jebakan inheritance: ubah kelas induk, semua anaknya ikut berubah tanpa sadar.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">pilih</div>
+          <h2>Inheritance atau composition?</h2>
+          <div class="cols" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">is-a</div><h3>Inheritance</h3><p style="color: var(--ink)">Kucing <b>adalah</b> hewan. Dipakai hemat. Rantai turunan panjang susah diubah.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">has-a</div><h3>Composition</h3><p style="color: var(--ink)">Mobil <b>punya</b> mesin. Mesin bisa diganti. Lebih lentur.</p></div></div>
+          <div class="foot">Patokan umum: <b>utamakan composition</b>.</div>
+        </section>
+
+        <!-- ════════ 9 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Setter untuk semua field = objek tidak punya aturan. Itu cuma struct dengan langkah tambahan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Kebiasaan OOP yang sehat</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Field <b>private</b>, ubah lewat method yang punya nama bisnis: <code>withdraw()</code>, bukan <code>setBalance()</code>.</li><li>Objek dibuat langsung dalam keadaan valid (cek di constructor).</li><li>Pakai <b>record</b> untuk data sederhana yang tidak berubah.</li><li>Program ke interface: <code>List</code>, bukan <code>ArrayList</code>, di parameter.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari satu setter yang bisa diganti method bermakna seperti withdraw atau approve.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -556,13 +595,14 @@ long total = order.subtotal() + shipping.cost(order);
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

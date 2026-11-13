@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Pipa air: dibuka, dialirkan, lalu ditutup lagi.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: pernah lihat error &#x27;Too many open files&#x27;? Itu tanda stream tidak ditutup.">
           <h2>Baca file 2 GB sekaligus ke memori. Aplikasi langsung OutOfMemory.</h2>
@@ -485,7 +486,22 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: B. A memuat semua isi ke memori. B membaca baris per baris, seperti minum lewat sedotan, bukan menuang seember.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>File 2 GB, memori 512 MB. Bisa?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// A</span>
+String all = Files.readString(path);
+
+<span class="cm">// B</span>
+try (var lines = Files.lines(path)) {
+  lines.filter(l -&gt; l.contains("ERROR")).count();
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Mana yang aman? Kenapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Files.lines membaca baris demi baris, jadi hemat memori untuk file besar. try-with-resources menutup otomatis. Selalu tulis UTF_8 secara eksplisit.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Gaya lama vs gaya modern</h2>
@@ -509,7 +525,8 @@ String small = Files.readString(path, UTF_8); <span class="cm">// file kecil</sp
           </div>
           <div class="foot">Selalu: <b>try-with-resources</b> + tulis <b>UTF-8</b> secara eksplisit.</div>
         </section>
-        <!-- ════════ 4 — PILIH ════════ -->
+
+        <!-- ════════ 5 — PILIH ════════ -->
         <section class="slide" data-notes="NIO = New I/O. Selain API file yang lebih enak, NIO punya mode non-blocking untuk server yang menangani ribuan koneksi. Framework seperti Netty memakainya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">kosakata</div>
           <h2>Pilih cara sesuai ukuran</h2>
@@ -522,7 +539,8 @@ String small = Files.readString(path, UTF_8); <span class="cm">// file kecil</sp
           </table>
           <div class="foot">File kecil → readString. File besar → baca <b>per baris/potongan</b>.</div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Menulis ke file sementara lalu dipindah (atomic move) mencegah file setengah tertulis kalau aplikasi mati di tengah jalan.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -534,7 +552,39 @@ String small = Files.readString(path, UTF_8); <span class="cm">// file kecil</sp
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Sejak Java 18 default-nya UTF-8, tapi tetap tulis eksplisit supaya jelas maksudnya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Selalu sebut encoding</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ pakai default OS</div><pre class="code">new FileReader("data.csv");
+<span class="cm">// ← encoding ikut OS:</span>
+<span class="cm">//   Windows: Cp1252, Linux: UTF-8</span>
+<span class="cm">// "Café" jadi "CafÃ©"</span></pre></div>
+            <div><div class="codehead good">✓ eksplisit UTF-8</div><pre class="code">Files.newBufferedReader(
+    Path.of("data.csv"),
+    StandardCharsets.UTF_8);
+<span class="cm">// sama di semua mesin</span></pre></div>
+          </div>
+          <div class="foot">Huruf aneh seperti <b>Ã©</b> hampir selalu tanda salah encoding.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kesalahan umum: file.getBytes() pada upload. 100 user upload 50 MB = 5 GB memori.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Upload file besar tanpa bikin server sesak</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Terima sebagai stream</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Salin per potongan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Tulis ke disk / S3</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Jangan simpan di byte[]</div></div><ul class="clean" style="margin-top: 18px"><li><code>in.transferTo(out)</code> menyalin per potongan kecil secara otomatis.</li><li>Batasi ukuran upload di konfigurasi server supaya tidak disalahgunakan.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Path + Files lebih jelas dan lebih aman daripada File lama. Pakai ini untuk kode baru.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>API file modern (java.nio.file)</h2>
+          <table style="margin-top: 16px"><tr><th>Mau</th><th>Pakai</th></tr><tr><td class="mono">Baca file kecil</td><td>Files.readString(path)</td></tr><tr><td class="mono">Baca file besar per baris</td><td>Files.lines(path)</td></tr><tr><td class="mono">Tulis teks</td><td>Files.writeString(path, s)</td></tr><tr><td class="mono">Cek / buat folder</td><td>Files.exists, Files.createDirectories</td></tr><tr><td class="mono">Jelajahi folder</td><td>Files.walk(dir)</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari FileReader atau new String(bytes) tanpa charset di project kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -546,13 +596,14 @@ String small = Files.readString(path, UTF_8); <span class="cm">// file kecil</sp
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

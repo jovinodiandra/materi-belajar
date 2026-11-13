@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Rumah dengan petugas kebersihan otomatis.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang pernah restart aplikasi tiap minggu &#x27;biar tidak lambat&#x27;? Itu sering tanda memory leak.">
           <h2>Aplikasi makin lama makin lambat, lalu mati dengan OutOfMemoryError.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — AREA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="A dan B di stack (catatan kecil milik method). C di heap (gudang bersama). Saat method selesai, stack dibersihkan, objek di heap menunggu GC.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Di mana variabel ini tinggal?</h2>
+          <div style="margin-top: 14px"><pre class="code">void hitung() {
+  int n = 5;                        <span class="cm">// A</span>
+  User u = new User("budi");        <span class="cm">// B: variabel u</span>
+                                    <span class="cm">// C: objek User-nya</span>
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Pilihannya: <b>stack</b> atau <b>heap</b>?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — AREA ════════ -->
         <section class="slide" data-notes="Stack seperti meja kerja pribadi: barang di meja dibereskan saat pekerjaan selesai. Heap seperti gudang bersama: barang tetap di sana sampai petugas kebersihan (GC) yakin tidak ada yang memakainya.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Dua area memori utama</h2>
@@ -493,7 +507,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Stack</h3><p style="font-size:13.5px">per thread · variabel lokal & panggilan method<br>cepat, otomatis dibuang saat method selesai</p></div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Heap</h3><p style="font-size:13.5px">dipakai bersama · semua objek (new ...)<br>dibersihkan oleh Garbage Collector</p></div></div></div>
           <div class="foot">GC membuang objek yang <b>sudah tidak dirujuk siapa pun</b>.</div>
         </section>
-        <!-- ════════ 4 — LEAK ════════ -->
+
+        <!-- ════════ 5 — LEAK ════════ -->
         <section class="slide" data-notes="GC tidak bisa membuang objek yang masih dirujuk. Map static yang terus diisi adalah penyebab leak paling umum. Selalu beri batas ukuran dan umur.">
           <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
           <h2>Memory leak di Java: objek yang lupa dilepas</h2>
@@ -520,7 +535,8 @@ Report get(String id) {
           </div>
           <div class="foot">GC tidak bisa membuang objek yang <b>masih dirujuk</b>. Beri batas pada cache.</div>
         </section>
-        <!-- ════════ 5 — ALAT ════════ -->
+
+        <!-- ════════ 6 — ALAT ════════ -->
         <section class="slide" data-notes="Pasang HeapDumpOnOutOfMemoryError di produksi. Saat crash, kita punya &#x27;foto&#x27; memori untuk dianalisis, bukan cuma menebak.">
           <div class="lens-tag lt-green" style="align-self: flex-start">kotak perkakas</div>
           <h2>Alat untuk memeriksa</h2>
@@ -533,7 +549,43 @@ Report get(String id) {
           </table>
           <div class="foot">Wajib di produksi: <b>HeapDumpOnOutOfMemoryError</b>.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="GC hanya membuang objek yang sudah tidak dirujuk. Selama map masih memegangnya, objek tidak bisa dibuang.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Cache tanpa batas = memory leak</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ tumbuh terus</div><pre class="code">static Map&lt;String, Report&gt; cache =
+    new HashMap&lt;&gt;();
+Report get(String id) {
+  return cache.computeIfAbsent(id,
+      this::build);   <span class="cm">// ← tidak pernah dihapus</span>
+}</pre></div>
+            <div><div class="codehead good">✓ ada batas & kedaluwarsa</div><pre class="code">Cache&lt;String, Report&gt; cache =
+    Caffeine.newBuilder()
+      .maximumSize(10_000)
+      .expireAfterWrite(Duration.ofMinutes(10))
+      .build();</pre></div>
+          </div>
+          <div class="foot">Map <b>static</b> yang terus diisi adalah tersangka leak nomor satu.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Heap dump = foto isi memori. Bisa besar, simpan di disk yang cukup.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Investigasi OutOfMemoryError</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Nyalakan heap dump</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Tunggu OOM / ambil dump</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Buka di Eclipse MAT</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Cari objek terbesar</div></div><ul class="clean" style="margin-top: 18px"><li>Flag: <code>-XX:+HeapDumpOnOutOfMemoryError</code>.</li><li>Di MAT, buka <b>Leak Suspects</b>. Lihat siapa yang memegang objek itu.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau Xmx sama dengan limit container, JVM bisa dibunuh OOMKilled karena memori non-heap tidak dihitung.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Flag JVM yang sering dipakai</h2>
+          <table style="margin-top: 16px"><tr><th>Flag</th><th>Artinya</th></tr><tr><td class="mono">-Xmx2g</td><td>Batas maksimal heap 2 GB</td></tr><tr><td class="mono">-Xms2g</td><td>Heap awal, samakan dengan Xmx di server</td></tr><tr><td class="mono">-XX:MaxRAMPercentage=75</td><td>Di container: pakai 75% RAM container</td></tr><tr><td class="mono">-Xlog:gc</td><td>Catat aktivitas GC ke log</td></tr></table>
+          <div class="foot">Di Kubernetes, pakai <b>MaxRAMPercentage</b> supaya ikut batas container.</div>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari Map atau List static di project kita yang terus diisi tanpa pernah dihapus.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -545,13 +597,14 @@ Report get(String id) {
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

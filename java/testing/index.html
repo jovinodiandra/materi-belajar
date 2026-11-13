@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Sabuk pengaman: tidak terasa sampai kamu butuh.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: berapa lama waktu yang dibutuhkan untuk tes manual satu fitur? Bandingkan dengan tes otomatis yang jalan dalam milidetik.">
           <h2>Ubah satu baris, tiga fitur lain diam-diam rusak. Ketahuan seminggu kemudian.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tes yang tidak pernah bisa merah = tes palsu. Assertion harus memeriksa nilai yang diharapkan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tes ini lulus. Apakah kodenya benar?</h2>
+          <div style="margin-top: 14px"><pre class="code">@Test
+void hitungDiskon() {
+  var price = service.discount(100_000, "VIP");
+  assertNotNull(price);   <span class="cm">// ← cuma ini?</span>
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau discount() salah hitung jadi 0, tes ini tetap hijau.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Nama tes yang bagus bisa dibaca seperti dokumentasi. Kalau tes gagal, namanya langsung memberi tahu aturan mana yang rusak.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Bentuk tes yang rapi: Given – When – Then</h2>
@@ -506,7 +520,8 @@
           </div>
           <div class="foot">Nama tes = <b>kalimat aturan bisnis</b>. Gagal? Langsung tahu apa yang rusak.</div>
         </section>
-        <!-- ════════ 4 — MOCK ════════ -->
+
+        <!-- ════════ 5 — MOCK ════════ -->
         <section class="slide" data-notes="Mock seperti stuntman di film. Dipakai untuk adegan berbahaya atau mahal, bukan untuk semua adegan. Terlalu banyak mock membuat tes rapuh.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Mockito: ganti teman yang lambat dengan pemeran pengganti</h2>
@@ -529,7 +544,8 @@
           </div>
           <div class="foot">Mock = <b>stuntman</b>. Untuk adegan mahal, bukan untuk semua adegan.</div>
         </section>
-        <!-- ════════ 5 — JENIS ════════ -->
+
+        <!-- ════════ 6 — JENIS ════════ -->
         <section class="slide" data-notes="Testcontainers menjalankan database asli di Docker untuk integration test. Lebih jujur daripada database in-memory seperti H2.">
           <div class="lens-tag lt-green" style="align-self: flex-start">strategi</div>
           <h2>Piramida tes</h2>
@@ -541,7 +557,46 @@
           </table>
           <div class="foot">Banyak unit test, sebagian integration test (<b>Testcontainers</b>), sedikit E2E.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Nama tes boleh panjang. Itu dokumentasi gratis.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Satu tes, satu cerita, assertion jelas</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ tes campur aduk</div><pre class="code">@Test void test1() {
+  var c = new Cart();
+  c.add(item(50));
+  assertEquals(50, c.total());
+  c.add(item(30));
+  c.applyVoucher("X");
+  assertTrue(c.total() &lt; 80);   <span class="cm">// ← apa yang dites?</span>
+}</pre></div>
+            <div><div class="codehead good">✓ nama = perilaku</div><pre class="code">@Test
+void voucher_10persen_memotong_total() {
+  var cart = cartWith(item(100_000));
+  cart.applyVoucher("HEMAT10");
+  assertEquals(90_000, cart.total());
+}</pre></div>
+          </div>
+          <div class="foot">Kalau tes gagal, <b>namanya</b> sudah memberi tahu apa yang rusak.</div>
+        </section>
+
+        <!-- ════════ 8 — JEBAKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Flaky = hasilnya berubah-ubah tanpa ada kode yang berubah.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">jebakan</div>
+          <h2>Tes yang kadang merah, kadang hijau</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">penyebab</div><h3>Waktu & tanggal</h3><p style="color: var(--ink)">Pakai <code>Clock</code> yang bisa diatur, bukan LocalDate.now().</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">penyebab</div><h3>Urutan tes</h3><p style="color: var(--ink)">Tes saling berbagi data. Bersihkan di @BeforeEach.</p></div><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">penyebab</div><h3>Thread.sleep</h3><p style="color: var(--ink)">Tunggu kondisi, bukan tunggu waktu. Pakai Awaitility.</p></div></div>
+          <div class="foot">Tes flaky (tidak stabil) lebih buruk dari tidak ada tes: orang <b>berhenti percaya</b>.</div>
+        </section>
+
+        <!-- ════════ 9 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Testcontainers bagus untuk menguji query sungguhan. Mock database sering menyembunyikan bug SQL.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Kotak peralatan tes Java</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Untuk</th></tr><tr><td class="mono">JUnit 5</td><td>Menjalankan tes</td></tr><tr><td class="mono">AssertJ</td><td>Assertion yang enak dibaca: assertThat(x).isEqualTo(…)</td></tr><tr><td class="mono">Mockito</td><td>Pemeran pengganti dependency</td></tr><tr><td class="mono">Testcontainers</td><td>Database asli di Docker untuk tes integrasi</td></tr><tr><td class="mono">@SpringBootTest</td><td>Nyalakan aplikasi utuh (lambat, pakai hemat)</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: pilih satu aturan bisnis yang belum dites, tulis satu tes Given-When-Then.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -553,13 +608,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

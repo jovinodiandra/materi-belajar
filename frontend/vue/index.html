@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Ubah datanya, layarnya ikut berubah.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Vue cocok untuk tim yang ingin mulai cepat. Single File Component menyatukan template, script, dan style untuk satu komponen.">
           <h2>Data berubah, tapi tampilan harus diubah manual di banyak tempat.</h2>
@@ -485,7 +486,23 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: template masih memegang objek reactive yang lama. Ganti isinya (state.items = …) atau pakai ref dan ubah .value.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa tampilan tidak update?</h2>
+          <div style="margin-top: 14px"><pre class="code">&lt;script setup&gt;
+import &#123; reactive &#125; from "vue";
+let state = reactive(&#123; items: [] &#125;);
+
+async function load() &#123;
+  state = reactive(&#123; items: await api.items() &#125;);   <span class="cm">// ← ?</span>
+&#125;
+&lt;/script&gt;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Data sudah dimuat, tapi daftar di layar tetap kosong. Kenapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Di Vue, push ke array reaktif langsung terdeteksi. Berbeda dengan React yang butuh array baru. computed seperti rumus Excel: berubah sendiri saat datanya berubah.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Single File Component (Composition API)</h2>
@@ -506,7 +523,8 @@
           </div>
           <div class="foot"><b>computed</b> = rumus Excel: ikut berubah saat datanya berubah.</div>
         </section>
-        <!-- ════════ 4 — BEDA ════════ -->
+
+        <!-- ════════ 5 — BEDA ════════ -->
         <section class="slide" data-notes="Dua-duanya bagus. Pilih yang dipakai tim. Konsep komponen, props, dan state berlaku di keduanya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">perbandingan</div>
           <h2>Vue vs React, sekilas</h2>
@@ -519,7 +537,47 @@
           </table>
           <div class="foot">Konsep intinya sama: komponen, props, state.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — KOMUNIKASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="defineModel menyederhanakan pola v-model di komponen sendiri.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">komunikasi</div>
+          <h2>Props turun, event naik</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">anak: QtyInput.vue</div><pre class="code">&lt;script setup&gt;
+const props = defineProps(&#123; modelValue: Number &#125;);
+const emit = defineEmits(["update:modelValue"]);
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;button @click="emit('update:modelValue', props.modelValue - 1)"&gt;−&lt;/button&gt;
+  &#123;&#123; props.modelValue &#125;&#125;
+  &lt;button @click="emit('update:modelValue', props.modelValue + 1)"&gt;+&lt;/button&gt;
+&lt;/template&gt;</pre></div>
+            <div><div class="codehead ">induk</div><pre class="code">&lt;QtyInput v-model="qty" /&gt;
+
+&lt;!<span class="cm">-- Vue 3.4+: lebih singkat --&gt;</span>
+&lt;!<span class="cm">-- di anak: --&gt;</span>
+&lt;!<span class="cm">-- const model = defineModel() --&gt;</span>
+&lt;!<span class="cm">-- model.value++ --&gt;</span></pre></div>
+          </div>
+          <div class="foot">Anak <b>tidak mengubah props</b>. Anak mengabari induk lewat event.</div>
+        </section>
+
+        <!-- ════════ 7 — COMPOSABLE ════════ -->
+        <section class="slide" data-ext="1" data-notes="VueUse punya ratusan composable: useLocalStorage, useDark, useIntersectionObserver, dan lain-lain.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">composable</div>
+          <h2>Logika yang bisa dipakai ulang</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tulis useFetch(url)</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Isinya ref + watch + fetch</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Kembalikan data, loading, error</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Pakai di banyak komponen</div></div><ul class="clean" style="margin-top: 18px"><li><code>const { data, loading } = useFetch("/api/products")</code></li><li>Kumpulan composable siap pakai: <b>VueUse</b>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Vue DevTools membantu melihat state komponen dan Pinia secara langsung.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Kebiasaan Vue yang sehat</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Pakai <code>&lt;script setup&gt;</code> + TypeScript untuk proyek baru.</li><li>Selalu beri <code>:key</code> unik di <code>v-for</code>.</li><li>Jangan pakai v-if dan v-for di elemen yang sama.</li><li>State bersama antar halaman: Pinia.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari watch yang sebenarnya cukup diganti computed.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -531,13 +589,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

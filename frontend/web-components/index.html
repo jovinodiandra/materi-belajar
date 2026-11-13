@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Lego resmi buatan browser.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Contoh nyata: design system perusahaan besar sering dibuat dengan Web Components (misalnya pakai Lit) supaya bisa dipakai semua tim.">
           <h2>Tim A pakai React, tim B pakai Vue. Tombol desain yang sama dibuat dua kali.</h2>
@@ -485,7 +486,18 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Browser membuatnya dengan shadow DOM tersembunyi. Web components memberi kita kemampuan yang sama untuk membuat tag sendiri.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kamu sudah memakai web component</h2>
+          <div style="margin-top: 14px"><pre class="code">&lt;video controls src="demo.mp4"&gt;&lt;/video&gt;
+&lt;input type="date"&gt;
+&lt;details&gt;&lt;summary&gt;Lihat&lt;/summary&gt;…&lt;/details&gt;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Tombol play, kalender, dan panah buka-tutup ini dibuat dari mana?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Nama tag wajib pakai tanda hubung, misalnya user-card, supaya tidak bentrok dengan tag HTML resmi. Di dunia nyata, orang biasanya memakai library kecil seperti Lit.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Membuat tag sendiri</h2>
@@ -506,7 +518,8 @@ customElements.define(&quot;user-card&quot;, UserCard);
           </div>
           <div class="foot">Nama tag wajib pakai <b>tanda hubung</b>. Di praktik, pakai library kecil seperti <b>Lit</b>.</div>
         </section>
-        <!-- ════════ 4 — KAPAN ════════ -->
+
+        <!-- ════════ 5 — KAPAN ════════ -->
         <section class="slide" data-notes="Kalau seluruh perusahaan memakai satu framework, komponen framework biasa lebih praktis.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ringkasan</div>
           <h2>Kapan Web Components masuk akal?</h2>
@@ -519,7 +532,49 @@ customElements.define(&quot;user-card&quot;, UserCard);
           </table>
           <div class="foot">Satu framework saja? Komponen framework biasa lebih praktis.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — ATRIBUT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanda hubung mencegah bentrok dengan tag HTML resmi di masa depan.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">atribut</div>
+          <h2>Bereaksi saat atribut berubah</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">komponen</div><pre class="code">class StarRating extends HTMLElement &#123;
+  static observedAttributes = ["value"];
+
+  attributeChangedCallback(name, oldV, newV) &#123;
+    this.render(Number(newV));
+  &#125;
+  render(n) &#123;
+    this.shadowRoot.textContent = "★".repeat(n);
+  &#125;
+&#125;
+customElements.define("star-rating", StarRating);</pre></div>
+            <div><div class="codehead ">dipakai di mana saja</div><pre class="code">&lt;star-rating value="4"&gt;&lt;/star-rating&gt;
+
+&lt;!<span class="cm">-- di React --&gt;</span>
+&lt;star-rating value=&#123;rating&#125; /&gt;
+
+&lt;!<span class="cm">-- di Vue --&gt;</span>
+&lt;star-rating :value="rating" /&gt;</pre></div>
+          </div>
+          <div class="foot">Nama tag custom <b>wajib</b> mengandung tanda hubung: star-rating, bukan starrating.</div>
+        </section>
+
+        <!-- ════════ 7 — LIT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Shoelace / Web Awesome adalah contoh library komponen berbasis Lit yang bisa dipakai di framework apa pun.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">Lit</div>
+          <h2>Lit: menulis web component dengan nyaman</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Pakai class LitElement</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Deklarasi properti reaktif</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Tulis template html``</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Render otomatis saat berubah</div></div><ul class="clean" style="margin-top: 18px"><li>Lit kecil (±5 KB) dan menghemat banyak kode manual.</li><li>Dipakai oleh design system besar seperti milik Google dan Adobe.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — HAL PENTING ════════ -->
+        <section class="slide" data-ext="1" data-notes="CSS variables menembus shadow DOM, jadi design token tetap bisa dipakai.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">hal penting</div>
+          <h2>Yang perlu diperhatikan</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Shadow DOM menutup style dari luar. Pakai CSS variables atau <code>::part</code> untuk kustomisasi.</li><li>SSR untuk web components masih terbatas (Declarative Shadow DOM).</li><li>Kirim data rumit lewat <b>property</b>, bukan atribut teks.</li><li>Pakai event custom untuk mengabari luar: <code>dispatchEvent(new CustomEvent(…))</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: komponen apa di perusahaan kita yang dibuat ulang di beberapa framework?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -531,13 +586,14 @@ customElements.define(&quot;user-card&quot;, UserCard);
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

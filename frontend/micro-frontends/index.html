@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu mal, banyak toko dengan pengelola sendiri.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: berapa tim yang mengubah repo frontend kita? Kalau cuma satu atau dua, micro frontend kemungkinan berlebihan.">
           <h2>Lima tim mengubah satu aplikasi frontend raksasa. Deploy harus antre.</h2>
@@ -485,14 +486,24 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: nomor 2 dan 4. Micro-frontend menyelesaikan masalah organisasi dan migrasi, bukan masalah kode.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Perlu micro-frontend atau tidak?</h2>
+          <p class="lede">Mana yang cocok pakai micro-frontend?</p>
+          <ul class="clean" style="margin-top: 16px"><li>Startup 4 developer, satu produk.</li><li>E-commerce besar, 6 tim, deploy saling menunggu.</li><li>Dashboard internal yang dipegang satu tim.</li><li>Portal yang menggabungkan aplikasi lama (Angular) dan baru (React).</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Shell memuat bagian sesuai URL. Cara memuatnya bisa lewat Module Federation (Webpack/Vite), Web Components, atau sekadar link antar aplikasi dengan path berbeda.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Satu shell, banyak bagian</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">App shell</h3><p style="font-size:13.5px">header, login, routing utama</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Katalog</h3><p style="font-size:13.5px">Tim A · React</p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Keranjang & checkout</h3><p style="font-size:13.5px">Tim B · React</p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Akun</h3><p style="font-size:13.5px">Tim C · Vue</p></div></div></div>
           <div class="foot">Cara menyambung: Module Federation, Web Components, atau routing per path.</div>
         </section>
-        <!-- ════════ 4 — HARGA ════════ -->
+
+        <!-- ════════ 5 — HARGA ════════ -->
         <section class="slide" data-notes="Alternatif yang lebih sederhana untuk tim kecil: monorepo dengan modul yang rapi. Micro frontend hanya sepadan untuk organisasi besar.">
           <div class="lens-tag lt-green" style="align-self: flex-start">harga</div>
           <h2>Harga yang dibayar</h2>
@@ -504,7 +515,45 @@
           </div>
           <div class="foot">Tim kecil? <b>Monorepo + modul rapi</b> biasanya cukup.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — MODULE FEDERATION ════════ -->
+        <section class="slide" data-ext="1" data-notes="Alternatif tanpa bundler khusus: web components, iframe, atau penggabungan di server/edge.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">Module Federation</div>
+          <h2>Memuat bagian dari tim lain saat runtime</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">shell: vite / webpack config</div><pre class="code">federation({
+  name: "shell",
+  remotes: {
+    catalog: "https://catalog.toko.com/remoteEntry.js",
+  },
+  shared: ["react", "react-dom"],   <span class="cm">// dipakai bersama</span>
+})</pre></div>
+            <div><div class="codehead ">pemakaian di shell</div><pre class="code">const Catalog = lazy(() =&gt; import("catalog/App"));
+
+&lt;Suspense fallback={&lt;Spinner /&gt;}&gt;
+  &lt;Catalog /&gt;
+&lt;/Suspense&gt;
+<span class="cm">// tim katalog deploy sendiri,</span>
+<span class="cm">// shell otomatis memuat versi terbaru</span></pre></div>
+          </div>
+          <div class="foot"><b>shared</b> mencegah React diunduh berkali-kali oleh tiap bagian.</div>
+        </section>
+
+        <!-- ════════ 7 — KOMUNIKASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Semakin sedikit yang dibagi, semakin mandiri tiap tim.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">komunikasi</div>
+          <h2>Bagian-bagian berbicara lewat event</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Katalog: user klik Beli</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Kirim event cart:add</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Bagian Keranjang mendengar</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Badge jumlah berubah</div></div><ul class="clean" style="margin-top: 18px"><li><code>window.dispatchEvent(new CustomEvent("cart:add", { detail: item }))</code></li><li>Hindari berbagi state global antar bagian. Kontrak cukup lewat event dan URL.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Bungkus setiap remote dengan error boundary. Kalau katalog error, header dan keranjang tetap jalan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Aturan supaya tetap waras</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Satu tim, satu bagian dari halaman, dari UI sampai API.</li><li>Design system bersama untuk tampilan seragam.</li><li>Bagian yang gagal dimuat tidak boleh menjatuhkan seluruh halaman.</li><li>Pantau ukuran total JavaScript di halaman.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: apakah masalah tim kita benar-benar masalah organisasi, atau cukup diperbaiki dengan struktur kode?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -516,13 +565,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

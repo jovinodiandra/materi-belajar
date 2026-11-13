@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Lampu darurat: tetap ada jalan keluar saat listrik padam.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: kalau ada error JavaScript di produksi sekarang, bagaimana kita tahu?">
           <h2>Satu komponen error, seluruh halaman jadi layar putih. Tim tidak tahu sama sekali.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: tidak. Promise jalan setelah try selesai. Pakai await di dalam try, atau .catch() di rantai promise.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Error apa yang tidak tertangkap?</h2>
+          <div style="margin-top: 14px"><pre class="code">try {
+  fetch("/api/orders").then(r =&gt; r.json()).then(render);
+} catch (e) {
+  showError(e);   <span class="cm">// ← apakah ini akan jalan?</span>
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau API mati, apakah showError terpanggil?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Pasang error boundary di sekitar bagian yang bisa gagal sendiri: widget, panel, rekomendasi. Halaman lain tetap jalan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Error boundary di React</h2>
@@ -501,7 +515,8 @@
           </div>
           <div class="foot">Bagian rusak diganti pesan. <b>Halaman lain tetap jalan.</b></div>
         </section>
-        <!-- ════════ 4 — PESAN ════════ -->
+
+        <!-- ════════ 5 — PESAN ════════ -->
         <section class="slide" data-notes="Pesan error yang baik menjawab tiga hal: apa, kenapa, dan apa langkah berikutnya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ux</div>
           <h2>Pesan error yang baik</h2>
@@ -513,7 +528,43 @@
           </div>
           <div class="foot">Pesan yang baik: <b>apa · kenapa · langkah berikutnya</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pasang window.addEventListener(&#x27;unhandledrejection&#x27;) untuk menangkap yang terlewat dan kirim ke monitoring.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>await di dalam try</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ try tidak menunggu</div><pre class="code">try {
+  fetch(url).then(r =&gt; r.json());
+} catch (e) {
+  <span class="cm">// tidak pernah sampai sini</span>
+}</pre></div>
+            <div><div class="codehead good">✓ await + cek status</div><pre class="code">try {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  render(await res.json());
+} catch (e) {
+  showError("Gagal memuat pesanan", e);
+}</pre></div>
+          </div>
+          <div class="foot">Promise tanpa <b>await</b> atau <b>.catch</b> = error yang hilang tanpa jejak.</div>
+        </section>
+
+        <!-- ════════ 7 — MONITORING ════════ -->
+        <section class="slide" data-ext="1" data-notes="Breadcrumbs = jejak langkah user sebelum error: klik apa, buka halaman apa.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">monitoring</div>
+          <h2>Tahu ada error sebelum user komplain</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Pasang Sentry / sejenisnya</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Error tercatat otomatis</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Lengkap dengan browser & langkah user</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Upload source map</div></div><ul class="clean" style="margin-top: 18px"><li>Tanpa source map, stack trace berisi kode yang sudah di-minify: <code>a.b is not a function</code>.</li><li>Tambahkan konteks: id user, versi rilis.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Error boundary React tidak menangkap error di event handler dan kode async. Itu sering mengejutkan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Jenis error dan cara menanganinya</h2>
+          <table style="margin-top: 16px"><tr><th>Jenis</th><th>Tangani dengan</th></tr><tr><td class="mono">Error render komponen</td><td>Error boundary</td></tr><tr><td class="mono">Error di event handler</td><td>try/catch di handler</td></tr><tr><td class="mono">Error async / fetch</td><td>await + try/catch, atau .catch()</td></tr><tr><td class="mono">Error yang lolos</td><td>window.onerror, unhandledrejection</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: matikan internet lalu pakai aplikasi kita. Pesan apa yang muncul?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -525,13 +576,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Website yang berperilaku seperti aplikasi.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Contoh PWA terkenal: Twitter Lite, Starbucks, Spotify Web. Coba pasang dari menu Chrome &#x27;Install app&#x27;.">
           <h2>Sinyal hilang di kereta. Aplikasi web langsung menampilkan dinosaurus Chrome.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BAHAN ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: service worker lama tetap aktif sampai semua tab ditutup. Perlu strategi update yang jelas, misalnya tampilkan tombol &#x27;Versi baru tersedia, muat ulang&#x27;.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa user masih melihat versi lama?</h2>
+          <p class="lede">Kita sudah deploy versi baru. User PWA masih memakai versi kemarin.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Petunjuk: service worker menyimpan file di cache.</li><li>Siapa yang memutuskan kapan cache diganti?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BAHAN ════════ -->
         <section class="slide" data-notes="Manifest membuat website bisa dipasang. Service worker membuatnya bisa bekerja offline.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Tiga bahan PWA</h2>
@@ -496,7 +506,8 @@
           </div>
 
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Di dunia nyata pakai library Workbox atau plugin PWA dari Vite/Next. Menulis service worker manual mudah salah, terutama soal versi cache.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Service worker: cache sederhana</h2>
@@ -517,7 +528,49 @@ self.addEventListener(&quot;fetch&quot;, (e) =&gt; &#123;
           </div>
           <div class="foot">Di praktik pakai <b>Workbox</b> atau plugin PWA. Hati-hati versi cache.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — MANIFEST ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ikon 512 juga dipakai untuk splash screen di Android.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">manifest</div>
+          <h2>Web App Manifest</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">manifest.webmanifest</div><pre class="code">{
+  "name": "Toko Kita",
+  "short_name": "Toko",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0d9488",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192" },
+    { "src": "/icon-512.png", "sizes": "512x512" }
+  ]
+}</pre></div>
+            <div><div class="codehead ">di HTML</div><pre class="code">&lt;link rel="manifest"
+      href="/manifest.webmanifest"&gt;
+
+display: standalone
+→ tanpa address bar,
+  terasa seperti aplikasi</pre></div>
+          </div>
+          <div class="foot">Cek di DevTools → <b>Application</b> → Manifest.</div>
+        </section>
+
+        <!-- ════════ 7 — STRATEGI CACHE ════════ -->
+        <section class="slide" data-ext="1" data-notes="vite-plugin-pwa atau next-pwa memakai Workbox di belakangnya.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">strategi cache</div>
+          <h2>Strategi cache per jenis file</h2>
+          <table style="margin-top: 16px"><tr><th>Strategi</th><th>Gampangnya</th><th>Cocok untuk</th></tr><tr><td class="mono">Cache first</td><td>Ambil dari cache, internet kalau tidak ada</td><td>CSS, JS, font, ikon</td></tr><tr><td class="mono">Network first</td><td>Coba internet, cache kalau offline</td><td>Data API, halaman HTML</td></tr><tr><td class="mono">Stale-while-revalidate</td><td>Tampilkan cache, perbarui di belakang</td><td>Avatar, daftar produk</td></tr></table>
+          <div class="foot"><b>Workbox</b> menyediakan strategi ini siap pakai.</div>
+        </section>
+
+        <!-- ════════ 8 — FITUR LAIN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Fitur di iOS masih lebih terbatas dibanding Android. Cek dukungan sebelum menjanjikan fitur.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">fitur lain</div>
+          <h2>Yang bisa dilakukan PWA sekarang</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Push notification (termasuk iOS 16.4+ setelah dipasang ke home screen).</li><li>Background sync: kirim data saat sinyal kembali.</li><li>Share target: muncul di menu Share HP.</li><li>Badge angka di ikon aplikasi.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: halaman apa di produk kita yang berguna kalau bisa dibuka offline?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -529,13 +582,14 @@ self.addEventListener(&quot;fetch&quot;, (e) =&gt; &#123;
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

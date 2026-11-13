@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Simpan barang sedekat mungkin dengan yang memakainya.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: berapa banyak data di store global kita yang sebenarnya cuma dipakai satu komponen?">
           <h2>Semua state dimasukkan ke satu store global. Ubah input form, seluruh aplikasi render ulang.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — JENIS ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: server, lokal, URL, global. Setiap jenis punya alat yang paling pas.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>State ini milik siapa?</h2>
+          <p class="lede">Tentukan jenisnya: lokal, server, URL, atau global?</p>
+          <ul class="clean" style="margin-top: 16px"><li>Daftar produk dari API</li><li>Dropdown sedang terbuka atau tertutup</li><li>Halaman ke-3 dari hasil pencarian</li><li>Tema gelap dan user yang sedang login</li></ul>
+        </section>
+
+        <!-- ════════ 4 — JENIS ════════ -->
         <section class="slide" data-notes="Kebanyakan state di aplikasi sebenarnya state server. Kalau itu sudah diurus TanStack Query, sisa state global biasanya tinggal sedikit.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Empat jenis state, empat tempat</h2>
@@ -498,7 +508,8 @@
           </table>
           <div class="foot">Kebanyakan state adalah <b>state server</b>. Urus dengan library cache, bukan store.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Library seperti TanStack Query mengurus cache, loading, error, retry, dan refresh otomatis. Kode jauh lebih pendek dan data lebih jarang basi.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Store global vs alat yang pas</h2>
@@ -518,7 +529,8 @@ dispatch(fetchProductsSuccess(res.data));
           </div>
           <div class="foot">Cache, loading, retry, refetch: <b>otomatis</b>.</div>
         </section>
-        <!-- ════════ 5 — ATURAN ════════ -->
+
+        <!-- ════════ 6 — ATURAN ════════ -->
         <section class="slide" data-notes="Data turunan yang disimpan terpisah adalah sumber bug klasik: isinya berubah, totalnya lupa diperbarui.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Aturan jempol</h2>
@@ -530,7 +542,47 @@ dispatch(fetchProductsSuccess(res.data));
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — ZUSTAND ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanpa selector, komponen render ulang setiap ada perubahan apa pun di store.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">Zustand</div>
+          <h2>Store global yang kecil</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">membuat store</div><pre class="code">import &#123; create &#125; from "zustand";
+
+export const useCart = create((set) =&gt; (&#123;
+  items: [],
+  add: (item) =&gt; set((s) =&gt; (&#123;
+    items: [...s.items, item],
+  &#125;)),
+  clear: () =&gt; set(&#123; items: [] &#125;),
+&#125;));</pre></div>
+            <div><div class="codehead ">memakai</div><pre class="code"><span class="cm">// hanya render ulang saat items berubah</span>
+const count = useCart((s) =&gt; s.items.length);
+const add = useCart((s) =&gt; s.add);
+
+&lt;button onClick=&#123;() =&gt; add(product)&#125;&gt;
+  Beli (&#123;count&#125;)
+&lt;/button&gt;</pre></div>
+          </div>
+          <div class="foot">Ambil <b>sebagian kecil</b> dari store (selector) supaya render ulang seperlunya.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Banyak masalah props drilling selesai hanya dengan menyusun ulang komponen.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Props drilling? Coba ini dulu</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Data dioper 4 lapis</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Bisa composition (children)?</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Bisa Context?</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Baru pakai store global</div></div><ul class="clean" style="margin-top: 18px"><li>Context cocok untuk data yang <b>jarang berubah</b>: tema, user login, bahasa.</li><li>Context untuk data yang sering berubah membuat banyak komponen render ulang.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PILIHAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Vue punya Pinia, Angular punya signals dan NgRx, Svelte punya stores dan runes.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pilihan</div>
+          <h2>Alat state yang populer</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Gaya</th></tr><tr><td class="mono">useState / useReducer</td><td>Lokal, bawaan React</td></tr><tr><td class="mono">Context</td><td>Bagikan nilai ke anak-cucu</td></tr><tr><td class="mono">Zustand / Jotai</td><td>Global, ringan</td></tr><tr><td class="mono">Redux Toolkit</td><td>Global, terstruktur, devtools kuat</td></tr><tr><td class="mono">TanStack Query</td><td>Khusus data dari server</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: daftar isi store global kita, tandai mana yang sebenarnya state server.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -542,13 +594,14 @@ dispatch(fetchProductsSuccess(res.data));
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

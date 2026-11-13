@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu meja resepsionis, bukan semua orang masuk ke dapur.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: kalau backend mengganti base URL, berapa file yang harus kita ubah?">
           <h2>URL API dan header token ditulis ulang di 40 komponen.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 5 kali refresh, dan bisa saling membatalkan token. Solusinya: satu refresh dibagi bersama, request lain menunggu.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Apa yang terjadi saat token kedaluwarsa?</h2>
+          <p class="lede">Halaman dashboard memanggil 5 API bersamaan. Token sudah kedaluwarsa.</p>
+          <ul class="clean" style="margin-top: 16px"><li>5 request dapat 401 bersamaan.</li><li>Masing-masing mencoba refresh token sendiri.</li><li>Apa masalahnya?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Komponen tidak tahu URL atau header. Kalau backend berubah, hanya folder api yang diubah.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Satu client, fungsi per endpoint</h2>
@@ -508,7 +518,8 @@ export <span class="kw">const</span> getProduct = (id: string) =&gt; api&lt;Prod
           </div>
           <div class="foot">Backend berubah? Ubah folder <b>api/</b> saja.</div>
         </section>
-        <!-- ════════ 4 — TIPS ════════ -->
+
+        <!-- ════════ 5 — TIPS ════════ -->
         <section class="slide" data-notes="Semua yang ada di kode frontend bisa dilihat siapa saja lewat DevTools. Rahasia harus tetap di backend.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Kebiasaan baik</h2>
@@ -520,7 +531,42 @@ export <span class="kw">const</span> getProduct = (id: string) =&gt; api&lt;Prod
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini kejutan umum buat yang terbiasa dengan axios, yang otomatis melempar error untuk status di luar 2xx.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Cek res.ok, fetch tidak melempar error untuk 4xx/5xx</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ dianggap sukses</div><pre class="code">const res = await fetch("/api/orders");
+const data = await res.json();
+render(data);
+<span class="cm">// ← server balas 500 + HTML error,</span>
+<span class="cm">//   json() gagal dengan pesan aneh</span></pre></div>
+            <div><div class="codehead good">✓ cek status dulu</div><pre class="code">const res = await fetch("/api/orders");
+if (!res.ok) {
+  throw new ApiError(res.status,
+                     await res.text());
+}
+const data: Order[] = await res.json();</pre></div>
+          </div>
+          <div class="foot"><b>fetch</b> hanya gagal kalau jaringan putus. Status 500 tetap dianggap "berhasil".</div>
+        </section>
+
+        <!-- ════════ 7 — POLA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pola ini sering ditaruh di interceptor axios atau di fungsi api() pusat.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">pola</div>
+          <h2>Satu refresh token untuk banyak request</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Request dapat 401</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Ada refresh berjalan?</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Ya: tunggu promise itu</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Ulangi request dengan token baru</div></div><ul class="clean" style="margin-top: 18px"><li>Simpan promise refresh di satu variabel. Request lain cukup <code>await</code> promise yang sama.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — STATUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Desainer sering hanya menggambar keadaan sukses. Tanyakan keadaan lain sejak awal.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">status</div>
+          <h2>Tampilan untuk setiap keadaan</h2>
+          <table style="margin-top: 16px"><tr><th>Keadaan</th><th>Tampilkan</th></tr><tr><td class="mono">Memuat</td><td>Skeleton, bukan layar putih</td></tr><tr><td class="mono">Kosong</td><td>Pesan + aksi ("Belum ada pesanan. Mulai belanja")</td></tr><tr><td class="mono">Error jaringan</td><td>Pesan + tombol coba lagi</td></tr><tr><td class="mono">401</td><td>Arahkan ke login, simpan halaman tujuan</td></tr><tr><td class="mono">Sukses</td><td>Data</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: hitung berapa komponen yang memanggil fetch langsung di project kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +578,14 @@ export <span class="kw">const</span> getProduct = (id: string) =&gt; api&lt;Prod
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

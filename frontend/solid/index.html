@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Ganti satu bola lampu, bukan rewiring satu rumah.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Signal = nilai yang tahu siapa saja yang memakainya. Saat berubah, dia hanya memberi tahu pemakainya.">
           <h2>Satu angka berubah, seluruh komponen dijalankan ulang.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: komponen Solid hanya jalan sekali. Destructuring membaca nilai saat itu saja. Pakai props.name langsung di JSX supaya tetap terlacak.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa ini tidak reaktif?</h2>
+          <div style="margin-top: 14px"><pre class="code">function Greeting(props) &#123;
+  const &#123; name &#125; = props;   <span class="cm">// ← destructuring</span>
+  return &lt;p&gt;Halo &#123;name&#125;&lt;/p&gt;;
+&#125;
+<span class="cm">// name di induk berubah → teks tidak berubah</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Di React ini jalan. Kenapa di Solid tidak?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Jebakan untuk orang dari React: jangan destructure props, dan jangan lupa tanda kurung saat membaca signal.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Signal di SolidJS</h2>
@@ -504,7 +518,8 @@
           </div>
           <div class="foot">Dari React? Jangan destructure props, dan baca signal pakai <b>()</b>.</div>
         </section>
-        <!-- ════════ 4 — POSISI ════════ -->
+
+        <!-- ════════ 5 — POSISI ════════ -->
         <section class="slide" data-notes="Walau tidak dipakai di project kita, ide signal dari Solid sudah memengaruhi hampir semua framework modern.">
           <div class="lens-tag lt-green" style="align-self: flex-start">ringkasan</div>
           <h2>Di mana posisi SolidJS?</h2>
@@ -516,7 +531,58 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — PRIMITIF ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini disebut fine-grained reactivity. Svelte 5, Vue, dan Angular signals memakai ide yang mirip.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">primitif</div>
+          <h2>Signal, memo, dan effect</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">primitif dasar</div><pre class="code">const [price, setPrice] = createSignal(100);
+const [qty, setQty] = createSignal(2);
+
+const total = createMemo(() =&gt; price() * qty());
+
+createEffect(() =&gt; &#123;
+  console.log("Total sekarang", total());
+&#125;);</pre></div>
+            <div><div class="codehead ">perbedaan dengan React</div><pre class="code">price() → panggil sebagai fungsi
+Tidak ada dependency array:
+  Solid melacak sendiri apa yang dibaca
+
+Ubah qty → hanya teks total
+  yang diperbarui di DOM.
+  Komponen tidak dijalankan ulang.</pre></div>
+          </div>
+          <div class="foot">Solid memperbarui <b>titik kecil di DOM</b>, bukan seluruh komponen.</div>
+        </section>
+
+        <!-- ════════ 7 — KONTROL ALUR ════════ -->
+        <section class="slide" data-ext="1" data-notes="map() juga jalan, tapi membuat ulang semua baris saat array berubah.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">kontrol alur</div>
+          <h2>Pakai komponen <For> dan <Show></h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">seperti React (kurang efisien)</div><pre class="code">&#123;items().map(item =&gt; &lt;Row item=&#123;item&#125; /&gt;)&#125;
+
+&#123;loading() ? &lt;Spinner /&gt; : &lt;List /&gt;&#125;</pre></div>
+            <div><div class="codehead ">gaya Solid</div><pre class="code">&lt;For each=&#123;items()&#125;&gt;
+  &#123;(item) =&gt; &lt;Row item=&#123;item&#125; /&gt;&#125;
+&lt;/For&gt;
+
+&lt;Show when=&#123;!loading()&#125; fallback=&#123;&lt;Spinner /&gt;&#125;&gt;
+  &lt;List /&gt;
+&lt;/Show&gt;</pre></div>
+          </div>
+          <div class="foot"><b>&lt;For&gt;</b> hanya membuat ulang baris yang berubah.</div>
+        </section>
+
+        <!-- ════════ 8 — EKOSISTEM ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau tim sudah paham React, belajar Solid biasanya hanya butuh beberapa hari.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">ekosistem</div>
+          <h2>Mulai dengan Solid</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Proyek baru: <code>npm create solid</code> (SolidStart untuk SSR).</li><li>Router: @solidjs/router. Data: createResource / TanStack Query untuk Solid.</li><li>Cocok untuk widget dan aplikasi yang butuh sangat cepat.</li><li>Ekosistem lebih kecil dari React: cek dulu library yang dibutuhkan.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: framework kita sekarang punya konsep signal juga? Bagaimana bentuknya?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +594,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

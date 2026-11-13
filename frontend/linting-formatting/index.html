@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Mesin cuci untuk kode: bersih tanpa debat.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Prinsip: semua yang bisa dicek mesin, biarkan mesin yang mengecek. Manusia fokus ke desain dan logika.">
           <h2>Code review penuh debat: tab atau spasi, titik koma atau tidak.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — ALAT ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: toast muncul sebelum data tersimpan. Aturan ESLint seperti no-misused-promises (typescript-eslint) menangkap ini. Linter bukan cuma soal gaya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Bug apa yang ditangkap linter di sini?</h2>
+          <div style="margin-top: 14px"><pre class="code">async function save(items) {
+  items.forEach(async (i) =&gt; {
+    await api.save(i);
+  });
+  showToast("Tersimpan!");   <span class="cm">// ← benarkah?</span>
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Petunjuk: forEach tidak menunggu fungsi async.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — ALAT ════════ -->
         <section class="slide" data-notes="Prettier sengaja punya sedikit pilihan supaya tidak ada debat. ESLint aturannya bisa diatur sesuai kesepakatan tim.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Dua alat, dua tugas</h2>
@@ -498,7 +513,8 @@
           </table>
           <div class="foot">Prettier sengaja punya sedikit pilihan: <b>tidak ada debat</b>.</div>
         </section>
-        <!-- ════════ 4 — OTOMATIS ════════ -->
+
+        <!-- ════════ 5 — OTOMATIS ════════ -->
         <section class="slide" data-notes="Tiga lapis ini memastikan kode yang masuk ke main selalu rapi tanpa ada yang perlu mengingatkan.">
           <div class="lens-tag lt-green" style="align-self: flex-start">pasang</div>
           <h2>Pasang di tiga tempat</h2>
@@ -506,7 +522,45 @@
           <ul class="clean" style="margin-top: 14px"><li><b>Editor</b>: format on save. Tidak perlu dipikirkan.</li><li><b>Pre-commit</b>: husky + lint-staged mengecek file yang berubah saja.</li><li><b>CI</b>: <code>npm run lint</code> dan <code>prettier --check</code> menjadi penjaga terakhir.</li></ul>
           <div class="foot">Tiga lapis: editor → pre-commit → CI.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — KONFIGURASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="eslint-config-prettier mematikan aturan ESLint soal format supaya tidak bertengkar dengan Prettier.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">konfigurasi</div>
+          <h2>Flat config ESLint + Prettier</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">eslint.config.js</div><pre class="code">import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+import prettier from "eslint-config-prettier";
+
+export default [
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  prettier,   <span class="cm">// matikan aturan gaya yang bentrok</span>
+];</pre></div>
+            <div><div class="codehead ">package.json</div><pre class="code">"scripts": {
+  "lint": "eslint .",
+  "format": "prettier --write .",
+  "check": "prettier --check . &amp;&amp; eslint ."
+}</pre></div>
+          </div>
+          <div class="foot">Prettier urus <b>gaya</b>. ESLint urus <b>kebenaran</b>. Jangan saling tumpang tindih.</div>
+        </section>
+
+        <!-- ════════ 7 — PROYEK LAMA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jangan menyalakan 200 aturan sekaligus di proyek lama. Tim akan kewalahan dan mematikannya.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">proyek lama</div>
+          <h2>Memasang linter di proyek yang sudah besar</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Pasang dengan aturan dasar</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Format semua file dalam 1 commit</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Catat commit itu di .git-blame-ignore-revs</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Perketat aturan pelan-pelan</div></div><ul class="clean" style="margin-top: 18px"><li>Commit format besar dipisah supaya <code>git blame</code> tetap berguna.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Biome mulai populer karena ditulis dengan Rust dan jauh lebih cepat dari ESLint + Prettier.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Alat lain yang sejenis</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Untuk</th></tr><tr><td class="mono">Stylelint</td><td>Lint untuk CSS</td></tr><tr><td class="mono">Biome</td><td>Formatter + linter dalam satu alat, sangat cepat</td></tr><tr><td class="mono">lint-staged + husky</td><td>Cek hanya file yang di-commit</td></tr><tr><td class="mono">tsc --noEmit</td><td>Cek tipe TypeScript di CI</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: hitung berapa komentar review minggu ini yang sebenarnya bisa diganti mesin.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -518,13 +572,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

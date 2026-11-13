@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Asisten yang membaca kodemu sebelum kamu menekan save.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: berapa bug minggu lalu yang sebenarnya cuma typo atau null? TypeScript menangkap sebagian besar.">
           <h2>user.adress.city — typo kecil, baru ketahuan saat user komplain.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: error saat jalan. &#x27;as&#x27; hanya menyuruh compiler percaya. Data dari luar perlu dicek, misalnya dengan Zod.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>TypeScript bilang aman. Benarkah?</h2>
+          <div style="margin-top: 14px"><pre class="code">type User = &#123; name: string; email: string &#125;;
+
+const res = await fetch("/api/me");
+const user = (await res.json()) as User;   <span class="cm">// ← "percayalah"</span>
+user.email.toLowerCase();</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau API ternyata mengirim email: null, apa yang terjadi?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Dengan type Cart, editor langsung menandai itms sebagai salah. Bonus: autocomplete jadi pintar.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>JavaScript vs TypeScript</h2>
@@ -508,7 +522,8 @@ total(&#123; itms: [] &#125;);   <span class="cm">// merah di editor!</span></pr
           </div>
           <div class="foot">Bonus gratis: <b>autocomplete</b> jadi pintar.</div>
         </section>
-        <!-- ════════ 4 — KOSAKATA ════════ -->
+
+        <!-- ════════ 5 — KOSAKATA ════════ -->
         <section class="slide" data-notes="Union string seperti &#x27;paid&#x27; | &#x27;pending&#x27; sangat berguna: editor menolak status lain dan autocomplete menampilkan pilihannya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">kosakata</div>
           <h2>Fitur yang paling sering dipakai</h2>
@@ -522,7 +537,8 @@ total(&#123; itms: [] &#125;);   <span class="cm">// merah di editor!</span></pr
           </table>
           <div class="foot">Hindari <b>any</b>: itu sama dengan mematikan TypeScript.</div>
         </section>
-        <!-- ════════ 5 — TIPS ════════ -->
+
+        <!-- ════════ 6 — TIPS ════════ -->
         <section class="slide" data-notes="TypeScript hanya mengecek saat compile. Data dari luar seperti API atau form tetap bisa berbentuk salah, jadi validasi di batas aplikasi.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Kebiasaan baik</h2>
@@ -534,7 +550,57 @@ total(&#123; itms: [] &#125;);   <span class="cm">// merah di editor!</span></pr
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="z.infer membuat tipe dari skema, jadi tidak perlu menulis tipe dua kali.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Validasi data dari luar</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ as = janji tanpa bukti</div><pre class="code">const user = data as User;
+<span class="cm">// compiler diam,</span>
+<span class="cm">// data bisa saja beda bentuk</span></pre></div>
+            <div><div class="codehead good">✓ Zod: cek lalu dapat tipe</div><pre class="code">const UserSchema = z.object(&#123;
+  name: z.string(),
+  email: z.string().email(),
+&#125;);
+type User = z.infer&lt;typeof UserSchema&gt;;
+
+const user = UserSchema.parse(data);
+<span class="cm">// salah bentuk → error jelas di sini</span></pre></div>
+          </div>
+          <div class="foot">Tipe hanya ada saat compile. Di <b>batas sistem</b> (API, localStorage), cek saat jalan.</div>
+        </section>
+
+        <!-- ════════ 8 — UNION ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini fitur TypeScript yang paling berguna untuk memodelkan data bisnis.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">union</div>
+          <h2>Discriminated union: compiler membantu</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">tipe</div><pre class="code">type Payment =
+  | &#123; kind: "card"; last4: string &#125;
+  | &#123; kind: "va"; bank: string; number: string &#125;
+  | &#123; kind: "qris" &#125;;</pre></div>
+            <div><div class="codehead ">pemakaian</div><pre class="code">function label(p: Payment) &#123;
+  switch (p.kind) &#123;
+    case "card": return `Kartu •••• $&#123;p.last4&#125;`;
+    case "va":   return `VA $&#123;p.bank&#125;`;
+    case "qris": return "QRIS";
+  &#125;
+&#125;
+<span class="cm">// tambah kind baru → compiler menunjuk</span>
+<span class="cm">// switch yang lupa diperbarui</span></pre></div>
+          </div>
+          <div class="foot">Di dalam <b>case "card"</b>, TypeScript tahu p.last4 pasti ada.</div>
+        </section>
+
+        <!-- ════════ 9 — UTILITY TYPES ════════ -->
+        <section class="slide" data-ext="1" data-notes="Daripada menulis tipe baru yang mirip, turunkan dari tipe yang sudah ada.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">utility types</div>
+          <h2>Tipe bantu yang sering dipakai</h2>
+          <table style="margin-top: 16px"><tr><th>Tipe</th><th>Hasil</th></tr><tr><td class="mono">Partial&lt;User&gt;</td><td>Semua field jadi opsional</td></tr><tr><td class="mono">Pick&lt;User, "id" | "name"&gt;</td><td>Ambil sebagian field</td></tr><tr><td class="mono">Omit&lt;User, "password"&gt;</td><td>Buang field tertentu</td></tr><tr><td class="mono">Record&lt;string, number&gt;</td><td>Objek kunci → nilai</td></tr><tr><td class="mono">ReturnType&lt;typeof fn&gt;</td><td>Tipe hasil fungsi</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: hitung berapa &#x27;any&#x27; di project TypeScript kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -546,13 +612,14 @@ total(&#123; itms: [] &#125;);   <span class="cm">// merah di editor!</span></pr
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

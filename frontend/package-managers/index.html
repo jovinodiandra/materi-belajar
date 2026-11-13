@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Daftar belanja + struk yang sama untuk semua orang.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="package.json = daftar belanja (boleh kira-kira). Lock file = struk (persis apa yang dibeli).">
           <h2>“Di laptop saya jalan.” Teman install ulang, versi library-nya berbeda.</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — VERSI ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 1.7.9. Caret membolehkan naik minor dan patch, tapi tidak major. Lock file mengunci versi persis yang sudah dites.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak versi yang terpasang</h2>
+          <div style="margin-top: 14px"><pre class="code">"dependencies": {
+  "axios": "^1.6.0"
+}
+<span class="cm">// rilis terbaru: 1.7.9 dan 2.0.0</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Tanpa lock file, <code>npm install</code> hari ini memasang versi berapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — VERSI ════════ -->
         <section class="slide" data-notes="Semantic versioning: angka pertama naik = ada perubahan yang bisa merusak. Angka kedua = fitur baru. Angka ketiga = perbaikan bug.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Membaca versi di package.json</h2>
@@ -498,7 +511,8 @@
           </table>
           <div class="foot">MAJOR naik = <b>bisa merusak</b>. Baca changelog dulu.</div>
         </section>
-        <!-- ════════ 4 — PERINTAH ════════ -->
+
+        <!-- ════════ 5 — PERINTAH ════════ -->
         <section class="slide" data-notes="Di CI selalu pakai npm ci, bukan npm install. npm ci memasang persis sesuai lock file dan gagal kalau tidak cocok. pnpm menghemat disk dengan berbagi file antar project.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">sehari-hari</div>
           <h2>Perintah penting</h2>
@@ -511,7 +525,42 @@
           </table>
           <div class="foot">Di CI: <b>npm ci</b>, bukan npm install.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — KEAMANAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Temuan di devDependencies (alat build) biasanya risikonya lebih kecil daripada di kode yang dikirim ke browser.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">keamanan</div>
+          <h2>Cek dan perbaiki celah keamanan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">perintah</div><pre class="code">npm audit
+npm audit fix          <span class="cm"># perbaiki yang aman</span>
+npm outdated           <span class="cm"># yang sudah ada versi baru</span>
+npx npm-check-updates  <span class="cm"># rencana upgrade</span></pre></div>
+            <div><div class="codehead ">contoh hasil</div><pre class="code">lodash  &lt;4.17.21
+Severity: high
+Prototype Pollution
+fix available via `npm audit fix`
+
+<span class="cm"># bukan semua temuan berbahaya</span>
+<span class="cm"># untuk aplikasimu — baca dulu</span></pre></div>
+          </div>
+          <div class="foot">Pasang <b>Dependabot</b> / Renovate supaya PR update datang otomatis.</div>
+        </section>
+
+        <!-- ════════ 7 — PNPM ════════ -->
+        <section class="slide" data-ext="1" data-notes="Npm/yarn klasik meratakan node_modules, sehingga library &#x27;tumpangan&#x27; bisa diimport tanpa sengaja. pnpm mencegahnya.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">pnpm</div>
+          <h2>Kenapa node_modules pnpm jauh lebih kecil?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Library disimpan sekali di store global</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Proyek menautkan (link) ke sana</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">10 proyek pakai React yang sama</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Disimpan 1 kali, bukan 10</div></div><ul class="clean" style="margin-top: 18px"><li>pnpm juga <b>ketat</b>: kamu tidak bisa import library yang tidak tertulis di package.json.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ingat kasus left-pad: library 11 baris yang dihapus dan merusak ribuan proyek.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Kebiasaan sehat</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Commit lock file. Di CI pakai <code>npm ci</code>.</li><li>Satu package manager per proyek. Tulis di <code>"packageManager"</code> + Corepack.</li><li>Sebelum menambah library: cek ukuran (bundlephobia), umur, dan siapa yang merawat.</li><li>Library kecil 5 baris? Kadang lebih baik tulis sendiri.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: jalankan npm audit di project kita. Ada celah high/critical?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -523,13 +572,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

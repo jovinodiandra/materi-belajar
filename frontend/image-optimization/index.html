@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Jangan kirim baliho untuk dipasang di bingkai foto.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Buka tab Network di DevTools, filter Img. Urutkan berdasarkan ukuran. Biasanya langsung terlihat pelakunya.">
           <h2>Foto produk 4 MB ditampilkan sebagai thumbnail 200px.</h2>
@@ -485,7 +486,18 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: width dan height. Browser tidak tahu harus menyiapkan ruang berapa besar. Ini dihitung sebagai CLS (Cumulative Layout Shift).">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa layout melompat?</h2>
+          <p class="lede">User mau menekan tombol "Beli". Tiba-tiba gambar di atasnya selesai dimuat dan tombol bergeser.</p>
+          <div style="margin-top: 14px"><pre class="code">&lt;img src="banner.webp"&gt;   &lt;!<span class="cm">-- ← tanpa ukuran --&gt;</span>
+&lt;button&gt;Beli&lt;/button&gt;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Apa yang kurang dari tag img ini?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Gambar utama di atas layar (hero) jangan diberi lazy, karena justru harus dimuat secepatnya. Framework seperti Next.js Image melakukan sebagian besar ini otomatis.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Satu tag img yang lengkap</h2>
@@ -503,7 +515,8 @@
           </div>
           <div class="foot">Gambar <b>hero</b> di atas jangan lazy. Next.js &lt;Image&gt; mengurus ini otomatis.</div>
         </section>
-        <!-- ════════ 4 — FORMAT ════════ -->
+
+        <!-- ════════ 5 — FORMAT ════════ -->
         <section class="slide" data-notes="Ikon sebaiknya SVG: tajam di semua ukuran dan sangat kecil. Foto sebaiknya WebP atau AVIF.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">format</div>
           <h2>Pilih format</h2>
@@ -516,7 +529,41 @@
           </table>
           <div class="foot">Ikon → <b>SVG</b>. Foto → <b>WebP/AVIF</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jangan pakai loading=lazy di gambar hero. Itu malah memperlambat LCP.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Gambar penting vs gambar di bawah</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ semua diperlakukan sama</div><pre class="code">&lt;img src="hero.webp"&gt;
+&lt;!<span class="cm">-- gambar utama dimuat santai --&gt;</span>
+
+&lt;img src="footer-logo.png"&gt;
+&lt;!<span class="cm">-- logo bawah ikut dimuat di awal --&gt;</span></pre></div>
+            <div><div class="codehead good">✓ prioritas yang tepat</div><pre class="code">&lt;img src="hero.webp" width="1200" height="600"
+     fetchpriority="high" alt="Promo sepatu"&gt;
+
+&lt;img src="footer-logo.png" width="120" height="40"
+     loading="lazy" alt="Toko Kita"&gt;</pre></div>
+          </div>
+          <div class="foot">Gambar pertama yang terlihat: <b>prioritas tinggi</b>. Sisanya: <b>lazy</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — OTOMATIS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Layanan: Cloudinary, imgix, Cloudflare Images. format=auto memilih AVIF/WebP sesuai browser.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">otomatis</div>
+          <h2>Pakai image CDN, jangan resize manual</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Upload 1 file asli</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Minta ukuran lewat URL</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">CDN ubah ukuran & format</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Disimpan di cache</div></div><ul class="clean" style="margin-top: 18px"><li>Contoh: <code>/img/sepatu.jpg?w=400&amp;format=auto</code>.</li><li>Next.js &lt;Image&gt; dan Astro &lt;Image&gt; melakukan ini otomatis.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — UKUR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Cek di Lighthouse atau PageSpeed Insights. Biasanya gambar adalah penyumbang terbesar ukuran halaman.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">ukur</div>
+          <h2>Metrik yang terpengaruh gambar</h2>
+          <table style="margin-top: 16px"><tr><th>Metrik</th><th>Artinya</th><th>Target</th></tr><tr><td class="mono">LCP</td><td>Waktu elemen terbesar tampil (sering gambar)</td><td>&lt; 2,5 detik</td></tr><tr><td class="mono">CLS</td><td>Seberapa banyak layout melompat</td><td>&lt; 0,1</td></tr><tr><td class="mono">Total bytes</td><td>Ukuran halaman</td><td>Sekecil mungkin</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari 3 gambar terbesar di halaman utama kita lewat tab Network.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +575,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

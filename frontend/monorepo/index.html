@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu rumah besar, banyak kamar.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Contoh terkenal: Google, Meta, dan Vercel memakai monorepo.">
           <h2>Komponen tombol dipakai di 4 repo. Perbaikan bug = 4 PR + 4 rilis.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — STRUKTUR ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: cuma yang terpengaruh. Alat seperti Turborepo dan Nx tahu peta ketergantungan dan menjalankan yang perlu saja.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa lama CI kalau semua dites?</h2>
+          <p class="lede">Monorepo berisi 3 aplikasi dan 8 package. Kamu mengubah satu baris di <code>packages/utils</code>.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Perlu tes ulang semua 11 proyek?</li><li>Atau cuma yang memakai utils?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — STRUKTUR ════════ -->
         <section class="slide" data-notes="Kuncinya alat seperti Turborepo atau Nx: mereka tahu project mana yang terdampak perubahan, dan hanya membangun ulang yang perlu.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Contoh struktur monorepo</h2>
@@ -504,7 +514,8 @@
           </div>
           <div class="foot">Turborepo / Nx: build &amp; tes <b>hanya yang terdampak</b>.</div>
         </section>
-        <!-- ════════ 4 — HARGA ════════ -->
+
+        <!-- ════════ 5 — HARGA ════════ -->
         <section class="slide" data-notes="Monorepo cocok saat banyak project berbagi kode dan dipegang tim yang saling dekat.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">harga</div>
           <h2>Untung dan rugi</h2>
@@ -516,7 +527,57 @@
           </table>
           <div class="foot">Cocok saat banyak project <b>berbagi kode</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — WORKSPACE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ubah Button di packages/ui, aplikasi web langsung memakai perubahan itu.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">workspace</div>
+          <h2>Memakai package internal</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">pnpm-workspace.yaml</div><pre class="code">packages:
+  - "apps/*"
+  - "packages/*"</pre></div>
+            <div><div class="codehead ">apps/web/package.json</div><pre class="code">{
+  "dependencies": {
+    "@toko/ui": "workspace:*",
+    "@toko/utils": "workspace:*"
+  }
+}
+<span class="cm">// import { Button } from "@toko/ui";</span>
+<span class="cm">// tidak perlu publish ke npm</span></pre></div>
+          </div>
+          <div class="foot"><b>workspace:*</b> = pakai versi yang ada di repo ini, langsung.</div>
+        </section>
+
+        <!-- ════════ 7 — TURBOREPO ════════ -->
+        <section class="slide" data-ext="1" data-notes="^build artinya: build dulu semua package yang dibutuhkan, baru proyek ini.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">Turborepo</div>
+          <h2>Jalankan hanya yang berubah, simpan hasilnya</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">turbo.json</div><pre class="code">{
+  "tasks": {
+    "build": { "dependsOn": ["^build"],
+               "outputs": ["dist/**"] },
+    "test":  { "dependsOn": ["build"] }
+  }
+}</pre></div>
+            <div><div class="codehead ">perintah</div><pre class="code">turbo run test --filter=...[origin/main]
+<span class="cm"># tes semua yang terpengaruh perubahan</span>
+<span class="cm"># sejak main</span>
+
+<span class="cm"># build kedua kali dengan input sama:</span>
+<span class="cm"># &gt;&gt;&gt; FULL TURBO (dari cache, 0.2 detik)</span></pre></div>
+          </div>
+          <div class="foot">Cache bisa <b>dibagi</b> antar developer dan CI (remote cache).</div>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="CODEOWNERS otomatis meminta review dari tim yang tepat saat folder mereka diubah.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Monorepo yang sehat</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Batasi siapa boleh import siapa (misal app tidak boleh import app lain).</li><li>Satu versi untuk library utama (React, TypeScript) di seluruh repo.</li><li>CODEOWNERS: tiap folder punya tim pemilik untuk review.</li><li>Mulai dari 2–3 proyek yang memang sering berubah bersama.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: kode apa yang saat ini kita copy-paste antar repo?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +589,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Jangan nyalakan semua lampu. Nyalakan saat masuk ruangan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Hydration = browser &#x27;menghidupkan&#x27; HTML dari server dengan menjalankan ulang JavaScript-nya. Qwik melewati langkah ini.">
           <h2>Halaman sudah tampil dari server, tapi tombol belum bisa diklik beberapa detik.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Qwik bilang: pasang kabel hanya untuk saklar yang ditekan, saat ditekan. Itu resumability.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Apa itu hydration, versi gampang?</h2>
+          <p class="lede">Bayangin rumah contoh di pameran properti.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Server mengirim rumah jadi (HTML) — kelihatan lengkap.</li><li>Tapi listrik belum nyala: saklar belum berfungsi.</li><li>Hydration = memasang ulang semua kabel listrik sebelum satu saklar pun bisa dipakai.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Tanda dollar memberi tahu compiler Qwik bahwa kode ini boleh dipecah dan dimuat belakangan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Komponen Qwik</h2>
@@ -504,7 +514,8 @@
           </div>
           <div class="foot">Tanda <b>$</b> = “kode ini boleh dimuat nanti”.</div>
         </section>
-        <!-- ════════ 4 — POSISI ════════ -->
+
+        <!-- ════════ 5 — POSISI ════════ -->
         <section class="slide" data-notes="Walau jarang dipakai di produksi, Qwik mengajarkan bahwa hydration itu mahal. Astro dan React Server Components menjawab masalah yang sama dengan cara lain.">
           <div class="lens-tag lt-green" style="align-self: flex-start">ringkasan</div>
           <h2>Posisi Qwik</h2>
@@ -516,7 +527,51 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — TANDA $ ════════ -->
+        <section class="slide" data-ext="1" data-notes="Karena itu ada aturan: isi $ harus bisa diserialisasi. Tidak bisa sembarang menangkap variabel.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">tanda $</div>
+          <h2>Tanda $ = boleh dimuat belakangan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">komponen</div><pre class="code">export const AddToCart = component$(({ id }) =&gt; {
+  const added = useSignal(false);
+  return (
+    &lt;button onClick$={async () =&gt; {
+      await addToCart(id);
+      added.value = true;
+    }}&gt;
+      {added.value ? "✓ Ditambahkan" : "Beli"}
+    &lt;/button&gt;
+  );
+});</pre></div>
+            <div><div class="codehead ">yang terjadi</div><pre class="code">Halaman dibuka:
+  → HTML saja, JS ±1 KB
+
+User klik "Beli":
+  → baru unduh kode onClick$ ini
+  → jalankan
+
+Tombol lain tidak pernah diklik?
+  → kodenya tidak pernah diunduh</pre></div>
+          </div>
+          <div class="foot">Setiap <b>$</b> adalah titik potong: kode di dalamnya bisa dimuat terpisah.</div>
+        </section>
+
+        <!-- ════════ 7 — QWIK CITY ════════ -->
+        <section class="slide" data-ext="1" data-notes="Qwik City adalah meta-framework Qwik, seperti Next.js untuk React.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">Qwik City</div>
+          <h2>Ambil data di server dengan routeLoader$</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">routeLoader$ jalan di server</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Hasil ditaruh di HTML</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Komponen pakai useProducts()</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tidak ada fetch ulang di browser</div></div><ul class="clean" style="margin-top: 18px"><li>Mirip loader di Remix atau useFetch di Nuxt.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PERBANDINGAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Semua framework bergerak ke arah yang sama: kirim JavaScript sesedikit mungkin.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">perbandingan</div>
+          <h2>Cara menghidupkan halaman</h2>
+          <table style="margin-top: 16px"><tr><th>Cara</th><th>Contoh</th><th>JS awal</th></tr><tr><td class="mono">Hydration penuh</td><td>React SPA, Next.js (client components)</td><td>Besar</td></tr><tr><td class="mono">Islands</td><td>Astro</td><td>Hanya pulau yang interaktif</td></tr><tr><td class="mono">Resumability</td><td>Qwik</td><td>Hampir nol</td></tr><tr><td class="mono">Server Components</td><td>Next.js App Router</td><td>Hanya client components</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: ukur Time to Interactive salah satu halaman kita di Lighthouse.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +583,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

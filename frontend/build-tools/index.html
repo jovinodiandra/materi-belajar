@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dapur produksi: bahan mentah masuk, makanan siap saji keluar.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Build tool melakukan banyak pekerjaan: menerjemahkan, menggabungkan, membuang kode tidak terpakai, dan mengecilkan file.">
           <h2>Ratusan file JS, TypeScript, dan CSS. Browser tidak bisa langsung memakainya dengan efisien.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — TUGAS ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: hampir seluruh library. Ganti dengan import { includes } from &#x27;lodash-es&#x27;, atau fungsi bawaan: list.includes(x), Intl.DateTimeFormat.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa bundle-nya 2 MB?</h2>
+          <div style="margin-top: 14px"><pre class="code">import _ from "lodash";          <span class="cm">// ← seluruh lodash</span>
+import moment from "moment";     <span class="cm">// ← + semua bahasa</span>
+
+const tgl = moment().format("DD/MM");
+const ada = _.includes(list, x);</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kita cuma pakai 2 fungsi. Berapa yang ikut terkirim?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — TUGAS ════════ -->
         <section class="slide" data-notes="HMR = Hot Module Replacement: saat file disimpan, hanya modul yang berubah yang diganti, tanpa refresh halaman.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Apa saja yang dikerjakan build tool?</h2>
@@ -500,7 +514,8 @@
           </table>
           <div class="foot"><b>HMR</b>: simpan file, tampilan langsung berubah tanpa refresh.</div>
         </section>
-        <!-- ════════ 4 — PILIH ════════ -->
+
+        <!-- ════════ 5 — PILIH ════════ -->
         <section class="slide" data-notes="Untuk project baru, Vite adalah pilihan standar sekarang. Webpack masih banyak di project lama, jangan dipindah kalau tidak ada masalah.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">perbandingan</div>
           <h2>Vite vs Webpack</h2>
@@ -512,7 +527,42 @@
           </table>
           <div class="foot">Project baru → <b>Vite</b>. Project lama dengan Webpack → tidak wajib pindah.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CEK UKURAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Code splitting per halaman adalah penghematan paling besar untuk aplikasi besar.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">cek ukuran</div>
+          <h2>Lihat isi bundle</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Vite + visualizer</div><pre class="code"><span class="cm">// vite.config.ts</span>
+import { visualizer } from "rollup-plugin-visualizer";
+
+export default {
+  plugins: [visualizer({ open: true })],
+};
+<span class="cm">// npm run build → peta kotak-kotak terbuka</span></pre></div>
+            <div><div class="codehead ">pecah per halaman</div><pre class="code">const Admin = lazy(() =&gt; import("./Admin"));
+
+<span class="cm">// Admin.js dipisah jadi file sendiri.</span>
+<span class="cm">// User biasa tidak pernah mengunduhnya.</span></pre></div>
+          </div>
+          <div class="foot">Kotak terbesar di peta = <b>kandidat pertama</b> untuk diganti atau dipisah.</div>
+        </section>
+
+        <!-- ════════ 7 — DEV VS BUILD ════════ -->
+        <section class="slide" data-ext="1" data-notes="Webpack membundel semuanya dulu sebelum dev server siap. Vite memakai ES modules bawaan browser.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">dev vs build</div>
+          <h2>Kenapa Vite dev server cepat sekali?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Browser minta main.ts</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Vite ubah file itu saja</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Browser minta import berikutnya</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Hanya file yang dibuka yang diproses</div></div><ul class="clean" style="margin-top: 18px"><li>Saat <b>build</b>, Vite memakai Rollup untuk membungkus dan mengecilkan semuanya.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — KOSAKATA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Source map jangan dipublikasikan kalau kode sumber bersifat rahasia, atau unggah ke Sentry saja.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kosakata</div>
+          <h2>Istilah yang sering muncul</h2>
+          <table style="margin-top: 16px"><tr><th>Istilah</th><th>Gampangnya</th></tr><tr><td class="mono">Minify</td><td>Hapus spasi & pendekkan nama variabel</td></tr><tr><td class="mono">Source map</td><td>Peta dari kode kecil ke kode asli, untuk debugging</td></tr><tr><td class="mono">Polyfill</td><td>Tambalan fitur baru untuk browser lama</td></tr><tr><td class="mono">HMR</td><td>Ganti modul saat dev tanpa reload halaman</td></tr><tr><td class="mono">Content hash</td><td>app.3f9a1c.js — nama berubah kalau isi berubah</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: jalankan build produksi project kita, lihat ukuran file terbesar di folder dist.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -524,13 +574,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

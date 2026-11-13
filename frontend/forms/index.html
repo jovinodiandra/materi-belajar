@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Formulir yang baik membimbing, bukan memarahi.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: form mana di aplikasi kita yang paling sering dikomplain user?">
           <h2>User isi 10 field, klik kirim, semuanya hilang karena satu error.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 3 pesanan. Matikan tombol saat mengirim, dan di backend pakai idempotency key.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa pesanan masuk dua kali?</h2>
+          <div style="margin-top: 14px"><pre class="code">&lt;form onSubmit={async (e) =&gt; {
+  e.preventDefault();
+  await api.createOrder(form);   <span class="cm">// butuh 3 detik</span>
+}}&gt;
+  &lt;button&gt;Pesan&lt;/button&gt;
+&lt;/form&gt;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>User tidak sabar dan klik tombol 3 kali. Apa yang terjadi?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Skema Zod yang sama bisa dipakai di backend Node juga. Satu aturan, dua tempat.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Form dengan validasi skema (React Hook Form + Zod)</h2>
@@ -508,7 +523,8 @@
           </div>
           <div class="foot">Tombol <b>disabled</b> saat mengirim = tidak ada order dobel.</div>
         </section>
-        <!-- ════════ 4 — UX ════════ -->
+
+        <!-- ════════ 5 — UX ════════ -->
         <section class="slide" data-notes="Validasi di frontend hanya untuk kenyamanan user. Keamanan tetap di backend, karena request bisa dikirim tanpa lewat form.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Aturan form yang ramah</h2>
@@ -520,7 +536,37 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini pertahanan di sisi UI. Backend tetap harus aman dari request ganda.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Kunci tombol saat mengirim</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ bisa diklik berulang</div><pre class="code">&lt;button type="submit"&gt;Pesan&lt;/button&gt;</pre></div>
+            <div><div class="codehead good">✓ terkunci + umpan balik</div><pre class="code">const { isSubmitting } = formState;
+
+&lt;button type="submit" disabled={isSubmitting}&gt;
+  {isSubmitting ? "Memproses…" : "Pesan"}
+&lt;/button&gt;</pre></div>
+          </div>
+          <div class="foot">Tombol yang diam saja membuat user <b>klik lagi</b>. Beri tanda sedang diproses.</div>
+        </section>
+
+        <!-- ════════ 7 — ATRIBUT HTML ════════ -->
+        <section class="slide" data-ext="1" data-notes="Atribut kecil ini membuat form di HP jauh lebih nyaman tanpa satu baris JavaScript pun.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">atribut HTML</div>
+          <h2>Bantu browser dan keyboard HP</h2>
+          <table style="margin-top: 16px"><tr><th>Atribut</th><th>Efek</th></tr><tr><td class="mono">type="email"</td><td>Keyboard HP ada tombol @</td></tr><tr><td class="mono">inputmode="numeric"</td><td>Keyboard angka untuk OTP / kode pos</td></tr><tr><td class="mono">autocomplete="one-time-code"</td><td>OTP dari SMS terisi otomatis</td></tr><tr><td class="mono">autocomplete="street-address"</td><td>Alamat terisi dari data browser</td></tr><tr><td class="mono">enterkeyhint="next"</td><td>Tombol Enter bertuliskan "Next"</td></tr></table>
+        </section>
+
+        <!-- ════════ 8 — VALIDASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Contoh: email sudah terdaftar hanya bisa dicek backend. Tampilkan di bawah field email.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">validasi</div>
+          <h2>Validasi di dua tempat</h2>
+          <ul class="clean" style="margin-top: 18px"><li><b>Frontend</b>: untuk kenyamanan, user langsung tahu salahnya.</li><li><b>Backend</b>: untuk keamanan, karena frontend bisa dilewati.</li><li>Pakai skema yang sama kalau bisa (Zod di TS, atau generate dari OpenAPI).</li><li>Tampilkan error dari server di field yang tepat, bukan cuma toast.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: coba klik tombol simpan dua kali cepat di form kita. Apa yang terjadi?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +578,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

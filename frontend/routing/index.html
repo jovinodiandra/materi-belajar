@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> URL adalah alamat rumah halamanmu.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tes sederhana: buka halaman di aplikasi kita, copy URL, buka di tab baru. Apakah halaman yang sama muncul?">
           <h2>Semua halaman ada di satu URL. Refresh = balik ke beranda. Tombol back keluar dari aplikasi.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: server. Server mencari file /products yang tidak ada. Atur server agar semua rute mengembalikan index.html (SPA fallback).">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa refresh jadi 404?</h2>
+          <p class="lede">Aplikasi React di-deploy ke server statis. Klik menu ke /products lancar. Tekan refresh di /products: 404.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Siapa yang menjawab saat refresh: React Router atau server?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Simpan filter dan halaman di query string, bukan di state. Jadi bisa di-bookmark dan tombol back bekerja.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Rute, parameter, dan query (React Router)</h2>
@@ -505,7 +515,8 @@
           </div>
           <div class="foot">Filter &amp; halaman di <b>query string</b>: bisa di-bookmark.</div>
         </section>
-        <!-- ════════ 4 — TIPS ════════ -->
+
+        <!-- ════════ 5 — TIPS ════════ -->
         <section class="slide" data-notes="Guard di frontend hanya menyembunyikan halaman. Data admin tetap harus dilindungi di API.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Kebiasaan baik</h2>
@@ -517,7 +528,56 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — STATE DI URL ════════ -->
+        <section class="slide" data-ext="1" data-notes="Bonus: tombol back browser otomatis mengembalikan filter sebelumnya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">state di URL</div>
+          <h2>Simpan filter di URL, bukan di state</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ filter hilang saat refresh</div><pre class="code">const [category, setCategory] = useState("all");
+const [page, setPage] = useState(1);
+<span class="cm">// share link ke teman → filter hilang</span></pre></div>
+            <div><div class="codehead good">✓ filter di query string</div><pre class="code">const [params, setParams] = useSearchParams();
+const category = params.get("cat") ?? "all";
+const page = Number(params.get("page") ?? 1);
+
+setParams(&#123; cat: "sepatu", page: "2" &#125;);
+<span class="cm">// /products?cat=sepatu&amp;page=2</span></pre></div>
+          </div>
+          <div class="foot">Kalau user ingin <b>membagikan</b> atau <b>bookmark</b> keadaan itu, simpan di URL.</div>
+        </section>
+
+        <!-- ════════ 7 — LOADER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Waterfall = request berurutan yang sebenarnya bisa dimulai lebih awal.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">loader</div>
+          <h2>Ambil data sebelum halaman tampil</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User klik link</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Router jalankan loader</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Data siap</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Halaman tampil lengkap</div></div><ul class="clean" style="margin-top: 18px"><li>Menghindari "waterfall": halaman tampil → baru fetch → baru anak fetch lagi.</li><li>React Router, TanStack Router, Remix, SvelteKit punya konsep loader.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PROTEKSI ════════ -->
+        <section class="slide" data-ext="1" data-notes="replace mencegah halaman terlarang tersimpan di riwayat back.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">proteksi</div>
+          <h2>Halaman yang butuh login</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">route guard</div><pre class="code">function RequireAuth(&#123; children &#125;) &#123;
+  const &#123; user &#125; = useAuth();
+  const location = useLocation();
+  if (!user) &#123;
+    return &lt;Navigate to="/login"
+             state=&#123;&#123; from: location &#125;&#125; replace /&gt;;
+  &#125;
+  return children;
+&#125;</pre></div>
+            <div><div class="codehead ">ingat</div><pre class="code">Setelah login → kembali ke halaman
+yang tadi dituju (state.from)
+
+Guard di frontend hanya untuk UX.
+API tetap WAJIB cek izin sendiri.</pre></div>
+          </div>
+          <div class="foot">Menyembunyikan halaman <b>bukan</b> keamanan. Server yang menjaga data.</div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek filter di halaman daftar kita. Apakah tersimpan di URL?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -529,13 +589,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

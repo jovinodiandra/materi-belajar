@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Air mengikuti bentuk wadahnya.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tes cepat: buka DevTools, aktifkan device toolbar, pilih lebar 360px. Itu ukuran HP Android kebanyakan.">
           <h2>Dibuka di HP: teks kecil, harus zoom, dan tabel lebar keluar layar.</h2>
@@ -485,7 +486,18 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: ketiganya bisa. Obatnya: img { max-width: 100% }, tabel dibungkus div dengan overflow-x: auto, pre juga overflow auto.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa halaman bisa digeser ke samping?</h2>
+          <div style="margin-top: 14px"><pre class="code">&lt;table&gt;…12 kolom…&lt;/table&gt;
+&lt;img src="banner.jpg" width="1200"&gt;
+&lt;pre&gt;kode panjang tanpa jeda…&lt;/pre&gt;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Mana yang membuat halaman di HP melebar keluar layar?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Mobile first: tulis gaya untuk HP dulu, lalu tambahkan untuk layar yang lebih besar dengan min-width. Biasanya kodenya lebih sedikit.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Mobile first dengan media query</h2>
@@ -513,7 +525,8 @@
           </div>
           <div class="foot">Mulai dari HP, tambahkan untuk layar besar dengan <b>min-width</b>.</div>
         </section>
-        <!-- ════════ 4 — CHECKLIST ════════ -->
+
+        <!-- ════════ 5 — CHECKLIST ════════ -->
         <section class="slide" data-notes="Tanpa meta viewport, HP akan menampilkan versi desktop yang dikecilkan. Ini kesalahan paling dasar.">
           <div class="lens-tag lt-green" style="align-self: flex-start">checklist</div>
           <h2>Checklist responsif</h2>
@@ -525,7 +538,46 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTAINER QUERY ════════ -->
+        <section class="slide" data-ext="1" data-notes="Container query sudah didukung semua browser modern sejak 2023.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">container query</div>
+          <h2>Komponen yang menyesuaikan wadahnya</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">CSS</div><pre class="code">.card-wrap &#123; container-type: inline-size; &#125;
+
+.card &#123; display: grid; gap: 12px; &#125;
+
+@container (min-width: 420px) &#123;
+  .card &#123; grid-template-columns: 140px 1fr; &#125;
+&#125;</pre></div>
+            <div><div class="codehead ">kenapa berguna</div><pre class="code">Media query → lihat lebar LAYAR
+Container query → lihat lebar WADAH
+
+Kartu yang sama:
+  di sidebar sempit → bertumpuk
+  di konten lebar   → gambar di kiri
+
+Tanpa tahu dia dipasang di mana.</pre></div>
+          </div>
+          <div class="foot">Komponen jadi <b>mandiri</b>: tidak perlu tahu ukuran layar.</div>
+        </section>
+
+        <!-- ════════ 7 — CARA CEK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Emulator DevTools tidak meniru performa dan sentuhan dengan sempurna. Selalu cek di HP asli sebelum rilis.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">cara cek</div>
+          <h2>Tes responsif yang benar</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">DevTools mode device</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Coba 320px (HP kecil)</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Putar ke landscape</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tes di HP sungguhan</div></div><ul class="clean" style="margin-top: 18px"><li>Seret lebar layar pelan-pelan dari kecil ke besar. Cari titik yang "patah".</li><li>Breakpoint ditentukan oleh <b>konten</b>, bukan merk HP.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="iOS otomatis zoom saat fokus ke input dengan teks di bawah 16px. Itu sering mengganggu.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Teks dan sentuhan di HP</h2>
+          <table style="margin-top: 16px"><tr><th>Hal</th><th>Patokan</th></tr><tr><td class="mono">Ukuran teks isi</td><td>Minimal 16px (cegah zoom otomatis iOS)</td></tr><tr><td class="mono">Target sentuh</td><td>Minimal 44 × 44 px</td></tr><tr><td class="mono">Jarak antar tombol</td><td>Cukup supaya tidak salah tekan</td></tr><tr><td class="mono">Hover</td><td>Jangan jadi satu-satunya cara: HP tidak punya hover</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: buka 3 halaman kita di lebar 360px. Ada yang bisa digeser ke samping?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -537,13 +589,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

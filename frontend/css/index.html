@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Baju untuk kerangka HTML.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang pernah menulis !important lebih dari sekali dalam satu file? Itu tanda perang specificity.">
           <h2>Warna tombol tidak berubah. Ditambah !important. Lalu !important lagi.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — SPECIFICITY ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: biru, karena #id lebih kuat dari .class dan tag. Urutan penulisan hanya berpengaruh kalau kekuatannya sama.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Warna teksnya apa?</h2>
+          <div style="margin-top: 14px"><pre class="code">&lt;p id="promo" class="text"&gt;Diskon!&lt;/p&gt;
+
+<span class="cm">#promo     { color: blue; }</span>
+.text      { color: red; }
+p          { color: green; }</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Biru, merah, atau hijau? Kenapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — SPECIFICITY ════════ -->
         <section class="slide" data-notes="Kalau kekuatannya sama, aturan yang ditulis paling akhir yang menang. Itulah cascade. Kebiasaan baik: pakai class saja, hindari id untuk styling.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Siapa yang menang? Specificity</h2>
@@ -498,7 +512,8 @@
           </table>
           <div class="foot">Kekuatan sama? Yang ditulis <b>paling akhir</b> menang. Pakai class saja.</div>
         </section>
-        <!-- ════════ 4 — BOX MODEL ════════ -->
+
+        <!-- ════════ 5 — BOX MODEL ════════ -->
         <section class="slide" data-notes="Setiap elemen adalah kotak: isi, padding, border, margin. Default-nya lebar hanya menghitung isi. border-box membuat lebar sudah termasuk padding dan border, jauh lebih mudah ditebak.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">box model</div>
           <h2>Box model: kenapa lebarnya meleset</h2>
@@ -521,7 +536,8 @@
           </div>
           <div class="foot">Pasang <b>box-sizing: border-box</b> di awal setiap project.</div>
         </section>
-        <!-- ════════ 5 — TIPS ════════ -->
+
+        <!-- ════════ 6 — TIPS ════════ -->
         <section class="slide" data-notes="CSS variables membuat tema gelap/terang jadi gampang: cukup ganti nilai variabel.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Kebiasaan baik</h2>
@@ -533,7 +549,44 @@
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — MODERN CSS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Semua fitur ini sudah didukung browser modern. Nesting tidak perlu Sass lagi.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">modern CSS</div>
+          <h2>Selector baru yang menghemat JavaScript</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">:has() — induk yang tahu anaknya</div><pre class="code">/* kartu yang berisi gambar */
+.card:has(img) { padding-top: 0; }
+
+/* form yang punya input salah */
+form:has(:invalid) button {
+  opacity: .5;
+}</pre></div>
+            <div><div class="codehead ">nesting & clamp()</div><pre class="code">.card {
+  padding: 16px;
+  &amp; h3 { margin: 0; }
+  &amp;:hover { box-shadow: var(--shadow); }
+}
+h1 { font-size: clamp(24px, 4vw, 48px); }</pre></div>
+          </div>
+          <div class="foot"><b>clamp(min, ideal, max)</b> = ukuran yang menyesuaikan layar, tapi tetap ada batas.</div>
+        </section>
+
+        <!-- ════════ 8 — CARA CEK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Demo langsung di DevTools sangat efektif untuk topik ini.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">cara cek</div>
+          <h2>Gaya tidak berlaku? Cek di DevTools</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Klik kanan → Inspect</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Lihat panel Styles</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Aturan dicoret = kalah</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Lihat siapa pemenangnya</div></div><ul class="clean" style="margin-top: 18px"><li>Panel <b>Computed</b> menunjukkan nilai akhir dan dari mana asalnya.</li><li>Jangan langsung pakai !important. Cari tahu dulu siapa yang menang.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — SATUAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="1rem = ukuran huruf dasar browser (biasanya 16px). Kalau user memperbesar huruf, semua ikut membesar.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">satuan</div>
+          <h2>Satuan mana untuk apa?</h2>
+          <table style="margin-top: 16px"><tr><th>Satuan</th><th>Cocok untuk</th></tr><tr><td class="mono">rem</td><td>Ukuran teks, jarak umum</td></tr><tr><td class="mono">em</td><td>Jarak yang ikut ukuran teks elemen itu</td></tr><tr><td class="mono">%</td><td>Relatif terhadap induk</td></tr><tr><td class="mono">vw / dvh</td><td>Relatif terhadap layar</td></tr><tr><td class="mono">px</td><td>Garis border, bayangan tipis</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: hitung berapa !important di CSS project kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -545,13 +598,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

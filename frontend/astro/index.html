@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Halaman statis, dengan pulau-pulau interaktif.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Island architecture: lautnya HTML statis, pulaunya komponen interaktif seperti tombol beli atau carousel.">
           <h2>Blog sederhana mengirim 300 KB JavaScript, padahal isinya cuma teks.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 0 KB. Kode di antara --- jalan saat build/server. Browser hanya menerima HTML. Ini default Astro.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak berapa JavaScript yang dikirim</h2>
+          <div style="margin-top: 14px"><pre class="code">---
+const posts = await getPosts();
+---
+&lt;h1&gt;Blog&lt;/h1&gt;
+{posts.map(p =&gt; &lt;a href={p.url}&gt;{p.title}&lt;/a&gt;)}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Halaman ini mengirim berapa KB JavaScript ke browser?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="client:load, client:idle, client:visible mengatur kapan JavaScript pulau dimuat. Default tanpa directive: tidak ada JavaScript sama sekali.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Halaman Astro dengan satu pulau React</h2>
@@ -504,7 +518,8 @@
           </div>
           <div class="foot">Tanpa <code>client:*</code> = <b>nol</b> JavaScript.</div>
         </section>
-        <!-- ════════ 4 — KAPAN ════════ -->
+
+        <!-- ════════ 5 — KAPAN ════════ -->
         <section class="slide" data-notes="Pertanyaannya: halaman ini lebih banyak dibaca atau dipakai? Kalau dibaca, Astro. Kalau dipakai seperti aplikasi, pilih framework aplikasi.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ringkasan</div>
           <h2>Kapan pakai Astro?</h2>
@@ -517,7 +532,40 @@
           </table>
           <div class="foot">Lebih banyak <b>dibaca</b>? Astro. Lebih banyak <b>dipakai</b>? Framework aplikasi.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — DIRECTIVE ════════ -->
+        <section class="slide" data-ext="1" data-notes="client:visible bagus untuk komentar di bawah artikel: kebanyakan pembaca tidak sampai ke sana.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">directive</div>
+          <h2>Kapan pulau dinyalakan?</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">directive client:*</div><pre class="code">&lt;Header /&gt;                      &lt;!<span class="cm">-- HTML saja --&gt;</span>
+&lt;Search client:load /&gt;          &lt;!<span class="cm">-- langsung --&gt;</span>
+&lt;Comments client:visible /&gt;     &lt;!<span class="cm">-- saat terlihat --&gt;</span>
+&lt;Chat client:idle /&gt;            &lt;!<span class="cm">-- saat browser santai --&gt;</span>
+&lt;Map client:media="(min-width: 800px)" /&gt;</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">client:load    → JS dimuat segera
+client:visible → dimuat saat di-scroll
+client:idle    → setelah halaman tenang
+tanpa client:  → HTML statis, 0 JS</pre></div>
+          </div>
+          <div class="foot">Default-nya <b>tanpa JavaScript</b>. Kita yang memilih mana yang perlu interaktif.</div>
+        </section>
+
+        <!-- ════════ 7 — KONTEN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Cocok untuk tim konten: penulis cukup menulis Markdown, developer menjaga skemanya.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">konten</div>
+          <h2>Content collections: Markdown yang bertipe</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tulis .md di src/content/blog</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Definisikan skema (Zod)</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Frontmatter dicek saat build</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Salah ketik = build gagal</div></div><ul class="clean" style="margin-top: 18px"><li>Lupa isi tanggal atau judul? Ketahuan saat build, bukan saat dibaca user.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kebanyakan situs konten tidak butuh server. Statis = murah dan cepat.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Tips Astro</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Boleh campur React, Vue, Svelte dalam satu proyek.</li><li>Mulai statis. Tambah <code>output: "server"</code> hanya kalau butuh data per request.</li><li>Pakai <code>&lt;Image /&gt;</code> bawaan untuk optimasi gambar otomatis.</li><li>Ukur dengan Lighthouse: target skor performa 90+.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: halaman marketing kita mengirim berapa KB JavaScript?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -529,13 +577,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

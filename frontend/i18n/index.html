@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> i + 18 huruf + n. Satu aplikasi, banyak negara.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Bahkan kalau sekarang hanya satu bahasa, memakai Intl untuk angka dan tanggal sudah sangat membantu.">
           <h2>Ekspansi ke Malaysia. Ribuan teks Indonesia tertanam langsung di komponen.</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 1.234.567,5 / 1,234,567.5 / 1.234.567,5. Pemisah ribuan dan desimal berbeda per negara. Jangan format manual.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Format yang benar untuk siapa?</h2>
+          <div style="margin-top: 14px"><pre class="code">const n = 1234567.5;
+n.toLocaleString("id-ID");   <span class="cm">// ?</span>
+n.toLocaleString("en-US");   <span class="cm">// ?</span>
+n.toLocaleString("de-DE");   <span class="cm">// ?</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Tebak hasil masing-masing.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Intl sudah ada di semua browser, tanpa library. Untuk teks, pakai library seperti i18next, react-intl, atau vue-i18n yang mendukung bentuk jamak.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Teks dari kamus, format dari Intl</h2>
@@ -508,7 +521,8 @@
           </div>
           <div class="foot"><b>Intl</b> bawaan browser: angka, uang, tanggal sesuai negara.</div>
         </section>
-        <!-- ════════ 4 — JEBAKAN ════════ -->
+
+        <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Selalu terjemahkan kalimat utuh dengan placeholder, jangan potongan kata yang disambung.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -520,7 +534,46 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — JAMAK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Library populer: i18next, FormatJS (react-intl), vue-i18n.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">jamak</div>
+          <h2>Kalimat jamak yang benar</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">kamus (ICU message)</div><pre class="code">{
+  "cart": "{count, plural,
+    =0 {Keranjang kosong}
+    one {<span class="cm"># barang di keranjang}</span>
+    other {<span class="cm"># barang di keranjang}}"</span>
+}
+<span class="cm">// bahasa Inggris: item / items</span>
+<span class="cm">// bahasa Arab: 6 bentuk jamak!</span></pre></div>
+            <div><div class="codehead ">pemakaian</div><pre class="code">t("cart", { count: 0 })  <span class="cm">// Keranjang kosong</span>
+t("cart", { count: 3 })  <span class="cm">// 3 barang di keranjang</span>
+
+<span class="cm">// tanggal &amp; uang pakai Intl</span>
+new Intl.NumberFormat("id-ID",
+  { style: "currency", currency: "IDR" })
+  .format(25000)   <span class="cm">// Rp 25.000,00</span></pre></div>
+          </div>
+          <div class="foot">Aturan jamak tiap bahasa berbeda. Biarkan <b>library</b> yang mengurus.</div>
+        </section>
+
+        <!-- ════════ 7 — ALUR KERJA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Platform seperti Crowdin atau Lokalise membantu penerjemah bekerja tanpa menyentuh kode.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">alur kerja</div>
+          <h2>Alur kerja terjemahan</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Dev menulis key + teks Indonesia</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Ekstrak ke file JSON</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Penerjemah isi bahasa lain</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Build cek key yang hilang</div></div><ul class="clean" style="margin-top: 18px"><li>Pakai nama key yang bermakna: <code>checkout.pay_button</code>, bukan <code>text_42</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — HAL PENTING ════════ -->
+        <section class="slide" data-ext="1" data-notes="Properti CSS logical (inline-start, inline-end) otomatis membalik untuk bahasa RTL.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">hal penting</div>
+          <h2>Lebih dari sekadar terjemahan</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Bahasa kanan-ke-kiri (Arab): pakai <code>dir="rtl"</code> dan CSS <code>margin-inline-start</code>.</li><li>Teks Jerman bisa ±30% lebih panjang. Jangan kunci lebar tombol.</li><li>Zona waktu: simpan UTC, tampilkan sesuai zona user.</li><li>Gambar berisi teks juga perlu versi per bahasa.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari format rupiah manual (&#x27;Rp &#x27; + ...) di project kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +585,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

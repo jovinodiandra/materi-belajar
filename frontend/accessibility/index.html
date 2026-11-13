@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Tangga dan ramp: semua orang bisa masuk.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Latihan: coba pakai aplikasi kita 2 menit tanpa mouse, hanya Tab, Enter, dan Space.">
           <h2>Tombol hanya bisa diklik mouse. Pengguna keyboard terjebak.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau bisa, lakukan demo langsung. Biasanya ketemu minimal satu tempat di mana kita terjebak. Ingat: ±1 dari 6 orang di dunia hidup dengan disabilitas.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Coba tanpa mouse</h2>
+          <p class="lede">Latihan 2 menit: buka aplikasi kita, cabut mouse, pakai keyboard saja.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Bisa login? Bisa menambah barang ke keranjang?</li><li>Bisa melihat di mana fokus sedang berada?</li><li>Bisa menutup modal dengan Esc?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Pakai elemen asli dulu (button, a, label). ARIA hanya untuk menambal yang tidak bisa diungkapkan HTML biasa, seperti label untuk tombol ikon.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Tombol ikon yang bisa dibaca</h2>
@@ -504,7 +514,8 @@
           </div>
           <div class="foot">Aturan pertama ARIA: <b>pakai elemen HTML asli dulu</b>.</div>
         </section>
-        <!-- ════════ 4 — CHECKLIST ════════ -->
+
+        <!-- ════════ 5 — CHECKLIST ════════ -->
         <section class="slide" data-notes="WCAG adalah pedoman resmi aksesibilitas. Lighthouse dan axe DevTools bisa menemukan sebagian masalahnya otomatis.">
           <div class="lens-tag lt-green" style="align-self: flex-start">checklist</div>
           <h2>Checklist dasar (WCAG)</h2>
@@ -516,7 +527,41 @@
           </div>
           <div class="foot">Cek otomatis: Lighthouse &amp; <b>axe DevTools</b>. Lalu tes manual dengan keyboard.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="aria-describedby menghubungkan pesan error ke input, jadi screen reader membacakannya saat fokus.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Form yang bisa dibaca screen reader</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ placeholder sebagai label</div><pre class="code">&lt;input placeholder="Email"&gt;
+&lt;span class="red"&gt;Wajib diisi&lt;/span&gt;
+&lt;!<span class="cm">-- ← screen reader: "edit text" saja</span>
+     pesan error tidak terhubung --&gt;</pre></div>
+            <div><div class="codehead good">✓ label + error terhubung</div><pre class="code">&lt;label for="email"&gt;Email&lt;/label&gt;
+&lt;input id="email" type="email"
+       aria-invalid="true"
+       aria-describedby="email-err"&gt;
+&lt;p id="email-err"&gt;Wajib diisi&lt;/p&gt;</pre></div>
+          </div>
+          <div class="foot">Setiap input butuh <b>label</b> yang sungguhan. Placeholder hilang saat mengetik.</div>
+        </section>
+
+        <!-- ════════ 7 — CARA CEK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Mac: Cmd+F5 menyalakan VoiceOver. Windows: NVDA gratis.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">cara cek</div>
+          <h2>Tes aksesibilitas dalam 10 menit</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Lighthouse / axe DevTools</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Navigasi pakai Tab</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Zoom 200%</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Screen reader (VoiceOver / NVDA)</div></div><ul class="clean" style="margin-top: 18px"><li>Alat otomatis hanya menemukan ±30–40% masalah. Sisanya harus dicoba manual.</li><li>Pasang <code>eslint-plugin-jsx-a11y</code> supaya ketahuan sejak menulis kode.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Elemen HTML asli sudah bisa di-Tab, di-Enter, dan dibaca dengan benar. Gratis.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Pakai elemen HTML yang tepat</h2>
+          <table style="margin-top: 16px"><tr><th>Butuh</th><th>Pakai</th><th>Jangan</th></tr><tr><td class="mono">Aksi di halaman</td><td>&lt;button&gt;</td><td>&lt;div onclick&gt;</td></tr><tr><td class="mono">Pindah halaman</td><td>&lt;a href&gt;</td><td>&lt;button&gt; + router.push</td></tr><tr><td class="mono">Judul bagian</td><td>&lt;h2&gt;, &lt;h3&gt; berurutan</td><td>&lt;div class="title"&gt;</td></tr><tr><td class="mono">Gambar penting</td><td>&lt;img alt="…"&gt;</td><td>alt kosong / tidak ada</td></tr></table>
+          <div class="foot">Aturan pertama ARIA: <b>jangan pakai ARIA</b> kalau ada elemen HTML yang sudah bisa.</div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: pakai alur checkout kita hanya dengan keyboard. Catat di mana terjebak.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +573,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

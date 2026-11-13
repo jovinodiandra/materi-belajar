@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Penerjemah yang bekerja sebelum acara, bukan saat acara.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Svelte cocok untuk widget, situs konten, dan aplikasi yang sensitif terhadap ukuran.">
           <h2>Aplikasi kecil, tapi harus mengunduh framework yang besar.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Svelte adalah compiler. Komponen diubah jadi JavaScript biasa yang langsung mengubah DOM, tanpa runtime besar.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa Svelte bisa kecil?</h2>
+          <p class="lede">Bayangin dua cara memasak untuk tamu:</p>
+          <ul class="clean" style="margin-top: 16px"><li><b>React/Vue</b>: bawa koki (framework) ke rumah tamu. Koki memasak di sana.</li><li><b>Svelte</b>: masak di dapur sendiri (saat build), kirim makanan jadi.</li><li>Mana yang lebih ringan untuk dibawa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Svelte terasa seperti menulis HTML, CSS, dan JS biasa. Compiler yang menambahkan kode untuk memperbarui tampilan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Komponen Svelte 5 (runes)</h2>
@@ -506,7 +516,8 @@
           </div>
           <div class="foot">CSS di dalam komponen otomatis <b>tidak bocor</b> ke komponen lain.</div>
         </section>
-        <!-- ════════ 4 — KAPAN ════════ -->
+
+        <!-- ════════ 5 — KAPAN ════════ -->
         <section class="slide" data-notes="SvelteKit adalah framework lengkapnya, mirip Next.js untuk React.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ringkasan</div>
           <h2>Kapan Svelte masuk akal?</h2>
@@ -519,7 +530,63 @@
           </table>
           <div class="foot">Framework lengkapnya: <b>SvelteKit</b> (mirip Next.js).</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — PROPS & EVENT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Runes ($state, $derived, $props, $effect) adalah cara baru Svelte 5 untuk reaktivitas.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">props & event</div>
+          <h2>Props dan komunikasi ke induk</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">anak: Counter.svelte</div><pre class="code">&lt;script&gt;
+  let &#123; start = 0, onchange &#125; = $props();
+  let count = $state(start);
+  function inc() &#123;
+    count++;
+    onchange?.(count);
+  &#125;
+&lt;/script&gt;
+&lt;button onclick=&#123;inc&#125;&gt;&#123;count&#125;&lt;/button&gt;</pre></div>
+            <div><div class="codehead ">induk</div><pre class="code">&lt;script&gt;
+  import Counter from "./Counter.svelte";
+  let last = $state(0);
+&lt;/script&gt;
+
+&lt;Counter start=&#123;5&#125;
+         onchange=&#123;(n) =&gt; (last = n)&#125; /&gt;
+&lt;p&gt;Terakhir: &#123;last&#125;&lt;/p&gt;</pre></div>
+          </div>
+          <div class="foot">Di Svelte 5, event cukup dioper sebagai <b>fungsi biasa</b> lewat props.</div>
+        </section>
+
+        <!-- ════════ 7 — SVELTEKIT ════════ -->
+        <section class="slide" data-ext="1" data-notes="SvelteKit adalah meta-framework Svelte, seperti Next.js untuk React.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">SvelteKit</div>
+          <h2>Satu halaman SvelteKit</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">+page.server.ts: load data</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">+page.svelte: tampilan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">form actions: kirim form</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Jalan di server & browser</div></div><ul class="clean" style="margin-top: 18px"><li>Form tetap bekerja tanpa JavaScript (progressive enhancement).</li></ul>
+        </section>
+
+        <!-- ════════ 8 — BAWAAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini salah satu alasan developer suka Svelte: banyak hal sudah ada di dalam kotak.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">bawaan</div>
+          <h2>Animasi dan style bawaan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">transisi bawaan</div><pre class="code">&lt;script&gt;
+  import &#123; fade, fly &#125; from "svelte/transition";
+  let show = $state(true);
+&lt;/script&gt;
+
+&#123;#if show&#125;
+  &lt;div transition:fly=&#123;&#123; y: 20 &#125;&#125;&gt;Halo&lt;/div&gt;
+&#123;/if&#125;</pre></div>
+            <div><div class="codehead ">style otomatis terbatas</div><pre class="code">&lt;style&gt;
+  p &#123; color: teal; &#125;
+  /* hanya berlaku di komponen ini,
+     tidak bocor ke luar */
+&lt;/style&gt;</pre></div>
+          </div>
+          <div class="foot">Transisi dan scoped CSS sudah <b>tersedia tanpa library tambahan</b>.</div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: halaman mana di produk kita yang paling sensitif terhadap ukuran bundle?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -531,13 +598,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

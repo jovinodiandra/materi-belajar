@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Rumah jadi, tinggal diisi perabot.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Angular itu opinionated: punya pendapat kuat tentang cara menyusun aplikasi. Untuk tim besar, ini justru menguntungkan.">
           <h2>Tim besar, tiap orang memilih library sendiri. Struktur project berbeda-beda.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: kita mengubah isi array, bukan memberi nilai baru ke signal. Pakai items.update(list =&gt; [...list, item]).">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa layar tidak berubah?</h2>
+          <div style="margin-top: 14px"><pre class="code">export class CartComponent {
+  items = signal&lt;Item[]&gt;([]);
+  add(item: Item) {
+    this.items().push(item);   <span class="cm">// ← tampilan tidak update</span>
+  }
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Datanya sudah bertambah. Kenapa Angular tidak menggambar ulang?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Developer Spring biasanya cepat paham Angular: ada DI, ada service, ada dekorator mirip anotasi.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Komponen + service + DI (mirip Spring!)</h2>
@@ -507,7 +522,8 @@ export <span class="kw">class</span> ProductsComponent &#123;
           </div>
           <div class="foot">Dari Spring? Konsep DI &amp; service-nya hampir sama.</div>
         </section>
-        <!-- ════════ 4 — PAKET ════════ -->
+
+        <!-- ════════ 5 — PAKET ════════ -->
         <section class="slide" data-notes="Kekurangan Angular: lebih berat dan butuh belajar lebih banyak di awal. Kelebihannya: seragam dan lengkap.">
           <div class="lens-tag lt-green" style="align-self: flex-start">kelebihan</div>
           <h2>Yang sudah ada di dalam kotak</h2>
@@ -519,7 +535,47 @@ export <span class="kw">class</span> ProductsComponent &#123;
           </div>
           <div class="foot">Harga: lebih banyak yang dipelajari di awal.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SIGNALS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Sintaks @for dan @if adalah control flow baru sejak Angular 17. track wajib, mirip key di React.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">signals</div>
+          <h2>Signals: state yang otomatis mengabari</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">komponen</div><pre class="code">export class CartComponent {
+  items = signal&lt;Item[]&gt;([]);
+  total = computed(() =&gt;
+    this.items().reduce((s, i) =&gt; s + i.price, 0));
+
+  add(item: Item) {
+    this.items.update(list =&gt; [...list, item]);
+  }
+}</pre></div>
+            <div><div class="codehead ">template</div><pre class="code">&lt;p&gt;Total: {{ total() | currency:'IDR' }}&lt;/p&gt;
+
+@for (item of items(); track item.id) {
+  &lt;app-item [item]="item" /&gt;
+} @empty {
+  &lt;p&gt;Keranjang kosong&lt;/p&gt;
+}</pre></div>
+          </div>
+          <div class="foot"><b>computed</b> = nilai turunan yang dihitung ulang otomatis saat sumbernya berubah.</div>
+        </section>
+
+        <!-- ════════ 7 — RXJS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini contoh klasik kenapa RxJS berguna. Tanpa switchMap, jawaban yang datang terlambat bisa menimpa jawaban terbaru.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">RxJS</div>
+          <h2>Kotak pencarian yang sopan</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User mengetik</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">debounceTime(300)</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">distinctUntilChanged()</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">switchMap ke API</div></div><ul class="clean" style="margin-top: 18px"><li><code>switchMap</code> membatalkan request lama saat ada ketikan baru.</li><li>Hasilnya: tidak ada hasil lama yang menimpa hasil baru.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Subscription yang tidak dilepas adalah sumber memory leak paling umum di Angular.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Kebiasaan Angular modern</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Pakai <b>standalone component</b>, tidak perlu NgModule.</li><li>Ambil dependency dengan <code>inject()</code>.</li><li>State lokal pakai signals. Aliran event pakai RxJS.</li><li>Jangan lupa unsubscribe: pakai <code>async</code> pipe atau <code>takeUntilDestroyed()</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: kapan tim kita lebih cocok memakai framework lengkap dibanding library kecil?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -531,13 +587,14 @@ export <span class="kw">class</span> ProductsComponent &#123;
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

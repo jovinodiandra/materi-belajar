@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kerangka rumah dulu, baru catnya.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: coba buka halaman kita, tekan Tab. Apakah semua tombol bisa dicapai? Kalau tidak, biasanya karena div yang pura-pura jadi tombol.">
           <h2>Semua dibuat dengan div. Terlihat sama, tapi mesin tidak mengerti maknanya.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: nav, button, a, main, time. Tanya kenapa tombol Hapus bukan a: karena itu aksi, bukan pindah halaman.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak tag yang tepat</h2>
+          <p class="lede">Pilih tag HTML yang paling cocok:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Menu navigasi utama</li><li>Tombol "Hapus"</li><li>Link ke halaman "Tentang Kami"</li><li>Isi utama halaman</li><li>Tanggal terbit artikel</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="button asli otomatis bisa difokus dengan Tab, ditekan dengan Enter, dan diumumkan sebagai tombol oleh screen reader. div tidak dapat semua itu gratis.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Div soup vs HTML semantik</h2>
@@ -509,7 +519,8 @@
           </div>
           <div class="foot"><code>&lt;button&gt;</code> asli: bisa di-Tab, di-Enter, dan dibaca screen reader. <b>Gratis.</b></div>
         </section>
-        <!-- ════════ 4 — TAG ════════ -->
+
+        <!-- ════════ 5 — TAG ════════ -->
         <section class="slide" data-notes="Aturan gampang: kalau mengklik membuat pindah halaman, pakai a. Kalau melakukan aksi di halaman yang sama, pakai button.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">kosakata</div>
           <h2>Tag yang wajib kamu kenal</h2>
@@ -524,7 +535,59 @@
           </table>
           <div class="foot">Pindah halaman → <code>&lt;a&gt;</code>. Melakukan aksi → <code>&lt;button&gt;</code>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — BAWAAN BROWSER ════════ -->
+        <section class="slide" data-ext="1" data-notes="dialog.showModal() membuka dialog dengan fokus terkunci dan Esc untuk menutup.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">bawaan browser</div>
+          <h2>HTML sudah bisa banyak tanpa JavaScript</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">buka-tutup & dialog</div><pre class="code">&lt;details&gt;
+  &lt;summary&gt;Syarat &amp; ketentuan&lt;/summary&gt;
+  &lt;p&gt;Isi panjang…&lt;/p&gt;
+&lt;/details&gt;
+
+&lt;dialog id="confirm"&gt;
+  &lt;p&gt;Yakin hapus?&lt;/p&gt;
+  &lt;form method="dialog"&gt;&lt;button&gt;OK&lt;/button&gt;&lt;/form&gt;
+&lt;/dialog&gt;</pre></div>
+            <div><div class="codehead ">validasi bawaan</div><pre class="code">&lt;input type="email" required&gt;
+&lt;input type="number" min="1" max="10"&gt;
+&lt;input pattern="[0-9]{5}"
+       title="Kode pos 5 angka"&gt;
+
+&lt;!<span class="cm">-- browser menolak submit</span>
+     kalau tidak cocok --&gt;</pre></div>
+          </div>
+          <div class="foot">Elemen bawaan sudah <b>aksesibel</b> dan bisa dipakai keyboard secara gratis.</div>
+        </section>
+
+        <!-- ════════ 7 — HEAD ════════ -->
+        <section class="slide" data-ext="1" data-notes="lang juga membantu fitur terjemahan otomatis browser.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">head</div>
+          <h2>Isi head yang sering dilupakan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">wajib</div><pre class="code">&lt;meta charset="utf-8"&gt;
+&lt;meta name="viewport"
+      content="width=device-width, initial-scale=1"&gt;
+&lt;title&gt;Sepatu Lari — Toko Kita&lt;/title&gt;
+&lt;html lang="id"&gt;</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">charset   → huruf é, ñ, emoji tampil benar
+viewport  → tampilan HP tidak mengecil
+title     → judul tab &amp; hasil Google
+lang="id" → screen reader membaca
+            dengan logat Indonesia</pre></div>
+          </div>
+          <div class="foot">Tanpa <b>viewport</b>, situs di HP tampil seperti desktop yang diperkecil.</div>
+        </section>
+
+        <!-- ════════ 8 — CARA CEK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Halaman dengan HTML yang baik tetap terbaca walau CSS gagal dimuat.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">cara cek</div>
+          <h2>Cek HTML-mu</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Validator: <b>validator.w3.org</b>.</li><li>Lihat outline judul: apakah h1 → h2 → h3 berurutan?</li><li>Matikan CSS: apakah halaman masih masuk akal dibaca?</li><li>Lighthouse bagian Accessibility & SEO.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari div dengan onclick di project kita, ganti dengan button.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -536,13 +599,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

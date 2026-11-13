@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Gerak yang memberi arti, bukan gerak yang mengganggu.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Bandingkan dua demo: animasi left vs transform di DevTools Performance. Perbedaannya terlihat jelas.">
           <h2>Animasi patah-patah di HP. Sebagian user malah pusing.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aturan: animasi harus memberi informasi (sesuatu berubah, berasal dari mana). Kalau cuma hiasan dan membuat menunggu, buang.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Animasi ini membantu atau mengganggu?</h2>
+          <p class="lede">Nilai masing-masing: membantu 👍 atau mengganggu 👎</p>
+          <ul class="clean" style="margin-top: 16px"><li>Keranjang bergoyang sedikit saat barang ditambah.</li><li>Logo berputar terus di pojok layar.</li><li>Modal muncul pelan dari tengah dalam 200 ms.</li><li>Setiap kartu memantul saat halaman dibuka, satu per satu selama 3 detik.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="transform dan opacity bisa dikerjakan GPU tanpa menghitung ulang layout. prefers-reduced-motion menghormati user yang mematikan animasi di pengaturan HP atau laptopnya.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Animasikan transform, bukan posisi</h2>
@@ -509,7 +519,8 @@
           </div>
           <div class="foot">Animasikan <b>transform &amp; opacity</b>. Hormati <b>prefers-reduced-motion</b>.</div>
         </section>
-        <!-- ════════ 4 — PANDUAN ════════ -->
+
+        <!-- ════════ 5 — PANDUAN ════════ -->
         <section class="slide" data-notes="Kalau ragu apakah animasi perlu, tanya: apa yang user pelajari dari gerakan ini? Kalau tidak ada, mungkin tidak perlu.">
           <div class="lens-tag lt-green" style="align-self: flex-start">panduan</div>
           <h2>Panduan animasi UI</h2>
@@ -521,7 +532,45 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — HORMATI USER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Coba nyalakan Reduce Motion di pengaturan aksesibilitas HP/laptop dan lihat aplikasi favorit.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">hormati user</div>
+          <h2>prefers-reduced-motion</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">CSS</div><pre class="code">.card { transition: transform 250ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}</pre></div>
+            <div><div class="codehead ">JavaScript</div><pre class="code">const reduce = matchMedia(
+  "(prefers-reduced-motion: reduce)").matches;
+
+el.animate(frames, {
+  duration: reduce ? 0 : 250,
+});</pre></div>
+          </div>
+          <div class="foot">Sebagian orang <b>pusing</b> melihat gerakan. Sistem operasi punya pengaturan untuk itu.</div>
+        </section>
+
+        <!-- ════════ 7 — CARA CEK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Layout yang berulang setiap frame (layout thrashing) adalah penyebab paling umum.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">cara cek</div>
+          <h2>Mencari penyebab animasi patah-patah</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Buka DevTools → Performance</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Rekam saat animasi</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Cari blok ungu (Layout)</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Ganti ke transform/opacity</div></div><ul class="clean" style="margin-top: 18px"><li>Target: <b>60 fps</b> = setiap frame selesai dalam ±16 ms.</li><li>Centang "Paint flashing" untuk melihat area yang digambar ulang.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Mulai dari CSS. Tambah library hanya kalau CSS benar-benar tidak cukup.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Pilih alat animasi</h2>
+          <table style="margin-top: 16px"><tr><th>Kebutuhan</th><th>Pakai</th></tr><tr><td class="mono">Hover, buka-tutup sederhana</td><td>CSS transition</td></tr><tr><td class="mono">Loop / keyframe</td><td>CSS @keyframes</td></tr><tr><td class="mono">Kontrol dari JS (pause, urutan)</td><td>Web Animations API</td></tr><tr><td class="mono">Animasi antar halaman</td><td>View Transitions API</td></tr><tr><td class="mono">Animasi rumit di React</td><td>Framer Motion / Motion</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari transition pada width, height, top, atau left di CSS kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -533,13 +582,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

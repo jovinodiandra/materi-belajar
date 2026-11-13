@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Jangan buka pintu untuk tamu yang tidak dikenal.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="XSS (Cross-Site Scripting) = script jahat ikut berjalan di halaman kita. Ini serangan web yang paling sering ditemukan.">
           <h2>Komentar user berisi &lt;script&gt;. Semua pengunjung halaman itu kehilangan akun.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — XSS ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: ya. Semua yang dikirim ke browser bisa dibaca siapa saja lewat DevTools. Kunci rahasia hanya boleh di server.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Apa yang bocor di sini?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// .env (frontend, Vite)</span>
+VITE_API_URL=https://api.toko.com
+VITE_STRIPE_SECRET_KEY=sk_live_xxx   <span class="cm">// ← ?</span>
+
+<span class="cm">// dipakai di kode browser</span>
+const key = import.meta.env.VITE_STRIPE_SECRET_KEY;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Apakah user bisa melihat secret key ini?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — XSS ════════ -->
         <section class="slide" data-notes="React dan Vue otomatis meng-escape teks. Bahaya muncul saat kita sengaja memakai innerHTML, dangerouslySetInnerHTML, atau v-html. Kalau terpaksa, bersihkan dengan DOMPurify.">
           <div class="lens-tag lt-red" style="align-self: flex-start">serangan 1</div>
           <h2>XSS: tampilkan sebagai teks, bukan HTML</h2>
@@ -507,7 +522,8 @@ el.innerHTML = DOMPurify.sanitize(comment.text);</pre></div>
           </div>
           <div class="foot">React/Vue sudah aman <b>secara default</b>. Bahaya saat memakai innerHTML / v-html.</div>
         </section>
-        <!-- ════════ 4 — LAINNYA ════════ -->
+
+        <!-- ════════ 5 — LAINNYA ════════ -->
         <section class="slide" data-notes="Cookie HttpOnly tidak bisa dibaca JavaScript, jadi XSS tidak bisa mencurinya. CSP memberi tahu browser dari mana saja script boleh dimuat.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">pertahanan</div>
           <h2>Pertahanan lain yang wajib</h2>
@@ -521,7 +537,44 @@ el.innerHTML = DOMPurify.sanitize(comment.text);</pre></div>
           </table>
           <div class="foot">Semua kode frontend <b>bisa dibaca siapa saja</b>. Jangan simpan rahasia.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CSP ════════ -->
+        <section class="slide" data-ext="1" data-notes="frame-ancestors none mencegah clickjacking: situs kita dimasukkan ke iframe tak terlihat di situs jahat.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">CSP</div>
+          <h2>Content Security Policy: daftar tamu untuk script</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">header dari server</div><pre class="code">Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' https://js.stripe.com;
+  img-src 'self' data: https://cdn.toko.com;
+  connect-src 'self' https://api.toko.com;
+  frame-ancestors 'none'</pre></div>
+            <div><div class="codehead ">efeknya</div><pre class="code">Script dari domain lain → ditolak
+Script inline sisipan XSS → ditolak
+Situs kita di-iframe orang → ditolak
+
+Mulai dengan
+Content-Security-Policy-Report-Only
+untuk melihat dulu apa yang rusak.</pre></div>
+          </div>
+          <div class="foot">CSP = <b>lapisan kedua</b>. Kalau XSS lolos, script jahatnya tetap tidak jalan.</div>
+        </section>
+
+        <!-- ════════ 7 — SUPPLY CHAIN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Contoh nyata: event-stream (2018), ua-parser-js (2021), polyfill.io (2024).">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">supply chain</div>
+          <h2>Bahaya dari library pihak ketiga</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Library populer dibajak</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Versi baru berisi kode jahat</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Kita npm install</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Kode jahat ikut ke produksi</div></div><ul class="clean" style="margin-top: 18px"><li>Kunci versi (lock file), review update, pakai <code>npm audit</code>.</li><li>Script dari CDN: pakai <b>Subresource Integrity</b> (atribut integrity).</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CHECKLIST ════════ -->
+        <section class="slide" data-ext="1" data-notes="Cek header situs di securityheaders.com untuk melihat nilai cepat.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">checklist</div>
+          <h2>Checklist keamanan frontend</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Tidak ada rahasia di kode atau env frontend.</li><li>Tidak ada innerHTML / dangerouslySetInnerHTML dengan data user (atau disanitasi dengan DOMPurify).</li><li>Link ke luar dengan <code>target="_blank"</code> pakai <code>rel="noopener"</code>.</li><li>Header keamanan aktif: CSP, HSTS, X-Content-Type-Options.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: grep dangerouslySetInnerHTML, v-html, dan innerHTML di project kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -533,13 +586,14 @@ el.innerHTML = DOMPurify.sanitize(comment.text);</pre></div>
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

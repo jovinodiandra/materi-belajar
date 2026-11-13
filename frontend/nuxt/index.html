@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Vue + perlengkapan produksi.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Konvensi daripada konfigurasi: kalau file ditaruh di tempat yang benar, Nuxt otomatis tahu fungsinya.">
           <h2>Project Vue biasa: harus menyusun router, SSR, dan import sendiri.</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: fetch biasa tidak tahu hasil di server sudah ada. useFetch/useAsyncData mengirim hasil server ke browser, jadi tidak dipanggil ulang.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa API dipanggil dua kali?</h2>
+          <div style="margin-top: 14px"><pre class="code">&lt;script setup&gt;
+const res = await fetch("/api/products");   <span class="cm">// ← fetch biasa</span>
+const products = await res.json();
+&lt;/script&gt;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Di halaman SSR, request ini jalan di server lalu di browser lagi. Kenapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="useFetch memastikan data diambil sekali di server dan diteruskan ke browser, tidak diambil dua kali.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Halaman + ambil data di Nuxt</h2>
@@ -506,7 +519,8 @@
           </div>
           <div class="foot">useFetch: ambil data <b>sekali</b> di server, diteruskan ke browser.</div>
         </section>
-        <!-- ════════ 4 — FOLDER ════════ -->
+
+        <!-- ════════ 5 — FOLDER ════════ -->
         <section class="slide" data-notes="Ingat struktur folder ini, maka sebagian besar Nuxt sudah dipahami.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">konvensi</div>
           <h2>Folder dengan arti khusus</h2>
@@ -520,7 +534,43 @@
           </table>
           <div class="foot">Hafal struktur folder = paham sebagian besar Nuxt.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — API SERVER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Server Nuxt (Nitro) bisa di-deploy ke Node, serverless, atau edge.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">API server</div>
+          <h2>Backend kecil di folder server/</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">server/api/products/[id].get.ts</div><pre class="code">export default defineEventHandler(async (event) =&gt; {
+  const id = getRouterParam(event, "id");
+  const p = await db.product.find(id);
+  if (!p) throw createError({ statusCode: 404 });
+  return p;
+});</pre></div>
+            <div><div class="codehead ">dipakai di halaman</div><pre class="code">&lt;script setup&gt;
+const route = useRoute();
+const { data, error } = await useFetch(
+  `/api/products/${route.params.id}`);
+&lt;/script&gt;
+&lt;!<span class="cm">-- tipe data ikut terbaca otomatis --&gt;</span></pre></div>
+          </div>
+          <div class="foot">Nama file <b>.get.ts</b> / <b>.post.ts</b> menentukan metode HTTP.</div>
+        </section>
+
+        <!-- ════════ 7 — STATE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Variabel global biasa di SSR bisa dibagi antar request user. useState Nuxt mencegah hal itu.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">state</div>
+          <h2>Berbagi state antar komponen</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Kecil & sederhana: useState()</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Butuh aksi & devtools: Pinia</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Data dari server: useFetch</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Form lokal: ref() di komponen</div></div><ul class="clean" style="margin-top: 18px"><li><code>useState("cart", () => [])</code> aman untuk SSR: tidak bocor antar user.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — RENDER MODE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Satu aplikasi bisa mencampur cara render. Cocok untuk situs yang punya bagian publik dan dashboard.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">render mode</div>
+          <h2>Atur cara render per rute</h2>
+          <table style="margin-top: 16px"><tr><th>routeRules</th><th>Artinya</th></tr><tr><td class="mono">"/": { prerender: true }</td><td>Dibuat saat build</td></tr><tr><td class="mono">"/blog/**": { isr: 3600 }</td><td>Dibuat ulang tiap jam</td></tr><tr><td class="mono">"/admin/**": { ssr: false }</td><td>Render di browser saja</td></tr><tr><td class="mono">"/api/**": { cors: true }</td><td>Header CORS otomatis</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: halaman mana di produk kita yang butuh SEO dan cocok di-render di server?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +582,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Flexbox = rak. Grid = papan catur.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang masih ingat clearfix? Kalau tidak tahu, bagus. Kalian lahir di era Flexbox.">
           <h2>Menengahkan satu kotak saja butuh trik margin dan position.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: flex, grid, flex, grid. Satu arah → flex. Dua arah (baris dan kolom) → grid.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Flex atau grid?</h2>
+          <p class="lede">Pilih yang paling cocok:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Deretan tombol di footer dialog</li><li>Galeri foto 4 kolom yang jadi 2 kolom di HP</li><li>Header: logo kiri, menu kanan</li><li>Layout halaman: sidebar, header, konten, footer</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Baris Grid di kanan adalah resep paling berguna: kartu otomatis tersusun 1, 2, 3, atau 4 kolom sesuai lebar layar, tanpa media query.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Flexbox untuk satu arah, Grid untuk dua arah</h2>
@@ -509,7 +519,8 @@
           </div>
           <div class="foot">Resep sakti: <code>repeat(auto-fill, minmax(220px, 1fr))</code> — responsif tanpa media query.</div>
         </section>
-        <!-- ════════ 4 — PILIH ════════ -->
+
+        <!-- ════════ 5 — PILIH ════════ -->
         <section class="slide" data-notes="Keduanya boleh dicampur: Grid untuk kerangka halaman, Flexbox untuk isi di dalam tiap kotak.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">perbandingan</div>
           <h2>Kapan pakai yang mana?</h2>
@@ -522,7 +533,8 @@
           </table>
           <div class="foot">Campur saja: Grid untuk kerangka, Flexbox untuk isi kotak.</div>
         </section>
-        <!-- ════════ 5 — TENGAH ════════ -->
+
+        <!-- ════════ 6 — TENGAH ════════ -->
         <section class="slide" data-notes="Lelucon lama developer: &#x27;menengahkan div itu susah&#x27;. Sekarang tinggal dua baris.">
           <div class="lens-tag lt-green" style="align-self: flex-start">resep</div>
           <h2>Bonus: menengahkan sesuatu, akhirnya gampang</h2>
@@ -536,7 +548,62 @@
           </div>
           <div class="foot">Lelucon lama “center a div” sudah selesai.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — RESEP ════════ -->
+        <section class="slide" data-ext="1" data-notes="auto-fill vs auto-fit: bedanya cuma saat item sedikit. auto-fit meregangkan item untuk mengisi baris.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">resep</div>
+          <h2>Grid responsif tanpa media query</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">CSS</div><pre class="code">.gallery {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">Setiap kolom minimal 220px.
+Muat berapa? Isi sebanyak mungkin.
+Sisa ruang dibagi rata (1fr).
+
+Layar lebar → 5 kolom
+Tablet      → 3 kolom
+HP          → 1 kolom</pre></div>
+          </div>
+          <div class="foot">Satu baris CSS ini menggantikan <b>tiga media query</b>.</div>
+        </section>
+
+        <!-- ════════ 8 — AREA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Hati-hati: urutan visual berubah, urutan di HTML tetap. Pembaca layar dan Tab mengikuti HTML.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">area</div>
+          <h2>grid-template-areas: layout yang bisa "dilihat"</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">CSS</div><pre class="code">.page {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-areas:
+    "header header"
+    "side   main"
+    "footer footer";
+}
+.sidebar { grid-area: side; }</pre></div>
+            <div><div class="codehead ">versi HP</div><pre class="code">@media (max-width: 700px) {
+  .page {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header" "main" "side" "footer";
+  }
+}</pre></div>
+          </div>
+          <div class="foot">Ubah susunan halaman cukup dengan <b>menggambar ulang</b> petanya.</div>
+        </section>
+
+        <!-- ════════ 9 — JEBAKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="min-width: 0 menyelesaikan banyak masalah teks panjang yang membuat layout meluber.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">jebakan</div>
+          <h2>Jebakan layout yang sering bikin bingung</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Item flex tidak mau mengecil? Tambah <code>min-width: 0</code>.</li><li>Pakai <code>gap</code>, bukan margin di tiap anak.</li><li><code>100vh</code> di HP terpotong address bar. Pakai <code>100dvh</code>.</li><li>Pakai DevTools: ada tombol "grid" dan "flex" untuk melihat garisnya.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari float atau position: absolute untuk layout di project kita. Bisakah diganti flex/grid?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -548,13 +615,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

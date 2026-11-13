@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> React + perlengkapan lengkap untuk produksi.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Bandingkan: Create React App lama vs Next.js. Next.js sekarang jadi cara yang direkomendasikan tim React untuk memulai project.">
           <h2>Aplikasi React biasa: layar putih dulu, Google susah membaca isinya.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: di server. Ini Server Component, default di App Router. Kode dan rahasia di sini tidak dikirim ke browser.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kode ini jalan di mana?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// app/products/page.tsx</span>
+export default async function Page() {
+  const products = await db.product.findMany();   <span class="cm">// ← ?</span>
+  return &lt;ProductList items={products} /&gt;;
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Di server atau di browser? Apakah user bisa melihat query database-nya?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Server Component tidak menambah ukuran JavaScript di browser. Yang butuh klik, state, atau efek ditandai use client.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>App Router: folder = alamat halaman</h2>
@@ -506,7 +520,8 @@ export default <span class="kw">async</span> <span class="kw">function</span> Pr
           </div>
           <div class="foot">Default di server. Butuh klik/state? Tandai <code>"use client"</code>.</div>
         </section>
-        <!-- ════════ 4 — RENDER ════════ -->
+
+        <!-- ════════ 5 — RENDER ════════ -->
         <section class="slide" data-notes="Pilih per halaman. Next.js memungkinkan mencampur cara render dalam satu aplikasi. Detailnya ada di materi Rendering Strategies.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">pilihan</div>
           <h2>Pilihan cara render</h2>
@@ -519,7 +534,8 @@ export default <span class="kw">async</span> <span class="kw">function</span> Pr
           </table>
           <div class="foot">Boleh dicampur per halaman. Detail: materi <b>Rendering Strategies</b>.</div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Kesalahan paling umum: menaruh use client di layout atas sehingga semua turunannya ikut jadi client component.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -531,7 +547,45 @@ export default <span class="kw">async</span> <span class="kw">function</span> Pr
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SERVER ACTIONS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Siapa pun bisa memanggil server action secara langsung. Jangan anggap aman hanya karena tidak ada URL API.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">server actions</div>
+          <h2>Kirim form tanpa membuat API sendiri</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">app/todos/actions.ts</div><pre class="code">"use server";
+
+export async function addTodo(formData: FormData) {
+  const title = String(formData.get("title"));
+  await db.todo.create({ data: { title } });
+  revalidatePath("/todos");   <span class="cm">// segarkan halaman</span>
+}</pre></div>
+            <div><div class="codehead ">app/todos/page.tsx</div><pre class="code">import { addTodo } from "./actions";
+
+&lt;form action={addTodo}&gt;
+  &lt;input name="title" required /&gt;
+  &lt;button&gt;Tambah&lt;/button&gt;
+&lt;/form&gt;
+<span class="cm">// tetap jalan walau JS belum dimuat</span></pre></div>
+          </div>
+          <div class="foot">Server action tetap endpoint publik: <b>validasi dan cek izin</b> di dalamnya.</div>
+        </section>
+
+        <!-- ════════ 8 — FILE KHUSUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanpa menulis kode tambahan, setiap halaman sudah punya keadaan loading dan error.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">file khusus</div>
+          <h2>File khusus di setiap folder rute</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">layout.tsx: kerangka tetap</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">loading.tsx: tampil saat memuat</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">error.tsx: tampil saat gagal</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">not-found.tsx: 404</div></div><ul class="clean" style="margin-top: 18px"><li>Next.js otomatis membungkus page dengan Suspense dan error boundary dari file ini.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — CACHE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aturan default cache berubah antar versi Next.js. Selalu cek dokumentasi versi yang dipakai.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">cache</div>
+          <h2>Mengatur kesegaran data</h2>
+          <table style="margin-top: 16px"><tr><th>Tulis</th><th>Artinya</th></tr><tr><td class="mono">fetch(url, { cache: "force-cache" })</td><td>Simpan, pakai terus</td></tr><tr><td class="mono">fetch(url, { next: { revalidate: 60 } })</td><td>Segarkan tiap 60 detik (ISR)</td></tr><tr><td class="mono">fetch(url, { cache: "no-store" })</td><td>Selalu ambil baru</td></tr><tr><td class="mono">revalidatePath / revalidateTag</td><td>Segarkan setelah data diubah</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari use client di project kita yang sebenarnya tidak perlu.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -543,13 +597,14 @@ export default <span class="kw">async</span> <span class="kw">function</span> Pr
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

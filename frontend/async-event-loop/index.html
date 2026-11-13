@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu pelayan, banyak meja: titip pesanan ke dapur, lanjut melayani.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — WARM-UP ════════ -->
         <section class="slide" data-notes="Biarkan tim menebak dulu. Jawabannya 1, 4, 3, 2. Banyak yang menebak 1, 2, 3, 4.">
           <h2>Warm-up: apa urutan yang tercetak?</h2>
@@ -475,6 +476,7 @@ console.log(&quot;4&quot;);</pre>
           </div>
           <div class="foot">Waktu: 1 menit. Tulis urutannya di chat.</div>
         </section>
+
         <!-- ════════ 3 — EVENT LOOP ════════ -->
         <section class="slide" data-notes="Event loop: kerjakan semua kode biasa dulu. Setelah stack kosong, kerjakan semua microtask (Promise). Baru ambil satu task (setTimeout, klik, dll). Ulangi.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
@@ -483,6 +485,7 @@ console.log(&quot;4&quot;);</pre>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Call stack</h3><p style="font-size:13.5px">kerjakan kode sekarang: log 1, log 4</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Microtask queue</h3><p style="font-size:13.5px">Promise.then → log 3<br>diproses duluan</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Task queue</h3><p style="font-size:13.5px">setTimeout → log 2<br>diproses belakangan</p></div></div></div>
           <div class="foot">Urutan: <b>kode biasa → microtask (Promise) → task (setTimeout)</b>.</div>
         </section>
+
         <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="async/await membuat kode asinkron terbaca seperti kode biasa dari atas ke bawah. Error ditangkap dengan try/catch biasa.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">gaya penulisan</div>
@@ -510,6 +513,7 @@ console.log(&quot;4&quot;);</pre>
           </div>
           <div class="foot">async/await: dibaca dari atas ke bawah, error pakai <b>try/catch</b>.</div>
         </section>
+
         <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Karena hanya satu thread, kode berat seperti loop jutaan kali akan membuat halaman tidak bisa diklik sama sekali.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
@@ -522,7 +526,70 @@ console.log(&quot;4&quot;);</pre>
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini optimasi paling murah di frontend: halaman yang memuat 3 detik bisa jadi 1 detik.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">salah → benar</div>
+          <h2>Jalankan barengan kalau tidak saling tunggu</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ berurutan (3 detik)</div><pre class="code">const user   = await getUser();     <span class="cm">// 1 detik</span>
+const promos = await getPromos();   <span class="cm">// 1 detik</span>
+const news   = await getNews();     <span class="cm">// 1 detik</span>
+<span class="cm">// ← tidak saling butuh, tapi antre</span></pre></div>
+            <div><div class="codehead good">✓ paralel (1 detik)</div><pre class="code">const [user, promos, news] = await Promise.all([
+  getUser(),
+  getPromos(),
+  getNews(),
+]);
+<span class="cm">// boleh sebagian gagal? Promise.allSettled</span></pre></div>
+          </div>
+          <div class="foot"><b>Promise.all</b> gagal kalau satu gagal. <b>allSettled</b> menunggu semua apa pun hasilnya.</div>
+        </section>
+
+        <!-- ════════ 7 — JEBAKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Buka DevTools Performance, rekam, dan tunjukkan long task berwarna merah.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">jebakan</div>
+          <h2>Loop berat membekukan halaman</h2>
+          <div style="margin-top: 14px"><pre class="code">button.onclick = () =&gt; {
+  for (let i = 0; i &lt; 1e9; i++) { /* hitung */ }   <span class="cm">// ← 3 detik</span>
+  label.textContent = "Selesai";
+};
+<span class="cm">// selama 3 detik: tidak bisa klik, scroll, atau ketik</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>JavaScript di browser cuma punya <b>satu</b> thread utama.</li><li>Kerja berat → pindahkan ke <b>Web Worker</b> atau pecah jadi potongan kecil.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Race condition di frontend. Sering muncul di kotak pencarian dan filter.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Hasil lama menimpa hasil baru</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Ketik "sep" → request A</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Ketik "sepatu" → request B</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">B selesai duluan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">A datang belakangan, menimpa</div></div><ul class="clean" style="margin-top: 18px"><li>Batalkan request lama dengan <code>AbortController</code>.</li><li>Atau abaikan jawaban yang bukan dari request terakhir.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Fungsi cleanup di useEffect jalan saat url berubah atau komponen dilepas.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contoh</div>
+          <h2>AbortController untuk membatalkan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">batalkan request lama</div><pre class="code">let ctrl;
+async function search(q) {
+  ctrl?.abort();               <span class="cm">// batalkan yang lama</span>
+  ctrl = new AbortController();
+  const res = await fetch(`/api/search?q=${q}`,
+                          { signal: ctrl.signal });
+  render(await res.json());
+}</pre></div>
+            <div><div class="codehead ">di React</div><pre class="code">useEffect(() =&gt; {
+  const ctrl = new AbortController();
+  fetch(url, { signal: ctrl.signal })
+    .then(r =&gt; r.json()).then(setData)
+    .catch(() =&gt; {});
+  return () =&gt; ctrl.abort();   <span class="cm">// cleanup</span>
+}, [url]);</pre></div>
+          </div>
+          <div class="foot">Request yang dibatalkan melempar <b>AbortError</b>. Abaikan saja error itu.</div>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari await berurutan di project kita yang sebenarnya bisa dijalankan bareng.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -534,13 +601,14 @@ console.log(&quot;4&quot;);</pre>
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

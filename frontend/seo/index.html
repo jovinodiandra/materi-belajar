@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Papan nama toko yang jelas di pinggir jalan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tes: bagikan link halaman produk kita di WhatsApp. Muncul gambar dan judul, atau cuma URL?">
           <h2>Produk bagus, tapi tidak muncul di Google. Semua judul halaman sama: “My App”.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: tidak ada. Google bisa menjalankan JS, tapi lambat dan tidak selalu. Halaman publik penting sebaiknya SSR atau SSG.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Apa yang Google lihat?</h2>
+          <div style="margin-top: 14px"><pre class="code">&lt;!<span class="cm">-- yang diterima Google dari SPA --&gt;</span>
+&lt;html&gt;
+  &lt;head&gt;&lt;title&gt;My App&lt;/title&gt;&lt;/head&gt;
+  &lt;body&gt;&lt;div id="root"&gt;&lt;/div&gt;
+    &lt;script src="/app.js"&gt;&lt;/script&gt;&lt;/body&gt;
+&lt;/html&gt;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Ada nama produk? Harga? Deskripsi?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Title dan description inilah yang tampil di hasil Google. Tulis untuk manusia, bukan diisi kata kunci berulang-ulang.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Tag penting di setiap halaman</h2>
@@ -504,7 +519,8 @@
           </div>
           <div class="foot">Tulis untuk <b>manusia</b>, bukan menumpuk kata kunci.</div>
         </section>
-        <!-- ════════ 4 — CHECKLIST ════════ -->
+
+        <!-- ════════ 5 — CHECKLIST ════════ -->
         <section class="slide" data-notes="Halaman yang isinya baru muncul setelah JavaScript jalan lebih sulit diindeks. Untuk halaman publik, pakai server rendering atau static.">
           <div class="lens-tag lt-green" style="align-self: flex-start">checklist</div>
           <h2>Checklist SEO teknis</h2>
@@ -516,7 +532,50 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — DATA TERSTRUKTUR ════════ -->
+        <section class="slide" data-ext="1" data-notes="schema.org punya tipe untuk artikel, resep, event, FAQ, dan banyak lagi.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">data terstruktur</div>
+          <h2>Bantu Google memahami isi halaman</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">JSON-LD di halaman produk</div><pre class="code">&lt;script type="application/ld+json"&gt;
+&#123;
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Sepatu Lari X1",
+  "offers": &#123;
+    "@type": "Offer",
+    "price": "499000",
+    "priceCurrency": "IDR"
+  &#125;
+&#125;
+&lt;/script&gt;</pre></div>
+            <div><div class="codehead ">hasilnya</div><pre class="code">Hasil pencarian bisa tampil dengan:
+⭐ rating
+💰 harga
+📦 status stok
+
+Cek dengan Rich Results Test
+dari Google.</pre></div>
+          </div>
+          <div class="foot">Data terstruktur = <b>label rapi</b> yang langsung dibaca mesin.</div>
+        </section>
+
+        <!-- ════════ 7 — HALAMAN BERBAGI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Open Graph dibuat Facebook, sekarang dipakai hampir semua aplikasi chat dan media sosial.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">halaman berbagi</div>
+          <h2>Tampilan saat link dibagikan di WhatsApp</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User share link</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">WhatsApp ambil og:title</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">og:description & og:image</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Kartu pratinjau tampil</div></div><ul class="clean" style="margin-top: 18px"><li><code>&lt;meta property="og:image" content="https://…/sepatu-1200x630.jpg"&gt;</code></li><li>Tanpa og:image, link tampil polos dan jarang diklik.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Search Console wajib dipasang untuk situs publik. Gratis dan datanya langsung dari Google.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Alat untuk memeriksa SEO</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Untuk</th></tr><tr><td class="mono">Google Search Console</td><td>Halaman terindeks? Ada error?</td></tr><tr><td class="mono">Lighthouse → SEO</td><td>Cek dasar di satu halaman</td></tr><tr><td class="mono">Rich Results Test</td><td>Cek data terstruktur</td></tr><tr><td class="mono">sitemap.xml + robots.txt</td><td>Peta halaman untuk mesin pencari</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek title 5 halaman utama kita. Ada yang sama?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +587,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

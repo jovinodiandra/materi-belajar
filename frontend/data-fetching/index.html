@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Pesan makanan: ada status “sedang dimasak”, bukan diam saja.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Race condition di frontend: balasan datang tidak sesuai urutan permintaan. Demokan dengan network throttling di DevTools.">
           <h2>User mengetik cepat di kolom search. Hasil yang tampil justru dari ketikan lama.</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 3 kali, plus setiap kali komponen dipasang ulang. Library data-fetching menggabungkannya jadi satu dan menyimpannya di cache.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa kali data yang sama diambil?</h2>
+          <p class="lede">Header, sidebar, dan halaman profil sama-sama butuh data user.</p>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// Header.tsx    useEffect(() =&gt; fetch("/api/me")…)</span>
+<span class="cm">// Sidebar.tsx   useEffect(() =&gt; fetch("/api/me")…)</span>
+<span class="cm">// Profile.tsx   useEffect(() =&gt; fetch("/api/me")…)</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Berapa request ke /api/me saat halaman dibuka?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="AbortController membatalkan request lama saat ketikan berubah. Lebih baik lagi: tambahkan debounce, dan pakai TanStack Query yang mengurus ini otomatis.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Batalkan request lama</h2>
@@ -508,7 +521,8 @@
           </div>
           <div class="foot">Tambah <b>debounce</b> (tunggu user berhenti mengetik ±300ms).</div>
         </section>
-        <!-- ════════ 4 — CHECKLIST ════════ -->
+
+        <!-- ════════ 5 — CHECKLIST ════════ -->
         <section class="slide" data-notes="Jebakan fetch: status 404 dan 500 tidak dianggap error oleh fetch. Harus cek res.ok secara manual.">
           <div class="lens-tag lt-green" style="align-self: flex-start">checklist</div>
           <h2>Checklist setiap fetch</h2>
@@ -520,7 +534,59 @@
           </div>
           <div class="foot"><code>fetch</code> tidak menganggap 404/500 sebagai error. <b>Cek res.ok!</b></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — TANSTACK QUERY ════════ -->
+        <section class="slide" data-ext="1" data-notes="Alternatif: SWR, RTK Query, Apollo (untuk GraphQL). Idenya sama.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">TanStack Query</div>
+          <h2>Biarkan library mengurus cache</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">ambil data</div><pre class="code">function useMe() {
+  return useQuery({
+    queryKey: ["me"],
+    queryFn: () =&gt; api("/me"),
+    staleTime: 60_000,   <span class="cm">// segar selama 1 menit</span>
+  });
+}
+const { data, isPending, error } = useMe();</pre></div>
+            <div><div class="codehead ">yang didapat gratis</div><pre class="code">✓ 3 komponen → 1 request
+✓ Hasil disimpan di cache
+✓ Ambil ulang saat tab difokuskan lagi
+✓ Retry otomatis kalau gagal
+✓ Loading &amp; error state siap pakai</pre></div>
+          </div>
+          <div class="foot"><b>queryKey</b> = nama laci cache. Key sama = data sama.</div>
+        </section>
+
+        <!-- ════════ 7 — OPTIMISTIC UPDATE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Optimistic = berasumsi berhasil dulu. User merasa aplikasi sangat cepat.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">optimistic update</div>
+          <h2>Tombol suka yang terasa instan</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User klik ❤️</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Langsung tampil merah</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Kirim request di belakang</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Gagal? Kembalikan + pesan</div></div><ul class="clean" style="margin-top: 18px"><li>Cocok untuk aksi yang <b>hampir selalu berhasil</b> dan mudah dibatalkan.</li><li>Jangan untuk pembayaran atau hal penting.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — SETELAH MENGUBAH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pola ini menggantikan banyak kode Redux untuk data dari server.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">setelah mengubah</div>
+          <h2>Segarkan data setelah mutasi</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">useMutation</div><pre class="code">const qc = useQueryClient();
+const addTodo = useMutation({
+  mutationFn: (t) =&gt; api("/todos", { method: "POST", body: t }),
+  onSuccess: () =&gt; {
+    qc.invalidateQueries({ queryKey: ["todos"] });
+  },
+});</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">Simpan todo baru
+→ tandai cache ["todos"] basi
+→ daftar todo diambil ulang otomatis
+
+Tidak perlu memperbarui state manual
+di banyak komponen.</pre></div>
+          </div>
+          <div class="foot">Ubah data → <b>invalidate</b> → tampilan ikut segar.</div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari fetch di project kita yang tidak mengecek res.ok.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +598,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

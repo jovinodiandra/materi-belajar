@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Telepon terbuka, bukan kirim surat bolak-balik.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — TIGA CARA ════════ -->
         <section class="slide" data-notes="Jangan langsung WebSocket. Kalau data cuma mengalir dari server ke client, SSE jauh lebih sederhana dan lewat HTTP biasa.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
@@ -475,7 +476,16 @@
           </table>
           <div class="foot">Server → client saja? <b>SSE</b> lebih sederhana dari WebSocket.</div>
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban kira-kira: SSE atau WebSocket, polling jarang atau push notification, WebSocket, SSE. Diskusikan alasannya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Pilih teknologinya</h2>
+          <p class="lede">Polling, SSE, atau WebSocket?</p>
+          <ul class="clean" style="margin-top: 16px"><li>Status pesanan ojek online yang bergerak di peta</li><li>Notifikasi "pesanan dikirim" sehari 2–3 kali</li><li>Aplikasi chat dua arah</li><li>Jawaban AI yang muncul kata per kata</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="SSE otomatis menyambung ulang. WebSocket harus mengurus reconnect sendiri, biasanya dengan jeda yang makin lama (backoff).">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>SSE dan WebSocket</h2>
@@ -499,7 +509,8 @@ ws.onclose = () =&gt; reconnectWithBackoff();  <span class="cm">// urus sendiri<
           </div>
           <div class="foot">SSE menyambung ulang <b>otomatis</b>. WebSocket: urus reconnect sendiri.</div>
         </section>
-        <!-- ════════ 4 — JEBAKAN ════════ -->
+
+        <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Anggap koneksi realtime pasti putus suatu saat. Desain aplikasinya tetap benar walau ada pesan yang terlewat.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Yang perlu dijaga</h2>
@@ -511,7 +522,47 @@ ws.onclose = () =&gt; reconnectWithBackoff();  <span class="cm">// urus sendiri<
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — RECONNECT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Saat server restart, ribuan client tersambung ulang. Tanpa jitter, server langsung kebanjiran.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">reconnect</div>
+          <h2>Sambung ulang dengan jeda makin lama</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">WebSocket + backoff</div><pre class="code">let retry = 0;
+function connect() {
+  const ws = new WebSocket(URL);
+  ws.onopen = () =&gt; { retry = 0; resync(); };
+  ws.onclose = () =&gt; {
+    const wait = Math.min(30_000, 1000 * 2 ** retry++);
+    setTimeout(connect, wait + Math.random() * 1000);
+  };
+}</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">Putus → coba 1 detik
+Putus lagi → 2 detik, 4, 8, … maks 30
++ jeda acak supaya ribuan user
+  tidak menyerbu bersamaan
+
+resync() → ambil data terbaru
+  yang terlewat saat putus</pre></div>
+          </div>
+          <div class="foot">EventSource (SSE) sudah <b>reconnect otomatis</b>. WebSocket harus ditulis sendiri.</div>
+        </section>
+
+        <!-- ════════ 7 — SKALA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Alternatif tanpa urus sendiri: Pusher, Ably, Supabase Realtime, Firebase.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">skala</div>
+          <h2>Banyak server, pesan harus sampai</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User A tersambung ke server 1</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Event terjadi di server 2</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Server 2 publish ke Redis</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Server 1 terima & kirim ke A</div></div><ul class="clean" style="margin-top: 18px"><li>Koneksi realtime menempel di satu server. Butuh <b>pub/sub</b> untuk menyebarkan pesan.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Proxy dan load balancer sering memutus koneksi yang diam 60 detik. Heartbeat mencegahnya.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Hal kecil yang penting</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Kirim <b>heartbeat</b> (ping) supaya koneksi mati cepat terdeteksi.</li><li>Autentikasi saat tersambung, dan putuskan kalau token kedaluwarsa.</li><li>Tutup koneksi saat tab disembunyikan lama (hemat baterai).</li><li>Tampilkan status koneksi ke user: "Menyambungkan ulang…".</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: fitur mana di produk kita yang terasa lebih baik kalau realtime?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -523,13 +574,14 @@ ws.onclose = () =&gt; reconnectWithBackoff();  <span class="cm">// urus sendiri<
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

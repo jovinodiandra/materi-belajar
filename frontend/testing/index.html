@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Tes seperti user, bukan seperti tukang bongkar mesin.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Prinsip Testing Library: semakin tes mirip cara software dipakai, semakin besar kepercayaan yang diberikannya.">
           <h2>Refactor komponen tanpa mengubah tampilan, tapi 30 tes merah.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: A rusak padahal fitur masih benar. B tetap hijau karena menguji yang dilihat user.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tes mana yang lebih berguna?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// A</span>
+expect(wrapper.state("isOpen")).toBe(true);
+
+<span class="cm">// B</span>
+await user.click(screen.getByRole("button", &#123; name: "Menu" &#125;));
+expect(screen.getByRole("navigation")).toBeVisible();</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau isOpen diganti nama jadi expanded, tes mana yang rusak?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Bonus: getByRole juga diam-diam mengetes aksesibilitas. Kalau tombol tidak bisa ditemukan lewat role, screen reader juga kesulitan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Testing Library: cari seperti user</h2>
@@ -503,7 +518,8 @@
           </div>
           <div class="foot">Bonus: <b>getByRole</b> sekaligus mengetes aksesibilitas.</div>
         </section>
-        <!-- ════════ 4 — LAPISAN ════════ -->
+
+        <!-- ════════ 5 — LAPISAN ════════ -->
         <section class="slide" data-notes="End-to-end lambat dan mahal, jadi hanya untuk alur paling penting. Sisanya cukup tes komponen.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">strategi</div>
           <h2>Alat per lapisan</h2>
@@ -515,7 +531,63 @@
           </table>
           <div class="foot">E2E hanya untuk <b>alur paling penting</b>: login, checkout.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — MOCK API ════════ -->
+        <section class="slide" data-ext="1" data-notes="Handler yang sama bisa dipakai di tes, Storybook, dan saat development tanpa backend.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">mock API</div>
+          <h2>Palsukan API dengan MSW</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">handler</div><pre class="code">import &#123; http, HttpResponse &#125; from "msw";
+
+export const handlers = [
+  http.get("/api/products", () =&gt;
+    HttpResponse.json([&#123; id: 1, name: "Sepatu" &#125;])),
+  http.post("/api/cart", () =&gt;
+    new HttpResponse(null, &#123; status: 500 &#125;)),
+];</pre></div>
+            <div><div class="codehead ">tes</div><pre class="code">test("tampilkan error kalau gagal", async () =&gt; &#123;
+  render(&lt;ProductPage /&gt;);
+  await user.click(
+    await screen.findByRole("button", &#123; name: "Beli" &#125;));
+  expect(await screen.findByText(/gagal/i))
+    .toBeVisible();
+&#125;);</pre></div>
+          </div>
+          <div class="foot">MSW memalsukan di level <b>jaringan</b>. Komponen tetap memanggil fetch seperti biasa.</div>
+        </section>
+
+        <!-- ════════ 7 — END-TO-END ════════ -->
+        <section class="slide" data-ext="1" data-notes="Trace viewer menampilkan screenshot setiap langkah, sangat membantu saat tes gagal di CI.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">end-to-end</div>
+          <h2>Tes alur penting dengan Playwright</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">tes e2e</div><pre class="code">test("checkout berhasil", async (&#123; page &#125;) =&gt; &#123;
+  await page.goto("/products/1");
+  await page.getByRole("button", &#123; name: "Beli" &#125;).click();
+  await page.getByRole("link", &#123; name: "Keranjang" &#125;).click();
+  await page.getByRole("button", &#123; name: "Bayar" &#125;).click();
+  await expect(page.getByText("Terima kasih"))
+    .toBeVisible();
+&#125;);</pre></div>
+            <div><div class="codehead ">aturan</div><pre class="code">✓ Hanya untuk alur paling penting:
+  login, checkout, daftar
+✓ Jalan di browser sungguhan
+✗ Lambat, jangan untuk semua hal
+
+Gagal? Buka trace viewer:
+npx playwright show-trace</pre></div>
+          </div>
+          <div class="foot">Sedikit tes e2e untuk <b>alur yang menghasilkan uang</b>.</div>
+        </section>
+
+        <!-- ════════ 8 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau sulit menemukan elemen dengan getByRole, mungkin HTML-nya kurang aksesibel. Tes membantu menemukan itu.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Urutan memilih query di Testing Library</h2>
+          <table style="margin-top: 16px"><tr><th>Prioritas</th><th>Query</th><th>Kenapa</th></tr><tr><td class="mono">1</td><td>getByRole</td><td>Cara user & screen reader menemukan elemen</td></tr><tr><td class="mono">2</td><td>getByLabelText</td><td>Untuk field form</td></tr><tr><td class="mono">3</td><td>getByText</td><td>Teks yang terlihat</td></tr><tr><td class="mono">terakhir</td><td>getByTestId</td><td>Kalau tidak ada cara lain</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari tes yang mengecek state atau class internal, ubah jadi cek teks yang terlihat.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -527,13 +599,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

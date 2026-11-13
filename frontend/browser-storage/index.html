@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Saku, tas, dan lemari: beda barang, beda tempat.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PILIHAN ════════ -->
         <section class="slide" data-notes="Cookie selalu ikut dikirim ke server di setiap request, jadi jangan diisi data besar. localStorage tidak ikut terkirim.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
@@ -476,7 +477,16 @@
           </table>
           <div class="foot">Cookie ikut terkirim tiap request. localStorage <b>tidak</b>.</div>
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: cookie HttpOnly, localStorage, sessionStorage, IndexedDB. Bahas alasan tiap pilihan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Simpan di mana?</h2>
+          <p class="lede">Pilih tempat terbaik untuk tiap data:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Token login</li><li>Tema gelap/terang pilihan user</li><li>Draft formulir panjang di tab ini saja</li><li>Ribuan produk untuk mode offline</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="localStorage bisa kosong, rusak, atau diblokir (mode private, pengaturan privasi). Selalu siapkan nilai default dan bungkus dengan try/catch.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Pakai localStorage dengan aman</h2>
@@ -495,7 +505,8 @@ prefs.theme;   <span class="cm">// error kalau belum ada / rusak</span></pre></d
           </div>
           <div class="foot">Storage bisa <b>kosong atau diblokir</b>. Selalu siapkan nilai default.</div>
         </section>
-        <!-- ════════ 4 — JEBAKAN ════════ -->
+
+        <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Anggap semua isi browser storage bisa dibaca dan diubah user. Server tidak boleh percaya isinya.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -507,7 +518,54 @@ prefs.theme;   <span class="cm">// error kalau belum ada / rusak</span></pre></d
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — COOKIE AMAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="CSRF = situs jahat membuat browser kita mengirim request ke situs lain memakai cookie kita.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">cookie aman</div>
+          <h2>Cookie login yang aman</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">dikirim server</div><pre class="code">Set-Cookie: session=abc123;
+  HttpOnly;          <span class="cm">// JS tidak bisa baca</span>
+  Secure;            <span class="cm">// hanya lewat HTTPS</span>
+  SameSite=Lax;      <span class="cm">// tidak ikut dari situs lain</span>
+  Path=/;
+  Max-Age=86400</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">HttpOnly → aman dari pencurian lewat XSS
+Secure   → tidak bocor di Wi-Fi publik
+SameSite → mengurangi serangan CSRF
+
+Frontend tidak perlu menyentuh token.
+Browser yang mengirim otomatis.</pre></div>
+          </div>
+          <div class="foot">Tiga atribut wajib: <b>HttpOnly, Secure, SameSite</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — INDEXEDDB ════════ -->
+        <section class="slide" data-ext="1" data-notes="IndexedDB bersifat async, jadi tidak membekukan halaman seperti localStorage yang sync.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">IndexedDB</div>
+          <h2>IndexedDB tanpa pusing</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">pakai library kecil (idb-keyval)</div><pre class="code">import { get, set, del } from "idb-keyval";
+
+await set("products", products);   <span class="cm">// simpan</span>
+const cached = await get("products");
+await del("products");</pre></div>
+            <div><div class="codehead ">kapan perlu</div><pre class="code">✓ Data besar (MB)
+✓ Mode offline / PWA
+✓ Simpan objek &amp; Blob, bukan cuma teks
+✗ Setting kecil → localStorage cukup</pre></div>
+          </div>
+          <div class="foot">API asli IndexedDB rumit. Library seperti <b>idb</b> / <b>Dexie</b> membuatnya gampang.</div>
+        </section>
+
+        <!-- ════════ 8 — HAL PENTING ════════ -->
+        <section class="slide" data-ext="1" data-notes="Penyimpanan browser = cache yang nyaman, bukan tempat data penting. Data penting tetap di server.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">hal penting</div>
+          <h2>Penyimpanan browser bisa hilang</h2>
+          <ul class="clean" style="margin-top: 18px"><li>User bisa menghapusnya kapan saja.</li><li>Safari menghapus data situs yang tidak dibuka 7 hari (ITP).</li><li>Mode private: data hilang saat tab ditutup.</li><li>Selalu bungkus akses dengan <code>try/catch</code> dan siapkan nilai default.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: buka DevTools → Application. Apa saja yang aplikasi kita simpan di browser?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -519,13 +577,14 @@ prefs.theme;   <span class="cm">// error kalau belum ada / rusak</span></pre></d
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

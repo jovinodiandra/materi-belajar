@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Jatuh itu biasa. Yang penting tahu cara bangun.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Aturan sederhana: tangani error di tempat yang bisa melakukan sesuatu dengannya. Kalau tidak bisa, teruskan ke atas.">
           <h2>Error ditangkap di 5 lapisan, dicatat 5 kali, dan pesannya hilang di tengah jalan.</h2>
@@ -485,7 +486,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — JENIS ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 3 kali, dengan pesan berbeda. Saat insiden, orang mengira ada 3 masalah. Log sekali saja, di tempat error akhirnya ditangani.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa kali error ini tercatat?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// repository</span>
+catch (SQLException e) &#123; log.error("db error", e); throw new RepoException(e); &#125;
+<span class="cm">// service</span>
+catch (RepoException e) &#123; log.error("service error", e); throw new ServiceException(e); &#125;
+<span class="cm">// controller</span>
+catch (ServiceException e) &#123; log.error("api error", e); return 500; &#125;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Satu kejadian, berapa stack trace di log?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — JENIS ════════ -->
         <section class="slide" data-notes="Salah input user bukan error sistem. Jangan dicatat sebagai ERROR, nanti alert penuh kebisingan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Bedakan jenis error</h2>
@@ -497,7 +512,8 @@
           </table>
           <div class="foot">Salah input user <b>bukan</b> error sistem. Jangan bikin alert berisik.</div>
         </section>
-        <!-- ════════ 4 — ATURAN ════════ -->
+
+        <!-- ════════ 5 — ATURAN ════════ -->
         <section class="slide" data-notes="Fail fast: semakin cepat error ketahuan, semakin dekat dengan penyebabnya, semakin mudah diperbaiki.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Aturan praktis</h2>
@@ -509,7 +525,47 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SATU TEMPAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="ProblemDetail adalah format RFC 9457, sudah bawaan Spring 6.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">satu tempat</div>
+          <h2>Penanganan error terpusat</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">@RestControllerAdvice</div><pre class="code">@ExceptionHandler(OrderNotFound.class)
+ProblemDetail notFound(OrderNotFound e) &#123;
+  return ProblemDetail.forStatusAndDetail(
+      NOT_FOUND, e.getMessage());
+&#125;
+
+@ExceptionHandler(Exception.class)
+ProblemDetail unexpected(Exception e) &#123;
+  log.error("unexpected", e);   <span class="cm">// log di sini saja</span>
+  return ProblemDetail.forStatus(INTERNAL_SERVER_ERROR);
+&#125;</pre></div>
+            <div><div class="codehead ">hasilnya</div><pre class="code">✓ Controller bersih dari try-catch
+✓ Format error seragam
+✓ Error bisnis (404) tidak jadi ERROR log
+✓ Error tak terduga dicatat sekali,
+  detail tidak bocor ke user</pre></div>
+          </div>
+          <div class="foot">Lapisan lain cukup <b>melempar</b>. Satu tempat yang <b>menangani</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — RETRY ════════ -->
+        <section class="slide" data-ext="1" data-notes="Resilience4j atau Spring Retry menyediakan retry dengan backoff dan jitter.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">retry</div>
+          <h2>Error sementara: coba lagi dengan bijak</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Panggilan gagal (timeout)</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Tunggu 200 ms, coba lagi</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Gagal: tunggu 400 ms, 800 ms</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Maksimal 3x, lalu menyerah</div></div><ul class="clean" style="margin-top: 18px"><li>Hanya retry error <b>sementara</b> (timeout, 503). Jangan retry 400 atau 404.</li><li>Aksi yang di-retry harus <b>idempotent</b>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PESAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Berikan traceId ke user: &#x27;Kode error: a1b2c3&#x27;. Customer service bisa meneruskannya ke tim teknis.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pesan</div>
+          <h2>Pesan untuk siapa?</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">untuk user</div><h3>Jelas & bisa ditindaklanjuti</h3><p style="color: var(--ink)">"Pembayaran gagal. Saldo tidak terpotong. Coba lagi."</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">untuk developer</div><h3>Lengkap & bisa dicari</h3><p style="color: var(--ink)">orderId, traceId, penyebab asli, stack trace — di log.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">untuk penyerang</div><h3>Tidak ada</h3><p style="color: var(--ink)">Jangan tampilkan stack trace, query SQL, atau versi server.</p></div></div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: ambil satu error di log produksi kemarin. Apakah pesannya cukup untuk tahu penyebabnya?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -521,13 +577,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

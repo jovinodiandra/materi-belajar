@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Simpan barang yang sering dipakai di saku, bukan di gudang.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — LAPISAN ════════ -->
         <section class="slide" data-notes="Semakin dekat ke user, semakin cepat tapi semakin susah dikontrol. Cache di browser user tidak bisa kita hapus dari server.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
@@ -470,7 +471,18 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Browser</h3><p style="font-size:13.5px">Cache-Control, localStorage</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">CDN</h3><p style="font-size:13.5px">file statis, halaman publik</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Aplikasi</h3><p style="font-size:13.5px">in-memory (Caffeine), Redis</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-red" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Database</h3><p style="font-size:13.5px">buffer pool, query cache</p></div></div></div>
           <div class="foot">Makin dekat user = makin cepat, tapi <b>makin susah dihapus</b>.</div>
         </section>
-        <!-- ════════ 3 — STRATEGI ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: hasil milik user VIP di halaman 1. Key cache harus memuat semua hal yang membuat hasil berbeda: keyword, page, tier.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kunci cache ini benar?</h2>
+          <div style="margin-top: 14px"><pre class="code">@Cacheable("products")
+List&lt;Product&gt; search(String keyword, int page, String userTier) &#123; … &#125;
+<span class="cm">// key yang dipakai: hanya keyword   ← ?</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>User VIP mencari "sepatu" halaman 1. Lalu user biasa mencari "sepatu" halaman 3. Apa yang dia lihat?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — STRATEGI ════════ -->
         <section class="slide" data-notes="Pertanyaan pertama sebelum memasang cache: berapa lama data ini boleh basi? 1 detik? 1 jam? Tidak boleh sama sekali?">
           <div class="lens-tag lt-amber" style="align-self: flex-start">strategi</div>
           <h2>Strategi mengisi dan membuang cache</h2>
@@ -483,7 +495,8 @@
           </table>
           <div class="foot">Tanya dulu: data ini <b>boleh basi berapa lama?</b></div>
         </section>
-        <!-- ════════ 4 — JEBAKAN ════════ -->
+
+        <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Hit rate = berapa persen permintaan yang dijawab dari cache. Kalau rendah, cache itu tidak berguna.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan cache</h2>
@@ -495,7 +508,42 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — HTTP CACHE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Spring punya ShallowEtagHeaderFilter yang membuat ETag otomatis dari isi respons.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">HTTP cache</div>
+          <h2>ETag: "masih sama? tidak usah kirim ulang"</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">request pertama</div><pre class="code">GET /products/42
+← 200 OK
+  ETag: "v7"
+  Cache-Control: no-cache
+  &#123; …isi lengkap… &#125;</pre></div>
+            <div><div class="codehead ">request berikutnya</div><pre class="code">GET /products/42
+If-None-Match: "v7"
+← 304 Not Modified
+  (tanpa isi — pakai yang di cache)
+
+Kalau berubah → 200 + ETag baru</pre></div>
+          </div>
+          <div class="foot"><b>no-cache</b> bukan "jangan simpan", tapi "selalu tanya dulu sebelum pakai".</div>
+        </section>
+
+        <!-- ════════ 7 — PEMBUANGAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Redis memakai maxmemory-policy, misalnya allkeys-lru.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">pembuangan</div>
+          <h2>Cache penuh. Siapa yang dibuang?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">LRU: yang paling lama tidak dipakai</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">LFU: yang paling jarang dipakai</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">TTL: yang sudah kedaluwarsa</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Caffeine: campuran pintar (W-TinyLFU)</div></div><ul class="clean" style="margin-top: 18px"><li>Selalu pasang <b>batas ukuran</b>. Cache tanpa batas = memory leak yang menunggu waktu.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — SEBELUM MEMASANG CACHE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Cache menambah kerumitan. Pastikan masalahnya memang butuh cache.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">sebelum memasang cache</div>
+          <h2>Tiga pertanyaan sebelum menambah cache</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Seberapa basi data <b>boleh</b>? 1 detik? 1 jam?</li><li>Bagaimana cache dibersihkan saat data berubah?</li><li>Apa yang terjadi kalau cache mati? Database sanggup?</li><li>Sudah diukur? Mungkin cukup index database.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: sebutkan semua lapisan cache yang dilewati satu request di produk kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -507,13 +555,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Tombol lift: ditekan berkali-kali, lift datang sekali.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Ingat: timeout artinya &#x27;tidak tahu&#x27;, bukan &#x27;gagal&#x27;. Server mungkin sudah selesai memproses.">
           <h2>Sinyal lemah, user menekan Bayar. Timeout. Aplikasi retry. Saldo terpotong dua kali.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — METHOD ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 1 dan 3 (yang kedua ditolak karena id sudah ada). 2 memotong saldo dua kali. 4 mencatat dua kali.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Mana yang aman diulang?</h2>
+          <div style="margin-top: 14px"><pre class="code">1. UPDATE account SET balance = 5000 WHERE id = 7
+2. UPDATE account SET balance = balance - 1000 WHERE id = 7
+3. INSERT INTO payment (id, amount) VALUES ('pay-123', 1000)
+   <span class="cm">-- id punya UNIQUE constraint</span>
+4. INSERT INTO log (msg) VALUES ('bayar')</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau tiap perintah dijalankan dua kali, mana yang hasilnya tetap sama?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — METHOD ════════ -->
         <section class="slide" data-notes="POST adalah yang paling berbahaya, dan justru dipakai untuk pembayaran dan order. Di situlah idempotency key dibutuhkan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>HTTP method mana yang sudah idempotent?</h2>
@@ -499,7 +513,8 @@
           </table>
           <div class="foot"><b>POST</b> paling berbahaya, dan dipakai untuk bayar &amp; order.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Unique constraint di database menjaga kalau dua request dengan key sama datang bersamaan. Stripe memakai pola ini untuk semua API pembayarannya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Idempotency key</h2>
@@ -521,7 +536,45 @@ Payment pay(String key, PayRequest req) &#123;
           </div>
           <div class="foot">Pola yang dipakai <b>Stripe</b> untuk semua pembayaran.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONSUMER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tabel processed_events bisa dibersihkan berkala, misalnya simpan 7 hari.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">consumer</div>
+          <h2>Consumer pesan yang idempotent</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">catat pesan yang sudah diproses</div><pre class="code">@Transactional
+void handle(PaymentEvent ev) &#123;
+  if (processed.existsById(ev.eventId())) &#123;
+    return;                     <span class="cm">// sudah pernah, lewati</span>
+  &#125;
+  ledger.debit(ev.accountId(), ev.amount());
+  processed.save(new Processed(ev.eventId()));
+&#125;</pre></div>
+            <div><div class="codehead ">kenapa satu transaksi</div><pre class="code">Debit dan catatan 'sudah diproses'
+harus sukses BERSAMA.
+
+Kalau terpisah:
+  debit sukses → crash → catatan hilang
+  → pesan dikirim ulang → debit lagi</pre></div>
+          </div>
+          <div class="foot">Broker menjamin <b>minimal sekali</b>. Consumer yang membuatnya <b>efektif sekali</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanpa ini, dua request yang benar-benar bersamaan bisa lolos pengecekan &#x27;sudah ada?&#x27;.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Dua request dengan key sama datang bersamaan</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Request A & B, key sama</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">A ambil kunci, mulai proses</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">B lihat key sedang diproses</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">B dapat 409 / tunggu hasil A</div></div><ul class="clean" style="margin-top: 18px"><li>Simpan key dengan status <b>PROCESSING</b> pakai INSERT unik, sebelum mulai kerja.</li><li>Setelah selesai, simpan respons supaya retry berikutnya dapat jawaban yang sama.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Stripe adalah contoh API publik yang memakai Idempotency-Key dengan baik.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Teknik membuat aksi idempotent</h2>
+          <table style="margin-top: 16px"><tr><th>Teknik</th><th>Contoh</th></tr><tr><td class="mono">Idempotency key</td><td>Header Idempotency-Key untuk POST /payments</td></tr><tr><td class="mono">Unique constraint</td><td>UNIQUE(order_id) di tabel shipment</td></tr><tr><td class="mono">Set nilai, bukan tambah</td><td>status = 'PAID', bukan counter++</td></tr><tr><td class="mono">Upsert</td><td>INSERT … ON CONFLICT DO NOTHING</td></tr><tr><td class="mono">Versi / optimistic lock</td><td>UPDATE … WHERE version = 3</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek endpoint pembayaran kita. Apa yang terjadi kalau request yang sama dikirim dua kali?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -533,13 +586,14 @@ Payment pay(String key, PayRequest req) &#123;
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

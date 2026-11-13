@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Alarm yang membangunkan pekerja di jam yang sama setiap hari.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Ingat: begitu aplikasi punya lebih dari satu instance, @Scheduled biasa akan jalan di semuanya.">
           <h2>Aplikasi digandakan jadi 3 pod. Email pengingat terkirim 3 kali ke setiap user.</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: tiap jam 02.00, tiap 15 menit, jam 9 pagi hari kerja, tengah malam tanggal 1 setiap bulan. Sebut juga crontab.guru untuk mengecek.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Baca jadwal cron ini</h2>
+          <div style="margin-top: 14px"><pre class="code">0 0 2 * * *       (Spring: detik menit jam tgl bulan hari)
+0 */15 * * * *
+0 0 9 * * MON-FRI
+0 0 0 1 * *</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kapan masing-masing jalan?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Alternatif: Kubernetes CronJob (job terpisah dari aplikasi), Quartz cluster, atau workflow engine untuk job yang rumit.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Cron + kunci supaya jalan sekali</h2>
@@ -501,7 +514,8 @@
           </div>
           <div class="foot">Alternatif: <b>Kubernetes CronJob</b>, Quartz cluster.</div>
         </section>
-        <!-- ════════ 4 — ATURAN ════════ -->
+
+        <!-- ════════ 5 — ATURAN ════════ -->
         <section class="slide" data-notes="Dead man&#x27;s switch: alert berbunyi kalau job tidak melapor berhasil dalam waktu tertentu. Menangkap job yang diam-diam tidak jalan.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Aturan job terjadwal</h2>
@@ -513,7 +527,45 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SATU INSTANCE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Alternatif: Kubernetes CronJob yang menjalankan pod khusus sekali jalan.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">satu instance</div>
+          <h2>ShedLock: hanya satu pod yang jalan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">konfigurasi</div><pre class="code">@Scheduled(cron = "0 0 2 * * *", zone = "Asia/Jakarta")
+@SchedulerLock(name = "dailyReport",
+               lockAtMostFor = "30m",
+               lockAtLeastFor = "1m")
+void dailyReport() &#123;
+  reportService.generate(LocalDate.now(clock).minusDays(1));
+&#125;</pre></div>
+            <div><div class="codehead ">cara kerjanya</div><pre class="code">Jam 02.00, 3 pod bangun bersamaan
+→ semua coba ambil kunci di DB
+→ satu menang, dua lewati
+
+lockAtMostFor: kalau pod pemegang
+kunci mati, kunci lepas sendiri
+setelah 30 menit.</pre></div>
+          </div>
+          <div class="foot">Kunci disimpan di <b>tempat bersama</b> (database / Redis), bukan di memori pod.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Dead man&#x27;s switch: alert justru berbunyi kalau tidak ada sinyal sukses. Contoh layanan: Healthchecks.io.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Server mati saat job harus jalan</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Job tagihan jam 01.00</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Deploy jam 00.55–01.05</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Jadwal terlewat</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tagihan hari itu tidak dibuat</div></div><ul class="clean" style="margin-top: 18px"><li>Job sebaiknya memproses <b>"semua yang belum diproses"</b>, bukan "data hari ini" saja.</li><li>Pasang alert: "job X tidak sukses dalam 25 jam terakhir".</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau job butuh banyak memori atau berjalan lama, pisahkan dari aplikasi utama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Pilihan penjadwal</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Cocok untuk</th></tr><tr><td class="mono">@Scheduled + ShedLock</td><td>Job sederhana di aplikasi Spring</td></tr><tr><td class="mono">Kubernetes CronJob</td><td>Job terpisah, sumber daya sendiri</td></tr><tr><td class="mono">Quartz</td><td>Jadwal dinamis yang disimpan di DB</td></tr><tr><td class="mono">Temporal / Airflow</td><td>Alur kerja panjang, banyak langkah, retry rumit</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: daftar semua @Scheduled di project kita. Ada yang tanpa lock?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -525,13 +577,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

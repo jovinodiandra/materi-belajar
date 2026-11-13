@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Saklar lampu: kabelnya sudah terpasang, nyalakan saat siap.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Dengan flag, kode yang belum selesai boleh masuk main, asal saklarnya mati.">
           <h2>Fitur baru bermasalah di produksi. Satu-satunya cara mematikan: rollback seluruh deploy.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: bisa, dengan feature flag. Kode sudah di produksi tapi tertutup flag. Rilis = menyalakan flag, tanpa deploy.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Deploy atau rilis?</h2>
+          <p class="lede">Apa bedanya?</p>
+          <ul class="clean" style="margin-top: 16px"><li><b>Deploy</b>: kode baru sampai di server produksi.</li><li><b>Rilis</b>: user mulai bisa memakai fitur baru.</li><li>Pertanyaan: mungkinkah deploy hari Senin, rilis hari Kamis?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Alat populer: LaunchDarkly, Unleash, Flagsmith, OpenFeature sebagai standar. Bisa juga mulai sederhana dengan tabel di database.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Contoh pemakaian</h2>
@@ -504,7 +514,8 @@
           </div>
           <div class="foot">Alat: Unleash, LaunchDarkly, Flagsmith, standar <b>OpenFeature</b>.</div>
         </section>
-        <!-- ════════ 4 — JEBAKAN ════════ -->
+
+        <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Flag yang sudah 100% menyala harus dihapus beserta kode lamanya. Kalau tidak, kode jadi labirin if.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -516,7 +527,45 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — ROLLOUT BERTAHAP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanpa stickiness, user bisa melihat checkout baru dan lama bergantian. Membingungkan.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">rollout bertahap</div>
+          <h2>Nyalakan untuk sebagian user</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">aturan flag (contoh Unleash)</div><pre class="code">new-checkout:
+  strategies:
+    - name: userWithId          <span class="cm"># tim internal dulu</span>
+      userIds: [7, 12, 99]
+    - name: flexibleRollout     <span class="cm"># lalu 10% user</span>
+      rollout: 10
+      stickiness: userId</pre></div>
+            <div><div class="codehead ">perjalanannya</div><pre class="code">Hari 1: tim internal
+Hari 2: 10% user  → pantau error
+Hari 4: 50%
+Hari 7: 100%
+Hari 21: hapus flag &amp; kode lama
+
+Masalah? Matikan dalam 1 detik.</pre></div>
+          </div>
+          <div class="foot"><b>stickiness</b> = user yang sama selalu dapat pengalaman yang sama.</div>
+        </section>
+
+        <!-- ════════ 7 — JENIS FLAG ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kill switch contoh: matikan rekomendasi AI saat beban tinggi supaya checkout tetap lancar.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">jenis flag</div>
+          <h2>Tidak semua flag sama</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Release flag: sementara, dihapus</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Experiment: A/B test, sementara</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Ops / kill switch: matikan fitur berat</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Permission: fitur per paket</div></div><ul class="clean" style="margin-top: 18px"><li>Release flag punya <b>tanggal kedaluwarsa</b>. Kill switch boleh permanen.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau server flag mati, aplikasi harus tetap jalan dengan nilai default, biasanya &#x27;mati&#x27;.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Kebiasaan flag yang sehat</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Nama jelas: <code>checkout-v2-release</code>, bukan <code>flag1</code>.</li><li>Buat tiket penghapusan saat flag dibuat.</li><li>Tes kedua jalur: flag nyala dan mati.</li><li>Nilai default aman kalau layanan flag tidak bisa dihubungi.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: fitur besar berikutnya di tim kita, bisakah dirilis bertahap pakai flag?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +577,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Sabuk pengaman: bukan buat dipakai saat tabrakan saja, tapi biar berani jalan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PIRAMIDA TEST ════════ -->
         <section class="slide" data-notes="E2E itu berharga tapi lambat dan mudah rapuh. Jangan semua dites lewat E2E.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">piramida test</div>
@@ -470,7 +471,21 @@
           <table style="margin-top: 16px"><tr><th>Jenis</th><th>Ngetes apa</th><th>Kecepatan</th><th>Jumlah</th></tr><tr><td class="mono">Unit</td><td>Satu fungsi / class sendirian</td><td>Sangat cepat</td><td>Paling banyak</td></tr><tr><td class="mono">Integration</td><td>Beberapa bagian bareng (misal + database)</td><td>Sedang</td><td>Secukupnya</td></tr><tr><td class="mono">End-to-end</td><td>Seluruh aplikasi seperti user asli</td><td>Lambat</td><td>Sedikit saja</td></tr></table>
           <div class="foot">Bentuknya seperti <b>piramida</b>: bawahnya lebar (unit), atasnya kecil (E2E).</div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: memakai jam sungguhan. Tergantung kapan dijalankan. Pakai Clock tetap atau tanggal yang ditulis langsung.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa test ini kadang gagal?</h2>
+          <div style="margin-top: 14px"><pre class="code">@Test
+void promo_berlaku_hari_ini() &#123;
+  var promo = new Promo(LocalDate.now(), LocalDate.now());
+  assertTrue(promo.isActive(LocalDateTime.now()));
+&#125;
+<span class="cm">// gagal kalau dijalankan tepat jam 23:59:59.999…</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Apa yang membuat test ini tidak stabil?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Given = keadaan awal, When = aksi, Then = hasil yang diharapkan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Pola Given–When–Then</h2>
@@ -492,13 +507,53 @@ void totalDihitungDariHargaKaliJumlah() {
           </div>
           <div class="foot">Nama test = <b>kalimat</b> yang menjelaskan perilaku yang diharapkan.</div>
         </section>
-        <!-- ════════ 4 — TIPS ════════ -->
+
+        <!-- ════════ 5 — TIPS ════════ -->
         <section class="slide" data-notes="Flaky test = kadang lulus kadang gagal tanpa perubahan kode. Ini harus segera diperbaiki.">
           <div class="lens-tag lt-green" style="align-self: flex-start">tips</div>
           <h2>Ciri test yang baik</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">ciri</div><h3>Cepat</h3><p style="color: var(--ink)">Kalau lambat, orang malas menjalankan.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">ciri</div><h3>Mandiri</h3><p style="color: var(--ink)">Tidak tergantung urutan atau test lain.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">ciri</div><h3>Stabil</h3><p style="color: var(--ink)">Hasilnya sama setiap kali dijalankan (tidak flaky).</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">ciri</div><h3>Gagal dengan jelas</h3><p style="color: var(--ink)">Pesan error langsung menunjuk masalahnya.</p></div></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — TEST DOUBLE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau mengubah implementasi tanpa mengubah perilaku membuat test merah, kemungkinan test terlalu banyak mock.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">test double</div>
+          <h2>Stub, mock, fake: apa bedanya?</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">contoh</div><pre class="code"><span class="cm">// STUB: memberi jawaban siap</span>
+when(rates.get("USD")).thenReturn(16_000);
+
+<span class="cm">// MOCK: mengecek dipanggil atau tidak</span>
+verify(mailer).send(eq("budi@x.com"), any());
+
+<span class="cm">// FAKE: versi sederhana yang bekerja</span>
+var repo = new InMemoryOrderRepository();</pre></div>
+            <div><div class="codehead ">kapan pakai</div><pre class="code">Stub  → butuh input dari dependency
+Mock  → hasilnya adalah 'efek samping'
+        (email terkirim, event terbit)
+Fake  → banyak interaksi,
+        lebih mudah dibaca
+
+Jangan mock semua hal.</pre></div>
+          </div>
+          <div class="foot">Terlalu banyak mock = test yang <b>hanya mengulang implementasi</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — TDD ════════ -->
+        <section class="slide" data-ext="1" data-notes="Untuk bug: test merah membuktikan bug ada. Setelah diperbaiki, test hijau mencegah bug kembali.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">TDD</div>
+          <h2>Siklus red–green–refactor</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tulis test, jalankan: merah</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Tulis kode secukupnya: hijau</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Rapikan kode, test tetap hijau</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Ulangi untuk kasus berikutnya</div></div><ul class="clean" style="margin-top: 18px"><li>Langkah kecil. Satu kasus per putaran.</li><li>Cocok sekali untuk logika bisnis dan perbaikan bug (tulis test yang mereproduksi bug dulu).</li></ul>
+        </section>
+
+        <!-- ════════ 8 — UKURAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Java: PIT untuk mutation testing. JS: Stryker.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">ukuran</div>
+          <h2>Mengukur kualitas test</h2>
+          <table style="margin-top: 16px"><tr><th>Ukuran</th><th>Artinya</th><th>Hati-hati</th></tr><tr><td class="mono">Coverage</td><td>Baris yang dijalankan test</td><td>100% coverage belum tentu benar</td></tr><tr><td class="mono">Mutation testing</td><td>Kode diubah sedikit, apakah test gagal?</td><td>Lebih jujur, lebih lambat</td></tr><tr><td class="mono">Waktu jalan</td><td>Berapa lama suite selesai</td><td>Lambat → jarang dijalankan</td></tr><tr><td class="mono">Flaky rate</td><td>Test yang kadang gagal</td><td>Harus mendekati nol</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: tulis satu unit test untuk fungsi yang belum punya test di service kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -506,13 +561,14 @@ void totalDihitungDariHargaKaliJumlah() {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ kenapa</div><p style="font-size: 17px; color: #e2e8f0">Biar berani mengubah kode.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ piramida</div><p style="font-size: 17px; color: #e2e8f0">Banyak unit, cukup integration, sedikit E2E.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pola</div><p style="font-size: 17px; color: #e2e8f0">Given–When–Then, nama test = kalimat.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

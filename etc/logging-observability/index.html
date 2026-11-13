@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dokter butuh tensi, rontgen, dan riwayat. Bukan cuma tebakan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — TIGA PILAR ════════ -->
         <section class="slide" data-notes="Ketiganya saling melengkapi. Metrics memberi tahu ada masalah. Traces menunjukkan di mana. Logs menjelaskan kenapa.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
@@ -470,7 +471,16 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Logs</h3><p style="font-size:13.5px">cerita: apa yang terjadi<br>“payment gagal untuk order A-42”</p></div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Metrics</h3><p style="font-size:13.5px">angka: seberapa banyak / cepat<br>“error 2%, p95 800 ms”</p></div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Traces</h3><p style="font-size:13.5px">perjalanan: lewat mana saja<br>“lambat di bank-api 3 detik”</p></div></div></div>
           <div class="foot">Metrics: <b>ada masalah</b>. Traces: <b>di mana</b>. Logs: <b>kenapa</b>.</div>
         </section>
-        <!-- ════════ 3 — ALUR ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Monitoring menjawab pertanyaan yang sudah kita duga. Observability membantu menjawab pertanyaan baru yang belum terpikir. Butuh data kaya: traceId, atribut kota, versi rilis.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Monitoring atau observability?</h2>
+          <p class="lede">Bedakan dua pertanyaan ini:</p>
+          <ul class="clean" style="margin-top: 16px"><li><b>"Apakah sistem sedang sehat?"</b> — dijawab dashboard dan alert.</li><li><b>"Kenapa user dari Bandung saja yang checkout-nya lambat sejak jam 2?"</b></li><li>Data apa yang kamu butuhkan untuk menjawab pertanyaan kedua?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — ALUR ════════ -->
         <section class="slide" data-notes="Kalau tiga pilar ini tidak terhubung oleh traceId, investigasi jadi lompat-lompat dan menebak.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">investigasi</div>
           <h2>Alur investigasi yang ideal</h2>
@@ -478,7 +488,8 @@
           <ul class="clean" style="margin-top: 14px"><li>Mulai dari gejala yang dirasakan user (metrics).</li><li>Persempit ke request tertentu (traces).</li><li>Baca detail kejadiannya (logs).</li><li>Kuncinya: <b>traceId</b> yang sama di trace dan log.</li></ul>
           <div class="foot">Penghubungnya: <b>traceId</b> yang sama di trace &amp; log.</div>
         </section>
-        <!-- ════════ 4 — PRAKTIK ════════ -->
+
+        <!-- ════════ 5 — PRAKTIK ════════ -->
         <section class="slide" data-notes="Metrik bisnis sering menjadi alarm pertama: kalau order per menit tiba-tiba turun drastis, pasti ada yang rusak.">
           <div class="lens-tag lt-green" style="align-self: flex-start">praktik</div>
           <h2>Praktik sehari-hari</h2>
@@ -490,7 +501,45 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — METRIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Setiap kombinasi tag = satu deret data. Tag userId dengan sejuta user = sejuta deret. Mahal sekali.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">metrik</div>
+          <h2>Membuat metrik bisnis sendiri</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Micrometer (Spring)</div><pre class="code">Counter paid = Counter.builder("orders_paid_total")
+    .tag("method", "qris")
+    .register(registry);
+paid.increment();
+
+Timer.builder("checkout_duration")
+    .publishPercentiles(0.95, 0.99)
+    .register(registry);</pre></div>
+            <div><div class="codehead ">dipakai untuk</div><pre class="code">Grafik: pesanan lunas per menit
+Alert: turun 50% dibanding minggu lalu
+       → mungkin pembayaran bermasalah
+
+Metrik bisnis sering menangkap masalah
+yang tidak terlihat di CPU &amp; error rate.</pre></div>
+          </div>
+          <div class="foot">Hati-hati dengan tag yang nilainya tak terbatas (userId): <b>kardinalitas</b> meledak.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ceritakan sebagai detektif. Yang membuat cepat adalah data saling terhubung: metrik → trace → log lewat traceId.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Investigasi: checkout lambat sejak jam 14.00</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Dashboard: p95 naik 3x</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Filter: hanya versi 2.8</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Trace: span 'promo-service' 2 detik</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Log: query promo tanpa index</div></div><ul class="clean" style="margin-top: 18px"><li>Setiap langkah mempersempit: dari <b>gejala</b> ke <b>penyebab</b>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Dengan OpenTelemetry, ganti vendor tidak perlu mengubah kode aplikasi.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Tumpukan observability yang umum</h2>
+          <table style="margin-top: 16px"><tr><th>Kebutuhan</th><th>Open source</th><th>Layanan</th></tr><tr><td class="mono">Standar pengumpulan</td><td>OpenTelemetry</td><td>—</td></tr><tr><td class="mono">Metrik</td><td>Prometheus + Grafana</td><td>Datadog, New Relic</td></tr><tr><td class="mono">Log</td><td>Loki, OpenSearch</td><td>Datadog, Elastic Cloud</td></tr><tr><td class="mono">Trace</td><td>Jaeger, Tempo</td><td>Honeycomb, Datadog</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Latihan: ambil satu insiden lama, coba telusuri ulang dengan alat yang kita punya.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -502,13 +551,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

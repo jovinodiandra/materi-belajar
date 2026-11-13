@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Vakum baju sebelum masuk koper.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Teks seperti JSON punya banyak pengulangan (nama field yang sama berkali-kali), jadi bisa dikompresi sangat baik.">
           <h2>Response JSON 2 MB dikirim mentah ke HP pengguna.</h2>
@@ -485,7 +486,18 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — ALGORITMA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: nama field diulang di setiap baris. Kompresi mengganti pengulangan dengan rujukan pendek. Teks dengan banyak pengulangan mengecil drastis.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa JSON bisa mengecil 90%?</h2>
+          <div style="margin-top: 14px"><pre class="code">[&#123;"product_id":1,"product_name":"Sepatu","product_price":100&#125;,
+ &#123;"product_id":2,"product_name":"Sandal","product_price":50&#125;,
+ &#123;"product_id":3,"product_name":"Topi","product_price":30&#125;]</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kata apa yang muncul berulang-ulang?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — ALGORITMA ════════ -->
         <section class="slide" data-notes="Ada tarik-ulur: makin kecil hasilnya, biasanya makin lama proses kompresinya. Untuk HTTP dinamis pakai level sedang. Untuk file statis, kompres maksimal sekali saat build.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Algoritma yang sering dipakai</h2>
@@ -498,7 +510,8 @@
           </table>
           <div class="foot">File statis: kompres <b>maksimal saat build</b>. Response dinamis: level sedang.</div>
         </section>
-        <!-- ════════ 4 — JANGAN ════════ -->
+
+        <!-- ════════ 5 — JANGAN ════════ -->
         <section class="slide" data-notes="Cek di DevTools Network: kolom size yang menunjukkan ukuran transfer lebih kecil dari ukuran asli berarti kompresi aktif.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Kapan jangan dikompresi</h2>
@@ -510,7 +523,42 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — NYALAKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau ada reverse proxy (Nginx) atau CDN, kompresi sering lebih baik dilakukan di sana.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">nyalakan</div>
+          <h2>Kompresi di server</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Spring Boot</div><pre class="code">server:
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/css
+    min-response-size: 1KB</pre></div>
+            <div><div class="codehead ">cek hasilnya</div><pre class="code">curl -s -H "Accept-Encoding: gzip, br" \
+  -o /dev/null -w "%&#123;size_download&#125;\n" \
+  https://api.toko.com/products
+
+<span class="cm"># lihat header respons:</span>
+content-encoding: br</pre></div>
+          </div>
+          <div class="foot">Browser memberi tahu yang ia bisa lewat <b>Accept-Encoding</b>. Server memilih.</div>
+        </section>
+
+        <!-- ════════ 7 — PRA-KOMPRESI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Untuk respons dinamis, pakai level sedang (gzip 6, brotli 4-5) supaya CPU tidak habis.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">pra-kompresi</div>
+          <h2>File statis: kompres sekali saat build</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Build menghasilkan app.js</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Buat app.js.br (level maks)</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Server kirim file .br</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tidak ada CPU terbuang per request</div></div><ul class="clean" style="margin-top: 18px"><li>Brotli level 11 lambat dikompres tapi sangat kecil. Cocok dikerjakan sekali saat build.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — BUKAN CUMA HTTP ════════ -->
+        <section class="slide" data-ext="1" data-notes="zstd (Zstandard) dari Facebook: cepat dan rasio bagus, makin populer di mana-mana.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">bukan cuma HTTP</div>
+          <h2>Kompresi di tempat lain</h2>
+          <table style="margin-top: 16px"><tr><th>Tempat</th><th>Contoh</th></tr><tr><td class="mono">Kafka</td><td>compression.type=zstd di producer</td></tr><tr><td class="mono">Database</td><td>Kolom JSONB / TOAST di PostgreSQL otomatis</td></tr><tr><td class="mono">File log & backup</td><td>zstd, gzip</td></tr><tr><td class="mono">Format data besar</td><td>Parquet (kolom terkompresi)</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek header Content-Encoding response API kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -522,13 +570,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

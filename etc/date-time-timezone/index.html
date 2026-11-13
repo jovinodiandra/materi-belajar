@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Jam 9 pagi di Jakarta itu jam berapa di Jayapura?</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Indonesia punya 3 zona: WIB (UTC+7), WITA (UTC+8), WIT (UTC+9).">
           <h2>Order jam 23.30 WIB tercatat di laporan hari berikutnya.</h2>
@@ -485,7 +486,17 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — TIPE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 1 jam. Jam 02:00 melompat ke 03:00. Indonesia tidak punya DST, tapi user dan server kita bisa di negara yang punya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa jam di antara keduanya?</h2>
+          <div style="margin-top: 14px"><pre class="code">2026-03-29 01:30 Eropa/Amsterdam
+2026-03-29 03:30 Eropa/Amsterdam</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>2 jam? Petunjuk: malam itu jam dimajukan (daylight saving).</li></ul>
+        </section>
+
+        <!-- ════════ 4 — TIPE ════════ -->
         <section class="slide" data-notes="Instant untuk kejadian. LocalDate untuk tanggal kalender. ZonedDateTime untuk menampilkan ke user atau menjadwalkan per zona.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Pilih tipe waktu yang tepat (Java)</h2>
@@ -498,7 +509,8 @@
           </table>
           <div class="foot">Kejadian → <b>Instant</b>. Tanggal kalender → <b>LocalDate</b>.</div>
         </section>
-        <!-- ════════ 4 — ATURAN ════════ -->
+
+        <!-- ════════ 5 — ATURAN ════════ -->
         <section class="slide" data-notes="Untuk laporan harian, tentukan dengan jelas: hari menurut zona mana? Biasanya zona bisnis, misalnya Asia/Jakarta.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Aturan emas waktu</h2>
@@ -510,7 +522,41 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pakai Clock yang di-inject supaya tes bisa mengatur waktu sendiri.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Hitung "hari ini" di zona user</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ pakai zona server</div><pre class="code">LocalDate today = LocalDate.now();
+<span class="cm">// server UTC: jam 23.00 WIB</span>
+<span class="cm">// sudah dianggap besok (16.00 UTC → hari sama)</span>
+<span class="cm">// ...atau sebaliknya: laporan meleset</span></pre></div>
+            <div><div class="codehead good">✓ sebut zonanya</div><pre class="code">ZoneId jakarta = ZoneId.of("Asia/Jakarta");
+LocalDate today = LocalDate.now(clock.withZone(jakarta));
+
+Instant start = today.atStartOfDay(jakarta).toInstant();
+Instant end = today.plusDays(1).atStartOfDay(jakarta).toInstant();
+<span class="cm">// query: created_at &gt;= start AND &lt; end</span></pre></div>
+          </div>
+          <div class="foot">"Hari ini" <b>selalu</b> punya zona waktu, walaupun tidak ditulis.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aturan zona waktu bisa berubah oleh pemerintah. Menyimpan nama zona membuat jadwal ikut aturan terbaru.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Jadwal rapat berulang jam 09.00</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Simpan: 09.00 Amsterdam + aturan ulang</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Bukan: 07.00 UTC</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">DST berubah</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Rapat tetap 09.00 waktu lokal</div></div><ul class="clean" style="margin-top: 18px"><li>Untuk kejadian <b>masa depan</b> yang terikat jam lokal, simpan jam lokal + nama zona.</li><li>Untuk kejadian <b>yang sudah terjadi</b>, simpan Instant (UTC).</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Singkatan seperti CST bisa berarti China Standard Time atau Central Standard Time. Pakai nama IANA.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Format dan zona yang benar</h2>
+          <table style="margin-top: 16px"><tr><th>Kebutuhan</th><th>Pakai</th></tr><tr><td class="mono">Kirim waktu di API</td><td>2026-11-13T03:30:00Z (ISO-8601)</td></tr><tr><td class="mono">Nama zona</td><td>Asia/Jakarta, bukan "WIB" atau "+07:00"</td></tr><tr><td class="mono">Kolom PostgreSQL</td><td>timestamptz</td></tr><tr><td class="mono">Tampilkan ke user</td><td>Intl.DateTimeFormat / DateTimeFormatter dengan locale</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek kolom waktu di database kita. timestamp atau timestamptz?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -522,13 +568,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

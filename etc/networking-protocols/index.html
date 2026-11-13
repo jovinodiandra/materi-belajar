@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kirim surat tercatat vs teriak di lapangan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — DUA JALUR DASAR ════════ -->
         <section class="slide" data-notes="TCP seperti surat tercatat. UDP seperti teriak: cepat, tapi bisa tidak kedengaran.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">dua jalur dasar</div>
@@ -470,19 +471,67 @@
           <div class="cols" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">teliti</div><h3>TCP</h3><p style="color: var(--ink)">Pastikan semua data sampai dan urut. Kalau hilang, kirim ulang. Contoh: web, API, database.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">ngebut</div><h3>UDP</h3><p style="color: var(--ink)">Kirim saja, tidak cek sampai atau tidak. Cepat. Contoh: video call, game, DNS.</p></div></div>
           <div class="foot">Video call pakai UDP karena <b>telat lebih buruk daripada hilang sedikit</b>.</div>
         </section>
-        <!-- ════════ 3 — YANG SERING KETEMU ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Video call memakai UDP: paket yang hilang dilewati saja. Download memakai TCP: menunggu paket yang hilang dikirim ulang. Masing-masing pilihan yang tepat untuk kebutuhannya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa video call tetap jalan saat sinyal jelek?</h2>
+          <p class="lede">Saat sinyal jelek, video call jadi patah-patah tapi tetap jalan. Download file malah berhenti total.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Kenapa perilakunya berbeda?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — YANG SERING KETEMU ════════ -->
         <section class="slide" data-notes="Fokus ke kapan pakai apa, bukan hafal detail paketnya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">yang sering ketemu</div>
           <h2>Protokol di atasnya</h2>
           <table style="margin-top: 16px"><tr><th>Protokol</th><th>Gampangnya</th><th>Dipakai untuk</th></tr><tr><td class="mono">HTTP/1.1</td><td>Satu request per koneksi bergantian</td><td>Web klasik, REST API</td></tr><tr><td class="mono">HTTP/2</td><td>Banyak request barengan di satu koneksi</td><td>Web modern, gRPC</td></tr><tr><td class="mono">HTTP/3</td><td>HTTP di atas QUIC (berbasis UDP)</td><td>Lebih cepat di sinyal jelek</td></tr><tr><td class="mono">WebSocket</td><td>Saluran dua arah yang tetap terbuka</td><td>Chat, notifikasi realtime</td></tr><tr><td class="mono">DNS</td><td>Ubah nama domain jadi alamat IP</td><td>Setiap kali buka website</td></tr></table>
         </section>
-        <!-- ════════ 4 — SATU REQUEST ════════ -->
+
+        <!-- ════════ 5 — SATU REQUEST ════════ -->
         <section class="slide" data-notes="Coba di terminal: curl -w dengan time_namelookup, time_connect, time_appconnect untuk melihat tiap langkah.">
           <div class="lens-tag lt-green" style="align-self: flex-start">satu request</div>
           <h2>Apa yang terjadi saat buka sebuah URL?</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">DNS: cari IP</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">TCP: sambungan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">TLS: kunci aman</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">HTTP: minta halaman</div></div><ul class="clean" style="margin-top: 18px"><li>Setiap langkah butuh waktu bolak-balik. Makanya koneksi dipakai ulang (keep-alive).</li><li>Kalau ada yang lambat, cek satu-satu: DNS? Koneksi? TLS? Server?</li></ul>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — LIHAT SENDIRI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau dns tinggi, masalah DNS. Kalau connect tinggi, jarak atau jaringan. Kalau tls tinggi, cek koneksi baru terus-menerus.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">lihat sendiri</div>
+          <h2>Mengukur tiap langkah dengan curl</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">perintah</div><pre class="code">curl -o /dev/null -s -w '
+dns:     %&#123;time_namelookup&#125;
+connect: %&#123;time_connect&#125;
+tls:     %&#123;time_appconnect&#125;
+server:  %&#123;time_starttransfer&#125;
+total:   %&#123;time_total&#125;
+' https://api.toko.com/health</pre></div>
+            <div><div class="codehead ">contoh hasil</div><pre class="code">dns:     0.012
+connect: 0.045
+tls:     0.110
+server:  0.890   ← server lama berpikir
+total:   0.902
+
+Lambatnya di server, bukan di jaringan.</pre></div>
+          </div>
+          <div class="foot">Angka kumulatif: kurangi dengan langkah sebelumnya untuk dapat <b>lama tiap langkah</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — HTTP/2 ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini disebut multiplexing. Head-of-line blocking di TCP masih ada di HTTP/2, dan diatasi oleh HTTP/3.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">HTTP/2</div>
+          <h2>Kenapa HTTP/2 lebih cepat untuk halaman web?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">HTTP/1.1: 6 koneksi, antre</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">HTTP/2: 1 koneksi</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Banyak file dikirim berbarengan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Header dikompres</div></div><ul class="clean" style="margin-top: 18px"><li>HTTP/3 memakai QUIC (di atas UDP): paket hilang tidak menghambat file lain.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — LAINNYA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tidak perlu hafal semuanya. Cukup tahu namanya dan kapan biasanya muncul.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">lainnya</div>
+          <h2>Protokol lain yang akan kamu temui</h2>
+          <table style="margin-top: 16px"><tr><th>Protokol</th><th>Dipakai untuk</th></tr><tr><td class="mono">gRPC (HTTP/2 + Protobuf)</td><td>Panggilan antar service yang cepat</td></tr><tr><td class="mono">MQTT</td><td>Perangkat IoT, sensor, sinyal hemat</td></tr><tr><td class="mono">AMQP</td><td>Antrean pesan (RabbitMQ)</td></tr><tr><td class="mono">SMTP</td><td>Mengirim email</td></tr><tr><td class="mono">SSH</td><td>Masuk ke server dengan aman</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: jalankan curl -v ke API kita, perhatikan langkah DNS, TCP, TLS, HTTP.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -490,13 +539,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ dasar</div><p style="font-size: 17px; color: #e2e8f0">TCP teliti, UDP ngebut.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ web</div><p style="font-size: 17px; color: #e2e8f0">HTTP/1.1 → 2 → 3, makin efisien.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ realtime</div><p style="font-size: 17px; color: #e2e8f0">WebSocket untuk dua arah terus-menerus.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

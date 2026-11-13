@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Membongkar lemari untuk pindahan, lalu merakitnya lagi di rumah baru.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — FORMAT ════════ -->
         <section class="slide" data-notes="JSON untuk API publik dan frontend. Protobuf untuk komunikasi antar service yang butuh cepat (gRPC). Avro sering dipakai di Kafka.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
@@ -476,7 +477,20 @@
           </table>
           <div class="foot">API publik → JSON. Antar service cepat → Protobuf. Kafka → Avro/Protobuf.</div>
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: angka JavaScript hanya presisi sampai 2^53. Long Java lebih besar. Kirim ID besar sebagai string.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa ID-nya berubah di browser?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// dari server (Java long)</span>
+&#123; "id": 9007199254740993 &#125;
+
+<span class="cm">// di JavaScript</span>
+JSON.parse(text).id   <span class="cm">// 9007199254740992  ← ?</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Angkanya meleset 1. Kenapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Abaikan field yang tidak dikenal supaya penambahan field tidak merusak client. Pakai BigDecimal untuk uang dan Instant dengan format ISO-8601 untuk waktu.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Jebakan JSON di Java (Jackson)</h2>
@@ -500,7 +514,8 @@ spring.jackson:
           </div>
           <div class="foot">Uang → BigDecimal. Waktu → Instant (ISO-8601). Abaikan field asing.</div>
         </section>
-        <!-- ════════ 4 — BAHAYA ════════ -->
+
+        <!-- ════════ 5 — BAHAYA ════════ -->
         <section class="slide" data-notes="Java native serialization (ObjectInputStream) pernah menjadi sumber banyak celah keamanan serius. Pakai format seperti JSON atau Protobuf.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Yang perlu dijaga</h2>
@@ -512,7 +527,59 @@ spring.jackson:
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — JACKSON ════════ -->
+        <section class="slide" data-ext="1" data-notes="fail-on-unknown-properties false membuat client lama tetap jalan saat server menambah field.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">Jackson</div>
+          <h2>Pengaturan Jackson yang aman</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">konfigurasi</div><pre class="code">spring.jackson:
+  default-property-inclusion: non_null
+  deserialization:
+    fail-on-unknown-properties: false
+  serialization:
+    write-dates-as-timestamps: false</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">non_null → field null tidak dikirim
+unknown false → field baru dari pengirim
+                tidak membuat error
+                (kompatibel ke depan)
+dates false → tanggal jadi ISO-8601,
+              bukan angka epoch</pre></div>
+          </div>
+          <div class="foot">Toleran saat <b>membaca</b>, ketat saat <b>menulis</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — PROTOBUF ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ukuran Protobuf biasanya beberapa kali lebih kecil dari JSON untuk data yang sama.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">Protobuf</div>
+          <h2>Protobuf: skema dengan nomor</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">order.proto</div><pre class="code">message Order &#123;
+  string id = 1;
+  int64 total_cents = 2;
+  string status = 3;
+  reserved 4;            <span class="cm">// pernah dipakai, jangan dipakai ulang</span>
+  string note = 5;       <span class="cm">// field baru</span>
+&#125;</pre></div>
+            <div><div class="codehead ">aturan evolusi</div><pre class="code">✓ Tambah field dengan nomor baru
+✓ Hapus field → tandai reserved
+✗ Ganti nomor field yang sudah ada
+✗ Ganti tipe field
+
+Yang dikirim: nomor + nilai,
+bukan nama → kecil &amp; cepat.</pre></div>
+          </div>
+          <div class="foot"><b>Nomor</b> adalah identitas field. Nama boleh diganti, nomor jangan.</div>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="DTO memisahkan bentuk data di API dari bentuk tabel. Mengubah tabel tidak merusak client.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Aturan serialisasi</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Uang: integer (sen/rupiah) atau string desimal, bukan float.</li><li>Tanggal: string ISO-8601 dengan zona.</li><li>ID besar: string.</li><li>Jangan kirim entity database langsung: pakai DTO.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari entity JPA yang dikembalikan langsung sebagai response JSON.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -524,13 +591,14 @@ spring.jackson:
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

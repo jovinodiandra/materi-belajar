@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Nomor antrean yang berbunyi saat pesananmu siap.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Webhook = HTTP POST dari sistem lain ke endpoint kita, berisi data kejadian.">
           <h2>Aplikasi bertanya ke payment gateway tiap 5 detik: “sudah dibayar belum?”</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: pending, padahal sudah dibayar. Webhook bisa dobel dan tidak urut. Pakai event id untuk dedup dan jangan mundurkan status.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Webhook datang dua kali dan tidak urut</h2>
+          <p class="lede">Payment gateway mengirim tiga webhook untuk order yang sama:</p>
+          <div style="margin-top: 14px"><pre class="code">10:00:05  payment.paid      (sampai ke kita 10:00:09)
+10:00:01  payment.pending   (sampai ke kita 10:00:11)  ← telat
+10:00:05  payment.paid      (dikirim ulang)</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau diproses sesuai urutan datang, status akhir order apa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Pengirim akan mengulang webhook kalau kita tidak membalas 2xx cepat. Karena itu idempotency wajib.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Menerima webhook dengan aman</h2>
@@ -508,7 +521,8 @@ ResponseEntity&lt;Void&gt; onPayment(@RequestBody String body,
           </div>
           <div class="foot">Pengirim akan <b>mengulang</b> kalau kita lambat membalas. Idempotent wajib.</div>
         </section>
-        <!-- ════════ 4 — JEBAKAN ════════ -->
+
+        <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Untuk mengetes webhook di laptop, pakai alat seperti ngrok atau webhook.site untuk mendapatkan URL publik sementara.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -520,7 +534,42 @@ ResponseEntity&lt;Void&gt; onPayment(@RequestBody String body,
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pola aman: terima webhook, lalu panggil GET /payments/{id} ke gateway untuk status yang pasti.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Status hanya boleh maju</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ timpa apa adanya</div><pre class="code">void onEvent(PaymentEvent e) &#123;
+  order.setStatus(e.status());   <span class="cm">// ← bisa mundur</span>
+  repo.save(order);
+&#125;</pre></div>
+            <div><div class="codehead good">✓ cek urutan + dedup</div><pre class="code">void onEvent(PaymentEvent e) &#123;
+  if (!seen.add(e.id())) return;          <span class="cm">// dobel</span>
+  if (order.status().isAfter(e.status())) <span class="cm">// mundur</span>
+    return;
+  order.moveTo(e.status());
+&#125;
+<span class="cm">// atau: ambil status terbaru lewat API gateway</span></pre></div>
+          </div>
+          <div class="foot">Anggap webhook sebagai <b>colekan</b> "ada yang berubah". Kebenaran ada di API pengirim.</div>
+        </section>
+
+        <!-- ════════ 7 — SISI PENGIRIM ════════ -->
+        <section class="slide" data-ext="1" data-notes="Stripe dan GitHub adalah contoh bagus penyedia webhook. Pelajari dokumentasi mereka.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">sisi pengirim</div>
+          <h2>Kalau kita yang mengirim webhook</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tanda tangani dengan HMAC</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Kirim, tunggu 2xx</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Gagal: retry dengan backoff</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tetap gagal: tandai & beri tahu</div></div><ul class="clean" style="margin-top: 18px"><li>Sertakan <b>timestamp</b> di tanda tangan untuk mencegah replay.</li><li>Sediakan halaman log pengiriman dan tombol "kirim ulang" untuk pelanggan.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — DEVELOPMENT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jangan pernah mematikan verifikasi tanda tangan &#x27;sementara&#x27; saat testing. Sering terbawa ke produksi.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">development</div>
+          <h2>Menguji webhook di laptop</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Pakai tunnel: <b>ngrok</b> / cloudflared untuk URL publik sementara.</li><li>Simpan contoh payload asli sebagai fixture test.</li><li>Banyak penyedia punya CLI untuk memicu event palsu (stripe trigger).</li><li>Tes kasus dobel, terlambat, dan tanda tangan salah.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek endpoint webhook kita. Apakah tanda tangannya diverifikasi?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +581,14 @@ ResponseEntity&lt;Void&gt; onPayment(@RequestBody String body,
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Menu restoran yang jelas: nama, harga, dan cara pesan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: kalau ada developer baru, bisakah dia menebak URL untuk mengambil order milik user tertentu tanpa membaca dokumentasi?">
           <h2>Setiap endpoint punya gaya sendiri. Frontend harus membaca kode backend untuk tahu cara memakainya.</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — REST ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: GET /orders, POST /orders, DELETE /orders/42, POST /orders/42/shipment atau PATCH /orders/42 {status}. GET tidak boleh menghapus apa pun.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Perbaiki endpoint ini</h2>
+          <div style="margin-top: 14px"><pre class="code">POST /getOrderList
+POST /createNewOrder
+GET  /deleteOrder?id=42
+POST /order/updateStatusToShipped</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Tulis ulang dengan gaya REST yang bisa ditebak.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — REST ════════ -->
         <section class="slide" data-notes="URL berisi kata benda jamak (orders), bukan kata kerja. Kata kerjanya diwakili HTTP method.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Pola REST yang bisa ditebak</h2>
@@ -499,7 +512,8 @@
           </table>
           <div class="foot">URL = <b>kata benda jamak</b>. Kata kerjanya = <b>method</b>.</div>
         </section>
-        <!-- ════════ 4 — ERROR ════════ -->
+
+        <!-- ════════ 5 — ERROR ════════ -->
         <section class="slide" data-notes="Spring Boot 3 mendukung ProblemDetail bawaan. Satu bentuk error membuat client cukup menulis satu penanganan error.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">error</div>
           <h2>Bentuk error yang seragam</h2>
@@ -520,7 +534,8 @@ Content-Type: application/problem+json
           </div>
           <div class="foot">Spring Boot 3: <b>ProblemDetail</b> sudah bawaan.</div>
         </section>
-        <!-- ════════ 5 — ATURAN ════════ -->
+
+        <!-- ════════ 6 — ATURAN ════════ -->
         <section class="slide" data-notes="API-first: rancang kontraknya dulu dengan OpenAPI. Frontend bisa mulai bekerja dengan mock sebelum backend selesai.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Aturan emas</h2>
@@ -532,7 +547,43 @@ Content-Type: application/problem+json
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aturan aman: menambah field itu boleh, menghapus atau mengganti nama field itu breaking change.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Respons yang bisa tumbuh</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ array telanjang</div><pre class="code">GET /orders
+[
+  &#123; "id": 1, … &#125;,
+  &#123; "id": 2, … &#125;
+]
+<span class="cm">// mau tambah info halaman? breaking change</span></pre></div>
+            <div><div class="codehead good">✓ dibungkus objek</div><pre class="code">GET /orders?cursor=abc
+&#123;
+  "data": [ &#123; "id": 1, … &#125;, &#123; "id": 2, … &#125; ],
+  "next_cursor": "def",
+  "has_more": true
+&#125;</pre></div>
+          </div>
+          <div class="foot">Objek di level atas bisa <b>ditambah field</b> tanpa merusak client lama.</div>
+        </section>
+
+        <!-- ════════ 8 — ALUR KERJA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Mock bisa dibuat dengan Prism atau Postman mock server langsung dari file OpenAPI.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">alur kerja</div>
+          <h2>Desain API sebelum menulis kode</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tulis OpenAPI</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Review bersama frontend</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Buat mock dari spec</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Frontend & backend kerja paralel</div></div><ul class="clean" style="margin-top: 18px"><li>Spec jadi <b>kontrak</b>: dokumentasi, mock, dan tes kontrak dibuat dari satu sumber.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Yang terpenting bukan pilihan mana yang benar, tapi semua endpoint memakai pilihan yang sama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Keputusan kecil yang sering diperdebatkan</h2>
+          <table style="margin-top: 16px"><tr><th>Hal</th><th>Saran</th></tr><tr><td class="mono">Nama resource</td><td>Kata benda jamak: /orders</td></tr><tr><td class="mono">Nama field</td><td>Pilih satu: snake_case atau camelCase, konsisten</td></tr><tr><td class="mono">Tanggal</td><td>ISO-8601 UTC: 2026-11-13T03:30:00Z</td></tr><tr><td class="mono">Uang</td><td>Angka bulat + mata uang: {amount: 25000, currency: "IDR"}</td></tr><tr><td class="mono">ID</td><td>String, supaya bebas ganti format</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari endpoint kita yang mengembalikan 200 untuk error.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -544,13 +595,14 @@ Content-Type: application/problem+json
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

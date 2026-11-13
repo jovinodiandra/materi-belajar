@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Jangan ganti ban kalau ternyata bensinnya yang habis.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — ISTILAH DASAR ════════ -->
         <section class="slide" data-notes="p99 = dari 100 request, 1 yang paling lambat. User yang kena itu yang komplain.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">istilah dasar</div>
@@ -470,20 +471,66 @@
           <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">angka</div><h3>Latency</h3><p style="color: var(--ink)">Berapa lama satu request selesai. Contoh: 120ms.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">angka</div><h3>Throughput</h3><p style="color: var(--ink)">Berapa banyak request per detik yang sanggup dilayani.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">angka</div><h3>p95 / p99</h3><p style="color: var(--ink)">95% atau 99% request lebih cepat dari angka ini.</p></div></div>
           <div class="foot">Jangan lihat rata-rata saja. Rata-rata 100ms bisa <b>menyembunyikan</b> request yang 5 detik.</div>
         </section>
-        <!-- ════════ 3 — URUTAN KERJA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Rata-rata 590 ms, terlihat &#x27;lumayan&#x27;. Padahal 1 dari 10 user menunggu 5 detik. Pantau p95/p99.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Rata-rata yang menipu</h2>
+          <p class="lede">10 request: sembilan selesai 100 ms, satu selesai 5.000 ms.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Rata-ratanya berapa?</li><li>Berapa yang dirasakan user yang paling sial?</li><li>Angka mana yang sebaiknya dipantau?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — URUTAN KERJA ════════ -->
         <section class="slide" data-notes="Prinsip 80/20: biasanya sebagian kecil kode menghabiskan sebagian besar waktu.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">urutan kerja</div>
           <h2>Cara yang benar memperbaiki performa</h2>
           <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Ukur dulu</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Cari bagian paling lambat</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Perbaiki itu saja</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Ukur lagi</div></div><ul class="clean" style="margin-top: 18px"><li>Pakai profiler, tracing, atau log waktu. Jangan pakai perasaan.</li><li>Perbaiki yang makan 80% waktu, bukan yang 2%.</li></ul>
         </section>
-        <!-- ════════ 4 — TERSANGKA UMUM ════════ -->
+
+        <!-- ════════ 5 — TERSANGKA UMUM ════════ -->
         <section class="slide" data-notes="I/O = menunggu sesuatu di luar: disk, database, network.">
           <div class="lens-tag lt-green" style="align-self: flex-start">tersangka umum</div>
           <h2>Biasanya lambatnya di sini</h2>
           <table style="margin-top: 16px"><tr><th>Tersangka</th><th>Obat umum</th></tr><tr><td class="mono">Query database</td><td>Index, hindari N+1, LIMIT</td></tr><tr><td class="mono">Panggilan ke service lain</td><td>Paralelkan, cache, timeout</td></tr><tr><td class="mono">Data terlalu besar</td><td>Pagination, kompresi, pilih kolom</td></tr><tr><td class="mono">Kerja berat di request</td><td>Pindahkan ke background job</td></tr></table>
           <div class="foot">Lebih sering lambat karena <b>I/O</b> (database, jaringan) daripada karena CPU.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH NYATA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ada deck khusus N+1 di Root Cause. Di sini cukup kenali polanya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh nyata</div>
+          <h2>N+1 query: tersangka paling sering</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ 1 + N query</div><pre class="code">List&lt;Order&gt; orders = repo.findRecent();   <span class="cm">// 1 query</span>
+for (Order o : orders) &#123;
+  o.getCustomer().getName();   <span class="cm">// ← 1 query per order</span>
+&#125;
+<span class="cm">// 100 order = 101 query</span></pre></div>
+            <div><div class="codehead good">✓ ambil sekaligus</div><pre class="code">@Query("""
+  SELECT o FROM Order o
+  JOIN FETCH o.customer
+  WHERE o.createdAt &gt; :since
+""")
+List&lt;Order&gt; findRecentWithCustomer(Instant since);
+<span class="cm">// 1 query</span></pre></div>
+          </div>
+          <div class="foot">Nyalakan log SQL saat development. Kalau query yang sama berulang puluhan kali, itu <b>N+1</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — PROFILING ════════ -->
+        <section class="slide" data-ext="1" data-notes="Flame graph: sumbu horizontal = porsi waktu. Cari &#x27;dataran&#x27; yang lebar, itu tempat waktu habis.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">profiling</div>
+          <h2>Mencari bagian lambat dengan profiler</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Jalankan beban realistis</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Rekam dengan profiler</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Lihat flame graph</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Batang terlebar = tersangka</div></div><ul class="clean" style="margin-top: 18px"><li>Java: <b>async-profiler</b> atau JFR (Java Flight Recorder).</li><li>Browser: tab Performance di DevTools.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ANGKA PATOKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Angka ini membantu menebak di mana waktu habis. Satu panggilan jaringan = ribuan kali baca memori.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">angka patokan</div>
+          <h2>Berapa lama hal-hal ini? (kira-kira)</h2>
+          <table style="margin-top: 16px"><tr><th>Operasi</th><th>Waktu</th></tr><tr><td class="mono">Baca dari memori</td><td>±100 nanodetik</td></tr><tr><td class="mono">Baca dari SSD</td><td>±100 mikrodetik</td></tr><tr><td class="mono">Bolak-balik di satu data center</td><td>±0,5 milidetik</td></tr><tr><td class="mono">Query database sederhana</td><td>±1–5 milidetik</td></tr><tr><td class="mono">Jakarta ↔ Singapura</td><td>±10–20 milidetik</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: cari endpoint dengan p99 paling tinggi di dashboard kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -491,13 +538,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ ukur</div><p style="font-size: 17px; color: #e2e8f0">Pakai angka: latency, throughput, p99.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ fokus</div><p style="font-size: 17px; color: #e2e8f0">Perbaiki bagian paling lambat dulu.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ ulang</div><p style="font-size: 17px; color: #e2e8f0">Setelah perbaiki, ukur lagi.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

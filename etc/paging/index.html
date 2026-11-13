@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Buku dibaca per halaman, bukan dipotret semua sekaligus.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Aturan: setiap endpoint daftar wajib punya paging, sejak hari pertama.">
           <h2>GET /orders mengembalikan 2 juta baris. Server kehabisan memori.</h2>
@@ -485,7 +486,18 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 3 order terakhir dari halaman 1 muncul lagi, karena semua bergeser. Cursor pagination tidak punya masalah ini.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa ada item yang muncul dua kali?</h2>
+          <p class="lede">User membuka halaman 1 (20 order terbaru). Sementara itu, 3 order baru masuk. User membuka halaman 2.</p>
+          <div style="margin-top: 14px"><pre class="code">SELECT * FROM orders ORDER BY created_at DESC
+LIMIT 20 OFFSET 20;</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Apa yang dilihat user di bagian atas halaman 2?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Offset cocok untuk halaman bernomor yang dangkal. Cursor cocok untuk infinite scroll dan data besar. Untuk cursor, pastikan kolom urutnya unik, misalnya tambah id sebagai penentu kedua.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Offset vs cursor (keyset)</h2>
@@ -506,7 +518,8 @@
           </div>
           <div class="foot">Infinite scroll &amp; data besar → <b>cursor</b>. Halaman bernomor dangkal → offset.</div>
         </section>
-        <!-- ════════ 4 — ATURAN ════════ -->
+
+        <!-- ════════ 5 — ATURAN ════════ -->
         <section class="slide" data-notes="Tanpa ORDER BY, database boleh mengembalikan urutan berbeda tiap kali, sehingga item bisa muncul dua kali atau hilang antar halaman.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Aturan paging</h2>
@@ -518,7 +531,46 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CURSOR ════════ -->
+        <section class="slide" data-ext="1" data-notes="id dipakai sebagai penentu ketika dua order punya created_at yang sama persis.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">cursor</div>
+          <h2>Cursor pagination di API</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">query</div><pre class="code"><span class="cm">-- halaman berikutnya setelah item terakhir</span>
+SELECT * FROM orders
+WHERE (created_at, id) &lt; (:lastCreatedAt, :lastId)
+ORDER BY created_at DESC, id DESC
+LIMIT 21;   <span class="cm">-- ambil 1 lebih untuk tahu has_more</span>
+
+<span class="cm">-- index: (created_at DESC, id DESC)</span></pre></div>
+            <div><div class="codehead ">API</div><pre class="code">GET /orders?limit=20
+&#123;
+  "data": [ … ],
+  "next_cursor": "eyJjIjoiMjAyNi0xMS0xMyIsImkiOjk4fQ",
+  "has_more": true
+&#125;
+GET /orders?limit=20&amp;cursor=eyJj…</pre></div>
+          </div>
+          <div class="foot">Cursor = <b>pembatas buku</b>: "lanjutkan setelah yang ini". Isinya di-encode base64.</div>
+        </section>
+
+        <!-- ════════ 7 — MEMILIH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Banyak UI cukup menampilkan &#x27;Lihat lebih banyak&#x27; tanpa tahu totalnya.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">memilih</div>
+          <h2>Offset atau cursor?</h2>
+          <div class="cols" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">offset</div><h3>Nomor halaman</h3><p style="color: var(--ink)">Butuh lompat ke halaman 7, data kecil, admin panel.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">cursor</div><h3>Lanjutkan dari sini</h3><p style="color: var(--ink)">Infinite scroll, data besar, data terus bertambah, API publik.</p></div></div>
+          <div class="foot">Total jumlah data (COUNT) itu <b>mahal</b> di tabel besar. Tanyakan apakah benar dibutuhkan.</div>
+        </section>
+
+        <!-- ════════ 8 — EKSPOR ════════ -->
+        <section class="slide" data-ext="1" data-notes="OFFSET 1.000.000 memaksa database membaca dan membuang sejuta baris dulu. Makin jauh makin lambat.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">ekspor</div>
+          <h2>Mengambil semua data untuk ekspor</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Jangan pakai OFFSET besar</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Loop dengan cursor</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Proses per 1.000 baris</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tulis ke file per potongan</div></div><ul class="clean" style="margin-top: 18px"><li>Atau pakai streaming dari database (fetch size).</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari endpoint daftar di API kita yang tidak punya LIMIT.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -530,13 +582,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu koki memasak 3 menu bergantian vs 3 koki memasak bersamaan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — BEDA ════════ -->
         <section class="slide" data-notes="Concurrency adalah soal struktur: bagaimana mengurus banyak hal yang saling menunggu. Parallelism adalah soal eksekusi: benar-benar jalan bersamaan di beberapa CPU core.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
@@ -471,7 +472,16 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Concurrency</h3><p style="font-size:13.5px">1 koki, 3 panci.<br>Aduk A → tunggu → aduk B → aduk C.<br>Banyak urusan, <b>satu tangan</b>.</p></div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Parallelism</h3><p style="font-size:13.5px">3 koki, 3 panci.<br>Semua mengaduk di detik yang sama.<br>Banyak urusan, <b>banyak tangan</b>.</p></div></div></div>
           <div class="foot">JavaScript: concurrency tanpa parallelism. Java: bisa keduanya.</div>
         </section>
-        <!-- ════════ 3 — KAPAN ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: concurrency, parallelism, concurrency, parallelism. Concurrency = mengurus banyak hal. Parallelism = mengerjakan banyak hal bersamaan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Concurrency atau parallelism?</h2>
+          <p class="lede">Tebak:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Satu pelayan restoran melayani 5 meja bergantian.</li><li>Lima kasir melayani 5 antrean di saat yang sama.</li><li>Browser memuat 10 gambar sambil menunggu jaringan.</li><li>Mengubah ukuran 1.000 foto di 8 core CPU.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KAPAN ════════ -->
         <section class="slide" data-notes="Kebanyakan aplikasi web itu I/O-bound: lebih banyak menunggu database dan jaringan daripada menghitung. Menambah thread untuk pekerjaan CPU-bound melebihi jumlah core tidak membuatnya lebih cepat.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">memilih</div>
           <h2>Pilih berdasarkan jenis pekerjaan</h2>
@@ -482,7 +492,8 @@
           </table>
           <div class="foot">Aplikasi web kebanyakan <b>I/O-bound</b>: lebih banyak menunggu daripada menghitung.</div>
         </section>
-        <!-- ════════ 4 — BAHAYA ════════ -->
+
+        <!-- ════════ 5 — BAHAYA ════════ -->
         <section class="slide" data-notes="Detail tiap masalah ini ada di kategori Root Cause: Race Condition, Deadlock, Starvation, Livelock.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Bahaya saat berbagi data</h2>
@@ -494,7 +505,42 @@
           </div>
           <div class="foot">Detail lengkap di kategori <b>Root Cause</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — JAVA 21 ════════ -->
+        <section class="slide" data-ext="1" data-notes="Virtual threads membuat kode gaya blocking biasa bisa melayani konkurensi tinggi, tanpa async/await.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">Java 21</div>
+          <h2>Virtual threads: ribuan tugas menunggu tanpa berat</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">kode</div><pre class="code">try (var exec = Executors.newVirtualThreadPerTaskExecutor()) &#123;
+  for (var id : orderIds) &#123;
+    exec.submit(() -&gt; notify(id));   <span class="cm">// panggil API</span>
+  &#125;
+&#125;   <span class="cm">// menunggu semua selesai</span></pre></div>
+            <div><div class="codehead ">kenapa ringan</div><pre class="code">Thread biasa:   ±1 MB memori, ribuan = berat
+Virtual thread: beberapa KB, jutaan bisa
+
+Saat menunggu I/O, virtual thread
+'dilepas' dari thread OS.
+Thread OS bebas mengerjakan yang lain.</pre></div>
+          </div>
+          <div class="foot">Cocok untuk kerja <b>banyak menunggu</b> (I/O). Untuk hitungan berat CPU, tetap batasi sesuai jumlah core.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Bulkhead pattern: setiap dependency punya batas konkurensi sendiri supaya tidak saling menghabiskan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Memanggil 1.000 API sekaligus</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Kirim 1.000 request paralel</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">API partner kena rate limit</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Banyak 429 / timeout</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Batasi: maksimal 20 sekaligus</div></div><ul class="clean" style="margin-top: 18px"><li>Pakai <b>Semaphore</b> atau pool dengan ukuran tetap untuk membatasi.</li><li>Paralel tanpa batas bisa menjatuhkan sistem orang lain.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — LINTAS BAHASA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Python punya GIL: thread tidak bisa paralel untuk kerja CPU, makanya pakai multiprocessing.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">lintas bahasa</div>
+          <h2>Alat konkurensi di berbagai bahasa</h2>
+          <table style="margin-top: 16px"><tr><th>Bahasa</th><th>I/O banyak</th><th>CPU berat</th></tr><tr><td class="mono">Java</td><td>Virtual threads, CompletableFuture</td><td>ForkJoinPool, parallel stream</td></tr><tr><td class="mono">JavaScript</td><td>async/await, Promise.all</td><td>Web Worker, worker_threads</td></tr><tr><td class="mono">Go</td><td>goroutine + channel</td><td>goroutine (pakai semua core)</td></tr><tr><td class="mono">Python</td><td>asyncio</td><td>multiprocessing</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: pekerjaan paling lambat di sistem kita itu I/O-bound atau CPU-bound?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -506,13 +552,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

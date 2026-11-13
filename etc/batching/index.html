@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Belanja sekali seminggu, bukan ke warung tiap butuh satu telur.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Biaya bolak-balik jaringan biasanya jauh lebih besar dari biaya pekerjaannya sendiri.">
           <h2>Import 100.000 baris: 100.000 INSERT terpisah. Butuh 40 menit.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban kasar: satu per satu ±210 detik, hampir semuanya waktu jaringan. Batch: ±10 detik kerja DB + 0,2 detik jaringan. Waktu habis di perjalanan, bukan di kerja.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Hitung waktunya</h2>
+          <p class="lede">Satu INSERT butuh 0,1 ms kerja database + 2 ms bolak-balik jaringan.</p>
+          <ul class="clean" style="margin-top: 16px"><li>100.000 baris satu per satu = ?</li><li>Batch 1.000 baris (100 kali kirim) = ?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Hasil umum: dari puluhan menit menjadi satu-dua menit. Di JPA/Hibernate atur hibernate.jdbc.batch_size. Di PostgreSQL tambahkan reWriteBatchedInserts=true.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Satu-satu vs batch</h2>
@@ -507,7 +517,8 @@
           </div>
           <div class="foot">JPA: <code>hibernate.jdbc.batch_size</code>. PostgreSQL: <code>reWriteBatchedInserts=true</code>.</div>
         </section>
-        <!-- ════════ 4 — UKURAN ════════ -->
+
+        <!-- ════════ 5 — UKURAN ════════ -->
         <section class="slide" data-notes="Batching juga dipakai di tempat lain: Kafka producer mengirim pesan dalam batch, DataLoader di GraphQL, dan email massal.">
           <div class="lens-tag lt-green" style="align-self: flex-start">panduan</div>
           <h2>Memilih ukuran batch</h2>
@@ -519,7 +530,44 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — JPA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Cek di log SQL atau metrik datasource untuk memastikan batch benar-benar terjadi.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">JPA</div>
+          <h2>Batch di Hibernate tidak otomatis</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">application.yml</div><pre class="code">spring.jpa.properties.hibernate:
+  jdbc.batch_size: 500
+  order_inserts: true
+  order_updates: true
+<span class="cm"># PostgreSQL: tambah di URL JDBC</span>
+<span class="cm"># ?reWriteBatchedInserts=true</span></pre></div>
+            <div><div class="codehead ">jebakan: ID IDENTITY</div><pre class="code">@Id
+@GeneratedValue(strategy = IDENTITY)  <span class="cm">// ← batch MATI</span>
+Long id;
+
+<span class="cm">// pakai SEQUENCE supaya bisa batch</span>
+@GeneratedValue(strategy = SEQUENCE)</pre></div>
+          </div>
+          <div class="foot">Dengan <b>IDENTITY</b>, Hibernate harus INSERT satu-satu untuk tahu ID-nya.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Catat baris yang ditolak ke file atau tabel terpisah supaya bisa diperbaiki.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Satu baris rusak di tengah batch</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Batch 1.000 baris</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Baris ke-517 melanggar constraint</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Seluruh batch di-rollback</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Ulangi tanpa baris rusak</div></div><ul class="clean" style="margin-top: 18px"><li>Validasi data <b>sebelum</b> dikirim ke database.</li><li>Kalau tetap gagal: pecah batch jadi lebih kecil untuk mencari baris pelakunya.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — DI TEMPAT LAIN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Trade-off batching: throughput naik, tapi tiap item menunggu sedikit lebih lama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">di tempat lain</div>
+          <h2>Batching bukan cuma database</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">API</div><h3>Endpoint bulk</h3><p style="color: var(--ink)">POST /products/bulk dengan 100 item, bukan 100 request.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">antrean</div><h3>Kafka producer</h3><p style="color: var(--ink)">linger.ms & batch.size: kumpulkan pesan sebentar, kirim sekaligus.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">frontend</div><h3>DataLoader</h3><p style="color: var(--ink)">Kumpulkan 50 permintaan user di satu tick, jadi 1 query.</p></div></div>
+          <div class="foot">Polanya sama: <b>tunggu sebentar, kirim bersama</b>.</div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari loop yang memanggil save() atau HTTP di setiap iterasi.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -531,13 +579,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

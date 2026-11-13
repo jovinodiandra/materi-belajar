@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satpam cek KTP (siapa), lalu cek daftar akses lantai (boleh ke mana).</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Celah ini namanya IDOR / Broken Object Level Authorization, nomor satu di OWASP API Top 10.">
           <h2>User login, ganti angka di URL /orders/42 jadi /orders/43, dan melihat order orang lain.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BEDA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: AuthN, AuthZ, AuthN, AuthZ. Bug paling sering ada di AuthZ, bukan di login.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>AuthN atau AuthZ?</h2>
+          <p class="lede">Tebak mana yang authentication (siapa kamu) dan authorization (boleh apa):</p>
+          <ul class="clean" style="margin-top: 16px"><li>Masukkan kode OTP dari SMS</li><li>Kasir tidak boleh membuka menu laporan keuangan</li><li>Login dengan Google</li><li>User hanya boleh melihat pesanannya sendiri</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BEDA ════════ -->
         <section class="slide" data-notes="Nama status 401 Unauthorized sebenarnya membingungkan: artinya belum terautentikasi. 403 artinya sudah dikenal tapi tidak boleh.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Authentication vs Authorization</h2>
@@ -498,7 +508,8 @@
           </table>
           <div class="foot">401 = belum dikenal. 403 = dikenal, tapi <b>tidak boleh</b>.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Query dengan ownerId sekaligus. Kalau bukan miliknya, kembalikan 404, bukan 403, supaya penyerang tidak tahu order itu ada.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Selalu cek kepemilikan di server</h2>
@@ -520,7 +531,42 @@ Order get(@PathVariable long id,
           </div>
           <div class="foot">Bukan miliknya? Balas <b>404</b> supaya keberadaannya tidak bocor.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — JWT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Coba tempel token di jwt.io untuk demo. Server wajib memverifikasi tanda tangan dan exp setiap request.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">JWT</div>
+          <h2>Isi JWT bisa dibaca siapa saja</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">token</div><pre class="code">eyJhbGciOiJIUzI1NiJ9.
+eyJzdWIiOiI0MiIsInJvbGUiOiJ1c2VyIn0.
+Xk3…signature</pre></div>
+            <div><div class="codehead ">bagian tengah di-decode (base64)</div><pre class="code">&#123;
+  "sub": "42",
+  "role": "user",
+  "exp": 1763000000
+&#125;
+<span class="cm">// tidak terenkripsi, cuma ditandatangani</span>
+<span class="cm">// → jangan taruh data rahasia di sini</span></pre></div>
+          </div>
+          <div class="foot">Tanda tangan menjamin isinya <b>tidak diubah</b>, bukan menjamin <b>tidak dibaca</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — OAUTH / OIDC ════════ -->
+        <section class="slide" data-ext="1" data-notes="OAuth = memberi izin akses. OIDC = lapisan di atas OAuth untuk tahu siapa user-nya (login).">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">OAuth / OIDC</div>
+          <h2>Login dengan Google, versi gampang</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User klik "Login Google"</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Diarahkan ke Google, login di sana</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Google kirim kode ke kita</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Server tukar kode → token & profil</div></div><ul class="clean" style="margin-top: 18px"><li>Aplikasi kita <b>tidak pernah</b> melihat password Google user.</li><li>Pakai alur <b>Authorization Code + PKCE</b>, juga untuk aplikasi HP/SPA.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — MODEL IZIN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Uji AuthZ secara khusus: login sebagai user A, coba akses data user B. Harus ditolak (403/404).">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">model izin</div>
+          <h2>Cara mengatur izin</h2>
+          <table style="margin-top: 16px"><tr><th>Model</th><th>Gampangnya</th><th>Contoh</th></tr><tr><td class="mono">RBAC</td><td>Izin lewat peran</td><td>admin, kasir, gudang</td></tr><tr><td class="mono">Kepemilikan</td><td>Hanya pemilik data</td><td>order.userId == currentUser</td></tr><tr><td class="mono">ABAC</td><td>Berdasarkan atribut</td><td>Manajer cabang hanya melihat cabangnya</td></tr></table>
+          <div class="foot">Kebanyakan aplikasi butuh <b>RBAC + cek kepemilikan</b>.</div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari endpoint yang mengambil data berdasarkan id tanpa mengecek pemiliknya.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +578,14 @@ Order get(@PathVariable long id,
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

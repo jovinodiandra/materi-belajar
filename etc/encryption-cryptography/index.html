@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Gembok, kunci cadangan, dan segel lilin.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — TIGA ALAT ════════ -->
         <section class="slide" data-notes="Password tidak dienkripsi, tapi di-hash. Kita tidak pernah perlu tahu password asli user, cukup mencocokkan hash-nya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
@@ -475,7 +476,16 @@
           </table>
           <div class="foot">Password <b>di-hash</b>, bukan dienkripsi.</div>
         </section>
-        <!-- ════════ 3 — PASSWORD ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: hashing (bcrypt/argon2), enkripsi (AES), encoding (Base64), hashing (SHA-256). Base64 BUKAN enkripsi, siapa pun bisa membaliknya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Hashing, enkripsi, atau encoding?</h2>
+          <p class="lede">Pilih yang tepat:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Menyimpan password user</li><li>Menyimpan nomor KTP yang nanti perlu dibaca lagi</li><li>Mengirim gambar di dalam JSON</li><li>Mengecek file download tidak rusak</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PASSWORD ════════ -->
         <section class="slide" data-notes="Hash password harus sengaja lambat (bcrypt, scrypt, argon2) supaya menebak jutaan password jadi mahal. SHA-256 terlalu cepat untuk password.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Menyimpan password</h2>
@@ -495,7 +505,8 @@ boolean ok = enc.matches(input, hash);  <span class="cm">// saat login</span></p
           </div>
           <div class="foot">Password: <b>bcrypt / argon2</b> (sengaja lambat), bukan MD5/SHA polos.</div>
         </section>
-        <!-- ════════ 4 — ATURAN ════════ -->
+
+        <!-- ════════ 5 — ATURAN ════════ -->
         <section class="slide" data-notes="Kriptografi buatan sendiri hampir pasti punya celah. Bahkan ahli kriptografi memakai library yang sudah diaudit.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Aturan emas kriptografi</h2>
@@ -507,7 +518,46 @@ boolean ok = enc.matches(input, hash);  <span class="cm">// saat login</span></p
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Naikkan cost seiring komputer makin cepat. Argon2id adalah pilihan modern lainnya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Hash password yang benar</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Spring Security</div><pre class="code">PasswordEncoder enc = new BCryptPasswordEncoder(12);
+
+<span class="cm">// daftar</span>
+user.setPasswordHash(enc.encode(rawPassword));
+
+<span class="cm">// login</span>
+boolean ok = enc.matches(rawPassword,
+                         user.getPasswordHash());</pre></div>
+            <div><div class="codehead ">isi hash</div><pre class="code">$2a$12$N9qo8uLOickgx2ZMRZoMye…
+ │   │  └ salt + hash
+ │   └ cost: 2^12 putaran
+ └ algoritma bcrypt
+
+Salt acak → password sama,
+hash berbeda.</pre></div>
+          </div>
+          <div class="foot">Hash password harus <b>sengaja lambat</b>, supaya menebak jutaan kali jadi mahal.</div>
+        </section>
+
+        <!-- ════════ 7 — HTTPS ════════ -->
+        <section class="slide" data-ext="1" data-notes="CA = Certificate Authority, lembaga yang menjamin sertifikat itu benar milik domain tersebut.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">HTTPS</div>
+          <h2>Apa yang terjadi saat membuka https://</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Server kirim sertifikat</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Browser cek tanda tangan CA</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Sepakati kunci rahasia (asimetris)</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Data dikirim dengan AES (simetris)</div></div><ul class="clean" style="margin-top: 18px"><li>Asimetris dipakai untuk <b>berkenalan</b> dengan aman. Simetris dipakai untuk <b>ngobrol</b> karena cepat.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="java.util.Random bisa ditebak. Token reset password dan OTP wajib memakai SecureRandom.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Pilihan algoritma yang aman (2026)</h2>
+          <table style="margin-top: 16px"><tr><th>Kebutuhan</th><th>Pakai</th><th>Hindari</th></tr><tr><td class="mono">Password</td><td>Argon2id, bcrypt</td><td>MD5, SHA-1, SHA-256 polos</td></tr><tr><td class="mono">Enkripsi data</td><td>AES-256-GCM</td><td>AES-ECB, DES</td></tr><tr><td class="mono">Integritas / tanda tangan</td><td>HMAC-SHA256, Ed25519</td><td>MD5</td></tr><tr><td class="mono">Angka acak untuk token</td><td>SecureRandom</td><td>Math.random(), Random</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek bagaimana password user disimpan di sistem kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -519,13 +569,14 @@ boolean ok = enc.matches(input, hash);  <span class="cm">// saat login</span></p
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

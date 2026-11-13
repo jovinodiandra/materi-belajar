@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Nomor edisi buku: revisi kecil atau buku yang berbeda?</p>
           </div>
         </section>
+
         <!-- ════════ 2 — SEMVER ════════ -->
         <section class="slide" data-notes="Nomor versi adalah janji. Kalau kita merusak perilaku di versi PATCH, kita melanggar janji itu.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
@@ -475,7 +476,16 @@
           </table>
           <div class="foot">Nomor versi adalah <b>janji</b> kepada pemakai.</div>
         </section>
-        <!-- ════════ 3 — API ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 2.4.2, 2.5.0, 3.0.0. Ganti nama = merusak kode pemakai = MAJOR.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Naik versi berapa?</h2>
+          <p class="lede">Library kita sekarang versi 2.4.1. Tentukan versi berikutnya:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Memperbaiki bug pembulatan</li><li>Menambah method baru <code>formatCompact()</code></li><li>Mengganti nama method <code>format()</code> jadi <code>render()</code></li></ul>
+        </section>
+
+        <!-- ════════ 4 — API ════════ -->
         <section class="slide" data-notes="Untuk kebanyakan tim, versi di URL paling mudah dipahami dan di-debug.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">api</div>
           <h2>Cara memberi versi pada API</h2>
@@ -487,7 +497,8 @@
           </table>
           <div class="foot">Kebanyakan tim: versi di <b>URL</b> paling mudah.</div>
         </section>
-        <!-- ════════ 4 — PERUBAHAN ════════ -->
+
+        <!-- ════════ 5 — PERUBAHAN ════════ -->
         <section class="slide" data-notes="Kalau harus merusak: buat versi baru, umumkan jadwal penghentian (deprecation) versi lama, dan pantau siapa yang masih memakainya.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Perubahan yang aman vs merusak</h2>
@@ -499,7 +510,42 @@
           </div>
           <div class="foot">Harus merusak? Versi baru + <b>jadwal deprecation</b> + pantau pemakai.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — DEPRECATE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Header Deprecation dan Sunset adalah standar IETF untuk mengumumkan endpoint yang akan pensiun.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">deprecate</div>
+          <h2>Pensiunkan pelan-pelan, jangan langsung hapus</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Java</div><pre class="code">/** @deprecated pakai &#123;@link #render()&#125; */
+@Deprecated(since = "2.5", forRemoval = true)
+public String format() &#123; return render(); &#125;
+
+public String render() &#123; … &#125;</pre></div>
+            <div><div class="codehead ">HTTP API</div><pre class="code">HTTP/1.1 200 OK
+Deprecation: @1764547200
+Sunset: Wed, 01 Jul 2026 00:00:00 GMT
+Link: &lt;/v2/orders&gt;; rel="successor-version"
+
+<span class="cm">// pantau siapa yang masih memakai v1</span></pre></div>
+          </div>
+          <div class="foot">Beri <b>waktu dan petunjuk</b>, lalu pantau sampai pemakaiannya nol.</div>
+        </section>
+
+        <!-- ════════ 7 — OTOMATIS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pesan commit yang rapi jadi bahan changelog gratis.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">otomatis</div>
+          <h2>Versi dan changelog dari pesan commit</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">feat: tambah filter</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">fix: perbaiki total</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">feat!: ganti format respons</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Rilis otomatis: 3.0.0 + changelog</div></div><ul class="clean" style="margin-top: 18px"><li>Format <b>Conventional Commits</b>: feat → MINOR, fix → PATCH, ! → MAJOR.</li><li>Alat: semantic-release, release-please, changesets.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — KONTRAK ════════ -->
+        <section class="slide" data-ext="1" data-notes="openapi-diff atau oasdiff bisa memberi peringatan di PR kalau ada perubahan yang merusak.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kontrak</div>
+          <h2>Jaga kontrak dengan tes</h2>
+          <table style="margin-top: 16px"><tr><th>Cara</th><th>Mencegah</th></tr><tr><td class="mono">Contract test (Pact)</td><td>Provider merusak yang dipakai consumer</td></tr><tr><td class="mono">OpenAPI diff di CI</td><td>Breaking change lolos tanpa disadari</td></tr><tr><td class="mono">Schema registry (Avro/Protobuf)</td><td>Event Kafka berubah tidak kompatibel</td></tr><tr><td class="mono">japicmp / revapi</td><td>Library Java merusak API publik</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: kapan terakhir kali perubahan API kita merusak aplikasi mobile?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -511,13 +557,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

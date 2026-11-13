@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Menyaring air yang mengalir, bukan menunggu kolam penuh.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Batch = cuci baju seminggu sekali. Stream = cuci piring langsung setelah makan.">
           <h2>Penipuan kartu terdeteksi besok pagi, saat laporan batch selesai. Uang sudah hilang.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: batch, stream, stream, batch. Stream untuk yang butuh reaksi cepat. Batch untuk yang cukup dihitung sesekali.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Batch atau stream?</h2>
+          <p class="lede">Pilih untuk tiap kebutuhan:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Laporan gaji bulanan</li><li>Deteksi transaksi kartu mencurigakan</li><li>Dashboard pesanan per menit saat flash sale</li><li>Rekap pajak tahunan</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Window = potongan waktu. Data yang mengalir tanpa akhir dipotong per menit, per jam, dan seterusnya supaya bisa dijumlahkan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Contoh Kafka Streams: total penjualan per menit</h2>
@@ -505,7 +515,8 @@ orders
           </div>
           <div class="foot"><b>Window</b> = potongan waktu untuk aliran yang tidak pernah berhenti.</div>
         </section>
-        <!-- ════════ 4 — ALAT ════════ -->
+
+        <!-- ════════ 5 — ALAT ════════ -->
         <section class="slide" data-notes="Untuk tim Java yang sudah memakai Kafka, Kafka Streams adalah titik awal paling mudah karena cuma library, bukan cluster baru.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">alat</div>
           <h2>Pilihan alat</h2>
@@ -518,7 +529,30 @@ orders
           </table>
           <div class="foot">Tim Java + Kafka? Mulai dari <b>Kafka Streams</b> (cuma library).</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — WAKTU ════════ -->
+        <section class="slide" data-ext="1" data-notes="Di Kafka Streams dan Flink ada konsep grace period: jendela waktu tetap menerima data terlambat untuk sementara.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">waktu</div>
+          <h2>Event time vs processing time</h2>
+          <div class="cols" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">event time</div><h3>Kapan kejadiannya</h3><p style="color: var(--ink)">Transaksi terjadi 10:00:58 di HP yang sinyalnya jelek.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">processing time</div><h3>Kapan sampai ke kita</h3><p style="color: var(--ink)">Baru sampai 10:01:20. Masuk ke menit yang salah?</p></div></div>
+          <div class="foot">Hitung berdasarkan <b>event time</b>, beri toleransi untuk data yang terlambat.</div>
+        </section>
+
+        <!-- ════════ 7 — JENDELA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Gambar di papan: kotak-kotak waktu untuk tiap jenis window.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">jendela</div>
+          <h2>Tiga jenis window</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tumbling: per 1 menit, tidak tumpang tindih</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Hopping: 5 menit, geser tiap 1 menit</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Session: selama user aktif</div></div><ul class="clean" style="margin-top: 18px"><li>Tumbling paling umum untuk dashboard per menit.</li><li>Session cocok untuk menghitung lama kunjungan user.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Exactly-once di Kafka Streams cukup dengan processing.guarantee=exactly_once_v2, tapi ada biaya performa.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Hal penting di stream processing</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Event bisa datang <b>dobel</b>: buat proses idempotent atau pakai exactly-once.</li><li>Event bisa datang <b>tidak urut</b>: pakai event time.</li><li>State disimpan & dicadangkan (changelog) supaya tahan restart.</li><li>Pantau lag: makin besar, makin "tidak realtime".</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: laporan batch mana di sistem kita yang akan lebih berguna kalau real-time?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -530,13 +564,14 @@ orders
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

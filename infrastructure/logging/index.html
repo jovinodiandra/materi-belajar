@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kotak hitam pesawat untuk aplikasimu.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: kalau ada komplain &#x27;order saya gagal&#x27; dengan nomor order, berapa lama kita bisa menemukan log-nya?">
           <h2>Error di produksi. Log berisi “Error occurred” sebanyak 40.000 baris.</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: tidak bisa. Log tanpa konteks itu tidak berguna. Kita butuh orderId, userId, dan traceId di setiap baris.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Temukan pesanan yang gagal</h2>
+          <p class="lede">User komplain: "Pesanan saya jam 10.15 gagal." Kamu punya 20 server dan log seperti ini:</p>
+          <div style="margin-top: 14px"><pre class="code">10:15:02 INFO  Processing request
+10:15:02 ERROR Something went wrong
+10:15:03 INFO  Processing request</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Bisa tahu pesanan mana? User siapa? Kenapa gagal?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Log JSON bisa dicari seperti database: semua log dengan orderId A-42. traceId menghubungkan log dari banyak service untuk satu request.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Log teks bebas vs log terstruktur</h2>
@@ -507,7 +520,8 @@ log.info(&quot;payment done &quot; + orderId);
           </div>
           <div class="foot">Cari seperti database: <code>orderId = "A-42"</code>.</div>
         </section>
-        <!-- ════════ 4 — LEVEL ════════ -->
+
+        <!-- ════════ 5 — LEVEL ════════ -->
         <section class="slide" data-notes="Jangan log ERROR untuk hal biasa seperti user salah password. Kalau semua error, alert jadi tidak berarti. Kirim log ke tempat terpusat: ELK, Loki, Datadog.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">level</div>
           <h2>Pakai level dengan benar</h2>
@@ -520,7 +534,39 @@ log.info(&quot;payment done &quot; + orderId);
           </table>
           <div class="foot">Pusatkan log: <b>ELK</b>, <b>Loki</b>, atau Datadog. Jangan log password &amp; data pribadi.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — TRACE ID ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau memakai OpenTelemetry, traceId diisi otomatis. Hubungkan log dengan tracing.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">trace id</div>
+          <h2>Satu id untuk mengikuti satu request</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">pasang id di awal request</div><pre class="code"><span class="cm">// filter: sekali per request</span>
+MDC.put("traceId", req.getHeader("X-Trace-Id"));
+try { chain.doFilter(req, res); }
+finally { MDC.clear(); }</pre></div>
+            <div><div class="codehead ">muncul otomatis di semua log</div><pre class="code">{"ts":"10:15:02","level":"ERROR",
+ "traceId":"a1b2c3","orderId":42,
+ "msg":"payment declined"}
+<span class="cm">// cari traceId=a1b2c3 → seluruh cerita</span></pre></div>
+          </div>
+          <div class="foot">MDC = <b>kantong konteks</b> yang ikut ke setiap baris log di thread itu.</div>
+        </section>
+
+        <!-- ════════ 7 — ALUR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Penyimpanan populer: Elasticsearch/OpenSearch, Loki, atau layanan cloud.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">alur</div>
+          <h2>Perjalanan log sampai bisa dicari</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Aplikasi tulis ke stdout</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Agen kumpulkan (Fluent Bit)</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Dikirim ke penyimpanan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Dicari di Kibana / Grafana</div></div><ul class="clean" style="margin-top: 18px"><li>Aplikasi cukup menulis ke <b>stdout</b>. Urusan kirim-mengirim bukan tugas aplikasi.</li><li>Atur masa simpan: misalnya 14 hari panas, 90 hari arsip.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — JANGAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Log sering dibaca banyak orang dan disimpan lama. Anggap log bisa bocor, jadi jangan simpan rahasia di sana.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">jangan</div>
+          <h2>Yang tidak boleh masuk log</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Password, token, API key.</li><li>Nomor kartu, NIK, data kesehatan.</li><li>Isi request/response utuh tanpa disaring.</li><li>Log DEBUG di produksi terus-menerus: mahal dan berisik.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari log yang mencatat token, password, atau nomor kartu di project kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +578,14 @@ log.info(&quot;payment done &quot; + orderId);
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

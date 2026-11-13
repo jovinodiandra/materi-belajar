@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Minimarket di tiap kecamatan, bukan satu gudang pusat.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Contoh CDN: Cloudflare, CloudFront, Fastly, Akamai.">
           <h2>Server di Jakarta. User di Papua menunggu 3 detik hanya untuk gambar.</h2>
@@ -485,14 +486,26 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — ALUR ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: nama file sama, jadi CDN dan browser pakai salinan lama selama setahun. Solusinya nama file ber-hash: style.3f9a1c.css.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa CSS baru tidak muncul?</h2>
+          <p class="lede">Kita deploy desain baru. User masih melihat tampilan lama.</p>
+          <div style="margin-top: 14px"><pre class="code">&lt;link rel="stylesheet" href="/style.css"&gt;
+&lt;!<span class="cm">-- Cache-Control: max-age=31536000 --&gt;</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Apa masalahnya? Bagaimana memperbaikinya tanpa menyuruh user hapus cache?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — ALUR ════════ -->
         <section class="slide" data-notes="Request pertama mungkin MISS dan diambil dari origin. Request berikutnya HIT dari edge terdekat. Lama penyimpanan diatur lewat header Cache-Control.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Cara kerja CDN</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">User di Makassar</h3><p style="font-size:13.5px">minta app.js</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Edge CDN Makassar</h3><p style="font-size:13.5px">ada di cache? langsung kirim (HIT)</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Server asal (origin)</h3><p style="font-size:13.5px">hanya ditanya kalau belum ada (MISS)</p></div></div></div>
           <div class="foot">Lama simpan diatur header <b>Cache-Control</b>.</div>
         </section>
-        <!-- ════════ 4 — CACHE ════════ -->
+
+        <!-- ════════ 5 — CACHE ════════ -->
         <section class="slide" data-notes="Trik penting: beri hash pada nama file (app.3f9a1c.js). Isi berubah, nama berubah, jadi bisa disimpan selamanya tanpa takut basi.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">pengaturan</div>
           <h2>Header Cache-Control yang umum</h2>
@@ -505,7 +518,36 @@
           </table>
           <div class="foot">Data per user: <b>private, no-store</b>. Jangan sampai tersimpan di CDN!</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CEK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Nama header beda per penyedia: x-cache (CloudFront), cf-cache-status (Cloudflare). Idenya sama.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">cek</div>
+          <h2>Cek apakah CDN bekerja</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">perintah</div><pre class="code">curl -sI https://cdn.toko.com/app.3f9a1c.js</pre></div>
+            <div><div class="codehead ">baca header-nya</div><pre class="code">cache-control: max-age=31536000, immutable
+age: 5321          <span class="cm"># sudah disimpan 5321 detik</span>
+x-cache: HIT       <span class="cm"># dilayani dari edge ✓</span>
+cf-cache-status: HIT</pre></div>
+          </div>
+          <div class="foot"><b>MISS</b> terus-menerus? Cek header Cache-Control dari server asal.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kejadian nyata di beberapa perusahaan. CDN menyimpan respons yang seharusnya hanya untuk satu orang.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Data pribadi tersimpan di CDN</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">/api/me di-cache CDN</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">User A buka profil</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">User B dapat profil A</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Kebocoran data!</div></div><ul class="clean" style="margin-top: 18px"><li>Respons pribadi wajib <code>Cache-Control: private, no-store</code>.</li><li>Hati-hati dengan aturan "cache semua" di CDN.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Purge = perintah ke CDN untuk membuang salinan. Berguna kalau terlanjur menyimpan file yang salah.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Checklist CDN</h2>
+          <ul class="clean" style="margin-top: 18px"><li>File statis pakai <b>nama ber-hash</b> + cache panjang.</li><li>index.html pakai <code>no-cache</code> supaya selalu cek versi baru.</li><li>Respons milik user: <code>private, no-store</code>.</li><li>Siapkan cara <b>purge</b> (hapus cache) untuk keadaan darurat.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: buka DevTools Network, cek header Cache-Control file JS kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -517,13 +559,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

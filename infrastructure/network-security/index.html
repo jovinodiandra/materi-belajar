@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Rumah dengan pagar, kunci, dan satpam.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Defense in depth: jangan bergantung pada satu lapisan pengaman saja.">
           <h2>Database produksi bisa diakses dari internet dengan port 5432 terbuka.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — LAPISAN ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: bisa dalam hitungan menit. Ada robot yang memindai seluruh internet terus-menerus mencari port terbuka. Jangan pernah berpikir &#x27;tidak akan ada yang tahu&#x27;.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa lama sampai database terbuka ditemukan?</h2>
+          <p class="lede">Database baru dengan port 5432 terbuka ke internet dan password lemah.</p>
+          <ul class="clean" style="margin-top: 16px"><li>1 bulan?</li><li>1 minggu?</li><li>1 jam?</li><li>Beberapa menit?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — LAPISAN ════════ -->
         <section class="slide" data-notes="Prinsip least privilege berlaku juga untuk jaringan: buka hanya port yang benar-benar dibutuhkan, untuk sumber yang benar-benar dibutuhkan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Lapisan pengaman</h2>
@@ -499,7 +509,8 @@
           </table>
           <div class="foot">Prinsip <b>least privilege</b>: buka seminimal mungkin.</div>
         </section>
-        <!-- ════════ 4 — CHECKLIST ════════ -->
+
+        <!-- ════════ 5 — CHECKLIST ════════ -->
         <section class="slide" data-notes="Zero trust: setiap request dicek identitasnya, walaupun datang dari dalam jaringan.">
           <div class="lens-tag lt-green" style="align-self: flex-start">checklist</div>
           <h2>Checklist cepat</h2>
@@ -511,7 +522,42 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Merujuk ke security group lain lebih aman daripada IP, karena IP server bisa berubah.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Security group: buka seperlunya</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ terbuka ke dunia</div><pre class="code">ingress {
+  from_port   = 5432
+  to_port     = 5432
+  cidr_blocks = ["0.0.0.0/0"]   <span class="cm"># ← seluruh internet</span>
+}</pre></div>
+            <div><div class="codehead good">✓ hanya dari aplikasi</div><pre class="code">ingress {
+  from_port       = 5432
+  to_port         = 5432
+  security_groups = [aws_security_group.app.id]
+}
+<span class="cm"># hanya server aplikasi yang boleh masuk</span></pre></div>
+          </div>
+          <div class="foot"><b>0.0.0.0/0</b> artinya "siapa saja di dunia". Waspadai setiap kali melihatnya.</div>
+        </section>
+
+        <!-- ════════ 7 — ZERO TRUST ════════ -->
+        <section class="slide" data-ext="1" data-notes="Gerakan menyamping (lateral movement) adalah cara penyerang memperluas akses setelah berhasil masuk.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">zero trust</div>
+          <h2>Jangan percaya hanya karena "di dalam jaringan"</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Penyerang masuk 1 server</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Jaringan internal bebas</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Lompat ke DB & service lain</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Semua bocor</div></div><ul class="clean" style="margin-top: 18px"><li><b>Zero trust</b>: setiap panggilan tetap dicek, walaupun dari dalam.</li><li>Pakai mTLS antar service + izin per service (network policy).</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="WAF membantu, tapi bukan pengganti kode yang aman. Tetap pakai query parameter dan escape output.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Pengaman tambahan yang sering dipakai</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Melindungi dari</th></tr><tr><td class="mono">WAF (Web Application Firewall)</td><td>SQL injection, XSS, bot jahat</td></tr><tr><td class="mono">DDoS protection (Cloudflare, Shield)</td><td>Banjir trafik</td></tr><tr><td class="mono">Kubernetes NetworkPolicy</td><td>Pod bicara ke pod yang tidak seharusnya</td></tr><tr><td class="mono">VPN / bastion / SSM</td><td>Akses admin ke server privat</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari security group dengan 0.0.0.0/0 di akun cloud kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -523,13 +569,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

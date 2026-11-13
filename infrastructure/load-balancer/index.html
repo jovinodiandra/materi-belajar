@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Petugas antrean yang mengarahkan ke kasir yang kosong.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Load balancer juga yang membuat deploy tanpa downtime mungkin: server dikeluarkan satu per satu dari rotasi.">
           <h2>Satu server menerima semua trafik. Saat promo, server itu tumbang.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — ALGORITMA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban terbaik: simpan sesi di luar server (Redis) atau pakai token. Sticky session bisa, tapi membuat beban tidak rata.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa user tiba-tiba logout?</h2>
+          <p class="lede">Kita tambah server kedua di belakang load balancer. User mulai mengeluh sering logout.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Sesi login disimpan di memori server A.</li><li>Request berikutnya dikirim LB ke server B.</li><li>Apa solusinya?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — ALGORITMA ════════ -->
         <section class="slide" data-notes="Sticky session sebaiknya dihindari. Lebih baik aplikasi stateless dan sesi disimpan di Redis atau token, supaya request bisa ke server mana saja.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Cara membagi request</h2>
@@ -498,7 +508,8 @@
           </table>
           <div class="foot">Lebih baik aplikasi <b>stateless</b> daripada sticky session.</div>
         </section>
-        <!-- ════════ 4 — FITUR ════════ -->
+
+        <!-- ════════ 5 — FITUR ════════ -->
         <section class="slide" data-notes="Health check yang baik mengecek kesiapan aplikasi, bukan hanya apakah proses hidup.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">fitur</div>
           <h2>Fitur penting load balancer</h2>
@@ -510,7 +521,40 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — HEALTH CHECK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Hati-hati: kalau readiness ikut gagal karena dependency opsional mati, semua server bisa keluar bersamaan.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">health check</div>
+          <h2>Health check yang jujur</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ selalu bilang sehat</div><pre class="code">@GetMapping("/health")
+String health() {
+  return "OK";   <span class="cm">// ← DB mati pun tetap OK</span>
+}</pre></div>
+            <div><div class="codehead good">✓ readiness yang berarti</div><pre class="code"><span class="cm"># Spring Boot Actuator</span>
+management.endpoint.health.probes.enabled=true
+<span class="cm"># /actuator/health/liveness  → proses hidup?</span>
+<span class="cm"># /actuator/health/readiness → siap melayani?</span>
+<span class="cm">#   (cek DB &amp; dependency penting)</span></pre></div>
+          </div>
+          <div class="foot">LB hanya bisa mengeluarkan server sakit kalau health check-nya <b>jujur</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — DEPLOY TANPA PUTUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Draining biasanya diberi batas waktu, misal 30 detik.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">deploy tanpa putus</div>
+          <h2>Connection draining saat deploy</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tandai server A 'keluar'</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">LB berhenti kirim request baru</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Request lama diselesaikan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Server A dimatikan</div></div><ul class="clean" style="margin-top: 18px"><li>Tanpa draining, request yang sedang berjalan langsung putus.</li><li>Spring Boot: <code>server.shutdown=graceful</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — LAPISAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Untuk aplikasi web biasa, L7 paling sering dipakai karena lebih fleksibel.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">lapisan</div>
+          <h2>L4 vs L7 load balancer</h2>
+          <table style="margin-top: 16px"><tr><th></th><th>L4 (TCP)</th><th>L7 (HTTP)</th></tr><tr><td class="mono">Melihat</td><td>IP & port saja</td><td>URL, header, cookie</td></tr><tr><td class="mono">Bisa routing per path?</td><td>Tidak</td><td>Ya: /api → A, /img → B</td></tr><tr><td class="mono">Kecepatan</td><td>Sangat cepat</td><td>Sedikit lebih berat</td></tr><tr><td class="mono">Contoh</td><td>AWS NLB</td><td>AWS ALB, NGINX, Envoy</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek endpoint health check aplikasi kita. Apa saja yang dicek?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -522,13 +566,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

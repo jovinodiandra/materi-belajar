@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kantor pos juga butuh manajer gudang.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Pilihan paling aman untuk tim kecil: layanan terkelola seperti Amazon MSK, Confluent Cloud, atau CloudAMQP.">
           <h2>Satu node Kafka mati. Pesan seharian hilang.</h2>
@@ -485,7 +486,18 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KAFKA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: pesan hilang, padahal producer mengira berhasil. Pengaturan aman: acks=all, replikasi 3, min.insync.replicas 2.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Apakah pesan ini aman?</h2>
+          <div style="margin-top: 14px"><pre class="code">props.put("acks", "1");          <span class="cm">// tunggu 1 broker saja</span>
+props.put("replication.factor", 1);
+producer.send(orderCreated);     <span class="cm">// berhasil?</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Broker yang menerima pesan mati sebelum menyalin ke yang lain. Apa yang terjadi?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KAFKA ════════ -->
         <section class="slide" data-notes="Kombinasi replication 3, min.insync 2, dan acks=all adalah resep standar supaya pesan tidak hilang walau satu broker mati.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Pengaturan Kafka yang aman</h2>
@@ -499,7 +511,8 @@
           </table>
           <div class="foot">Resep standar: <b>RF=3, min.insync=2, acks=all</b>.</div>
         </section>
-        <!-- ════════ 4 — PANTAU ════════ -->
+
+        <!-- ════════ 5 — PANTAU ════════ -->
         <section class="slide" data-notes="Consumer lag yang terus naik artinya consumer tidak sanggup mengikuti. Tambah consumer atau perbaiki yang lambat.">
           <div class="lens-tag lt-green" style="align-self: flex-start">pantau</div>
           <h2>Yang wajib dipantau</h2>
@@ -511,7 +524,41 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Konsekuensinya: kalau crash setelah process tapi sebelum commit, pesan diproses ulang. Maka consumer harus idempotent.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Commit offset setelah selesai diproses</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ auto-commit</div><pre class="code">enable.auto.commit=true
+<span class="cm">// offset di-commit tiap 5 detik,</span>
+<span class="cm">// walau pesan belum selesai diproses</span>
+<span class="cm">// → aplikasi crash = pesan terlewat</span></pre></div>
+            <div><div class="codehead good">✓ commit manual</div><pre class="code">enable.auto.commit=false
+
+for (var rec : consumer.poll(timeout)) {
+  process(rec);          <span class="cm">// simpan ke DB dulu</span>
+}
+consumer.commitSync();   <span class="cm">// baru tandai selesai</span></pre></div>
+          </div>
+          <div class="foot">Offset = <b>pembatas buku</b>. Pindahkan setelah halaman benar-benar dibaca.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau partisi cuma 3, consumer ke-4 akan menganggur. Rencanakan jumlah partisi sejak awal.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Lag terus naik</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Producer 1.000 pesan/detik</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Consumer cuma 600/detik</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Lag naik 400/detik</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tambah consumer (≤ partisi)</div></div><ul class="clean" style="margin-top: 18px"><li>Jumlah consumer aktif dalam satu group <b>maksimal</b> sebanyak partisi.</li><li>Atau percepat proses per pesan (batch insert, kurangi panggilan luar).</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PILIHAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau tim belum punya Kafka dan kebutuhannya cuma antrean tugas, RabbitMQ atau SQS lebih sederhana.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pilihan</div>
+          <h2>Kafka, RabbitMQ, atau SQS?</h2>
+          <table style="margin-top: 16px"><tr><th>Broker</th><th>Kekuatan</th><th>Cocok untuk</th></tr><tr><td class="mono">Kafka</td><td>Log yang disimpan lama, bisa diputar ulang</td><td>Event streaming, data besar</td></tr><tr><td class="mono">RabbitMQ</td><td>Routing fleksibel, antrean klasik</td><td>Tugas latar belakang, RPC</td></tr><tr><td class="mono">AWS SQS</td><td>Tanpa urus server</td><td>Antrean sederhana di AWS</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek consumer lag topic utama kita sekarang.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -523,13 +570,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

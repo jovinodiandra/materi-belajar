@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Pintu putar stadion: satu per satu, tidak berdesakan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Rate limit melindungi dari serangan dan dari bug yang tidak disengaja. Yang kedua justru lebih sering terjadi.">
           <h2>Script partner salah loop: 50.000 request per menit. Semua user lain ikut lambat.</h2>
@@ -485,14 +486,24 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — TOKEN BUCKET ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: biasanya kombinasi. Login dibatasi per IP dan per akun, API partner per API key. Diskusikan contoh kantor yang berbagi satu IP.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Batas per apa?</h2>
+          <p class="lede">Kita batasi 100 request per menit. Tapi per apa?</p>
+          <ul class="clean" style="margin-top: 16px"><li>Per alamat IP? (satu kantor bisa berbagi satu IP)</li><li>Per user / API key?</li><li>Per endpoint? (login lebih ketat dari baca produk)</li></ul>
+        </section>
+
+        <!-- ════════ 4 — TOKEN BUCKET ════════ -->
         <section class="slide" data-notes="Token bucket membolehkan ledakan kecil (sampai isi ember), tapi rata-rata tetap dibatasi kecepatan isi ulang. Ini terasa adil untuk user normal.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Algoritma paling populer: token bucket</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Ember berisi token</h3><p style="font-size:13.5px">mis. maksimal 10 token</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Diisi ulang pelan-pelan</h3><p style="font-size:13.5px">mis. 5 token per detik</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-red" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Tiap request ambil 1 token</h3><p style="font-size:13.5px">ember kosong? tolak: 429</p></div></div></div>
           <div class="foot">Boleh ledakan kecil, tapi rata-rata tetap dibatasi.</div>
         </section>
-        <!-- ════════ 4 — RESPONSE ════════ -->
+
+        <!-- ════════ 5 — RESPONSE ════════ -->
         <section class="slide" data-notes="Client yang baik membaca Retry-After dan menunggu, bukan langsung mengulang. Batasi per user/API key, bukan cuma per IP, karena banyak user bisa berbagi satu IP kantor.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Jawaban yang sopan saat ditolak</h2>
@@ -508,7 +519,44 @@ RateLimit-Reset: 30
           </div>
           <div class="foot">Batasi per <b>user / API key</b>, bukan hanya per IP.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Membatasi OTP penting juga untuk biaya: setiap SMS yang dikirim ada harganya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Rate limit di Nginx</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">konfigurasi</div><pre class="code">limit_req_zone $binary_remote_addr
+    zone=login:10m rate=5r/m;
+
+location /login {
+  limit_req zone=login burst=3 nodelay;
+  limit_req_status 429;
+  proxy_pass http://app;
+}</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">5 request per menit per IP
+boleh lonjakan kecil 3 request
+lebih dari itu → 429
+
+Endpoint lain tidak terpengaruh</pre></div>
+          </div>
+          <div class="foot">Endpoint sensitif (login, OTP, reset password) butuh batas <b>paling ketat</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — BANYAK SERVER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Library seperti Bucket4j bisa memakai Redis sebagai penyimpanan bersama.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">banyak server</div>
+          <h2>Rate limit di banyak pod</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">3 pod, batas 100/menit</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Hitungan di memori tiap pod</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">User dapat 300/menit!</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Hitung di Redis bersama</div></div><ul class="clean" style="margin-top: 18px"><li>Hitungan harus di tempat <b>bersama</b> (Redis) atau di gateway.</li><li>Redis: <code>INCR</code> + <code>EXPIRE</code> per key user per menit.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — SISI CLIENT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jitter = jeda acak kecil, supaya semua client tidak retry di detik yang sama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">sisi client</div>
+          <h2>Kalau kita yang kena 429</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Baca header <code>Retry-After</code>, tunggu selama itu.</li><li>Retry dengan <b>backoff</b> + jitter, jangan langsung ulang.</li><li>Kurangi panggilan: cache, batch, atau webhook.</li><li>Pantau angka 429 di dashboard sebagai tanda peringatan.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek apakah endpoint login kita punya rate limit.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -520,13 +568,14 @@ RateLimit-Reset: 30
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

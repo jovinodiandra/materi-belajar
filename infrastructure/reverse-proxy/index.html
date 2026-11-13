@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Resepsionis kantor: tamu cukup tahu meja depan.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Beda forward proxy dan reverse proxy: forward proxy mewakili client (misal proxy kantor), reverse proxy mewakili server.">
           <h2>Aplikasi Java langsung menghadap internet: urus HTTPS, kompresi, dan file statis sendiri.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: dari sudut pandang aplikasi, yang menelepon adalah Nginx. IP asli harus diteruskan lewat header X-Forwarded-For.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>IP user siapa yang tercatat?</h2>
+          <p class="lede">Setelah pasang Nginx di depan aplikasi, log aplikasi menunjukkan semua user punya IP yang sama: 127.0.0.1.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Kenapa?</li><li>Bagaimana aplikasi tahu IP user yang asli?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Tanpa header X-Forwarded-For, aplikasi akan melihat semua request seolah datang dari IP proxy.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Contoh konfigurasi Nginx</h2>
@@ -509,7 +519,8 @@
           </div>
           <div class="foot">Teruskan <b>X-Forwarded-For</b>, supaya aplikasi tahu IP asli user.</div>
         </section>
-        <!-- ════════ 4 — BEDA ════════ -->
+
+        <!-- ════════ 5 — BEDA ════════ -->
         <section class="slide" data-notes="Ketiganya sering tumpang tindih. Nginx bisa jadi reverse proxy sekaligus load balancer. API gateway pada dasarnya reverse proxy dengan fitur tambahan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">perbandingan</div>
           <h2>Reverse proxy, load balancer, API gateway</h2>
@@ -521,7 +532,43 @@
           </table>
           <div class="foot">Sering tumpang tindih. Satu alat bisa memerankan beberapa.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanpa X-Forwarded-Proto, aplikasi bisa membuat redirect ke http padahal user memakai https.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Teruskan informasi asli ke aplikasi</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ tanpa header</div><pre class="code">location /api/ {
+  proxy_pass http://app:8080;
+}
+<span class="cm"># aplikasi mengira:</span>
+<span class="cm">#   IP = 127.0.0.1, skema = http</span></pre></div>
+            <div><div class="codehead good">✓ dengan header</div><pre class="code">location /api/ {
+  proxy_pass http://app:8080;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}</pre></div>
+          </div>
+          <div class="foot">Spring Boot: set <code>server.forward-headers-strategy=native</code> supaya membaca header ini.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pesan 502/504 datang dari proxy, bukan dari aplikasi. Jadi cari penyebabnya di aplikasi di belakangnya.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Error 502 dan 504 dari Nginx</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User dapat 502</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Nginx tidak bisa bicara ke app</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Cek: app jalan? port benar?</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Cek log error Nginx</div></div><ul class="clean" style="margin-top: 18px"><li><b>502 Bad Gateway</b>: aplikasi di belakang mati / menolak koneksi.</li><li><b>504 Gateway Timeout</b>: aplikasi terlalu lama menjawab (proxy_read_timeout).</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PILIHAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Untuk proyek pribadi, Caddy sangat praktis: sertifikat HTTPS diurus otomatis.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pilihan</div>
+          <h2>Reverse proxy yang populer</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Ciri khas</th></tr><tr><td class="mono">Nginx</td><td>Paling umum, cepat, konfigurasi file</td></tr><tr><td class="mono">Caddy</td><td>HTTPS otomatis, konfigurasi singkat</td></tr><tr><td class="mono">Traefik</td><td>Membaca label Docker/Kubernetes otomatis</td></tr><tr><td class="mono">Envoy</td><td>Dasar banyak service mesh & gateway</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari konfigurasi proxy di project kita. Domain apa diarahkan ke mana?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -533,13 +580,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

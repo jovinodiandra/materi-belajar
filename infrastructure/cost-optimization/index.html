@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Matikan lampu di ruangan yang kosong.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Istilah FinOps: budaya di mana engineer ikut bertanggung jawab atas biaya cloud.">
           <h2>Tagihan cloud naik 40% dalam tiga bulan. Tidak ada yang tahu kenapa.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — CEPAT ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tidak ada jawaban pasti, tapi sering mengejutkan: log dan lingkungan dev kerap lebih besar dari dugaan. Pesannya: lihat datanya, jangan menebak.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak: mana yang paling boros?</h2>
+          <p class="lede">Tagihan bulan ini Rp 80 juta. Tebak urutan pos terbesar:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Server produksi</li><li>Log yang disimpan selamanya</li><li>Lingkungan dev yang menyala 24 jam</li><li>Transfer data antar region</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CEPAT ════════ -->
         <section class="slide" data-notes="Urutan yang disarankan: matikan dulu yang tidak dipakai, baru kecilkan ukuran, baru beli komitmen. Jangan membeli komitmen untuk sumber daya yang seharusnya dimatikan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Penghematan yang paling sering berhasil</h2>
@@ -497,7 +507,8 @@
           </div>
           <div class="foot">Urutan: <b>matikan → kecilkan → komitmen</b>.</div>
         </section>
-        <!-- ════════ 4 — TERSEMBUNYI ════════ -->
+
+        <!-- ════════ 5 — TERSEMBUNYI ════════ -->
         <section class="slide" data-notes="Pasang label (tag) tim dan lingkungan di semua sumber daya, lalu buat budget alert. Biaya yang terlihat lebih mudah dikendalikan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">waspada</div>
           <h2>Biaya yang sering terlupa</h2>
@@ -510,7 +521,41 @@
           </table>
           <div class="foot">Pasang <b>tag</b> + <b>budget alert</b> supaya biaya terlihat.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Instance database dev juga bisa dihentikan di malam hari di kebanyakan cloud.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Matikan dev di luar jam kerja</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">jadwal (Kubernetes CronJob)</div><pre class="code"><span class="cm"># 20:00 — kecilkan ke nol</span>
+schedule: "0 20 * * 1-5"
+command: ["kubectl", "scale", "deploy",
+          "--all", "--replicas=0", "-n", "dev"]
+<span class="cm"># 08:00 — nyalakan lagi</span>
+schedule: "0 8 * * 1-5"</pre></div>
+            <div><div class="codehead ">hitungannya</div><pre class="code">Jam kerja: 12 jam × 5 hari = 60 jam
+Seminggu  : 168 jam
+Hemat     : (168 - 60) / 168 ≈ 64%</pre></div>
+          </div>
+          <div class="foot">Cara paling mudah berhemat: <b>matikan yang tidak dipakai</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — CARA BELI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kombinasi umum: beban dasar pakai komitmen, lonjakan pakai on-demand, batch pakai spot.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">cara beli</div>
+          <h2>Harga beda untuk server yang sama</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">on-demand</div><h3>Bayar per jam</h3><p style="color: var(--ink)">Paling fleksibel, paling mahal. Untuk beban tak terduga.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">komitmen</div><h3>Reserved / Savings Plan</h3><p style="color: var(--ink)">Janji pakai 1–3 tahun. Diskon hingga ±60%.</p></div><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">sisa</div><h3>Spot / Preemptible</h3><p style="color: var(--ink)">Kapasitas sisa, diskon hingga ±90%. Bisa diambil kapan saja.</p></div></div>
+          <div class="foot">Spot cocok untuk pekerjaan yang <b>boleh diulang</b>: batch, CI, worker antrean.</div>
+        </section>
+
+        <!-- ════════ 8 — KEBIASAAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="FinOps = budaya tim teknik dan keuangan bersama-sama mengelola biaya cloud.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kebiasaan</div>
+          <h2>Ritme FinOps sederhana</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tag semua resource</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Laporan biaya per tim</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Review bulanan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Pilih 3 aksi hemat</div></div><ul class="clean" style="margin-top: 18px"><li>Biaya adalah <b>metrik engineering</b>, sama seperti latency.</li><li>Tunjukkan biaya per fitur atau per pelanggan supaya punya makna.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari 5 sumber daya termahal di akun cloud kita bulan ini.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -522,13 +567,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

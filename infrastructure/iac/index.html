@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Cetak biru rumah, bukan ingatan tukang.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Pertanyaan tes: kalau seluruh akun cloud kita terhapus, berapa lama untuk membangun ulang?">
           <h2>Server produksi dibuat 2 tahun lalu lewat klik. Yang membuat sudah resign.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: di riwayat git. Setiap perubahan infrastruktur lewat PR yang punya penulis, reviewer, dan alasan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Siapa yang mengubah ini?</h2>
+          <p class="lede">Security group produksi tiba-tiba membuka port 22 ke seluruh internet.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Tidak ada tiket. Tidak ada catatan.</li><li>Siapa? Kapan? Kenapa?</li><li>Dengan IaC, jawaban ada di mana?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Terraform, Pulumi, dan CloudFormation adalah alat IaC yang populer. Semua bekerja dengan prinsip yang sama: deklaratif.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Contoh Terraform</h2>
@@ -503,7 +513,8 @@
           </div>
           <div class="foot">Alat populer: <b>Terraform</b>, Pulumi, CloudFormation.</div>
         </section>
-        <!-- ════════ 4 — ALUR ════════ -->
+
+        <!-- ════════ 5 — ALUR ════════ -->
         <section class="slide" data-notes="Selalu baca hasil plan dengan teliti, terutama baris yang akan menghapus atau membuat ulang (destroy/replace) database.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">alur</div>
           <h2>Alur kerja aman</h2>
@@ -511,7 +522,42 @@
           <ul class="clean" style="margin-top: 14px"><li><b>plan</b> menunjukkan apa yang akan dibuat, diubah, dan <b>dihapus</b>.</li><li>Rekan me-review hasil plan, bukan cuma kodenya.</li><li><b>apply</b> dijalankan dari CI, bukan laptop pribadi.</li><li>Simpan <b>state</b> di tempat bersama yang terkunci (mis. S3 + lock).</li></ul>
           <div class="foot">Baca <b>plan</b> dengan teliti. Waspadai kata <b>destroy</b> dan <b>replace</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Modul juga memudahkan menerapkan standar, misalnya semua database wajib terenkripsi.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Pakai modul, jangan copy-paste</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ copy per lingkungan</div><pre class="code"><span class="cm"># staging/main.tf  (300 baris)</span>
+<span class="cm"># prod/main.tf     (300 baris, hampir sama)</span>
+<span class="cm"># ← ubah satu, lupa yang lain</span>
+<span class="cm">#   staging ≠ prod lagi</span></pre></div>
+            <div><div class="codehead good">✓ satu modul, beda nilai</div><pre class="code">module "orders_db" {
+  source         = "../modules/postgres"
+  env            = "prod"
+  instance_class = "db.m6g.large"
+}
+<span class="cm"># staging memanggil modul yang sama</span>
+<span class="cm"># dengan nilai lebih kecil</span></pre></div>
+          </div>
+          <div class="foot">Modul = <b>cetakan kue</b>. Ukurannya bisa beda, bentuknya pasti sama.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Drift = perbedaan antara yang tertulis di kode dan yang benar-benar ada di cloud.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Drift: kenyataan beda dengan kode</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Seseorang ubah via console</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Kode tidak tahu</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">terraform plan menunjukkan selisih</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Kembalikan / tulis ke kode</div></div><ul class="clean" style="margin-top: 18px"><li>Jalankan <code>terraform plan</code> terjadwal untuk mendeteksi drift.</li><li>Batasi izin klik-klik di console produksi.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Lock mencegah dua orang menjalankan apply bersamaan dan merusak state.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Aturan aman Terraform</h2>
+          <ul class="clean" style="margin-top: 18px"><li>State disimpan di <b>remote backend</b> (S3 + lock), bukan di laptop.</li><li>Jangan pernah commit file <code>.tfstate</code>: isinya bisa memuat rahasia.</li><li>Baca bagian <b>destroy</b> di plan dengan teliti sebelum apply.</li><li>Pasang <code>prevent_destroy</code> pada database produksi.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: daftar sumber daya cloud kita yang masih dibuat lewat klik.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -523,13 +569,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

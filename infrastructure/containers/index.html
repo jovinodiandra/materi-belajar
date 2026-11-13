@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kontainer peti kemas: isinya apa saja, cara angkutnya sama.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Container bukan virtual machine. Container berbagi kernel dengan host, jadi jauh lebih ringan dan cepat menyala.">
           <h2>Aplikasi jalan di laptop, gagal di server: versi Java berbeda.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — ISTILAH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="A = VM, B = container. Container lebih ringan karena berbagi kernel, tapi isolasinya lebih tipis dari VM.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Container atau virtual machine?</h2>
+          <p class="lede">Tebak mana yang mana:</p>
+          <ul class="clean" style="margin-top: 16px"><li><b>A.</b> Bawa sistem operasi sendiri utuh. Nyala dalam menit. Ukuran GB.</li><li><b>B.</b> Pakai kernel bersama host. Nyala dalam detik. Ukuran MB.</li><li>Analogi: rumah sendiri vs kamar kos dengan dapur bersama.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — ISTILAH ════════ -->
         <section class="slide" data-notes="Satu image bisa dijalankan jadi banyak container sekaligus, seperti satu resep bisa dipakai untuk banyak kue.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Tiga istilah utama</h2>
@@ -497,7 +507,8 @@
           </table>
           <div class="foot">Satu image → banyak container.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Image yang kecil lebih cepat diunduh dan lebih sedikit celah keamanannya. Jangan pakai tag latest di produksi.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Dockerfile yang baik (multi-stage)</h2>
@@ -519,7 +530,8 @@ ENTRYPOINT [&quot;java&quot;, &quot;-jar&quot;, &quot;app.jar&quot;]</pre>
           </div>
           <div class="foot">Jangan pakai tag <b>latest</b> di produksi.</div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Container bersifat sementara. Anggap bisa dihapus dan dibuat ulang kapan saja.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -531,7 +543,52 @@ ENTRYPOINT [&quot;java&quot;, &quot;-jar&quot;, &quot;app.jar&quot;]</pre>
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Build yang tadinya 5 menit bisa jadi 30 detik hanya dengan menukar urutan COPY.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Urutan COPY menentukan kecepatan build</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ cache selalu hilang</div><pre class="code">FROM eclipse-temurin:21-jdk
+COPY . .                      <span class="cm"># ← ubah 1 file kode,</span>
+RUN ./mvnw dependency:go-offline   <span class="cm"># download ulang semua</span>
+RUN ./mvnw package</pre></div>
+            <div><div class="codehead good">✓ dependency di-cache</div><pre class="code">FROM eclipse-temurin:21-jdk
+COPY pom.xml mvnw ./
+COPY .mvn .mvn
+RUN ./mvnw dependency:go-offline   <span class="cm"># jarang berubah</span>
+COPY src src                       <span class="cm"># sering berubah</span>
+RUN ./mvnw package</pre></div>
+          </div>
+          <div class="foot">Docker meng-cache tiap langkah. Taruh yang <b>jarang berubah</b> di atas.</div>
+        </section>
+
+        <!-- ════════ 8 — PERINTAH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Demo langsung kalau sempat: build, run, curl localhost:8080/health, lalu docker logs.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">perintah</div>
+          <h2>Perintah Docker sehari-hari</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">menjalankan</div><pre class="code">docker build -t order:1.0 .
+docker run -d -p 8080:8080 \
+  -e DB_URL=jdbc:... order:1.0
+docker ps          <span class="cm"># yang sedang jalan</span>
+docker logs -f &lt;id&gt;</pre></div>
+            <div><div class="codehead ">memeriksa</div><pre class="code">docker exec -it &lt;id&gt; sh   <span class="cm"># masuk ke dalam</span>
+docker stats              <span class="cm"># CPU &amp; memori</span>
+docker image ls           <span class="cm"># daftar image</span>
+docker system prune       <span class="cm"># bersih-bersih</span></pre></div>
+          </div>
+          <div class="foot"><b>-p 8080:8080</b> = colokkan port laptop ke port container.</div>
+        </section>
+
+        <!-- ════════ 9 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="latest itu membingungkan: tidak jelas versi mana yang sedang jalan dan susah rollback.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Checklist image yang sehat</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Pakai base image kecil dan resmi (temurin <b>jre</b>, distroless).</li><li>Jalankan sebagai user <b>non-root</b>.</li><li>Tag dengan versi atau git SHA, bukan <code>latest</code>.</li><li>Scan kerentanan (Trivy) di pipeline.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek ukuran image aplikasi kita dengan docker images.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -543,13 +600,14 @@ ENTRYPOINT [&quot;java&quot;, &quot;-jar&quot;, &quot;app.jar&quot;]</pre>
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

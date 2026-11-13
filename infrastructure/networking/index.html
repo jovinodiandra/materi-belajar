@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Sistem alamat dan jalan raya untuk data.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — ALAMAT ════════ -->
         <section class="slide" data-notes="IP menemukan mesinnya, port menemukan aplikasinya. &#x27;Connection refused&#x27; biasanya berarti mesinnya ada, tapi tidak ada aplikasi di port itu.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
@@ -476,14 +477,25 @@
           </table>
           <div class="foot">“Connection refused” = mesin ada, tapi <b>tidak ada yang menunggu di port itu</b>.</div>
         </section>
-        <!-- ════════ 3 — VPC ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: /24 = 256 alamat (di cloud beberapa dipakai sistem). /16 = 65.536 alamat. Makin kecil angka di belakang garis miring, makin besar subnetnya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa alamat di subnet ini?</h2>
+          <div style="margin-top: 14px"><pre class="code">10.0.1.0/24
+<span class="cm">#        ↑ 24 bit pertama tetap, 8 bit sisanya bebas</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>2<sup>8</sup> = berapa?</li><li>Kalau /16, berapa alamat?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — VPC ════════ -->
         <section class="slide" data-notes="VPC = jaringan pribadi kita di cloud. Hanya load balancer yang menghadap internet. Aplikasi dan database disembunyikan di subnet privat.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">di cloud</div>
           <h2>Jaringan di cloud (VPC)</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Internet</h3><p style="font-size:13.5px"></p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Subnet publik</h3><p style="font-size:13.5px">load balancer, NAT gateway</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Subnet privat</h3><p style="font-size:13.5px">aplikasi (tidak bisa diakses langsung dari internet)</p></div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Subnet privat</h3><p style="font-size:13.5px">database (hanya dari aplikasi)</p></div></div></div>
           <div class="foot">Hanya load balancer yang menghadap internet. Database <b>selalu privat</b>.</div>
         </section>
-        <!-- ════════ 4 — ERROR ════════ -->
+
+        <!-- ════════ 5 — ERROR ════════ -->
         <section class="slide" data-notes="Alat cepat: ping (mesinnya hidup?), nc -zv host port (port terbuka?), dig nama (DNS benar?), curl -v (HTTP-nya bagaimana?).">
           <div class="lens-tag lt-green" style="align-self: flex-start">debugging</div>
           <h2>Membaca error jaringan</h2>
@@ -496,7 +508,39 @@
           </table>
           <div class="foot">Alat: <b>nc -zv host port</b>, <b>dig</b>, <b>curl -v</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — ALAT DEBUG ════════ -->
+        <section class="slide" data-ext="1" data-notes="Banyak salah diagnosis karena tes dari laptop berhasil, padahal pod di cluster punya aturan jaringan berbeda.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">alat debug</div>
+          <h2>Perintah untuk memeriksa koneksi</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">dari dalam pod / server</div><pre class="code">nc -vz payment 8080        <span class="cm"># port terbuka?</span>
+curl -v http://payment:8080/health
+nslookup payment           <span class="cm"># nama → IP?</span>
+traceroute 10.0.3.17       <span class="cm"># lewat mana saja?</span></pre></div>
+            <div><div class="codehead ">membaca hasilnya</div><pre class="code">succeeded!        → jalur &amp; port aman
+Connection refused → tidak ada yang dengar
+timed out          → diblokir firewall
+NXDOMAIN           → nama tidak dikenal</pre></div>
+          </div>
+          <div class="foot">Selalu tes dari <b>tempat yang sama</b> dengan aplikasi, bukan dari laptop.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Partner sering minta IP tetap untuk whitelist. Jawabannya biasanya IP NAT gateway.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Aplikasi di subnet privat tidak bisa panggil API luar</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Pod panggil api.bank.com</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Subnet privat tanpa IP publik</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Lewat NAT gateway</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Keluar dengan IP NAT</div></div><ul class="clean" style="margin-top: 18px"><li>NAT gateway = <b>pintu keluar</b> bersama. Masuk dari luar tetap tidak bisa.</li><li>IP NAT ini yang didaftarkan ke whitelist partner.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PORT UMUM ════════ -->
+        <section class="slide" data-ext="1" data-notes="Hafal beberapa ini membantu saat membaca aturan firewall dan pesan error.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">port umum</div>
+          <h2>Port yang sering ditemui</h2>
+          <table style="margin-top: 16px"><tr><th>Port</th><th>Layanan</th></tr><tr><td class="mono">22</td><td>SSH</td></tr><tr><td class="mono">80 / 443</td><td>HTTP / HTTPS</td></tr><tr><td class="mono">5432 / 3306</td><td>PostgreSQL / MySQL</td></tr><tr><td class="mono">6379</td><td>Redis</td></tr><tr><td class="mono">9092</td><td>Kafka</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Latihan: dari pod aplikasi, coba nc -zv ke database kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -508,13 +552,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Jaringan jalan tol dengan rambu dan CCTV otomatis.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Contoh: Istio, Linkerd, Cilium service mesh.">
           <h2>Lima puluh service, tiga bahasa. Masing-masing menulis sendiri retry, TLS, dan metrik.</h2>
@@ -485,14 +486,24 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau tidak ada yang angkat tangan, mungkin belum perlu. Mesh menambah kerumitan operasional yang besar.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Butuh service mesh atau belum?</h2>
+          <p class="lede">Angkat tangan kalau ini kondisi timmu:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Lebih dari 20 service, beberapa bahasa pemrograman.</li><li>Wajib enkripsi semua trafik internal (aturan keamanan).</li><li>Sering canary deploy dan butuh pembagian trafik halus.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Data plane = proxy-proxy yang membawa trafik. Control plane = otak yang membagikan aturan. Aplikasi tidak tahu ada mesh.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Bentuknya: proxy di samping setiap service</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Order app</h3><p style="font-size:13.5px"></p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">⇄</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Proxy (Envoy)</h3><p style="font-size:13.5px"></p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">⇄</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Proxy (Envoy)</h3><p style="font-size:13.5px"></p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">⇄</div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Payment app</h3><p style="font-size:13.5px"></p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↑</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Control plane (mis. Istio)</h3><p style="font-size:13.5px">membagikan aturan ke semua proxy: mTLS, retry, routing</p></div></div></div>
           <div class="foot"><b>Data plane</b> membawa trafik. <b>Control plane</b> membagikan aturan.</div>
         </section>
-        <!-- ════════ 4 — FITUR ════════ -->
+
+        <!-- ════════ 5 — FITUR ════════ -->
         <section class="slide" data-notes="Service mesh sepadan untuk puluhan service. Untuk 3-5 service, library seperti Resilience4j dan TLS biasa biasanya cukup.">
           <div class="lens-tag lt-green" style="align-self: flex-start">untung rugi</div>
           <h2>Yang didapat & harganya</h2>
@@ -504,7 +515,46 @@
           </div>
           <div class="foot">Service sedikit? Library biasa sering <b>sudah cukup</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Hal yang sama bisa untuk retry, timeout, dan fault injection untuk chaos engineering.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Canary 10% tanpa ubah kode (Istio)</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">VirtualService</div><pre class="code">apiVersion: networking.istio.io/v1
+kind: VirtualService
+spec:
+  hosts: [ payment ]
+  http:
+    - route:
+        - destination: { host: payment, subset: v1 }
+          weight: 90
+        - destination: { host: payment, subset: v2 }
+          weight: 10</pre></div>
+            <div><div class="codehead ">yang terjadi</div><pre class="code">90% panggilan ke payment v1
+10% ke payment v2
+
+Aplikasi pemanggil tidak tahu apa-apa.
+Ubah angka → trafik berpindah.</pre></div>
+          </div>
+          <div class="foot">Aturan jaringan pindah dari <b>kode</b> ke <b>konfigurasi</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Retry berlapis bisa melipatgandakan beban saat service sedang sakit.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Retry dobel: mesh dan aplikasi sama-sama retry</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">App retry 3×</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Mesh juga retry 3×</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">1 request jadi 9 panggilan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Service tujuan makin berat</div></div><ul class="clean" style="margin-top: 18px"><li>Tentukan <b>satu tempat</b> untuk retry. Kalau pakai mesh, matikan retry di aplikasi.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PILIHAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tren terbaru: mesh tanpa sidecar untuk mengurangi pemakaian memori.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pilihan</div>
+          <h2>Service mesh yang umum</h2>
+          <table style="margin-top: 16px"><tr><th>Mesh</th><th>Catatan</th></tr><tr><td class="mono">Istio</td><td>Paling lengkap, paling rumit</td></tr><tr><td class="mono">Linkerd</td><td>Lebih ringan dan sederhana</td></tr><tr><td class="mono">Cilium (eBPF)</td><td>Bekerja di kernel, tanpa sidecar</td></tr><tr><td class="mono">Istio ambient mode</td><td>Tanpa sidecar, proxy per node</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: apakah trafik antar service kita sekarang terenkripsi?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -516,13 +566,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

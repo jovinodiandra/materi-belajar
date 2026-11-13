@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satpam + resepsionis gedung perkantoran.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Contoh produk: Kong, AWS API Gateway, Spring Cloud Gateway, Apigee.">
           <h2>Sepuluh service, masing-masing mengecek token dan membatasi request dengan caranya sendiri.</h2>
@@ -485,14 +486,27 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: aplikasi HP versi lama rusak. Dengan gateway, HP cukup kenal api.toko.com. Alamat di belakang bebas berubah.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa alamat yang harus diingat aplikasi HP?</h2>
+          <div style="margin-top: 14px"><pre class="code">ORDER_URL   = "https://order.toko.internal:8081"
+USER_URL    = "https://user.toko.internal:8082"
+PAYMENT_URL = "https://pay.toko.internal:8083"
+<span class="cm">// … 7 lagi. Service pindah server? Rilis ulang aplikasi HP.</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Apa yang terjadi kalau satu alamat berubah, padahal aplikasi HP lama belum di-update user?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Client cukup kenal satu alamat. Gateway yang tahu service mana yang harus menjawab.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Posisi API gateway</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Web</h3><p style="font-size:13.5px"></p></div><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Mobile</h3><p style="font-size:13.5px"></p></div><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Partner</h3><p style="font-size:13.5px"></p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">API Gateway</h3><p style="font-size:13.5px">auth · rate limit · routing · logging · CORS</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Order service</h3><p style="font-size:13.5px"></p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">User service</h3><p style="font-size:13.5px"></p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Payment service</h3><p style="font-size:13.5px"></p></div></div></div>
           <div class="foot">Client cukup kenal <b>satu alamat</b>.</div>
         </section>
-        <!-- ════════ 4 — TARUH DI MANA ════════ -->
+
+        <!-- ════════ 5 — TARUH DI MANA ════════ -->
         <section class="slide" data-notes="Gateway yang terlalu pintar jadi bottleneck baru, seperti ESB di SOA. Biarkan gateway fokus ke urusan umum.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Apa yang ditaruh di gateway?</h2>
@@ -505,7 +519,43 @@
           </table>
           <div class="foot">Gateway terlalu pintar = <b>bottleneck baru</b>. Jaga tetap tipis.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH KONFIGURASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="lb:// artinya gateway memakai service discovery untuk mencari instance yang hidup.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh konfigurasi</div>
+          <h2>Satu pintu, banyak tujuan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">routing (Spring Cloud Gateway)</div><pre class="code">routes:
+  - id: orders
+    uri: lb://order-service
+    predicates: [ Path=/v1/orders/** ]
+    filters:
+      - StripPrefix=1
+      - name: RequestRateLimiter</pre></div>
+            <div><div class="codehead ">yang dilihat client</div><pre class="code">GET https://api.toko.com/v1/orders/42
+  → gateway cek token
+  → gateway cek batas request
+  → diteruskan ke order-service
+     sebagai GET /orders/42</pre></div>
+          </div>
+          <div class="foot">Client cuma kenal <b>satu alamat</b>. Gateway yang tahu jalan ke dalam.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Makin banyak logika di gateway, makin besar kemungkinan gateway yang jadi sumber masalah.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Gateway mati = semua mati?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Gateway cuma 1 instance</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Instance itu crash</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Semua API tidak bisa diakses</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Pasang ≥ 2 instance + LB</div></div><ul class="clean" style="margin-top: 18px"><li>Gateway adalah <b>titik tunggal kegagalan</b>. Wajib dijalankan lebih dari satu.</li><li>Jaga gateway tetap ringan supaya jarang error.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PILIHAN ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Untuk awal, pilih yang sudah tersedia di platform tim. Jangan menambah alat baru tanpa alasan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pilihan alat</div>
+          <h2>Contoh API gateway</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Cocok untuk</th></tr><tr><td class="mono">Kong / Tyk</td><td>Self-hosted, banyak plugin</td></tr><tr><td class="mono">Spring Cloud Gateway</td><td>Tim Java, butuh kustom dalam kode</td></tr><tr><td class="mono">AWS API Gateway</td><td>Serverless / Lambda di AWS</td></tr><tr><td class="mono">NGINX / Envoy</td><td>Ringan, sering jadi dasar gateway lain</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: daftar urusan yang sekarang diulang di setiap service kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -517,13 +567,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

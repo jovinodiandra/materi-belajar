@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dashboard mobil: kecepatan, bensin, suhu mesin.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tiga pilar observability: logs (cerita), metrics (angka), traces (perjalanan request). Hari ini fokus ke metrics.">
           <h2>Tim tahu sistem down dari komplain di media sosial.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — SINYAL ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Hanya yang kedua. Itu gejala yang dirasakan user. Yang lain cukup tiket di jam kerja.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Alert mana yang layak membangunkan orang?</h2>
+          <p class="lede">Jam 3 pagi. Pilih yang pantas membangunkan on-call:</p>
+          <ul class="clean" style="margin-top: 16px"><li>CPU server 85% selama 5 menit</li><li>Error rate checkout 12% selama 5 menit</li><li>Disk akan penuh dalam 30 hari</li><li>Satu dari 6 pod restart sekali</li></ul>
+        </section>
+
+        <!-- ════════ 4 — SINYAL ════════ -->
         <section class="slide" data-notes="p95 = 95% request lebih cepat dari angka ini. Lebih jujur daripada rata-rata, karena rata-rata menyembunyikan user yang kebagian lambat.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Empat sinyal emas (Golden Signals)</h2>
@@ -498,7 +508,8 @@
           </table>
           <div class="foot">Pakai <b>p95/p99</b>, bukan rata-rata. Rata-rata menyembunyikan yang lambat.</div>
         </section>
-        <!-- ════════ 4 — ALERT ════════ -->
+
+        <!-- ════════ 5 — ALERT ════════ -->
         <section class="slide" data-notes="Alat populer: Prometheus untuk mengumpulkan angka, Grafana untuk dashboard, Alertmanager atau PagerDuty untuk memberi tahu.">
           <div class="lens-tag lt-green" style="align-self: flex-start">alert</div>
           <h2>Alert yang berarti</h2>
@@ -510,7 +521,42 @@
           </div>
           <div class="foot">Alat: <b>Prometheus</b> + <b>Grafana</b> + Alertmanager.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="for: 5m mencegah alert berbunyi karena lonjakan sesaat.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Alert berbasis gejala (Prometheus)</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">aturan alert</div><pre class="code">- alert: CheckoutErrorRateHigh
+  expr: |
+    sum(rate(http_requests_total{route="/checkout",status=~"5.."}[5m]))
+    / sum(rate(http_requests_total{route="/checkout"}[5m])) &gt; 0.05
+  for: 5m
+  labels: { severity: page }</pre></div>
+            <div><div class="codehead ">yang wajib ada di alert</div><pre class="code">annotations:
+  summary: "Checkout error &gt; 5%"
+  runbook: "https://wiki/runbook/checkout"
+  dashboard: "https://grafana/d/checkout"
+<span class="cm"># on-call langsung tahu harus ke mana</span></pre></div>
+          </div>
+          <div class="foot">Alert tanpa <b>runbook</b> = alarm kebakaran tanpa peta pintu darurat.</div>
+        </section>
+
+        <!-- ════════ 7 — SLO ════════ -->
+        <section class="slide" data-ext="1" data-notes="Error budget membuat diskusi antara fitur dan stabilitas jadi berbasis angka, bukan perasaan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">SLO</div>
+          <h2>Dari SLO ke error budget</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">SLO: 99,9% sukses</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Budget: 0,1% boleh gagal</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">≈ 43 menit / bulan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Budget habis → rem fitur</div></div><ul class="clean" style="margin-top: 18px"><li>SLO = janji kualitas yang disepakati. Error budget = jatah gagal yang masih boleh.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Synthetic monitoring = robot yang pura-pura jadi user, misalnya login dan checkout tiap 5 menit.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Tumpukan monitoring yang umum</h2>
+          <table style="margin-top: 16px"><tr><th>Bagian</th><th>Contoh alat</th></tr><tr><td class="mono">Kumpulkan metrik</td><td>Prometheus, Micrometer</td></tr><tr><td class="mono">Dashboard</td><td>Grafana</td></tr><tr><td class="mono">Alert & on-call</td><td>Alertmanager, PagerDuty, Opsgenie</td></tr><tr><td class="mono">Cek dari luar</td><td>Uptime check, synthetic monitoring</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: hitung berapa alert minggu lalu yang benar-benar butuh tindakan.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -522,13 +568,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

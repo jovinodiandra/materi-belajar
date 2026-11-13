@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kasir tambahan dibuka saat antrean panjang.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Bedakan scale up (server lebih besar) dan scale out (server lebih banyak). Autoscaling biasanya scale out.">
           <h2>Server disiapkan untuk trafik puncak. 20 jam sehari menganggur.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban kasar: 1, 9–13, dan 30-an pod. Autoscaling menghitung ini otomatis setiap beberapa detik.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak: berapa pod yang dibutuhkan?</h2>
+          <p class="lede">Satu pod sanggup 200 request per detik. Target CPU 70%.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Jam 3 pagi: 150 req/detik</li><li>Jam 12 siang: 1.800 req/detik</li><li>Flash sale: 6.000 req/detik</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Selain CPU, bisa memakai metrik lain seperti panjang antrean atau request per detik (dengan KEDA). Untuk worker antrean, panjang antrean biasanya metrik yang lebih tepat.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Kubernetes Horizontal Pod Autoscaler</h2>
@@ -506,7 +516,8 @@ spec:
           </div>
           <div class="foot">Worker antrean? Scale berdasarkan <b>panjang antrean</b> (KEDA).</div>
         </section>
-        <!-- ════════ 4 — SYARAT ════════ -->
+
+        <!-- ════════ 5 — SYARAT ════════ -->
         <section class="slide" data-notes="Jebakan klasik: aplikasi berhasil digandakan, tapi database kehabisan koneksi. Atur ukuran connection pool dikali jumlah maksimal pod.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Syarat supaya autoscaling berhasil</h2>
@@ -518,7 +529,42 @@ spec:
           </div>
           <div class="foot">Pod × pool koneksi ≤ batas koneksi database.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="500m = setengah core CPU. Mi = mebibyte. Requests = jatah yang dijamin, limits = batas atas.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Tanpa resource request, HPA buta</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ tidak ada request</div><pre class="code">containers:
+  - name: app
+    image: order:1.4
+<span class="cm">    # ← tidak ada resources</span>
+<span class="cm"># HPA: "CPU 70% dari berapa?"</span></pre></div>
+            <div><div class="codehead good">✓ request jelas</div><pre class="code">containers:
+  - name: app
+    image: order:1.4
+    resources:
+      requests: { cpu: 500m, memory: 512Mi }
+      limits:   { memory: 1Gi }</pre></div>
+          </div>
+          <div class="foot">HPA menghitung persen CPU dari <b>requests</b>. Tanpa itu, angkanya tidak berarti.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Di HPA v2 ada behavior.scaleDown.stabilizationWindowSeconds, defaultnya 300 detik.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Naik-turun terus (flapping)</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Trafik naik → tambah pod</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">CPU turun → kurangi pod</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">CPU naik lagi</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Bolak-balik tiap menit</div></div><ul class="clean" style="margin-top: 18px"><li>Atur <b>stabilization window</b>: tunggu beberapa menit sebelum mengurangi pod.</li><li>Naik cepat, turun pelan.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — JENIS ════════ -->
+        <section class="slide" data-ext="1" data-notes="KEDA berguna untuk worker: kalau antrean Kafka menumpuk, worker ditambah. Kosong, bisa sampai nol.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">jenis</div>
+          <h2>Jenis-jenis autoscaling</h2>
+          <table style="margin-top: 16px"><tr><th>Jenis</th><th>Yang ditambah</th><th>Contoh</th></tr><tr><td class="mono">Horizontal</td><td>Jumlah pod/server</td><td>HPA, Auto Scaling Group</td></tr><tr><td class="mono">Vertical</td><td>CPU/RAM per pod</td><td>VPA</td></tr><tr><td class="mono">Cluster</td><td>Jumlah node</td><td>Cluster Autoscaler, Karpenter</td></tr><tr><td class="mono">Berbasis event</td><td>Pod sesuai panjang antrean</td><td>KEDA</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: hitung max pod × ukuran pool vs max_connections database kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -530,13 +576,14 @@ spec:
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

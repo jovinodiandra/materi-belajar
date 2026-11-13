@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Backup yang belum pernah di-restore = belum tentu backup.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Dua angka yang harus disepakati dengan bisnis: RPO dan RTO.">
           <h2>DELETE tanpa WHERE di produksi. Backup ada… tapi ternyata rusak.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — RPO RTO ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Biasanya ruangan jadi hening. Itu tujuannya. Backup yang belum pernah dites belum terbukti bisa dipakai.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Pertanyaan yang bikin deg-degan</h2>
+          <p class="lede">Jawab jujur untuk sistem yang kamu pegang sekarang:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Kapan terakhir kali backup <b>dipulihkan</b> (bukan cuma dibuat)?</li><li>Berapa lama memulihkan database produksi dari nol?</li><li>Siapa yang tahu caranya kalau orang itu sedang cuti?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — RPO RTO ════════ -->
         <section class="slide" data-notes="RPO 5 menit artinya backup atau replikasi harus jalan minimal tiap 5 menit. RTO 1 jam artinya proses restore harus sudah dilatih dan bisa selesai dalam 1 jam.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Dua angka yang harus disepakati</h2>
@@ -496,7 +506,8 @@
           </table>
           <div class="foot">Makin kecil RPO &amp; RTO, makin mahal. Sepakati dengan bisnis.</div>
         </section>
-        <!-- ════════ 4 — ATURAN ════════ -->
+
+        <!-- ════════ 5 — ATURAN ════════ -->
         <section class="slide" data-notes="Simpan satu backup di akun terpisah dengan akses terbatas dan tidak bisa dihapus (immutable). Ransomware sering menghapus backup juga.">
           <div class="lens-tag lt-green" style="align-self: flex-start">aturan</div>
           <h2>Aturan backup 3-2-1 + tes</h2>
@@ -508,7 +519,40 @@
           </div>
           <div class="foot">Satu backup <b>immutable</b> di akun terpisah: tahan ransomware.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — POINT-IN-TIME ════════ -->
+        <section class="slide" data-ext="1" data-notes="Di cloud, fitur ini sering sudah ada: RDS point-in-time recovery. Tetap latih cara memakainya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">point-in-time</div>
+          <h2>Pulihkan ke detik sebelum kesalahan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">PostgreSQL: backup + WAL</div><pre class="code"><span class="cm"># backup penuh tiap malam</span>
+pg_basebackup -D /backup/base
+<span class="cm"># ditambah arsip WAL terus-menerus</span>
+archive_command = 'cp %p /backup/wal/%f'</pre></div>
+            <div><div class="codehead ">pulihkan ke waktu tertentu</div><pre class="code"><span class="cm"># DELETE salah jam 14:32:10</span>
+restore_command = 'cp /backup/wal/%f %p'
+recovery_target_time = '2026-11-13 14:32:00'
+<span class="cm"># data kembali seperti 10 detik sebelumnya</span></pre></div>
+          </div>
+          <div class="foot">WAL = <b>buku harian</b> database. Semua perubahan dicatat, bisa diputar ulang.</div>
+        </section>
+
+        <!-- ════════ 7 — LATIHAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Runbook = buku langkah-langkah. Ditulis oleh orang yang baru saja melakukannya, bukan dari ingatan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">latihan</div>
+          <h2>Restore drill tiap bulan</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Ambil backup terbaru</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Pulihkan ke server terpisah</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Cek data & hitung waktunya</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Catat & perbaiki runbook</div></div><ul class="clean" style="margin-top: 18px"><li>Waktu pemulihan nyata dibandingkan dengan target <b>RTO</b>.</li><li>Gilir orangnya, supaya bukan cuma satu orang yang bisa.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — STRATEGI DR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Makin cepat pulih, makin mahal. Diskusikan dengan bisnis: berapa kerugian per jam kalau sistem mati?">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">strategi DR</div>
+          <h2>Seberapa siap kalau satu region mati?</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">murah</div><h3>Backup & restore</h3><p style="color: var(--ink)">Data dicadangkan ke region lain. Pulih dalam jam.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">sedang</div><h3>Pilot light / warm standby</h3><p style="color: var(--ink)">Region cadangan menyala kecil. Pulih dalam menit.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">mahal</div><h3>Active-active</h3><p style="color: var(--ink)">Dua region melayani bersamaan. Hampir tanpa jeda.</p></div></div>
+          <div class="foot">Pilih sesuai <b>RTO/RPO</b> yang disepakati bisnis, bukan yang paling canggih.</div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: kapan terakhir kali kita melakukan restore database dari backup? Berapa lama?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -520,13 +564,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

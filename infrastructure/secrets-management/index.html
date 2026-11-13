@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kunci rumah di brankas, bukan di bawah keset.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: kalau password database produksi bocor hari ini, berapa lama kita bisa menggantinya?">
           <h2>Password produksi ada di application.yml dan sudah ter-commit 300 kali.</h2>
@@ -485,7 +486,18 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: tidak. Password masih ada di riwayat git dan di setiap clone. Satu-satunya jalan: ganti (rotate) password-nya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Sudah dihapus dari repo. Aman?</h2>
+          <div style="margin-top: 14px"><pre class="code">git commit -m "add config"      <span class="cm"># password ikut</span>
+git commit -m "remove password" <span class="cm"># dihapus di commit berikutnya</span>
+git push</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Apakah password itu sudah aman sekarang?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Kode hanya tahu nama variabelnya. Nilainya disuntik saat aplikasi jalan, dari brankas seperti HashiCorp Vault, AWS Secrets Manager, atau Google Secret Manager.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Rahasia di kode vs dari brankas</h2>
@@ -508,7 +520,8 @@ spring:
           </div>
           <div class="foot">Brankas populer: <b>Vault</b>, AWS Secrets Manager, GCP Secret Manager.</div>
         </section>
-        <!-- ════════ 4 — ATURAN ════════ -->
+
+        <!-- ════════ 5 — ATURAN ════════ -->
         <section class="slide" data-notes="Kalau rahasia sudah pernah masuk git, anggap sudah bocor. Menghapus dari riwayat tidak menjamin tidak ada yang sempat menyalin.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Aturan main rahasia</h2>
@@ -520,7 +533,43 @@ spring:
           </div>
           <div class="foot">Sudah masuk git? <b>Anggap bocor. Ganti.</b></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="External Secrets Operator menyinkronkan rahasia dari brankas cloud ke Kubernetes Secret.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Ambil rahasia dari Vault / Secrets Manager</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Kubernetes: External Secrets</div><pre class="code">apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+spec:
+  secretStoreRef: { name: aws-sm, kind: ClusterSecretStore }
+  target: { name: orders-db }
+  data:
+    - secretKey: password
+      remoteRef: { key: prod/orders/db, property: password }</pre></div>
+            <div><div class="codehead ">hasilnya</div><pre class="code">Secret 'orders-db' dibuat otomatis
+→ dipasang sebagai env var di pod
+→ rahasia asli hanya ada di brankas
+→ ganti di brankas = ikut berubah</pre></div>
+          </div>
+          <div class="foot">Repo cuma berisi <b>alamat</b> rahasianya, bukan isinya.</div>
+        </section>
+
+        <!-- ════════ 7 — ROTASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Rotasi rutin membuat rahasia yang bocor cepat jadi tidak berguna.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">rotasi</div>
+          <h2>Ganti password tanpa downtime</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Buat password baru</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Database terima dua-duanya</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Aplikasi pakai yang baru</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Hapus password lama</div></div><ul class="clean" style="margin-top: 18px"><li>Lebih baik lagi: kredensial <b>dinamis</b> yang dibuat Vault per aplikasi dan kedaluwarsa sendiri.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — KEBIASAAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Banyak kebocoran berawal dari laptop: file .env ikut ter-commit atau tangkapan layar terminal.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kebiasaan</div>
+          <h2>Rahasia di laptop developer</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Simpan di <code>.env</code> yang masuk <code>.gitignore</code>.</li><li>Bagikan lewat password manager tim, bukan chat.</li><li>Kredensial dev ≠ kredensial produksi.</li><li>Pasang pre-commit hook gitleaks.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: jalankan gitleaks di repo kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +581,14 @@ spring:
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

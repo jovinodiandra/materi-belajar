@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Catatan contekan di meja, bukan buka buku tebal tiap kali.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Redis adalah cache paling populer: penyimpanan key-value di memori, sangat cepat.">
           <h2>Halaman utama menjalankan 12 query yang sama untuk setiap pengunjung.</h2>
@@ -485,7 +486,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: sampai 1 jam. Lupa menghapus cache setelah update. Dua hal tersulit di programming: menamai sesuatu dan invalidasi cache.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa user masih lihat harga lama?</h2>
+          <div style="margin-top: 14px"><pre class="code">void updatePrice(long id, long price) {
+  db.update(id, price);
+  <span class="cm">// ← lupa sesuatu?</span>
+}
+Product get(long id) { return cacheAside(id); }   <span class="cm">// TTL 1 jam</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Harga sudah diubah di database. Berapa lama user masih melihat harga lama?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Di Spring bisa memakai @Cacheable dan @CacheEvict supaya tidak menulis pola ini manual.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Pola cache-aside (paling umum)</h2>
@@ -508,7 +522,8 @@
           </div>
           <div class="foot">Di Spring: <b>@Cacheable</b> &amp; <b>@CacheEvict</b>.</div>
         </section>
-        <!-- ════════ 4 — JEBAKAN ════════ -->
+
+        <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Cache stampede dibahas lebih dalam di materi Root Cause. Solusinya antara lain TTL acak dan hanya satu request yang mengisi ulang.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -520,7 +535,39 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Menghapus lebih aman daripada menimpa, karena tidak ada risiko menulis versi yang salah.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Hapus cache setelah update</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ perbarui cache dulu</div><pre class="code">redis.set("product:" + id, newProduct);
+db.update(id, newProduct);   <span class="cm">// ← kalau ini gagal,</span>
+                             <span class="cm">//   cache berisi data</span>
+                             <span class="cm">//   yang tidak ada di DB</span></pre></div>
+            <div><div class="codehead good">✓ update DB, lalu hapus</div><pre class="code">db.update(id, newProduct);
+redis.del("product:" + id);
+<span class="cm">// request berikutnya: cache miss</span>
+<span class="cm">// → ambil dari DB yang sudah benar</span></pre></div>
+          </div>
+          <div class="foot">Database adalah <b>sumber kebenaran</b>. Cache cuma salinan yang boleh dibuang.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ada deck khusus Cache Stampede di Root Cause. Sebut sekilas saja di sini.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Cache stampede: cache kosong, semua menyerbu DB</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Key populer kedaluwarsa</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">1.000 request miss bersamaan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">1.000 query ke DB</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">DB kewalahan</div></div><ul class="clean" style="margin-top: 18px"><li>Kunci: cuma <b>satu</b> request yang mengisi ulang, sisanya menunggu.</li><li>Tambah TTL acak (jitter) supaya tidak kedaluwarsa bareng.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Cache di memori aplikasi tidak dibagi antar pod. Redis dibagi, tapi lewat jaringan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Lapisan cache dari dekat ke jauh</h2>
+          <table style="margin-top: 16px"><tr><th>Lapisan</th><th>Contoh</th><th>Kecepatan</th></tr><tr><td class="mono">Browser</td><td>Cache-Control header</td><td>Paling cepat</td></tr><tr><td class="mono">CDN</td><td>Cloudflare, CloudFront</td><td>Sangat cepat</td></tr><tr><td class="mono">Memori aplikasi</td><td>Caffeine</td><td>Mikrodetik</td></tr><tr><td class="mono">Cache terpusat</td><td>Redis, Memcached</td><td>Milidetik</td></tr><tr><td class="mono">Database</td><td>Buffer pool</td><td>Paling lambat</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari 3 query paling sering di database kita. Mana yang datanya jarang berubah?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -532,13 +579,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

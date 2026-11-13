@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Simpan nama di kontak, bukan hafal nomor HP.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — ALUR ════════ -->
         <section class="slide" data-notes="Jawaban DNS disimpan (cache) di banyak tempat selama TTL. Itulah kenapa perubahan DNS tidak langsung terlihat di semua orang.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
@@ -470,7 +471,18 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">1. Browser</h3><p style="font-size:13.5px">cek cache sendiri</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">2. Resolver ISP / 8.8.8.8</h3><p style="font-size:13.5px">tanya berantai</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">3. Root → .id → toko.id</h3><p style="font-size:13.5px">server otoritatif menjawab</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">4. IP: 203.0.113.10</h3><p style="font-size:13.5px">disimpan sesuai TTL</p></div></div></div>
           <div class="foot">Jawaban disimpan selama <b>TTL</b>. Perubahan tidak langsung terlihat semua orang.</div>
         </section>
-        <!-- ════════ 3 — RECORD ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: TTL 86400 detik = 24 jam. Resolver di seluruh dunia boleh menyimpan jawaban lama selama itu.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa sebagian user masih ke server lama?</h2>
+          <p class="lede">Jam 10 kita ubah IP toko.id ke server baru. Jam 14, separuh user masih ke server lama.</p>
+          <div style="margin-top: 14px"><pre class="code">toko.id.  86400  IN  A  203.0.113.10
+<span class="cm">#          ↑ TTL</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Petunjuk: perhatikan angka 86400.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — RECORD ════════ -->
         <section class="slide" data-notes="CNAME tidak boleh dipakai di root domain (toko.id) pada DNS standar. Banyak penyedia punya ALIAS/ANAME untuk itu.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">kosakata</div>
           <h2>Jenis record yang sering dipakai</h2>
@@ -483,7 +495,8 @@
           </table>
           <div class="foot">Cek sendiri: <code>dig toko.id</code> atau <code>nslookup toko.id</code>.</div>
         </section>
-        <!-- ════════ 4 — JEBAKAN ════════ -->
+
+        <!-- ════════ 5 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Sebelum migrasi server, turunkan TTL dulu, tunggu TTL lama habis, baru ganti IP. Setelah stabil, naikkan TTL lagi.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -495,7 +508,41 @@
           </div>
 
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — ALAT DEBUG ════════ -->
+        <section class="slide" data-ext="1" data-notes="Di Windows bisa pakai nslookup. Tapi dig lebih lengkap informasinya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">alat debug</div>
+          <h2>Bertanya langsung ke DNS</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">perintah</div><pre class="code">dig toko.id A +short
+dig www.toko.id CNAME
+dig toko.id @8.8.8.8      <span class="cm"># tanya Google DNS</span>
+dig +trace toko.id        <span class="cm"># ikuti dari root</span></pre></div>
+            <div><div class="codehead ">contoh hasil</div><pre class="code">;; ANSWER SECTION:
+toko.id.   297   IN   A   203.0.113.10
+<span class="cm">#          ↑ sisa TTL di cache resolver</span>
+
+<span class="cm"># beda hasil antar resolver?</span>
+<span class="cm"># → masih masa transisi cache</span></pre></div>
+          </div>
+          <div class="foot"><b>dig</b> adalah teman terbaik saat ada yang bilang "situsnya tidak bisa dibuka".</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kesalahan umum: mematikan server lama tepat setelah ganti DNS. User dengan cache lama langsung error.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Pindah server tanpa user sadar</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">H-1: turunkan TTL ke 60</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Hari H: ganti IP</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Server lama tetap menyala</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Lalu naikkan TTL lagi</div></div><ul class="clean" style="margin-top: 18px"><li>Server lama dibiarkan hidup sampai trafiknya benar-benar nol.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — HAL PENTING ════════ -->
+        <section class="slide" data-ext="1" data-notes="Lelucon klasik SRE: penyebab insiden misterius ternyata DNS. Sering benar.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">hal penting</div>
+          <h2>DNS yang sering bikin insiden</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Domain dan sertifikat <b>kedaluwarsa</b>: pasang auto-renew dan pengingat.</li><li>DNS internal Kubernetes (<code>order.default.svc.cluster.local</code>) juga bisa lambat.</li><li>Aplikasi Java meng-cache DNS: atur <code>networkaddress.cache.ttl</code>.</li><li>"It's always DNS" — kalau semua aneh, cek DNS dulu.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Latihan: jalankan dig untuk domain produk kita. Berapa TTL-nya?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -507,13 +554,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

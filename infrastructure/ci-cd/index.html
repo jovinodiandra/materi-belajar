@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Ban berjalan dari commit ke produksi.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Paradoks: rilis yang sering justru lebih aman, karena tiap rilis kecil dan mudah dilacak kalau bermasalah.">
           <h2>Deploy hari Jumat sore, manual, oleh satu orang yang tahu caranya.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — PIPELINE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tim yang sehat bisa rilis dalam menit dan rollback dalam menit. Tulis jawaban audiens di papan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa lama dari commit sampai produksi?</h2>
+          <p class="lede">Hitung untuk tim kamu sekarang:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Commit di-merge → berapa jam/hari sampai user bisa memakainya?</li><li>Berapa langkah yang dilakukan <b>manual</b> oleh manusia?</li><li>Kalau ada bug, berapa lama untuk rollback?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PIPELINE ════════ -->
         <section class="slide" data-notes="Bedakan Delivery (siap dirilis, manusia menekan tombol) dan Deployment (otomatis sampai produksi). Kebanyakan tim mulai dari Delivery.">
           <div class="lens-tag lt-green" style="align-self: flex-start">ide dasar</div>
           <h2>Pipeline: dari commit sampai produksi</h2>
@@ -493,7 +503,8 @@
           <ul class="clean" style="margin-top: 14px"><li><b>CI</b>: setiap push langsung dibangun &amp; dites. Gagal? PR tidak boleh di-merge.</li><li><b>Continuous Delivery</b>: setiap commit di main siap dirilis, tinggal tekan tombol.</li><li><b>Continuous Deployment</b>: lolos semua tes → langsung ke produksi otomatis.</li></ul>
           <div class="foot">Mulai dari <b>Continuous Delivery</b>: otomatis sampai siap, manusia menekan tombol.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Tag image dengan commit SHA membuat setiap versi bisa dilacak ke kode persisnya, dan rollback tinggal deploy SHA sebelumnya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Contoh pipeline GitHub Actions</h2>
@@ -513,7 +524,44 @@ jobs:
           </div>
           <div class="foot">Tag image dengan <b>commit SHA</b>: rollback tinggal deploy versi sebelumnya.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tag image dengan git SHA supaya selalu tahu commit mana yang sedang jalan.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Build sekali, deploy di mana-mana</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ build ulang per lingkungan</div><pre class="code">deploy-staging:
+  - mvn package -Pstaging
+  - docker build -t app:staging .
+deploy-prod:
+  - mvn package -Pprod   <span class="cm"># ← beda build!</span>
+  - docker build -t app:prod .</pre></div>
+            <div><div class="codehead good">✓ satu image, dipromosikan</div><pre class="code">build:
+  - docker build -t app:${GIT_SHA} .
+  - docker push app:${GIT_SHA}
+deploy-staging:
+  - deploy app:${GIT_SHA} --env staging
+deploy-prod:
+  - deploy app:${GIT_SHA} --env prod</pre></div>
+          </div>
+          <div class="foot">Yang dites di staging harus <b>persis sama</b> dengan yang dirilis ke produksi.</div>
+        </section>
+
+        <!-- ════════ 7 — RILIS AMAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kubernetes Deployment default memakai rolling update. Canary butuh alat tambahan seperti Argo Rollouts atau service mesh.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">rilis aman</div>
+          <h2>Strategi deploy tanpa downtime</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Rolling: ganti pod satu-satu</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Blue-green: dua set, pindah sekaligus</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Canary: 5% user dulu</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Pantau, lalu lanjut/mundur</div></div><ul class="clean" style="margin-top: 18px"><li>Canary paling aman untuk perubahan berisiko: masalah hanya kena sedikit user.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pipeline yang lambat dan sering flaky membuat orang mencari jalan pintas. Rawat pipeline seperti kode produksi.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Tanda pipeline yang sehat</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Pipeline PR selesai < <b>10 menit</b>. Lebih lama, orang mulai melewatinya.</li><li>Main branch <b>selalu</b> bisa dirilis.</li><li>Rahasia disimpan di secret CI, bukan di file yml.</li><li>Pipeline merah = prioritas nomor satu tim.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: berapa langkah manual yang masih ada di proses deploy kita?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -525,13 +573,14 @@ jobs:
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

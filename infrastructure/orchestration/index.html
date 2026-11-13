@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dirigen untuk orkestra container.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Ide kuncinya: deklaratif. Kita bilang ingin 3 salinan. Kubernetes terus mengecek dan memperbaiki sampai keadaannya sesuai.">
           <h2>50 container di 10 server. Satu server mati jam 2 pagi, siapa yang memindahkan?</h2>
@@ -485,7 +486,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: Deployment meminta 3 salinan. Kubernetes terus membandingkan keinginan dengan kenyataan dan memperbaiki selisihnya. Ini disebut reconciliation loop.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Apa yang Kubernetes lakukan?</h2>
+          <div style="margin-top: 14px"><pre class="code">$ kubectl delete pod order-7d9f-abcde
+pod "order-7d9f-abcde" deleted
+$ kubectl get pods
+order-7d9f-xk2lp   1/1   Running   0   3s   <span class="cm"># ← ?</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kita menghapus pod. Kenapa 3 detik kemudian ada pod baru?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Kubernetes terus membandingkan keinginan (3 salinan) dengan kenyataan. Kalau beda, dia memperbaikinya. Ini disebut reconciliation loop.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Deployment: “saya mau 3 salinan”</h2>
@@ -508,7 +521,8 @@ spec:
           </div>
           <div class="foot">Keinginan vs kenyataan dibandingkan terus. Beda? <b>Diperbaiki otomatis.</b></div>
         </section>
-        <!-- ════════ 4 — ISTILAH ════════ -->
+
+        <!-- ════════ 5 — ISTILAH ════════ -->
         <section class="slide" data-notes="Pod datang dan pergi dengan IP yang berubah-ubah. Service memberi alamat tetap supaya service lain bisa menemukannya.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">kosakata</div>
           <h2>Istilah Kubernetes yang wajib</h2>
@@ -523,7 +537,42 @@ spec:
           </table>
           <div class="foot">Pod datang &amp; pergi. <b>Service</b> memberi alamat tetap.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — PROBE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aplikasi Java butuh waktu start. Pakai startupProbe atau initialDelaySeconds yang cukup.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">probe</div>
+          <h2>Kasih tahu Kubernetes kapan pod siap</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">probe di Deployment</div><pre class="code">readinessProbe:
+  httpGet: { path: /actuator/health/readiness, port: 8080 }
+  periodSeconds: 5
+livenessProbe:
+  httpGet: { path: /actuator/health/liveness, port: 8080 }
+  initialDelaySeconds: 30</pre></div>
+            <div><div class="codehead ">artinya</div><pre class="code">readiness gagal → pod tidak diberi trafik
+                  (tapi tidak dibunuh)
+
+liveness gagal  → pod dianggap macet,
+                  di-restart</pre></div>
+          </div>
+          <div class="foot">Liveness yang terlalu galak = pod <b>dibunuh terus</b> saat sedang start.</div>
+        </section>
+
+        <!-- ════════ 7 — DEBUGGING ════════ -->
+        <section class="slide" data-ext="1" data-notes="--previous menampilkan log dari container yang sudah mati, sangat berguna untuk CrashLoopBackOff.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">debugging</div>
+          <h2>Pod tidak mau jalan? Urutan cek</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">kubectl get pods</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">kubectl describe pod</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">kubectl logs --previous</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Cek event & resource</div></div><ul class="clean" style="margin-top: 18px"><li><b>CrashLoopBackOff</b>: aplikasi crash saat start. Lihat log.</li><li><b>ImagePullBackOff</b>: image tidak ditemukan / tidak ada izin.</li><li><b>Pending</b>: tidak ada node yang cukup CPU/memori.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — LANJUTAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Untuk developer aplikasi, Deployment, Service, ConfigMap, dan Ingress sudah mencakup sebagian besar kebutuhan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">lanjutan</div>
+          <h2>Objek Kubernetes berikutnya untuk dipelajari</h2>
+          <table style="margin-top: 16px"><tr><th>Objek</th><th>Gunanya</th></tr><tr><td class="mono">ConfigMap / Secret</td><td>Config dan rahasia untuk pod</td></tr><tr><td class="mono">Ingress</td><td>Pintu masuk HTTP dari luar cluster</td></tr><tr><td class="mono">StatefulSet</td><td>Aplikasi yang butuh identitas & disk tetap (DB)</td></tr><tr><td class="mono">Job / CronJob</td><td>Tugas sekali jalan / terjadwal</td></tr><tr><td class="mono">HPA</td><td>Tambah-kurangi pod otomatis</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: jalankan kubectl get pods di cluster dev. Berapa salinan service kita?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -535,13 +584,14 @@ spec:
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

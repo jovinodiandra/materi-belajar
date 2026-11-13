@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Lacak paket: dari gudang, transit, sampai rumah.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Trace id itu seperti nomor resi paket. Setiap service yang dilewati mencatat dengan nomor yang sama.">
           <h2>Checkout butuh 4 detik. Enam tim saling tunjuk: “bukan service kami”.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — TRACE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tanya: siapa yang pernah lacak paket online? Itulah tracing. Setiap span punya waktu mulai, selesai, dan induknya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kosakata: trace dan span</h2>
+          <p class="lede">Bayangin paket kiriman yang dilacak dari gudang sampai rumah.</p>
+          <ul class="clean" style="margin-top: 16px"><li><b>Trace</b> = seluruh perjalanan paket (satu request dari awal sampai akhir).</li><li><b>Span</b> = satu etape: gudang → hub, hub → kurir, kurir → rumah.</li><li><b>Trace id</b> = nomor resi yang sama di semua etape.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — TRACE ════════ -->
         <section class="slide" data-notes="Tidak perlu saling tunjuk lagi. Gambar trace langsung menunjukkan span mana yang paling lama.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Seperti apa sebuah trace</h2>
@@ -500,7 +510,8 @@
           </div>
           <div class="foot">Tidak perlu saling tunjuk: trace menunjukkan <b>siapa yang lambat</b>.</div>
         </section>
-        <!-- ════════ 4 — CARA ════════ -->
+
+        <!-- ════════ 5 — CARA ════════ -->
         <section class="slide" data-notes="Pasang trace id di log juga. Dari trace yang lambat, kita bisa langsung lompat ke log yang berhubungan.">
           <div class="lens-tag lt-green" style="align-self: flex-start">pasang</div>
           <h2>Cara memasangnya</h2>
@@ -512,7 +523,44 @@
           </div>
           <div class="foot">Taruh <b>traceId di log</b>: dari trace lompat ke log, dan sebaliknya.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Atribut seperti city atau orderId membuat trace bisa dicari dan dianalisis.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Pasang tanpa ubah kode: Java agent</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">menjalankan aplikasi</div><pre class="code"><span class="cm"># env var untuk agent</span>
+OTEL_SERVICE_NAME=order-service
+OTEL_EXPORTER_OTLP_ENDPOINT=
+    http://collector:4317
+
+java -javaagent:otel-agent.jar
+     -jar order.jar</pre></div>
+            <div><div class="codehead ">span manual untuk bagian penting</div><pre class="code">@WithSpan("hitung-ongkir")
+Money shippingCost(@SpanAttribute("city") String city) {
+  ...
+}
+<span class="cm">// muncul sebagai span sendiri di Jaeger</span></pre></div>
+          </div>
+          <div class="foot">Agent otomatis melacak HTTP, JDBC, Kafka. Span manual untuk <b>logika bisnis</b> yang penting.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau trace terputus, cek bagian di mana request berpindah: antar service, antrean, atau thread.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Trace terputus di tengah jalan</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Order kirim pesan Kafka</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Header traceparent tidak ikut</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Consumer bikin trace baru</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Cerita terpotong dua</div></div><ul class="clean" style="margin-top: 18px"><li>Pastikan library HTTP dan Kafka yang dipakai <b>meneruskan header</b> traceparent.</li><li>Thread pool kustom juga bisa memutus konteks: bungkus dengan Context.wrap.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — SAMPLING ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tail sampling dilakukan di OpenTelemetry Collector, karena harus menunggu seluruh trace selesai.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">sampling</div>
+          <h2>Tidak semua request perlu dilacak</h2>
+          <table style="margin-top: 16px"><tr><th>Strategi</th><th>Gampangnya</th></tr><tr><td class="mono">Head sampling 10%</td><td>Lempar koin di awal: simpan 1 dari 10</td></tr><tr><td class="mono">Tail sampling</td><td>Putuskan di akhir: simpan semua yang error atau lambat</td></tr><tr><td class="mono">100% di dev/staging</td><td>Murah karena trafiknya kecil</td></tr></table>
+          <div class="foot">Trace yang <b>error dan lambat</b> adalah yang paling berharga untuk disimpan.</div>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek apakah log service kita sudah punya traceId.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -524,13 +572,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

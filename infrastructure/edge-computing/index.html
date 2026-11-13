@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dapur kecil di tiap cabang, bukan semua dimasak di pusat.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Contoh platform: Cloudflare Workers, Vercel Edge Functions, Lambda@Edge, Deno Deploy.">
           <h2>Redirect bahasa sederhana harus bolak-balik ke server di Singapura.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — KODE ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: lebih dari 400 ms, sebelum server bekerja apa pun. Edge mendekatkan kode ke user untuk memotong jarak ini.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Hitung waktu bolak-balik</h2>
+          <p class="lede">Cahaya di kabel fiber butuh ±5 ms per 1.000 km (satu arah).</p>
+          <ul class="clean" style="margin-top: 16px"><li>Jakarta → Singapura (±900 km): bolak-balik ±10 ms</li><li>Amsterdam → Singapura (±10.500 km): bolak-balik ±105 ms</li><li>Satu halaman butuh 4 kali bolak-balik. Berapa total untuk user Eropa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — KODE ════════ -->
         <section class="slide" data-notes="Edge function biasanya punya batasan: waktu jalan pendek, memori kecil, dan tidak semua library tersedia.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Contoh: Cloudflare Worker</h2>
@@ -506,7 +516,8 @@
           </div>
           <div class="foot">Ada batasan: waktu jalan pendek, memori kecil.</div>
         </section>
-        <!-- ════════ 4 — KAPAN ════════ -->
+
+        <!-- ════════ 5 — KAPAN ════════ -->
         <section class="slide" data-notes="Masalah utama edge: data. Kalau kode di edge harus bertanya ke database di pusat, keuntungannya hilang.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ringkasan</div>
           <h2>Cocok dan tidak cocok</h2>
@@ -519,7 +530,44 @@
           </table>
           <div class="foot">Kode di edge yang harus bertanya ke DB pusat = <b>keuntungannya hilang</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Verifikasi JWT hanya butuh kunci publik, tidak perlu database. Cocok dikerjakan di edge.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Cek bot dan token sebelum sampai ke server</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">edge function</div><pre class="code">export default {
+  async fetch(req, env) {
+    const token = req.headers.get("Authorization");
+    if (!token || !(await verifyJwt(token, env.KEY)))
+      return new Response("Unauthorized", { status: 401 });
+    return fetch(req);   <span class="cm">// lolos → ke server asal</span>
+  }
+};</pre></div>
+            <div><div class="codehead ">hasilnya</div><pre class="code">Request jahat ditolak di kota terdekat
+→ server pusat tidak ikut terbebani
+
+Request sah diteruskan
+→ server pusat cukup mengurus bisnis</pre></div>
+          </div>
+          <div class="foot">Edge = <b>satpam di pintu masing-masing kota</b>, bukan cuma di kantor pusat.</div>
+        </section>
+
+        <!-- ════════ 7 — BATASAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Eventually consistent: perubahan butuh beberapa detik untuk menyebar ke semua lokasi.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">batasan</div>
+          <h2>Kenapa tidak semuanya di edge?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Kode di 300 kota</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Butuh data dari DB</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">DB cuma di Singapura</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tetap bolak-balik jauh</div></div><ul class="clean" style="margin-top: 18px"><li>Edge hebat untuk logika yang <b>tidak butuh database utama</b>.</li><li>Ada database khusus edge (KV store) tapi datanya hanya "pada akhirnya sama".</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PILIHAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Batasan umum: waktu jalan pendek, memori kecil, tidak semua library Node tersedia.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pilihan</div>
+          <h2>Platform edge yang umum</h2>
+          <table style="margin-top: 16px"><tr><th>Platform</th><th>Bahasa</th><th>Catatan</th></tr><tr><td class="mono">Cloudflare Workers</td><td>JS/TS, Wasm</td><td>Sangat cepat start, banyak lokasi</td></tr><tr><td class="mono">Vercel / Netlify Edge</td><td>JS/TS</td><td>Menyatu dengan framework frontend</td></tr><tr><td class="mono">AWS CloudFront Functions / Lambda@Edge</td><td>JS, Python</td><td>Untuk yang sudah di AWS</td></tr><tr><td class="mono">Fastly Compute</td><td>Wasm (Rust, Go, JS)</td><td>Performa tinggi</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: logika apa di aplikasi kita yang bisa dipindah ke edge?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -531,13 +579,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

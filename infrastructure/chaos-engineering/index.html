@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Latihan kebakaran, bukan menunggu kebakaran.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Chaos engineering bukan merusak sembarangan. Ini eksperimen ilmiah dengan hipotesis dan batas.">
           <h2>“Kalau Redis mati, aplikasi tetap jalan kok.” Ternyata tidak.</h2>
@@ -485,7 +486,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — LANGKAH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawabannya jelas A. Chaos engineering = memilih waktu kegagalan sendiri, supaya tidak dipilihkan oleh nasib.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Mana yang lebih enak?</h2>
+          <p class="lede">Bandingkan dua cara menemukan bahwa fallback Redis tidak bekerja:</p>
+          <ul class="clean" style="margin-top: 16px"><li><b>A.</b> Selasa jam 10 pagi, sengaja dimatikan, semua tim siap, dampak cuma 1% user.</li><li><b>B.</b> Sabtu jam 2 pagi, Redis mati sendiri, semua user kena, tim panik.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — LANGKAH ════════ -->
         <section class="slide" data-notes="Mulai dari game day di staging: satu tim berkumpul, satu orang merusak, yang lain mengamati dan menangani seperti insiden sungguhan.">
           <div class="lens-tag lt-green" style="align-self: flex-start">ide dasar</div>
           <h2>Langkah eksperimen</h2>
@@ -493,7 +503,8 @@
           <ul class="clean" style="margin-top: 14px"><li><b>Hipotesis</b>: “Kalau Redis mati, checkout tetap jalan, hanya lebih lambat.”</li><li><b>Batasi</b>: mulai di staging, atau 1% trafik. Siapkan tombol berhenti.</li><li><b>Gangguan</b>: matikan pod, tambah latensi 2 detik, putus jaringan.</li><li><b>Amati</b> metrik &amp; alert. Hipotesis benar? Kalau tidak, catat dan perbaiki.</li></ul>
           <div class="foot">Mulai dari <b>game day</b> di staging, bukan langsung produksi.</div>
         </section>
-        <!-- ════════ 4 — ALAT ════════ -->
+
+        <!-- ════════ 5 — ALAT ════════ -->
         <section class="slide" data-notes="Toxiproxy bisa dipakai bahkan di tes integrasi lokal untuk mensimulasikan jaringan lambat atau putus.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">alat</div>
           <h2>Contoh gangguan & alat</h2>
@@ -506,7 +517,43 @@
           </table>
           <div class="foot">Bisa mulai kecil: <b>Toxiproxy</b> di tes integrasi lokal.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Temuan negatif itu sukses. Lebih baik ketemu saat eksperimen daripada saat insiden.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Eksperimen dengan Chaos Mesh</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">tambah latensi 2 detik</div><pre class="code">apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata: { name: slow-payment }
+spec:
+  action: delay
+  selector: { labelSelectors: { app: payment } }
+  delay: { latency: "2s" }
+  duration: "5m"</pre></div>
+            <div><div class="codehead ">yang kita amati</div><pre class="code">✓ checkout timeout di 1 detik?
+✓ circuit breaker terbuka?
+✓ user dapat pesan "coba lagi"?
+✗ thread pool order habis?   ← temuan!</pre></div>
+          </div>
+          <div class="foot">Selalu pasang <b>duration</b>. Eksperimen harus berhenti sendiri.</div>
+        </section>
+
+        <!-- ════════ 7 — MULAI KECIL ════════ -->
+        <section class="slide" data-ext="1" data-notes="Game day = sesi latihan terjadwal. Satu orang menyuntik gangguan, yang lain mencoba mendeteksi dan memulihkan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">mulai kecil</div>
+          <h2>Tangga kematangan chaos</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Game day di staging</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Eksperimen kecil di prod</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Terjadwal rutin</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Otomatis di pipeline</div></div><ul class="clean" style="margin-top: 18px"><li>Mulai dari <b>staging</b> dan dengan seluruh tim menonton.</li><li>Selalu siapkan tombol <b>stop</b>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — IDE EKSPERIMEN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Setiap eksperimen dimulai dengan hipotesis tertulis dan diakhiri dengan catatan temuan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">ide eksperimen</div>
+          <h2>Eksperimen pertama yang aman</h2>
+          <table style="margin-top: 16px"><tr><th>Eksperimen</th><th>Yang dibuktikan</th></tr><tr><td class="mono">Hapus 1 pod</td><td>Replika lain mengambil alih</td></tr><tr><td class="mono">DNS lambat</td><td>Timeout dan cache DNS bekerja</td></tr><tr><td class="mono">Disk hampir penuh</td><td>Alarm berbunyi sebelum mati</td></tr><tr><td class="mono">Matikan satu dependency</td><td>Fallback benar-benar jalan</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: pilih satu dependensi (Redis/Kafka) dan tulis hipotesis &#x27;kalau ini mati, apa yang terjadi?&#x27;">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -518,13 +565,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

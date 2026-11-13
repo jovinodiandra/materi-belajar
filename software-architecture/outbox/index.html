@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Outbox Pattern — Software Architecture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #1f2933;
+        --ink-2: #2c3a45;
+        --paper: #fcfcfb;
+        --teal: #0d9488;
+        --teal-dk: #0f766e;
+        --teal-tint: #f0fdfa;
+        --amber: #d97706;
+        --amber-tint: #fff7ed;
+        --red: #b91c1c;
+        --red-tint: #fef2f2;
+        --green: #15803d;
+        --green-tint: #f0fdf4;
+        --muted: #64748b;
+        --code-bg: #111827;
+        --code-tx: #e5e7eb;
+        --code-gn: #6ee7b7;
+        --code-yl: #fcd34d;
+        --display: "Fraunces", Georgia, serif;
+        --body: "Inter", -apple-system, Segoe UI, sans-serif;
+        --mono: "JetBrains Mono", "Courier New", monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        background: #0e1418;
+        font-family: var(--body);
+        overflow: hidden;
+      }
+
+      /* ---------- stage scaling (desain 1280x720) ---------- */
+      #viewport {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+      @media (max-width: 700px) {
+        html, body { overflow: auto; }
+        #viewport {
+          position: static;
+          display: block;
+          width: max-content;
+          max-width: 100%;
+          margin: 0 auto;
+          overflow: hidden;
+        }
+      }
+      #stage {
+        width: 1280px;
+        height: 720px;
+        position: relative;
+        transform-origin: center center;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        padding: 60px 72px;
+        background: var(--paper);
+        color: var(--ink);
+        display: none;
+        flex-direction: column;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .slide.active {
+        display: flex;
+        animation: fadeIn 0.35s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .slide.active {
+          animation: none;
+        }
+      }
+      .slide.dark {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      /* ---------- tipografi ---------- */
+      h1 {
+        font-family: var(--display);
+        font-size: 58px;
+        line-height: 1.07;
+        font-weight: 700;
+      }
+      h2 {
+        font-family: var(--display);
+        font-size: 40px;
+        line-height: 1.12;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--teal);
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+      .lede {
+        font-size: 18px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .dark .lede {
+        color: #94a3b8;
+      }
+      .foot {
+        margin-top: auto;
+        font-size: 15px;
+        font-style: italic;
+        color: var(--teal-dk);
+        padding-top: 14px;
+      }
+      .dark .foot {
+        color: var(--teal);
+      }
+
+      /* label pilar bergaya terminal */
+      .lens-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+      }
+      .lens-tag::before {
+        content: "❯";
+        font-weight: 700;
+      }
+      .lt-green {
+        background: var(--green-tint);
+        color: var(--green);
+      }
+      .lt-amber {
+        background: var(--amber-tint);
+        color: var(--amber);
+      }
+      .lt-teal {
+        background: var(--teal-tint);
+        color: var(--teal-dk);
+      }
+      .lt-ink {
+        background: #edf1f5;
+        color: var(--ink);
+      }
+      .lt-red {
+        background: var(--red-tint);
+        color: var(--red);
+      }
+
+      /* ---------- komponen ---------- */
+      .cols {
+        display: grid;
+        gap: 28px;
+      }
+      .c2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .c3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .card {
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 22px 24px;
+        box-shadow: 0 3px 14px rgba(15, 23, 42, 0.07);
+      }
+      .card h3 {
+        font-size: 19px;
+        margin-bottom: 8px;
+      }
+      .card p {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .tint-teal {
+        background: var(--teal-tint);
+      }
+      .tint-amber {
+        background: var(--amber-tint);
+      }
+      .tint-red {
+        background: var(--red-tint);
+      }
+      .tint-green {
+        background: var(--green-tint);
+      }
+
+      pre.code {
+        background: var(--code-bg);
+        color: var(--code-tx);
+        font-family: var(--mono);
+        font-size: 14.5px;
+        line-height: 1.6;
+        border-radius: 14px;
+        padding: 20px 24px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+      }
+      pre.code.sm {
+        font-size: 12.5px;
+        padding: 14px 18px;
+        line-height: 1.55;
+      }
+      pre.code .cm {
+        color: var(--code-gn);
+      }
+      pre.code .kw {
+        color: var(--code-yl);
+      }
+      .codehead {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .bad {
+        color: var(--red);
+      }
+      .good {
+        color: var(--green);
+      }
+
+      ul.clean {
+        list-style: none;
+      }
+      ul.clean li {
+        position: relative;
+        padding-left: 26px;
+        margin-bottom: 13px;
+        font-size: 16.5px;
+        line-height: 1.45;
+      }
+      ul.clean li::before {
+        content: "›";
+        position: absolute;
+        left: 4px;
+        color: var(--teal);
+        font-weight: 700;
+      }
+      .dark ul.clean li::before {
+        color: var(--teal);
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 16px;
+      }
+      th {
+        background: var(--ink);
+        color: #fff;
+        text-align: left;
+        padding: 10px 16px;
+        font-weight: 600;
+      }
+      td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      td.mono {
+        font-family: var(--mono);
+        font-weight: 700;
+      }
+
+      .iconrow {
+        display: flex;
+        gap: 18px;
+        align-items: flex-start;
+        margin-bottom: 22px;
+      }
+      .dot {
+        flex: 0 0 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 21px;
+        color: #fff;
+      }
+      .iconrow h3 {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+      .iconrow p {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.45;
+        max-width: 560px;
+      }
+
+      .bigbrace {
+        position: absolute;
+        right: 30px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: var(--mono);
+        font-size: 560px;
+        line-height: 1;
+        color: #2c3e46;
+        user-select: none;
+        pointer-events: none;
+        font-weight: 700;
+      }
+
+      .cycle {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 18px 0;
+      }
+      .cycle .step {
+        border-radius: 12px;
+        padding: 14px 20px;
+        font-weight: 700;
+        font-size: 16.5px;
+        color: #fff;
+        text-align: center;
+      }
+      .cycle .arrow {
+        font-size: 24px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .dsacase h3 {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: var(--teal-dk);
+        margin-bottom: 2px;
+      }
+      .dsacase .case {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      /* ---------- chrome ---------- */
+      #bar {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        height: 4px;
+        background: var(--teal);
+        width: 0;
+        transition: width 0.25s ease;
+        z-index: 50;
+      }
+      #hud {
+        position: fixed;
+        right: 18px;
+        bottom: 14px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        z-index: 50;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: #7b8794;
+      }
+      #hud button {
+        background: #1f2933;
+        color: #cbd5e1;
+        border: 1px solid #3a4a56;
+        border-radius: 8px;
+        width: 36px;
+        height: 32px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      #hud button:hover {
+        background: #2c3a45;
+      }
+      #hud button:focus-visible {
+        outline: 2px solid var(--teal);
+        outline-offset: 2px;
+      }
+      #notes {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(17, 24, 39, 0.97);
+        color: #e5e7eb;
+        z-index: 60;
+        padding: 18px 28px 22px;
+        font-size: 15px;
+        line-height: 1.55;
+        display: none;
+        border-top: 2px solid var(--teal);
+      }
+      #notes.open {
+        display: block;
+      }
+      #notes .nlabel {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: var(--teal);
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      #help {
+        position: fixed;
+        left: 18px;
+        bottom: 14px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: #5b6b78;
+        z-index: 50;
+      }
+    </style>
+  </head>
+  <body>
+<a id="__exitbtn" href="../../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+    <div id="viewport">
+      <div id="stage">
+        <!-- ════════ 1 — JUDUL ════════ -->
+        <section class="slide dark" data-notes="Buka santai. Bilang: hari ini kita bahas satu masalah kecil yang sering bikin data kacau di sistem yang pakai message broker. Solusinya simpel banget: tabel tambahan. Intro maks 1 menit.">
+          <div class="bigbrace">{ }</div>
+          <div style="margin-top: 80px; max-width: 800px; position: relative">
+            <div class="eyebrow">Software Architecture · Edisi Java</div>
+            <h1>Outbox Pattern</h1>
+            <p style="font-size: 21px; font-style: italic; color: #cbd5e1; margin-top: 26px; max-width: 640px">Cara aman menyimpan data <b>dan</b> mengirim event — tanpa ada yang hilang di tengah jalan.</p>
+            <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Tulis dulu di buku, baru dikirim pak pos.</p>
+          </div>
+        </section>
+        <!-- ════════ 2 — KENAPA PENTING ════════ -->
+        <section class="slide" data-notes="Tanya ke tim: pernah lihat order sudah ada tapi email konfirmasinya tidak terkirim? Itu biasanya masalah ini. Tekankan: ini bukan bug langka. Jaringan putus dan server restart itu kejadian sehari-hari.">
+          <h2>Simpan ke database + kirim event = dua pekerjaan. Bisa gagal salah satu.</h2>
+          <div class="cols" style="grid-template-columns: 1.5fr 1fr; margin-top: 14px">
+            <div><div class="iconrow"><div class="dot" style="background: var(--teal)">💾</div><div><h3>Kita simpan order ke database</h3><p>Ini pekerjaan pertama.</p></div></div>
+<div class="iconrow"><div class="dot" style="background: var(--amber)">📨</div><div><h3>Lalu kirim event ke Kafka</h3><p>Ini pekerjaan kedua. Supaya service lain tahu ada order baru.</p></div></div>
+<div class="iconrow"><div class="dot" style="background: var(--red)">💥</div><div><h3>Kalau server mati di tengah-tengah?</h3><p>Satu berhasil, satu gagal. Data jadi tidak cocok.</p></div></div>
+</div>
+            <div class="card tint-teal" style="display: flex; flex-direction: column; justify-content: center; text-align: center">
+              <div style="font-family: var(--display); font-size: 36px; font-weight: 700; color: var(--teal-dk)">Satu transaksi</div>
+              <p style="font-size: 16px; color: var(--ink); margin-top: 6px">dua pekerjaan → dijadikan satu</p>
+            </div>
+          </div>
+          <div style="border:1px solid #8883;border-left:3px solid #f5b14c;background:rgba(245,177,76,.06);padding:12px 18px;margin:12px 0 0;border-radius:0 10px 10px 0;max-width:80ch">
+            <p style="font-family:monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5b14c;margin-bottom:6px">◆ Buat apa ini? Kenapa pakai ini?</p>
+            <p style="margin:4px 0"><b>Given</b> — kita perlu simpan data dan kasih tahu service lain.</p>
+            <p style="margin:4px 0"><b>When</b> — dua pekerjaan itu dilakukan terpisah, lalu salah satunya gagal.</p>
+            <p style="margin:4px 0"><b>Then</b> — event hilang, atau event terkirim padahal datanya tidak ada.</p>
+            <p style="margin:6px 0 0">→ makanya kita pakai <b>Outbox Pattern</b> — supaya data dan event selalu kompak.</p>
+          </div>
+
+        </section>
+        <!-- ════════ 3 — AGENDA ════════ -->
+        <section class="slide" data-notes="Jelaskan urutannya: kenali masalah dulu, baru solusi, lalu jebakan yang masih tersisa.">
+
+          <h2>Tiga hal yang kita pelajari</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px">
+            <div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">bagian 1</div><h3>Masalahnya</h3><p style="color: var(--ink)">Kenapa simpan + kirim bisa bikin data kacau. Namanya <b>dual write</b>.</p></div>
+            <div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">bagian 2</div><h3>Cara kerja outbox</h3><p style="color: var(--ink)">Tabel “kotak surat keluar” + petugas yang rajin mengirim.</p></div>
+            <div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">bagian 3</div><h3>Yang perlu dijaga</h3><p style="color: var(--ink)">Event bisa terkirim dua kali. Penerima harus siap.</p></div>
+          </div>
+          <div class="foot" style="text-align: center; color: var(--muted)">Masalah → solusi → jebakan.</div>
+        </section>
+        <!-- ════════ 4 — WARM-UP ════════ -->
+        <section class="slide" data-notes="Kasih waktu 2 menit, biarkan hening. Minta tim tulis jawaban di chat. Jangan buru-buru kasih jawaban.">
+          <h2>Warm-up: kode ini kelihatan benar. Aman?</h2>
+          <div class="cols" style="grid-template-columns: 1.7fr 1fr; margin-top: 18px">
+<pre class="code">@Transactional
+<span class="kw">public</span> <span class="kw">void</span> placeOrder(Order order) {
+    orderRepository.save(order);      <span class="cm">// 1. simpan ke DB</span>
+    kafka.send(&quot;order-created&quot;,       <span class="cm">// 2. kirim event</span>
+               order.toEvent());
+}   <span class="cm">// &lt;- transaksi DB commit di sini</span></pre>
+            <div class="card"><h3>Coba tebak 🤔</h3><ul class="clean" style="margin-top: 10px"><li>Kalau Kafka lagi mati, apa yang terjadi?</li><li>Kalau Kafka sukses, tapi commit DB gagal?</li><li>Kalau server mati di antara baris 1 dan 2?</li></ul></div>
+          </div>
+          <div class="foot">Waktu: 2 menit. Tulis tebakanmu di chat.</div>
+        </section>
+        <!-- ════════ 5 — JAWABAN ════════ -->
+        <section class="slide" data-notes="Bahas satu per satu. Analogi: kamu catat utang di buku, lalu SMS ke temanmu. Kalau HP mati sebelum SMS terkirim, temanmu tidak tahu. Kalau SMS terkirim tapi bukunya hilang, kamu yang lupa. Masalah ini namanya dual write: menulis ke dua tempat yang tidak bisa dikunci bersama.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">bagian 1 · dual write</div>
+          <h2>Jawaban: ada dua cara gagal</h2>
+          <div class="cols" style="grid-template-columns: 1.5fr 1fr; margin-top: 18px"><div><div class="iconrow"><div class="dot" style="background: var(--red)">👻</div><div><h3>Event hantu</h3><p>Kafka sudah kirim “order dibuat”. Lalu commit DB gagal. Service lain memproses order yang <b>tidak ada</b>.</p></div></div>
+<div class="iconrow"><div class="dot" style="background: var(--amber)">🕳️</div><div><h3>Event hilang</h3><p>DB sudah simpan order. Lalu Kafka gagal atau server mati. Service lain <b>tidak pernah tahu</b> ada order.</p></div></div>
+<div class="iconrow"><div class="dot" style="background: var(--teal)">🔁</div><div><h3>Retry tidak menyelamatkan</h3><p>Kalau server mati, tidak ada yang ingat untuk retry. Ingatannya ikut hilang.</p></div></div>
+</div><div class="card tint-amber" style="display:flex;flex-direction:column;justify-content:center;text-align:center"><div style="font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--amber)">Dual write</div><p style="font-size: 16px; color: var(--ink); margin-top: 8px">menulis ke dua tempat yang tidak bisa di-commit bersama</p></div></div>
+          <div class="foot">Database dan Kafka tidak bisa ikut dalam satu transaksi yang sama.</div>
+        </section>
+        <!-- ════════ 6 — ANALOGI ════════ -->
+        <section class="slide" data-notes="Baris atas: dunia nyata. Baris bawah: versi kodenya. Intinya: kamu tidak mengirim langsung. Kamu cuma menaruh surat di kotak. Menaruh di kotak itu satu transaksi dengan menyimpan order, jadi pasti kompak. Pengiriman diurus petugas terpisah.">
+          <div class="lens-tag lt-amber" style="align-self: flex-start">bagian 2 · cara kerja</div>
+          <h2>Bayangin kotak surat keluar di kantor</h2>
+          <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">1. Kamu</h3><p style="font-size:13.5px">taruh surat di kotak “keluar”</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">2. Kotak keluar</h3><p style="font-size:13.5px">surat aman, tidak hilang</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">3. Pak pos</h3><p style="font-size:13.5px">rutin ambil & kirim</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Tabel orders + tabel outbox</h3><p style="font-size:13.5px">disimpan di <b>satu transaksi DB</b></p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Tabel outbox</h3><p style="font-size:13.5px">berisi event yang belum dikirim</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Relay / publisher</h3><p style="font-size:13.5px">baca outbox → kirim ke Kafka</p></div></div></div>
+          <div class="foot">Kuncinya: simpan order dan simpan event terjadi di <b>satu transaksi database</b>.</div>
+        </section>
+        <!-- ════════ 7 — KODE SEBELUM vs SESUDAH ════════ -->
+        <section class="slide" data-notes="Tunjuk baris yang berubah: kafka.send diganti outboxRepository.save. Sekarang dua baris itu ada di transaksi DB yang sama. Kalau gagal, gagal dua-duanya. Kalau sukses, sukses dua-duanya. Tidak ada setengah-setengah.">
+          <div class="lens-tag lt-amber" style="align-self: flex-start">bagian 2 · cara kerja</div>
+          <h2>Ubah “kirim langsung” jadi “taruh di kotak”</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ Sebelum: kirim langsung</div>
+<pre class="code">@Transactional
+<span class="kw">public</span> <span class="kw">void</span> placeOrder(Order order) {
+    orderRepository.save(order);
+    kafka.send(&quot;order-created&quot;,   <span class="cm">// &lt;- di luar</span>
+               order.toEvent());  <span class="cm">//    transaksi DB</span>
+}</pre></div>
+            <div><div class="codehead good">✓ Sesudah: simpan ke outbox</div>
+<pre class="code">@Transactional
+<span class="kw">public</span> <span class="kw">void</span> placeOrder(Order order) {
+    orderRepository.save(order);
+    outboxRepository.save(<span class="kw">new</span> OutboxEvent(
+        &quot;Order&quot;, order.getId(),
+        &quot;OrderCreated&quot;, toJson(order)));
+}   <span class="cm">// &lt;- dua-duanya commit bareng</span></pre></div>
+          </div>
+          <div class="foot">Tidak ada lagi “setengah berhasil”. Semua berhasil, atau semua batal.</div>
+        </section>
+        <!-- ════════ 8 — TABEL OUTBOX ════════ -->
+        <section class="slide" data-notes="Jelaskan kolom satu-satu, pelan. Paling penting: id unik dan sent_at. id unik nanti dipakai penerima untuk mengenali event yang dobel.">
+          <div class="lens-tag lt-amber" style="align-self: flex-start">bagian 2 · cara kerja</div>
+          <h2>Isi tabel outbox: cukup sederhana</h2>
+          <div class="cols" style="grid-template-columns: 1.6fr 1fr; margin-top: 14px">
+<pre class="code"><span class="kw">CREATE</span> <span class="kw">TABLE</span> outbox (
+  id            UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,
+  aggregate     VARCHAR(50),  <span class="cm">-- contoh: &#x27;Order&#x27;</span>
+  aggregate_id  VARCHAR(50),  <span class="cm">-- id order-nya</span>
+  type          VARCHAR(50),  <span class="cm">-- &#x27;OrderCreated&#x27;</span>
+  payload       JSONB,        <span class="cm">-- isi event</span>
+  created_at    TIMESTAMP,
+  sent_at       TIMESTAMP     <span class="cm">-- null = belum dikirim</span>
+);</pre>
+            <div class="card"><h3>Gampangnya</h3><ul class="clean" style="margin-top: 10px"><li><b>id</b> = nomor unik tiap surat.</li><li><b>payload</b> = isi suratnya.</li><li><b>sent_at</b> kosong = surat belum dikirim.</li><li>Satu baris = satu event.</li></ul></div>
+          </div>
+          <div class="foot">Tabel ini tinggal di database yang <b>sama</b> dengan tabel orders.</div>
+        </section>
+        <!-- ════════ 9 — RELAY ════════ -->
+        <section class="slide" data-notes="CDC = Change Data Capture: alat yang membaca catatan perubahan database secara otomatis. Saran untuk tim baru: mulai dari polling. Kalau sudah ramai, baru pindah ke CDC.">
+          <div class="lens-tag lt-amber" style="align-self: flex-start">bagian 2 · cara kerja</div>
+          <h2>Siapa “pak pos”-nya? Ada dua pilihan</h2>
+          <p class="lede">Relay = petugas yang membaca outbox lalu mengirim ke Kafka.</p>
+          <table style="margin-top: 16px">
+<tr><th>Cara</th><th>Gampangnya</th><th>Kelebihan</th><th>Kekurangan</th></tr>
+<tr><td class="mono">Polling</td><td>Cek tabel outbox tiap beberapa detik</td><td>Simpel, cukup pakai @Scheduled</td><td>Ada jeda, beban query ke DB</td></tr>
+<tr><td class="mono">CDC (Debezium)</td><td>Baca “buku harian” database (log transaksi)</td><td>Cepat, tidak membebani query</td><td>Butuh setup tambahan (Kafka Connect)</td></tr>
+          </table>
+          <div class="foot">Baru mulai? Pakai polling dulu. Sudah ramai? Pindah ke CDC.</div>
+        </section>
+        <!-- ════════ 10 — RELAY POLLING ════════ -->
+        <section class="slide" data-notes="Poin ketiga itu penting dan jadi jembatan ke bagian 3. Outbox menjamin event tidak hilang, tapi bukan menjamin event cuma terkirim sekali.">
+          <div class="lens-tag lt-amber" style="align-self: flex-start">bagian 2 · cara kerja</div>
+          <h2>Contoh relay polling (versi simpel)</h2>
+          <div class="cols" style="grid-template-columns: 1.6fr 1fr; margin-top: 14px">
+<pre class="code">@Scheduled(fixedDelay = 1000)  <span class="cm">// tiap 1 detik</span>
+<span class="kw">public</span> <span class="kw">void</span> publish() {
+    <span class="kw">var</span> events = outboxRepository
+        .findTop100BySentAtIsNullOrderByCreatedAt();
+    <span class="kw">for</span> (<span class="kw">var</span> ev : events) {
+        kafka.send(ev.getType(), ev.getPayload()).get();
+        ev.markSent();                <span class="cm">// isi sent_at</span>
+        outboxRepository.save(ev);
+    }
+}</pre>
+            <div class="card"><h3>Perhatikan</h3><ul class="clean" style="margin-top: 10px"><li>Ambil yang <b>belum terkirim</b>, urut dari yang lama.</li><li>Kirim dulu, <b>baru</b> tandai terkirim.</li><li>Kalau mati setelah kirim tapi sebelum tandai → nanti dikirim <b>lagi</b>.</li></ul></div>
+          </div>
+          <div class="foot">Event pasti terkirim <b>minimal sekali</b>. Kadang dua kali.</div>
+        </section>
+        <!-- ════════ 11 — IDEMPOTENT ════════ -->
+        <section class="slide" data-notes="Idempotent = dijalankan sekali atau berkali-kali, hasilnya sama. Analogi: tombol lift. Ditekan 5 kali, lift tetap datang sekali. Caranya: simpan id event yang sudah diproses, lalu lewati kalau ketemu lagi.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">bagian 3 · yang perlu dijaga</div>
+          <h2>Penerima harus kebal terhadap event dobel</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ Penerima polos</div>
+<pre class="code">@KafkaListener(topics = &quot;order-created&quot;)
+<span class="kw">public</span> <span class="kw">void</span> on(OrderCreated ev) {
+    emailService.sendConfirmation(ev);
+    <span class="cm">// event dobel = email dobel</span>
+}</pre></div>
+            <div><div class="codehead good">✓ Penerima idempotent</div>
+<pre class="code">@KafkaListener(topics = &quot;order-created&quot;)
+@Transactional
+<span class="kw">public</span> <span class="kw">void</span> on(OrderCreated ev) {
+    <span class="kw">if</span> (processed.exists(ev.eventId())) <span class="kw">return</span>;
+    emailService.sendConfirmation(ev);
+    processed.save(ev.eventId()); <span class="cm">// ingat id</span>
+}</pre></div>
+          </div>
+          <div class="foot"><b>Idempotent</b> = kayak tombol lift: ditekan 5 kali, lift tetap datang sekali.</div>
+        </section>
+        <!-- ════════ 12 — KESALAHAN UMUM ════════ -->
+        <section class="slide" data-notes="Bahas satu per satu dengan cepat. Yang paling sering terjadi di tim: lupa bersih-bersih tabel outbox, lalu query polling jadi lambat setelah beberapa bulan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">bagian 3 · yang perlu dijaga</div>
+          <h2>Jebakan yang sering kejadian</h2>
+          <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px">
+            <div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">jebakan</div><h3>Outbox di DB lain</h3><p style="color: var(--ink)">Tabel outbox harus di DB yang sama. Kalau beda DB, balik lagi ke dual write.</p></div>
+            <div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">jebakan</div><h3>Tabel makin gendut</h3><p style="color: var(--ink)">Hapus atau arsipkan baris yang sudah terkirim secara rutin.</p></div>
+            <div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">jebakan</div><h3>Urutan kacau</h3><p style="color: var(--ink)">Kalau urutan penting, kirim pakai key = aggregate_id supaya masuk partisi yang sama.</p></div>
+            <div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">jebakan</div><h3>Lupa idempotent</h3><p style="color: var(--ink)">Relay pasti pernah mengirim dobel. Penerima wajib siap.</p></div>
+          </div>
+
+        </section>
+        <!-- ════════ 13 — KAPAN PAKAI ════════ -->
+        <section class="slide" data-notes="Tekankan: outbox menambah satu tabel dan satu petugas. Jangan dipakai kalau tidak ada masalah dual write. Sering dipasangkan dengan Saga dan Event Driven, yang juga ada di materi ini.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">ringkasan</div>
+          <h2>Kapan pakai outbox, kapan tidak perlu</h2>
+          <table style="margin-top: 16px">
+<tr><th>Situasi</th><th>Pakai outbox?</th></tr>
+<tr><td>Simpan data + kirim event ke service lain</td><td>✅ Ya, ini kasus utamanya</td></tr>
+<tr><td>Event penting: pembayaran, order, stok</td><td>✅ Ya, tidak boleh hilang</td></tr>
+<tr><td>Satu aplikasi, tidak ada service lain</td><td>❌ Tidak perlu</td></tr>
+<tr><td>Event cuma log/analitik, hilang sedikit tidak apa-apa</td><td>❌ Boleh kirim langsung</td></tr>
+          </table>
+          <div class="foot">Teman dekatnya: <b>Saga</b>, <b>Event Driven</b>, dan <b>CQRS</b>.</div>
+        </section>
+        <!-- ════════ 14 — PENUTUP ════════ -->
+        <section class="slide dark" data-notes="Minta empat orang membacakan satu kalimat masing-masing. Tugas besok: cari satu tempat di kode kita yang memanggil save lalu kafka.send berurutan. Itu kandidat outbox.">
+          <div class="bigbrace" style="font-size: 460px">{ }</div>
+          <div style="position: relative; max-width: 880px">
+            <h2 style="color: #fff">Empat hal untuk diingat</h2>
+            <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ masalah</div><p style="font-size: 17px; color: #e2e8f0">Simpan ke DB + kirim event itu dua pekerjaan. Bisa gagal salah satu.</p></div>
+<div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ solusi</div><p style="font-size: 17px; color: #e2e8f0">Simpan event ke tabel outbox di transaksi yang sama dengan datanya.</p></div>
+<div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ relay</div><p style="font-size: 17px; color: #e2e8f0">Petugas terpisah mengirim isi outbox. Mulai pakai polling.</p></div>
+<div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ idempotent</div><p style="font-size: 17px; color: #e2e8f0">Event bisa datang dua kali. Penerima harus kebal dobel.</p></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="bar"></div>
+    <div id="help">← → navigasi · N catatan · F fullscreen</div>
+    <div id="hud">
+      <span id="counter">1 / 17</span>
+      <button id="prev" aria-label="Slide sebelumnya">‹</button>
+      <button id="next" aria-label="Slide berikutnya">›</button>
+    </div>
+    <div id="notes" aria-live="polite">
+      <div class="nlabel">Catatan presenter — tekan N untuk menutup</div>
+      <div id="notesText"></div>
+    </div>
+
+    <script>
+      (function () {
+        const slides = Array.from(document.querySelectorAll(".slide"));
+        const bar = document.getElementById("bar");
+        const counter = document.getElementById("counter");
+        const notes = document.getElementById("notes");
+        const notesText = document.getElementById("notesText");
+        let i = Math.min(
+          slides.length - 1,
+          Math.max(0, parseInt(location.hash.slice(1), 10) - 1 || 0),
+        );
+
+        function show(n) {
+          i = Math.max(0, Math.min(slides.length - 1, n));
+          slides.forEach((s, k) => s.classList.toggle("active", k === i));
+          bar.style.width = ((i + 1) / slides.length) * 100 + "%";
+          counter.textContent = i + 1 + " / " + slides.length;
+          notesText.textContent = slides[i].dataset.notes || "";
+          history.replaceState(null, "", "#" + (i + 1));
+        }
+        function fit() {
+          const mobile = innerWidth <= 700;
+          const stage = document.getElementById("stage");
+          const viewport = document.getElementById("viewport");
+          if (mobile) {
+            // On phones, don't shrink to fit height too (text becomes unreadable).
+            // Scale to width only with a legibility floor, then let the page scroll vertically.
+            const s = Math.max(innerWidth / 1280, 0.62);
+            stage.style.transformOrigin = "top left";
+            stage.style.transform = "scale(" + s + ")";
+            viewport.style.width = Math.round(1280 * s) + "px";
+            viewport.style.height = Math.round(720 * s) + "px";
+          } else {
+            const s = Math.min(innerWidth / 1280, innerHeight / 720) * 0.97;
+            stage.style.transformOrigin = "center center";
+            stage.style.transform = "scale(" + s + ")";
+            viewport.style.width = "";
+            viewport.style.height = "";
+          }
+        }
+        addEventListener("resize", fit);
+        addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+            e.preventDefault();
+            show(i + 1);
+          } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+            e.preventDefault();
+            show(i - 1);
+          } else if (e.key === "Home") show(0);
+          else if (e.key === "End") show(slides.length - 1);
+          else if (e.key.toLowerCase() === "n") notes.classList.toggle("open");
+          else if (e.key.toLowerCase() === "f") {
+            document.fullscreenElement
+              ? document.exitFullscreen()
+              : document.documentElement.requestFullscreen();
+          }
+        });
+        document.getElementById("prev").onclick = () => show(i - 1);
+        document.getElementById("next").onclick = () => show(i + 1);
+        // klik sepertiga kanan/kiri slide untuk maju/mundur
+        document.getElementById("stage").addEventListener("click", (e) => {
+          if (e.target.closest("a,button")) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          (e.clientX - r.left) / r.width > 0.33 ? show(i + 1) : show(i - 1);
+        });
+        fit();
+        show(i);
+      })();
+    </script>
+  </body>
+</html>

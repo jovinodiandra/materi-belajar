@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>On-Premise — Etc</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #1f2933;
+        --ink-2: #2c3a45;
+        --paper: #fcfcfb;
+        --teal: #0d9488;
+        --teal-dk: #0f766e;
+        --teal-tint: #f0fdfa;
+        --amber: #d97706;
+        --amber-tint: #fff7ed;
+        --red: #b91c1c;
+        --red-tint: #fef2f2;
+        --green: #15803d;
+        --green-tint: #f0fdf4;
+        --muted: #64748b;
+        --code-bg: #111827;
+        --code-tx: #e5e7eb;
+        --code-gn: #6ee7b7;
+        --code-yl: #fcd34d;
+        --display: "Fraunces", Georgia, serif;
+        --body: "Inter", -apple-system, Segoe UI, sans-serif;
+        --mono: "JetBrains Mono", "Courier New", monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        background: #0e1418;
+        font-family: var(--body);
+        overflow: hidden;
+      }
+
+      /* ---------- stage scaling (desain 1280x720) ---------- */
+      #viewport {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+      @media (max-width: 700px) {
+        html, body { overflow: auto; }
+        #viewport {
+          position: static;
+          display: block;
+          width: max-content;
+          max-width: 100%;
+          margin: 0 auto;
+          overflow: hidden;
+        }
+      }
+      #stage {
+        width: 1280px;
+        height: 720px;
+        position: relative;
+        transform-origin: center center;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        padding: 60px 72px;
+        background: var(--paper);
+        color: var(--ink);
+        display: none;
+        flex-direction: column;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .slide.active {
+        display: flex;
+        animation: fadeIn 0.35s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .slide.active {
+          animation: none;
+        }
+      }
+      .slide.dark {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      /* ---------- tipografi ---------- */
+      h1 {
+        font-family: var(--display);
+        font-size: 58px;
+        line-height: 1.07;
+        font-weight: 700;
+      }
+      h2 {
+        font-family: var(--display);
+        font-size: 40px;
+        line-height: 1.12;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--teal);
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+      .lede {
+        font-size: 18px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .dark .lede {
+        color: #94a3b8;
+      }
+      .foot {
+        margin-top: auto;
+        font-size: 15px;
+        font-style: italic;
+        color: var(--teal-dk);
+        padding-top: 14px;
+      }
+      .dark .foot {
+        color: var(--teal);
+      }
+
+      /* label pilar bergaya terminal */
+      .lens-tag {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+      }
+      .lens-tag::before {
+        content: "❯";
+        font-weight: 700;
+      }
+      .lt-green {
+        background: var(--green-tint);
+        color: var(--green);
+      }
+      .lt-amber {
+        background: var(--amber-tint);
+        color: var(--amber);
+      }
+      .lt-teal {
+        background: var(--teal-tint);
+        color: var(--teal-dk);
+      }
+      .lt-ink {
+        background: #edf1f5;
+        color: var(--ink);
+      }
+      .lt-red {
+        background: var(--red-tint);
+        color: var(--red);
+      }
+
+      /* ---------- komponen ---------- */
+      .cols {
+        display: grid;
+        gap: 28px;
+      }
+      .c2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .c3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .card {
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 22px 24px;
+        box-shadow: 0 3px 14px rgba(15, 23, 42, 0.07);
+      }
+      .card h3 {
+        font-size: 19px;
+        margin-bottom: 8px;
+      }
+      .card p {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .tint-teal {
+        background: var(--teal-tint);
+      }
+      .tint-amber {
+        background: var(--amber-tint);
+      }
+      .tint-red {
+        background: var(--red-tint);
+      }
+      .tint-green {
+        background: var(--green-tint);
+      }
+
+      pre.code {
+        background: var(--code-bg);
+        color: var(--code-tx);
+        font-family: var(--mono);
+        font-size: 14.5px;
+        line-height: 1.6;
+        border-radius: 14px;
+        padding: 20px 24px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+      }
+      pre.code.sm {
+        font-size: 12.5px;
+        padding: 14px 18px;
+        line-height: 1.55;
+      }
+      pre.code .cm {
+        color: var(--code-gn);
+      }
+      pre.code .kw {
+        color: var(--code-yl);
+      }
+      .codehead {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .bad {
+        color: var(--red);
+      }
+      .good {
+        color: var(--green);
+      }
+
+      ul.clean {
+        list-style: none;
+      }
+      ul.clean li {
+        position: relative;
+        padding-left: 26px;
+        margin-bottom: 13px;
+        font-size: 16.5px;
+        line-height: 1.45;
+      }
+      ul.clean li::before {
+        content: "›";
+        position: absolute;
+        left: 4px;
+        color: var(--teal);
+        font-weight: 700;
+      }
+      .dark ul.clean li::before {
+        color: var(--teal);
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 16px;
+      }
+      th {
+        background: var(--ink);
+        color: #fff;
+        text-align: left;
+        padding: 10px 16px;
+        font-weight: 600;
+      }
+      td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      td.mono {
+        font-family: var(--mono);
+        font-weight: 700;
+      }
+
+      .iconrow {
+        display: flex;
+        gap: 18px;
+        align-items: flex-start;
+        margin-bottom: 22px;
+      }
+      .dot {
+        flex: 0 0 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 21px;
+        color: #fff;
+      }
+      .iconrow h3 {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+      .iconrow p {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.45;
+        max-width: 560px;
+      }
+
+      .bigbrace {
+        position: absolute;
+        right: 30px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: var(--mono);
+        font-size: 560px;
+        line-height: 1;
+        color: #2c3e46;
+        user-select: none;
+        pointer-events: none;
+        font-weight: 700;
+      }
+
+      .cycle {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 18px 0;
+      }
+      .cycle .step {
+        border-radius: 12px;
+        padding: 14px 20px;
+        font-weight: 700;
+        font-size: 16.5px;
+        color: #fff;
+        text-align: center;
+      }
+      .cycle .arrow {
+        font-size: 24px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .dsacase h3 {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: var(--teal-dk);
+        margin-bottom: 2px;
+      }
+      .dsacase .case {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      /* ---------- chrome ---------- */
+      #bar {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        height: 4px;
+        background: var(--teal);
+        width: 0;
+        transition: width 0.25s ease;
+        z-index: 50;
+      }
+      #hud {
+        position: fixed;
+        right: 18px;
+        bottom: 14px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        z-index: 50;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: #7b8794;
+      }
+      #hud button {
+        background: #1f2933;
+        color: #cbd5e1;
+        border: 1px solid #3a4a56;
+        border-radius: 8px;
+        width: 36px;
+        height: 32px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      #hud button:hover {
+        background: #2c3a45;
+      }
+      #hud button:focus-visible {
+        outline: 2px solid var(--teal);
+        outline-offset: 2px;
+      }
+      #notes {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(17, 24, 39, 0.97);
+        color: #e5e7eb;
+        z-index: 60;
+        padding: 18px 28px 22px;
+        font-size: 15px;
+        line-height: 1.55;
+        display: none;
+        border-top: 2px solid var(--teal);
+      }
+      #notes.open {
+        display: block;
+      }
+      #notes .nlabel {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: var(--teal);
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      #help {
+        position: fixed;
+        left: 18px;
+        bottom: 14px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: #5b6b78;
+        z-index: 50;
+      }
+    </style>
+  </head>
+  <body>
+<a id="__exitbtn" href="../../../index.html" style="position:fixed;top:12px;right:12px;z-index:99999;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#fff;background:rgba(20,20,30,.78);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 13px;text-decoration:none;backdrop-filter:blur(6px)">✕ Keluar</a>
+
+    <div id="viewport">
+      <div id="stage">
+        <!-- ════════ 1 — JUDUL ════════ -->
+        <section class="slide dark" data-notes="Analogi rumah sendiri vs sewa. On-premise = sebelum ada cloud, semua perusahaan begini. 1 menit.">
+          <div class="bigbrace">{ }</div>
+          <div style="margin-top: 80px; max-width: 820px; position: relative">
+            <div class="eyebrow">Cloud Service Models · Edisi Junior</div>
+            <h1>On-Premise</h1>
+            <p style="font-size: 21px; font-style: italic; color: #cbd5e1; margin-top: 26px; max-width: 680px">Server milik sendiri, di gedung sendiri. Semua kendali di tangan kita, semua repot juga di tangan kita.</p>
+            <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Punya rumah sendiri: bebas renovasi, tapi atap bocor ya benerin sendiri.</p>
+          </div>
+        </section>
+        <!-- ════════ 2 — PETA BESARNYA ════════ -->
+        <section class="slide" data-notes="Tabel ini sama di semua materi cloud service model. Tunjukkan posisi topik hari ini di tabel.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">peta besarnya</div>
+          <h2>Siapa yang ngurus apa?</h2>
+          <table style="margin-top: 16px"><tr><th>Model</th><th>Kamu urus</th><th>Penyedia urus</th></tr><tr><td class="mono">On-Premise</td><td>Semuanya: gedung, server, OS, aplikasi</td><td>—</td></tr><tr><td class="mono">IaaS</td><td>OS, runtime, aplikasi, data</td><td>Server fisik, jaringan, listrik</td></tr><tr><td class="mono">PaaS</td><td>Aplikasi dan data</td><td>Server, OS, runtime, scaling</td></tr><tr><td class="mono">FaaS</td><td>Fungsi (potongan kode)</td><td>Hampir semuanya</td></tr><tr><td class="mono">BaaS</td><td>Frontend / logika app</td><td>Backend siap pakai</td></tr><tr><td class="mono">SaaS</td><td>Cuma pakai</td><td>Semuanya</td></tr></table>
+          <div class="foot">Makin ke bawah: <b>makin sedikit yang diurus</b>, tapi <b>makin sedikit kontrol</b>.</div>
+        </section>
+        <!-- ════════ 3 — UNTUNG RUGI ════════ -->
+        <section class="slide" data-notes="Contoh: bank, pemerintahan, rumah sakit sering masih on-premise karena aturan data.">
+          <div class="lens-tag lt-amber" style="align-self: flex-start">untung rugi</div>
+          <h2>Kapan on-premise masuk akal?</h2>
+          <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">untung</div><h3>Kontrol penuh</h3><p style="color: var(--ink)">Data tidak keluar gedung. Penting untuk regulasi ketat.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">untung</div><h3>Murah untuk beban stabil</h3><p style="color: var(--ink)">Kalau server dipakai penuh bertahun-tahun.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">rugi</div><h3>Modal awal besar</h3><p style="color: var(--ink)">Beli server, rak, pendingin, listrik cadangan.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">rugi</div><h3>Lambat bertambah</h3><p style="color: var(--ink)">Butuh server baru? Pesan, kirim, pasang: bisa berminggu-minggu.</p></div></div>
+        </section>
+        <!-- ════════ 4 — YANG HARUS DIURUS ════════ -->
+        <section class="slide" data-notes="Biaya on-premise bukan cuma harga server, tapi juga orang dan waktu untuk merawatnya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">yang harus diurus</div>
+          <h2>Tugas yang biasanya "tidak kelihatan"</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Ganti hardware rusak, beli cadangan.</li><li>Update OS dan patch keamanan sendiri.</li><li>Backup dan rencana kalau gedung kebanjiran (disaster recovery).</li><li>Tim yang siaga 24 jam kalau server mati tengah malam.</li></ul>
+        </section>
+        <!-- ════════ 5 — PENUTUP ════════ -->
+        <section class="slide dark" data-notes="Diskusi: apakah ada bagian sistem kita yang masih on-premise? Kenapa?">
+          <div class="bigbrace" style="font-size: 460px">{ }</div>
+          <div style="position: relative; max-width: 880px">
+            <h2 style="color: #fff">Tiga hal untuk diingat</h2>
+            <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Server dan pusat data milik sendiri.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ untung</div><p style="font-size: 17px; color: #e2e8f0">Kontrol penuh, cocok untuk aturan ketat.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ rugi</div><p style="font-size: 17px; color: #e2e8f0">Modal besar, lambat menambah kapasitas.</p></div></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="bar"></div>
+    <div id="help">← → navigasi · N catatan · F fullscreen</div>
+    <div id="hud">
+      <span id="counter">1 / 5</span>
+      <button id="prev" aria-label="Slide sebelumnya">‹</button>
+      <button id="next" aria-label="Slide berikutnya">›</button>
+    </div>
+    <div id="notes" aria-live="polite">
+      <div class="nlabel">Catatan presenter — tekan N untuk menutup</div>
+      <div id="notesText"></div>
+    </div>
+
+    <script>
+      (function () {
+        const slides = Array.from(document.querySelectorAll(".slide"));
+        const bar = document.getElementById("bar");
+        const counter = document.getElementById("counter");
+        const notes = document.getElementById("notes");
+        const notesText = document.getElementById("notesText");
+        let i = Math.min(
+          slides.length - 1,
+          Math.max(0, parseInt(location.hash.slice(1), 10) - 1 || 0),
+        );
+
+        function show(n) {
+          i = Math.max(0, Math.min(slides.length - 1, n));
+          slides.forEach((s, k) => s.classList.toggle("active", k === i));
+          bar.style.width = ((i + 1) / slides.length) * 100 + "%";
+          counter.textContent = i + 1 + " / " + slides.length;
+          notesText.textContent = slides[i].dataset.notes || "";
+          history.replaceState(null, "", "#" + (i + 1));
+        }
+        function fit() {
+          const mobile = innerWidth <= 700;
+          const stage = document.getElementById("stage");
+          const viewport = document.getElementById("viewport");
+          if (mobile) {
+            // On phones, don't shrink to fit height too (text becomes unreadable).
+            // Scale to width only with a legibility floor, then let the page scroll vertically.
+            const s = Math.max(innerWidth / 1280, 0.62);
+            stage.style.transformOrigin = "top left";
+            stage.style.transform = "scale(" + s + ")";
+            viewport.style.width = Math.round(1280 * s) + "px";
+            viewport.style.height = Math.round(720 * s) + "px";
+          } else {
+            const s = Math.min(innerWidth / 1280, innerHeight / 720) * 0.97;
+            stage.style.transformOrigin = "center center";
+            stage.style.transform = "scale(" + s + ")";
+            viewport.style.width = "";
+            viewport.style.height = "";
+          }
+        }
+        addEventListener("resize", fit);
+        addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+            e.preventDefault();
+            show(i + 1);
+          } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+            e.preventDefault();
+            show(i - 1);
+          } else if (e.key === "Home") show(0);
+          else if (e.key === "End") show(slides.length - 1);
+          else if (e.key.toLowerCase() === "n") notes.classList.toggle("open");
+          else if (e.key.toLowerCase() === "f") {
+            document.fullscreenElement
+              ? document.exitFullscreen()
+              : document.documentElement.requestFullscreen();
+          }
+        });
+        document.getElementById("prev").onclick = () => show(i - 1);
+        document.getElementById("next").onclick = () => show(i + 1);
+        // klik sepertiga kanan/kiri slide untuk maju/mundur
+        document.getElementById("stage").addEventListener("click", (e) => {
+          if (e.target.closest("a,button")) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          (e.clientX - r.left) / r.width > 0.33 ? show(i + 1) : show(i - 1);
+        });
+        fit();
+        show(i);
+      })();
+    </script>
+  </body>
+</html>

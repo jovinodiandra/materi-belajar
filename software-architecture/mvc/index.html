@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Dapur, piring saji, dan pelayan — tiga peran berbeda.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang pernah lihat file JSP atau PHP lama yang berisi query SQL di tengah HTML?">
           <h2>Satu file berisi HTML, query database, dan logika. Ubah tampilan, logika ikut rusak.</h2>
@@ -484,7 +485,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — PERAN ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: V, M, C, V. Tanya audiens satu per satu, minta alasan singkat.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak perannya</h2>
+          <p class="lede">Di aplikasi toko online, cocokkan dengan M, V, atau C:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Template HTML halaman produk</li><li>Kelas <code>Product</code> dengan aturan harga diskon</li><li>Method yang menerima klik "Beli" lalu memanggil service</li><li>Halaman keranjang yang menampilkan total</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PERAN ════════ -->
         <section class="slide" data-notes="Analogi restoran: Controller = pelayan yang menerima pesanan. Model = dapur yang tahu resep. View = piring saji yang dilihat pelanggan. Pelayan tidak memasak, dapur tidak menata meja.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Tiga peran dalam MVC</h2>
@@ -492,7 +502,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Controller</h3><p style="font-size:13.5px">terima aksi user, putuskan mau apa</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Model</h3><p style="font-size:13.5px">data + aturan bisnis</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">View</h3><p style="font-size:13.5px">tampilkan data ke user</p></div></div></div>
           <div class="foot">Alur: user → Controller → Model → View → user.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Tunjukkan: controller tidak menghitung apa pun. Dia cuma mengatur alur. View tidak memanggil database. Dia cuma menampilkan data yang diberikan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>MVC di Spring Boot</h2>
@@ -510,7 +521,8 @@
           </div>
           <div class="foot">Controller <b>mengatur</b>, bukan menghitung. View <b>menampilkan</b>, bukan mengambil data.</div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Fat controller adalah masalah paling umum. Aturannya: controller harus tipis, model harus gemuk.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -522,7 +534,43 @@
           </div>
           <div class="foot">Aturan jempol: <b>controller tipis, model gemuk</b>.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="@Valid otomatis memeriksa anotasi. Hasilnya ditaruh di BindingResult untuk ditampilkan view.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Validasi input di controller, bukan di view</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ dicek di template</div><pre class="code">&lt;!<span class="cm">-- product-form.html --&gt;</span>
+&lt;if test="${price &lt; 0}"&gt;
+  &lt;span&gt;Harga tidak boleh minus&lt;/span&gt;
+&lt;/if&gt;
+&lt;!<span class="cm">-- ← request API tetap bisa lolos --&gt;</span></pre></div>
+            <div><div class="codehead good">✓ Bean Validation</div><pre class="code">record ProductForm(
+  @NotBlank String name,
+  @PositiveOrZero long price) {}
+
+@PostMapping("/products")
+String save(@Valid ProductForm f,
+            BindingResult err) { … }</pre></div>
+          </div>
+          <div class="foot">View cuma <b>menampilkan</b> pesan error. Yang memutuskan valid atau tidak ada di belakang.</div>
+        </section>
+
+        <!-- ════════ 8 — ALUR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pola klasik MVC yang sering dilupakan. Demo: tekan F5 setelah submit tanpa redirect.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">alur</div>
+          <h2>Post–Redirect–Get: biar tidak dobel submit</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User kirim form (POST)</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Controller simpan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Redirect ke /orders/42</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Browser GET halaman hasil</div></div><ul class="clean" style="margin-top: 18px"><li>Tanpa redirect, tekan refresh = form terkirim <b>dua kali</b>.</li><li>Di Spring: <code>return "redirect:/orders/" + id;</code></li></ul>
+        </section>
+
+        <!-- ════════ 9 — DI MANA-MANA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Namanya bisa beda, idenya sama: pisahkan data, tampilan, dan pengatur alur.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">di mana-mana</div>
+          <h2>MVC di berbagai framework</h2>
+          <table style="margin-top: 16px"><tr><th>Framework</th><th>Model</th><th>View</th><th>Controller</th></tr><tr><td class="mono">Spring MVC</td><td>Service + entity</td><td>Thymeleaf</td><td>@Controller</td></tr><tr><td class="mono">Ruby on Rails</td><td>ActiveRecord</td><td>ERB</td><td>ApplicationController</td></tr><tr><td class="mono">Laravel</td><td>Eloquent</td><td>Blade</td><td>Controller</td></tr><tr><td class="mono">Django (MVT)</td><td>Model</td><td>Template</td><td>View (namanya beda!)</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari controller terpanjang di project kita. Berapa baris yang sebenarnya aturan bisnis?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -534,13 +582,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

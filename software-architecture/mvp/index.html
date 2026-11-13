@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> View itu boneka. Presenter dalangnya.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: pernah menulis unit test untuk Activity atau Form? Biasanya susah sekali. MVP menyelesaikan itu.">
           <h2>Activity Android berisi logika. Tidak bisa dites tanpa menyalakan HP.</h2>
@@ -484,7 +485,22 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — PERAN ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: pindahkan if ke Presenter. Presenter cuma kelas Java biasa, bisa dites dengan JUnit dalam milidetik.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Bagaimana mengetes tombol ini?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// LoginActivity.java</span>
+void onLoginClick(View v) {
+  String email = emailField.getText().toString();
+  if (!email.contains("@")) {
+    errorText.setText("Email tidak valid");   <span class="cm">// ← logika di UI</span>
+  }
+}</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Untuk mengetes satu if, kita harus menyalakan emulator Android.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PERAN ════════ -->
         <section class="slide" data-notes="View dan Model tidak pernah bicara langsung. Semua lewat Presenter. View cuma punya method seperti showError() atau showName(). Presenter yang memutuskan kapan memanggilnya.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Tiga peran dalam MVP</h2>
@@ -492,7 +508,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">View</h3><p style="font-size:13.5px">tampilkan & teruskan klik<br>(tidak berpikir)</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">⇄</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Presenter</h3><p style="font-size:13.5px">putuskan apa yang tampil</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">⇄</div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Model</h3><p style="font-size:13.5px">data + aturan bisnis</p></div></div></div>
           <div class="foot">View bicara ke Presenter lewat <b>interface</b>, jadi gampang diganti saat tes.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Kuncinya interface LoginView. Saat tes, kita ganti View dengan mock. Tidak perlu emulator, tes jalan dalam milidetik.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Presenter bisa dites tanpa UI</h2>
@@ -523,7 +540,8 @@
           </div>
           <div class="foot">View diganti <b>mock</b> saat tes. Jalan dalam milidetik.</div>
         </section>
-        <!-- ════════ 5 — BEDA ════════ -->
+
+        <!-- ════════ 6 — BEDA ════════ -->
         <section class="slide" data-notes="Di MVP, View benar-benar bodoh. Kekurangannya: banyak interface dan method kecil yang harus ditulis.">
           <div class="lens-tag lt-green" style="align-self: flex-start">perbandingan</div>
           <h2>MVC vs MVP</h2>
@@ -536,7 +554,43 @@
           </table>
           <div class="foot">Kekurangan MVP: banyak interface & method kecil yang harus ditulis.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — TES PRESENTER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Di MVP, interface View adalah kontrak. Tes mengganti View asli dengan versi palsu yang mencatat panggilan.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">tes presenter</div>
+          <h2>View palsu untuk mengetes Presenter</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">view palsu</div><pre class="code">class FakeLoginView implements LoginView {
+  String error; boolean wentHome;
+  public void showError(String m) { error = m; }
+  public void goToHome() { wentHome = true; }
+}</pre></div>
+            <div><div class="codehead ">tes tanpa emulator</div><pre class="code">@Test void email_tanpa_at_ditolak() {
+  var view = new FakeLoginView();
+  var p = new LoginPresenter(view, fakeAuth());
+  p.onLoginClicked("budi", "rahasia");
+  assertEquals("Email tidak valid", view.error);
+  assertFalse(view.wentHome);
+}</pre></div>
+          </div>
+          <div class="foot">View yang <b>bodoh</b> itu bagus: tidak ada logika yang perlu dites di sana.</div>
+        </section>
+
+        <!-- ════════ 8 — JEBAKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Presenter memegang referensi ke View. Kalau View sudah mati tapi masih dipegang, memori tidak bisa dibersihkan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">jebakan</div>
+          <h2>Layar diputar, Presenter bocor</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Activity dibuat ulang</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Presenter lama pegang View lama</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">View lama tidak dibuang</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Memory leak</div></div><ul class="clean" style="margin-top: 18px"><li>Panggil <code>presenter.detach()</code> di onDestroy untuk melepas View.</li><li>Inilah salah satu alasan Android modern beralih ke MVVM.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau Presenter import android.widget, berarti batasnya bocor.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Aturan main MVP yang sehat</h2>
+          <ul class="clean" style="margin-top: 18px"><li>View <b>tidak mengambil keputusan</b>. Cuma meneruskan klik dan menampilkan.</li><li>Presenter <b>tidak import</b> kelas Android/Swing. Hanya interface View.</li><li>Satu layar, satu Presenter. Kalau Presenter 1.000 baris, pecah layarnya.</li><li>Nama method View berbentuk perintah: <code>showLoading()</code>, <code>showError()</code>.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: ambil satu layar dengan validasi form, pindahkan logikanya ke presenter, lalu tulis satu tes.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -548,13 +602,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

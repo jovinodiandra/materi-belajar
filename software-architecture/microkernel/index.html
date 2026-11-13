@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kayak HP: sistemnya satu, aplikasinya bisa dipasang-copot.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: berapa banyak if-else berdasarkan nama klien di kode kita?">
           <h2>Tiap klien minta fitur khusus. Kode inti penuh if-else per klien.</h2>
@@ -484,7 +485,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Semuanya punya inti kecil yang stabil dan banyak plugin. Inti tidak tahu plugin apa yang terpasang. Tanya audiens: extension VS Code favorit kalian apa?">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kamu sudah pakai microkernel setiap hari</h2>
+          <p class="lede">Tebak, apa kesamaan aplikasi-aplikasi ini?</p>
+          <ul class="clean" style="margin-top: 16px"><li>VS Code + extension</li><li>Browser Chrome + add-on</li><li>IntelliJ + plugin</li><li>WordPress + plugin</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Inti hanya mendefinisikan kontrak: plugin harus punya method apa. Inti tidak tahu ada plugin apa saja. Plugin didaftarkan saat aplikasi jalan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Inti kecil, plugin di sekelilingnya</h2>
@@ -492,7 +502,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Plugin: Ekspor PDF</h3><p style="font-size:13.5px"></p></div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Plugin: Ekspor Excel</h3><p style="font-size:13.5px"></p></div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Plugin: Aturan pajak klien A</h3><p style="font-size:13.5px"></p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Inti (core)</h3><p style="font-size:13.5px">alur utama + <b>kontrak plugin</b> (interface)<br>tidak tahu plugin apa saja yang ada</p></div></div></div>
           <div class="foot">Tambah fitur = tambah plugin. Inti <b>tidak diubah</b>.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Spring otomatis mengumpulkan semua bean Exporter ke dalam list. Mau format baru? Tambah satu kelas. Inti tidak disentuh. Di Java murni bisa pakai ServiceLoader.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Dari if-else jadi plugin</h2>
@@ -520,7 +531,8 @@ exporters.stream()
           </div>
           <div class="foot">Format baru? Tambah <b>satu kelas</b>. Kode inti tidak disentuh.</div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Kontrak plugin itu seperti colokan listrik: sekali ditetapkan, jangan sering diganti.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Yang perlu dijaga</h2>
@@ -532,7 +544,45 @@ exporters.stream()
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — CONTOH KODE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Spring otomatis memberi semua bean yang implement Exporter. Di Java murni bisa pakai ServiceLoader.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh kode</div>
+          <h2>Menemukan plugin secara otomatis</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">kontrak + plugin</div><pre class="code">public interface Exporter {
+  String format();          <span class="cm">// "pdf", "excel"</span>
+  byte[] export(Report r);
+}
+@Component
+class PdfExporter implements Exporter { … }</pre></div>
+            <div><div class="codehead ">inti mencari plugin</div><pre class="code">@Service
+class ExportService {
+  private final Map&lt;String, Exporter&gt; byFormat;
+  ExportService(List&lt;Exporter&gt; all) {
+    byFormat = all.stream().collect(
+        toMap(Exporter::format, e -&gt; e));
+  }
+}</pre></div>
+          </div>
+          <div class="foot">Tambah format baru = <b>tambah satu kelas</b>. ExportService tidak diubah.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Inti harus melindungi dirinya dari plugin yang nakal.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Plugin klien A error. Semua ikut jatuh?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Plugin A throw exception</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Inti tangkap error-nya</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Catat & matikan plugin A</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Klien lain tetap jalan</div></div><ul class="clean" style="margin-top: 18px"><li>Bungkus setiap panggilan plugin dengan try-catch + timeout.</li><li>Plugin yang tidak terpercaya bisa dijalankan terpisah (proses lain).</li></ul>
+        </section>
+
+        <!-- ════════ 9 — KAPAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kunci suksesnya: kontrak plugin yang jarang berubah.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kapan</div>
+          <h2>Cocok untuk microkernel?</h2>
+          <table style="margin-top: 16px"><tr><th>Situasi</th><th>Microkernel?</th></tr><tr><td class="mono">Produk dipakai banyak klien dengan variasi kecil</td><td>✅ Cocok</td></tr><tr><td class="mono">Alat/IDE yang dikembangkan komunitas</td><td>✅ Sangat cocok</td></tr><tr><td class="mono">Aplikasi bisnis biasa, satu klien</td><td>❌ Berlebihan</td></tr><tr><td class="mono">Fitur baru selalu mengubah alur inti</td><td>❌ Kontrak akan terus berubah</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari satu switch/if-else panjang berdasarkan tipe atau klien. Bisakah jadi plugin?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -544,13 +594,14 @@ exporters.stream()
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

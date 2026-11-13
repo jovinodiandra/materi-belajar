@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Baju ukuran pas, bukan satu ukuran untuk semua.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: pernah lihat endpoint dengan parameter ?client=mobile? Itu tanda butuh BFF.">
           <h2>Web dan mobile memakai API yang sama. Dua-duanya tidak puas.</h2>
@@ -484,7 +485,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — AGENDA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: bisa 1,2 detik kalau berurutan. Dengan BFF, HP cukup satu request. BFF yang memanggil 4 service di jaringan server yang cepat.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Hitung: berapa request untuk satu layar?</h2>
+          <p class="lede">Layar "Detail Pesanan" di aplikasi HP butuh data dari 4 service.</p>
+          <div style="margin-top: 14px"><pre class="code">GET /orders/42
+GET /users/7
+GET /products?ids=11,12,13
+GET /shipments?order=42
+<span class="cm">// 4 kali bolak-balik lewat sinyal 3G…</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau satu bolak-balik 300 ms, berapa lama user menunggu?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — AGENDA ════════ -->
         <section class="slide" data-notes="Urutannya: masalah, bentuk, aturan.">
 
           <h2>Tiga hal yang kita pelajari</h2>
@@ -495,14 +510,16 @@
           </div>
           <div class="foot" style="text-align: center; color: var(--muted)">Masalah → bentuk → aturan.</div>
         </section>
-        <!-- ════════ 4 — BENTUK ════════ -->
+
+        <!-- ════════ 5 — BENTUK ════════ -->
         <section class="slide" data-notes="Tiap BFF sebaiknya dipegang oleh tim yang membuat tampilannya. Tim mobile mengurus Mobile BFF. Jadi mereka bisa mengubah bentuk data tanpa menunggu tim backend.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">bagian 2 · bentuk BFF</div>
           <h2>Satu BFF untuk tiap jenis tampilan</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Web app</h3><p style="font-size:13.5px"></p></div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Mobile app</h3><p style="font-size:13.5px"></p></div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Smart TV</h3><p style="font-size:13.5px"></p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Web BFF</h3><p style="font-size:13.5px">data lengkap untuk tabel</p></div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Mobile BFF</h3><p style="font-size:13.5px">data ringkas, sedikit request</p></div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">TV BFF</h3><p style="font-size:13.5px">data untuk layar besar</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Order service · User service · Product service</h3><p style="font-size:13.5px">service inti, dipakai bersama</p></div></div></div>
           <div class="foot">Idealnya BFF dipegang oleh <b>tim yang membuat tampilannya</b>.</div>
         </section>
-        <!-- ════════ 5 — KODE ════════ -->
+
+        <!-- ════════ 6 — KODE ════════ -->
         <section class="slide" data-notes="Data asalnya sama dari service inti. Bedanya cuma bentuk yang dikirim. Mobile bahkan sudah dapat teks siap tampil, misalnya &#x27;Dikirim&#x27; dan format rupiah.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">bagian 2 · bentuk BFF</div>
           <h2>Satu data, dua bentuk</h2>
@@ -526,7 +543,8 @@
           </div>
           <div class="foot">Data asalnya sama. Bentuk kirimnya disesuaikan dengan layarnya.</div>
         </section>
-        <!-- ════════ 6 — ATURAN ════════ -->
+
+        <!-- ════════ 7 — ATURAN ════════ -->
         <section class="slide" data-notes="BFF harus tipis. Kalau ada aturan bisnis di BFF, nanti web dan mobile bisa beda hasil hitungnya. Aturan bisnis tetap di service inti.">
           <div class="lens-tag lt-green" style="align-self: flex-start">bagian 3 · aturan main</div>
           <h2>Aturan main BFF</h2>
@@ -539,7 +557,45 @@
           </table>
           <div class="foot">BFF itu <b>tipis</b>. Aturan bisnis tetap di service inti.</div>
         </section>
-        <!-- ════════ 7 — PENUTUP ════════ -->
+
+        <!-- ════════ 8 — CONTOH KODE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Promise.all menjalankan panggilan barengan, jadi waktu tunggu = yang paling lambat, bukan dijumlah.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh kode</div>
+          <h2>BFF memanggil paralel, lalu merangkai</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Mobile BFF (Node.js)</div><pre class="code">app.get("/m/orders/:id", async (req, res) =&gt; {
+  const [order, ship] = await Promise.all([
+    orderApi.get(req.params.id),
+    shipApi.byOrder(req.params.id),
+  ]);
+  res.json({ id: order.id, status: order.status,
+             eta: ship.eta });   <span class="cm">// cuma yang dibutuhkan</span>
+});</pre></div>
+            <div><div class="codehead ">Yang dikirim ke HP</div><pre class="code">{
+  "id": 42,
+  "status": "SHIPPED",
+  "eta": "2026-11-15"
+}
+<span class="cm">// kecil, satu request, siap tampil</span></pre></div>
+          </div>
+          <div class="foot">BFF = <b>pelayan pribadi</b>: ambil dari banyak dapur, sajikan satu piring.</div>
+        </section>
+
+        <!-- ════════ 9 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini namanya graceful degradation: turun kualitas sedikit, tapi tidak mati total.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Satu service mati. Layar ikut blank?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Shipping service down</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">BFF kena timeout</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Isi eta = null</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Layar tetap tampil</div></div><ul class="clean" style="margin-top: 18px"><li>Pasang <b>timeout</b> pendek di BFF untuk tiap panggilan.</li><li>Data pelengkap boleh kosong. Data utama (order) wajib ada.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — KAPAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="BFF paling enak dipegang tim yang memakai tampilannya. Tim mobile pegang Mobile BFF.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kapan</div>
+          <h2>Perlu BFF atau tidak?</h2>
+          <table style="margin-top: 16px"><tr><th>Situasi</th><th>BFF?</th></tr><tr><td class="mono">Cuma satu jenis client (web saja)</td><td>❌ Belum perlu</td></tr><tr><td class="mono">Web dan mobile butuh data sangat beda</td><td>✅ Cocok</td></tr><tr><td class="mono">Tim mobile sering minta endpoint khusus</td><td>✅ Biar tim mobile pegang BFF-nya</td></tr><tr><td class="mono">Cuma butuh pilih field</td><td>🟡 Coba GraphQL dulu</td></tr></table>
+        </section>
+
+        <!-- ════════ 11 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari endpoint yang dipakai web dan mobile sekaligus. Apakah mobile mengambil data yang tidak dipakai?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -551,13 +607,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 11</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Arisan: semua anggota setara, tidak ada bos.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Single point of failure = satu bagian yang kalau mati, semuanya ikut mati. Tanya: kenapa torrent makin cepat kalau makin banyak yang download?">
           <h2>Semua orang download file besar dari satu server. Servernya jebol.</h2>
@@ -484,7 +485,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BEDA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: client-server makin lambat. P2P malah makin cepat karena makin banyak yang membagi.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Hitung kasar: siapa yang lebih kuat?</h2>
+          <p class="lede">10.000 orang mau download file 1 GB.</p>
+          <ul class="clean" style="margin-top: 16px"><li><b>Client–server:</b> server harus kirim 10.000 GB. Butuh bandwidth raksasa.</li><li><b>Peer-to-peer:</b> tiap orang yang sudah dapat potongan ikut mengirim ke yang lain.</li><li>Pertanyaan: kalau penggunanya jadi 100.000, mana yang makin lambat?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BEDA ════════ -->
         <section class="slide" data-notes="Kelebihan terbesar P2P: makin banyak pengguna, makin kuat. Kekurangan terbesar: susah mengontrol dan menjaga keamanan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ide dasar</div>
           <h2>Client–server vs peer-to-peer</h2>
@@ -497,14 +507,16 @@
           </table>
           <div class="foot">Makin banyak pengguna = makin kuat. Tapi makin susah dikontrol.</div>
         </section>
-        <!-- ════════ 4 — CARA KERJA ════════ -->
+
+        <!-- ════════ 5 — CARA KERJA ════════ -->
         <section class="slide" data-notes="Kunci P2P: setiap peer yang download juga ikut upload. Untuk menemukan peer, biasanya tetap ada bantuan kecil seperti tracker atau DHT (buku alamat terdistribusi).">
           <div class="lens-tag lt-amber" style="align-self: flex-start">cara kerja</div>
           <h2>Contoh: berbagi file ala torrent</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">1. Pecah file</h3><p style="font-size:13.5px">file 1 GB jadi ribuan potongan kecil</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">2. Cari teman</h3><p style="font-size:13.5px">tanya siapa punya potongan apa</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">3. Ambil dari banyak peer</h3><p style="font-size:13.5px">potongan berbeda dari orang berbeda</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-red" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">4. Ikut membagi</h3><p style="font-size:13.5px">potongan yang sudah punya, dibagi lagi</p></div></div></div>
           <div class="foot">Yang download juga ikut <b>upload</b>. Itu yang membuatnya kuat.</div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Di aplikasi bisnis biasa, P2P jarang dipakai murni. Tapi idenya muncul di banyak tempat, misalnya replikasi database dan protokol gossip di cluster.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Tantangan peer-to-peer</h2>
@@ -516,7 +528,40 @@
           </div>
           <div class="foot">Aplikasi bisnis jarang pakai P2P murni. Idenya muncul di replikasi & cluster.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — CEK KEASLIAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Daftar hash (manifest) diambil dari sumber terpercaya. Ini yang dipakai torrent dan git.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">cek keaslian</div>
+          <h2>Jangan percaya peer: cek hash</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">terima potongan</div><pre class="code">byte[] chunk = peer.download(index);
+String got = sha256(chunk);</pre></div>
+            <div><div class="codehead ">bandingkan dengan daftar resmi</div><pre class="code">String expected = manifest.hashOf(index);
+if (!got.equals(expected)) {
+  blacklist(peer);   <span class="cm">// peer nakal</span>
+  retryFromOtherPeer(index);
+} else {
+  save(index, chunk);
+}</pre></div>
+          </div>
+          <div class="foot">Hash = <b>sidik jari</b> data. Diubah satu bit saja, sidik jarinya beda total.</div>
+        </section>
+
+        <!-- ════════ 8 — MENCARI TEMAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tracker itu titik pusat kecil. DHT menghilangkan titik pusat sepenuhnya.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">mencari teman</div>
+          <h2>Bagaimana peer saling menemukan?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tanya tracker / DHT</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Dapat daftar alamat peer</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Sambung ke beberapa peer</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Tukar info potongan</div></div><ul class="clean" style="margin-top: 18px"><li><b>DHT</b> (Distributed Hash Table) = buku alamat yang dipecah ke semua peer, tanpa server pusat.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — CONTOH NYATA ════════ -->
+        <section class="slide" data-ext="1" data-notes="WebRTC menarik: video call 1-lawan-1 bisa langsung antar browser tanpa lewat server media.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contoh nyata</div>
+          <h2>P2P di sekitar kita</h2>
+          <table style="margin-top: 16px"><tr><th>Contoh</th><th>Yang dibagi</th></tr><tr><td class="mono">BitTorrent</td><td>Potongan file</td></tr><tr><td class="mono">Blockchain (Bitcoin)</td><td>Catatan transaksi</td></tr><tr><td class="mono">WebRTC (video call)</td><td>Audio/video langsung antar browser</td></tr><tr><td class="mono">IPFS</td><td>File dengan alamat berdasarkan isi</td></tr><tr><td class="mono">Update Windows (Delivery Optimization)</td><td>Potongan update antar PC di kantor</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: bagian mana dari sistem kita yang punya single point of failure?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +573,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

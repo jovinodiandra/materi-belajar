@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Pahami masalahnya dulu, baru susun rumahnya.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="DDD = Domain-Driven Design. Clean Architecture dipopulerkan oleh Robert C. Martin, ada di materi Buku Bob Martin. Tanya: istilah apa di tim bisnis kita yang di kode namanya berbeda?">
           <h2>Kode tidak bicara bahasa bisnis. Dan aturan bisnis terkubur di bawah framework.</h2>
@@ -484,7 +485,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — DDD ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: inti bisnis ikut rusak. Dependency rule bilang: lapisan dalam tidak boleh kenal lapisan luar.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Arah panah mana yang salah?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// domain/Claim.java</span>
+import org.springframework.data.annotation.Id;     <span class="cm">// ← ?</span>
+import com.fasterxml.jackson.annotation.JsonProperty; <span class="cm">// ← ?</span>
+
+public class Claim { ... }</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kelas inti bisnis meng-import framework. Kalau framework ganti versi, siapa yang ikut rusak?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — DDD ════════ -->
         <section class="slide" data-notes="Jangan hafalkan semua istilah DDD. Empat ini sudah cukup untuk mulai. Detailnya ada di kategori DDD di materi ini.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">bagian 1 · DDD</div>
           <h2>DDD versi gampang: empat kata kunci</h2>
@@ -496,7 +510,8 @@
           </div>
           <div class="foot">Detail lengkap ada di kategori <b>DDD</b> di materi ini.</div>
         </section>
-        <!-- ════════ 4 — CLEAN ════════ -->
+
+        <!-- ════════ 5 — CLEAN ════════ -->
         <section class="slide" data-notes="Aturan dependency: kode di luar boleh bergantung ke dalam. Kode di dalam tidak boleh tahu kode di luar. Panah di gambar menunjuk ke arah ketergantungan, yaitu ke dalam.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">bagian 2 · Clean Architecture</div>
           <h2>Clean Architecture: lingkaran dengan satu aturan</h2>
@@ -504,7 +519,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Entities</h3><p style="font-size:13.5px">aturan bisnis inti</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">←</div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Use cases</h3><p style="font-size:13.5px">alur aplikasi: PlaceOrder</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">←</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Interface adapters</h3><p style="font-size:13.5px">controller, presenter, repository impl</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">←</div><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Frameworks &amp; drivers</h3><p style="font-size:13.5px">Spring, DB, web</p></div></div></div>
           <div class="foot">Entity &amp; use case tidak tahu Spring, database, atau HTTP.</div>
         </section>
-        <!-- ════════ 5 — GABUNG ════════ -->
+
+        <!-- ════════ 6 — GABUNG ════════ -->
         <section class="slide" data-notes="Ini contoh kecil gabungan keduanya. DDD memberi nama dan bentuk model. Clean memastikan model ini tidak tercemar framework.">
           <div class="lens-tag lt-green" style="align-self: flex-start">bagian 3 · gabungan</div>
           <h2>Gabungan: model DDD di dalam lingkaran Clean</h2>
@@ -526,7 +542,8 @@
           </div>
           <div class="foot">DDD memberi <b>nama &amp; bentuk</b>. Clean menjaga <b>arah ketergantungan</b>.</div>
         </section>
-        <!-- ════════ 6 — KAPAN PAKAI ════════ -->
+
+        <!-- ════════ 7 — KAPAN PAKAI ════════ -->
         <section class="slide" data-notes="DDD dan Clean ada harganya: lebih banyak kelas dan diskusi. Pakai di bagian yang bisnisnya paling rumit, bukan di semua tempat.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ringkasan</div>
           <h2>Kapan sepadan?</h2>
@@ -539,7 +556,43 @@
           </table>
           <div class="foot">Pakai di bagian yang bisnisnya <b>paling rumit</b>, bukan di semua tempat.</div>
         </section>
-        <!-- ════════ 7 — PENUTUP ════════ -->
+
+        <!-- ════════ 8 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Contoh value object lain: Email, PhoneNumber, ClaimId. Membuat salah ketik tipe tertangkap compiler.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Value object: angka yang punya aturan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ primitive di mana-mana</div><pre class="code">class Claim {
+  long amount;        <span class="cm">// rupiah? sen? dolar?</span>
+  String currency;    <span class="cm">// "IDR", "idr", "Rp"…</span>
+}
+claim.amount = -500;  <span class="cm">// ← siapa yang cek?</span></pre></div>
+            <div><div class="codehead good">✓ Money yang menjaga dirinya</div><pre class="code">record Money(long value, Currency cur) {
+  Money {
+    if (value &lt; 0)
+      throw new IllegalArgumentException("negatif");
+  }
+  Money plus(Money o) { … }
+}</pre></div>
+          </div>
+          <div class="foot">Value object = <b>nilai yang tahu aturannya</b> sendiri. Tidak bisa dibuat dalam keadaan salah.</div>
+        </section>
+
+        <!-- ════════ 9 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tunjukkan bahwa use case bisa dites cuma dengan repository palsu di memori.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Alur satu use case: Ajukan Klaim</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Controller terima JSON</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Use case SubmitClaim</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Entity Claim cek aturan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Repository simpan</div></div><ul class="clean" style="margin-top: 18px"><li>Use case tidak tahu HTTP. Entity tidak tahu database.</li><li>Mau tambah jalur CLI atau Kafka? Cukup tambah adapter baru, use case tetap.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="ArchUnit = library untuk menulis tes aturan arsitektur. Pelanggaran batas jadi tes merah.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Mulai pelan-pelan</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Mulai dari <b>satu bounded context</b> yang paling rumit. Jangan semua sekaligus.</li><li>Buat folder: <code>domain/</code>, <code>application/</code>, <code>adapter/</code>.</li><li>Tulis tes untuk entity dan use case <b>tanpa Spring</b>.</li><li>Pasang ArchUnit agar domain dilarang import framework.</li></ul>
+        </section>
+
+        <!-- ════════ 11 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: tulis 10 istilah yang dipakai tim bisnis, lalu cek apakah namanya sama di kode kita.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -551,13 +604,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 11</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

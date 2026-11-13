@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu rumah, tapi kamarnya jelas.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Bola lumpur (big ball of mud) = istilah untuk kode tanpa struktur. Tanya: tim kita berapa orang, dan berapa service yang kita rawat?">
           <h2>Monolith biasa jadi “bola lumpur”. Microservices terlalu mahal untuk tim kecil.</h2>
@@ -484,7 +485,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ketergantungan melingkar membuat modul tidak bisa dipisah. Tujuannya: arah panah satu jalur saja.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Coba hitung: modul mana yang paling kusut?</h2>
+          <div style="margin-top: 14px"><pre class="code">order    → payment, user, catalog, shipping
+payment  → order, user
+shipping → order, payment, user, catalog
+user     → order   <span class="cm">// ← user butuh order?</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Panah yang saling bolak-balik (order ↔ payment) adalah tanda bahaya.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Tiap modul punya pintu depan (API publik) dan isi dalam yang disembunyikan. Modul lain cuma boleh lewat pintu depan. Data tiap modul juga dipisah, minimal per skema.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Satu aplikasi, modul berbatas jelas</h2>
@@ -492,7 +505,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Modul Order</h3><p style="font-size:13.5px">API publik: OrderApi<br>data: skema order</p></div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Modul Payment</h3><p style="font-size:13.5px">API publik: PaymentApi<br>data: skema payment</p></div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Modul Catalog</h3><p style="font-size:13.5px">API publik: CatalogApi<br>data: skema catalog</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Satu aplikasi Spring Boot · satu deploy · satu database (skema terpisah)</h3><p style="font-size:13.5px"></p></div></div></div>
           <div class="foot">Modul lain hanya boleh lewat <b>API publik</b>, bukan kelas dalam.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Batas modul harus dijaga otomatis, bukan cuma janji. Spring Modulith atau ArchUnit bisa membuat tes gagal kalau ada modul yang mengakses package internal modul lain.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Jaga batas: lewat pintu depan saja</h2>
@@ -521,7 +535,8 @@
           </div>
           <div class="foot">Jaga batas <b>otomatis</b> dengan Spring Modulith atau ArchUnit.</div>
         </section>
-        <!-- ════════ 5 — PERBANDINGAN ════════ -->
+
+        <!-- ════════ 6 — PERBANDINGAN ════════ -->
         <section class="slide" data-notes="Modular monolith juga jalan aman menuju microservices. Kalau suatu saat satu modul perlu di-scale sendiri, modul itu tinggal diangkat keluar.">
           <div class="lens-tag lt-green" style="align-self: flex-start">perbandingan</div>
           <h2>Monolith vs Modular Monolith vs Microservices</h2>
@@ -534,7 +549,46 @@
           </table>
           <div class="foot">Butuh microservices nanti? Angkat satu modul keluar. Batasnya sudah siap.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — KOMUNIKASI MODUL ════════ -->
+        <section class="slide" data-ext="1" data-notes="Spring Modulith menyediakan event antar modul yang tersimpan, jadi tidak hilang kalau aplikasi restart.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">komunikasi modul</div>
+          <h2>Pakai event, bukan panggil langsung</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ modul saling panggil</div><pre class="code">class OrderService {
+  void complete(Order o) {
+    shipping.create(o);   <span class="cm">// order kenal shipping</span>
+    loyalty.addPoint(o);  <span class="cm">// order kenal loyalty</span>
+    mailer.send(o);       <span class="cm">// ← makin panjang</span>
+  }
+}</pre></div>
+            <div><div class="codehead good">✓ terbitkan event</div><pre class="code">class OrderService {
+  void complete(Order o) {
+    events.publish(new OrderCompleted(o.id()));
+  }
+}
+<span class="cm">// shipping, loyalty, mail masing-masing</span>
+<span class="cm">// @EventListener(OrderCompleted.class)</span></pre></div>
+          </div>
+          <div class="foot">Order cukup <b>mengumumkan</b> "pesanan selesai". Yang peduli akan mendengar.</div>
+        </section>
+
+        <!-- ════════ 8 — JAGA BATAS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aturan yang cuma ditulis di wiki pasti dilanggar. Aturan yang jadi tes akan dijaga.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">jaga batas</div>
+          <h2>Batas modul dicek otomatis</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Tulis aturan batas</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Jalankan di tes</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Ada yang langgar?</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Build merah</div></div><ul class="clean" style="margin-top: 18px"><li>Spring Modulith: <code>ApplicationModules.of(App.class).verify()</code>.</li><li>Atau ArchUnit: "kelas di order tidak boleh import payment.internal".</li></ul>
+        </section>
+
+        <!-- ════════ 9 — MASA DEPAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Modular monolith bukan jalan buntu. Ia pintu masuk ke microservices kalau memang dibutuhkan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">masa depan</div>
+          <h2>Kapan satu modul dipisah jadi service?</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">tanda 1</div><h3>Scale berbeda jauh</h3><p style="color: var(--ink)">Modul search butuh 20 server, yang lain cukup 2.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">tanda 2</div><h3>Ritme rilis berbeda</h3><p style="color: var(--ink)">Satu tim ingin rilis 10x sehari, yang lain mingguan.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">tanda 3</div><h3>Teknologi berbeda</h3><p style="color: var(--ink)">Modul ML butuh Python, sisanya Java.</p></div></div>
+          <div class="foot">Karena batasnya sudah rapi, memisahkan modul jadi <b>jauh lebih mudah</b>.</div>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: gambar modul-modul di aplikasi kita. Panah mana yang menembus isi dalam modul lain?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -546,13 +600,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

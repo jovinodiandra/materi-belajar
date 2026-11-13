@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kayak papan skor digital: skor berubah, papan langsung ganti.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: pernah ada bug &#x27;datanya sudah benar tapi tampilannya belum berubah&#x27;? MVVM mencegah itu.">
           <h2>Setiap data berubah, kita harus mengubah tampilan secara manual satu per satu.</h2>
@@ -484,7 +485,20 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — PERAN ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: di ViewModel. ViewModel tetap hidup saat layar diputar, Activity tidak.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa data hilang saat HP diputar?</h2>
+          <div style="margin-top: 14px"><pre class="code">class CartActivity extends Activity {
+  int total = 0;   <span class="cm">// ← disimpan di Activity</span>
+  void onAdd() { total += 10_000; render(); }
+}
+<span class="cm">// putar layar → Activity dibuat ulang → total = 0</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Di mana seharusnya total disimpan?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — PERAN ════════ -->
         <section class="slide" data-notes="Bedanya dengan MVP: ViewModel tidak kenal View sama sekali, tidak ada interface View. ViewModel cuma menyediakan data yang bisa diamati. View yang berlangganan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Tiga peran dalam MVVM</h2>
@@ -492,7 +506,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">View</h3><p style="font-size:13.5px">mengamati (observe) ViewModel</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">⇄</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">ViewModel</h3><p style="font-size:13.5px">state layar + aksi<br>(tidak kenal View)</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Model</h3><p style="font-size:13.5px">data + aturan bisnis</p></div></div></div>
           <div class="foot">Beda dengan MVP: ViewModel <b>tidak memanggil</b> View.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="View cukup mengamati total sekali. Setiap total berubah, teks ikut berubah. ViewModel juga bertahan saat layar diputar, jadi state tidak hilang.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Android: ViewModel + LiveData</h2>
@@ -520,7 +535,8 @@ addButton.setOnClickListener(v -&gt;
           </div>
           <div class="foot">Bonus di Android: ViewModel <b>bertahan</b> saat layar diputar.</div>
         </section>
-        <!-- ════════ 5 — BEDA ════════ -->
+
+        <!-- ════════ 6 — BEDA ════════ -->
         <section class="slide" data-notes="Tidak ada yang paling benar. Pilih yang didukung framework kalian. Android modern dan framework frontend sekarang mendorong MVVM.">
           <div class="lens-tag lt-green" style="align-self: flex-start">perbandingan</div>
           <h2>MVC vs MVP vs MVVM</h2>
@@ -533,7 +549,42 @@ addButton.setOnClickListener(v -&gt;
           </table>
           <div class="foot">Pilih yang didukung framework-mu. Jangan melawan framework.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — SATU STATE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Dengan sealed interface, compiler bisa memastikan semua keadaan ditangani di View.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">satu state</div>
+          <h2>Satu objek state, bukan banyak variabel</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ state tercecer</div><pre class="code">MutableLiveData&lt;Boolean&gt; loading;
+MutableLiveData&lt;List&lt;Item&gt;&gt; items;
+MutableLiveData&lt;String&gt; error;
+<span class="cm">// ← bisa loading=true DAN error terisi</span>
+<span class="cm">//   tampilan jadi aneh</span></pre></div>
+            <div><div class="codehead good">✓ satu UiState</div><pre class="code">sealed interface UiState {
+  record Loading() implements UiState {}
+  record Success(List&lt;Item&gt; items) implements UiState {}
+  record Error(String msg) implements UiState {}
+}
+MutableLiveData&lt;UiState&gt; state;</pre></div>
+          </div>
+          <div class="foot">Layar selalu dalam <b>satu keadaan</b> yang jelas: memuat, berhasil, atau gagal.</div>
+        </section>
+
+        <!-- ════════ 8 — ALUR DATA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pola ini juga dipakai di React, Jetpack Compose, dan SwiftUI. Sekali paham, berlaku di mana-mana.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">alur data</div>
+          <h2>Alur satu arah</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User klik "Tambah"</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">View panggil vm.addItem()</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">ViewModel ubah state</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">View otomatis menggambar ulang</div></div><ul class="clean" style="margin-top: 18px"><li>Data turun (ViewModel → View), aksi naik (View → ViewModel).</li><li>View <b>tidak pernah</b> mengubah data sendiri.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — DI MANA-MANA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Istilahnya beda-beda, intinya sama: View berlangganan perubahan state.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">di mana-mana</div>
+          <h2>MVVM di berbagai platform</h2>
+          <table style="margin-top: 16px"><tr><th>Platform</th><th>ViewModel</th><th>Cara View mengamati</th></tr><tr><td class="mono">Android</td><td>androidx ViewModel</td><td>LiveData / StateFlow</td></tr><tr><td class="mono">iOS SwiftUI</td><td>ObservableObject</td><td>@Published + @StateObject</td></tr><tr><td class="mono">Vue</td><td>komponen + reactive()</td><td>Template otomatis</td></tr><tr><td class="mono">WPF / .NET</td><td>INotifyPropertyChanged</td><td>Data binding XAML</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari satu layar yang masih update UI manual di banyak tempat. Coba ganti dengan observe.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -545,13 +596,14 @@ addButton.setOnClickListener(v -&gt;
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

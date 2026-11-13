@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kasir di depan, gudang di belakang.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Leher botol (bottleneck) = bagian paling sempit yang membatasi semuanya. Tanya: di flash sale terakhir, bagian mana yang paling dulu jebol?">
           <h2>Flash sale jam 12.00. Sejuta orang klik bersamaan. Database tumbang.</h2>
@@ -484,7 +485,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: semua server aplikasi tetap antre di satu database. Space-based memindahkan data panas ke memori yang tersebar.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa yang bisa dilayani database?</h2>
+          <p class="lede">Satu database sanggup ±5.000 transaksi per detik.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Flash sale: <b>50.000</b> klik per detik.</li><li>Menambah server aplikasi tidak membantu. Kenapa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Processing unit = salinan aplikasi yang membawa data di memorinya. Data grid menyinkronkan data antar unit. Database tetap ada, tapi diisi belakangan, jadi tidak menahan request user.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Bentuknya</h2>
@@ -492,7 +502,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Processing unit 1</h3><p style="font-size:13.5px">aplikasi + data di memori</p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Processing unit 2</h3><p style="font-size:13.5px">aplikasi + data di memori</p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Processing unit 3</h3><p style="font-size:13.5px">aplikasi + data di memori</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">⇅</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Data grid (memori bersama)</h3><p style="font-size:13.5px">salinan data disinkronkan antar unit, mis. Hazelcast</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Data writer → Database</h3><p style="font-size:13.5px">menulis ke database belakangan (asinkron)</p></div></div></div>
           <div class="foot">Database tetap ada, tapi diisi <b>belakangan</b>.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Ini versi sederhana. Hazelcast IMap tersebar di semua node, jadi semua processing unit melihat stok yang sama.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Contoh sederhana dengan Hazelcast</h2>
@@ -514,7 +525,8 @@ boolean buy(String productId) {
           </div>
           <div class="foot">Write-behind: memori dulu, database menyusul.</div>
         </section>
-        <!-- ════════ 5 — HARGA ════════ -->
+
+        <!-- ════════ 6 — HARGA ════════ -->
         <section class="slide" data-notes="Space-based itu senjata berat. Untuk kebanyakan aplikasi, cache biasa seperti Redis sudah cukup. Pakai ini hanya untuk kasus trafik ekstrem.">
           <div class="lens-tag lt-green" style="align-self: flex-start">harga</div>
           <h2>Harga yang dibayar</h2>
@@ -526,7 +538,42 @@ boolean buy(String productId) {
           </div>
           <div class="foot">Kebanyakan aplikasi cukup pakai <b>cache biasa</b> (mis. Redis).</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — TULIS BELAKANGAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Hazelcast dan Apache Ignite punya fitur write-behind bawaan. Risikonya: kalau semua node mati sebelum flush, data hilang.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">tulis belakangan</div>
+          <h2>Write-behind: simpan ke DB belakangan</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">di processing unit</div><pre class="code"><span class="cm">// cepat: hanya ubah memori</span>
+stock.put(productId, left - 1);
+orders.put(orderId, order);
+<span class="cm">// tidak menunggu database</span></pre></div>
+            <div><div class="codehead ">di data writer (latar belakang)</div><pre class="code"><span class="cm">// tiap beberapa detik, tulis batch ke DB</span>
+@Scheduled(fixedDelay = 2000)
+void flush() {
+  var batch = pendingOrders.drain(1000);
+  orderRepo.saveAll(batch);
+}</pre></div>
+          </div>
+          <div class="foot">Database jadi <b>arsip</b>, bukan jalur utama yang ditunggu user.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kunci: kurangi stok secara atomic (pakai lock atau operasi atomic di grid) supaya tidak oversell.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Flash sale 1.000 stok</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Stok dimuat ke memori</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Klik dilayani dari memori</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Stok 0 → tolak cepat</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Order ditulis ke DB bertahap</div></div><ul class="clean" style="margin-top: 18px"><li>Data disimpan ganda (backup) di node lain supaya aman kalau satu node mati.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — KAPAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kebanyakan sistem tidak butuh ini. Tiket konser, flash sale, dan bursa saham adalah contoh yang cocok.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">kapan</div>
+          <h2>Perlu space-based atau cukup cache?</h2>
+          <table style="margin-top: 16px"><tr><th>Situasi</th><th>Pilihan</th></tr><tr><td class="mono">Banyak baca, sedikit tulis</td><td>Cache biasa (Redis) sudah cukup</td></tr><tr><td class="mono">Lonjakan tulis sesekali</td><td>Antrean (queue) + proses bertahap</td></tr><tr><td class="mono">Lonjakan baca dan tulis ekstrem</td><td>Space-based</td></tr><tr><td class="mono">Trafik normal</td><td>Arsitektur biasa</td></tr></table>
+          <div class="foot">Space-based itu <b>senjata berat</b>. Coba solusi yang lebih sederhana dulu.</div>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: apakah sistem kita pernah mengalami lonjakan yang membuat database tumbang? Apa yang dilakukan saat itu?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -538,13 +585,14 @@ boolean buy(String productId) {
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

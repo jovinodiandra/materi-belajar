@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kayak pabrik: ban berjalan, tiap pos satu tugas.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang pernah menulis perintah seperti cat log | grep ERROR | wc -l? Itu pipe and filter.">
           <h2>Satu method raksasa membaca, membersihkan, menghitung, dan menyimpan data sekaligus.</h2>
@@ -484,7 +485,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: 7 langkah. Tiap perintah kecil, satu tugas, dan tidak tahu perintah lain. Hasilnya: URL yang paling sering error 500.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kamu sudah pakai pipe-and-filter di terminal</h2>
+          <div style="margin-top: 14px"><pre class="code">cat access.log | grep " 500 " | awk '{print $7}' | sort | uniq -c | sort -rn | head</pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Ada berapa filter di sini? Apa tugas masing-masing?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Setiap filter hanya tahu input dan output-nya sendiri. Filter tidak tahu siapa sebelum dan sesudahnya. Jadi filter bisa diurutkan ulang, ditambah, atau dipakai di pipeline lain.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Filter dan pipa</h2>
@@ -492,7 +502,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Sumber</h3><p style="font-size:13.5px">file CSV transaksi</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Filter: parse</h3><p style="font-size:13.5px">teks → objek</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Filter: bersihkan</h3><p style="font-size:13.5px">buang data rusak</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Filter: hitung</h3><p style="font-size:13.5px">total per hari</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Tujuan</h3><p style="font-size:13.5px">simpan laporan</p></div></div></div>
           <div class="foot">Filter bisa <b>ditukar, ditambah, dan dipakai ulang</b>.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Setiap baris di stream adalah satu filter kecil. Gampang dibaca dari atas ke bawah. Pola yang sama dipakai dalam skala besar di Spring Batch, Kafka Streams, dan pipeline ETL.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Kamu sudah memakainya: Java Stream</h2>
@@ -519,7 +530,8 @@
           </div>
           <div class="foot">Skala besar: Spring Batch, Kafka Streams, pipeline ETL.</div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Tips: buat filter sekecil mungkin dan tanpa state. Data gagal jangan menghentikan pipeline, kirim ke jalur terpisah untuk dicek.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Yang perlu dijaga</h2>
@@ -531,7 +543,41 @@
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — CONTOH KODE ════════ -->
+        <section class="slide" data-ext="1" data-notes="Tes valid cukup: valid.test(tx(-5)) harus false. Tidak perlu menyiapkan seluruh alur.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh kode</div>
+          <h2>Filter sebagai fungsi kecil yang bisa dirangkai</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">filter-filter kecil</div><pre class="code">Function&lt;String, Tx&gt; parse = Tx::fromCsv;
+Predicate&lt;Tx&gt; valid = tx -&gt; tx.amount() &gt; 0;
+Function&lt;Tx, Tx&gt; toIdr = fx::convert;</pre></div>
+            <div><div class="codehead ">rangkai jadi pipa</div><pre class="code">lines.stream()
+     .map(parse)
+     .filter(valid)
+     .map(toIdr)
+     .collect(groupingBy(Tx::date,
+              summingLong(Tx::amount)));
+<span class="cm">// mau tambah langkah? sisipkan satu baris</span></pre></div>
+          </div>
+          <div class="foot">Filter yang kecil bisa <b>dipakai ulang</b> dan <b>dites sendiri-sendiri</b>.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Dead letter = kotak surat untuk data yang tidak bisa diproses. Jangan dibuang diam-diam.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Satu baris rusak, seluruh laporan gagal?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Baris ke-50.001 rusak</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Parse throw exception</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Kirim ke 'dead letter'</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Lanjut baris berikutnya</div></div><ul class="clean" style="margin-top: 18px"><li>Simpan data rusak ke tempat terpisah supaya bisa diperiksa nanti.</li><li>Laporan tetap jadi, plus catatan "3 baris dilewati".</li></ul>
+        </section>
+
+        <!-- ════════ 9 — DI MANA-MANA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Servlet filter dan middleware Express juga pipe-and-filter: request lewat beberapa saringan sebelum sampai handler.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">di mana-mana</div>
+          <h2>Pipe-and-filter dalam skala besar</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Contoh pemakaian</th></tr><tr><td class="mono">Unix shell</td><td>grep | sort | uniq</td></tr><tr><td class="mono">Java Stream</td><td>map → filter → collect</td></tr><tr><td class="mono">Apache Beam / Spark</td><td>ETL data jutaan baris</td></tr><tr><td class="mono">Kafka Streams</td><td>Olah event secara terus-menerus</td></tr><tr><td class="mono">Middleware web (Express, Servlet Filter)</td><td>Auth → log → handler</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari satu for-loop panjang yang mengolah data. Coba tulis ulang jadi stream.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -543,13 +589,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Inti aplikasi tidak peduli colokannya merek apa.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: berapa banyak kelas service kita yang meng-import sesuatu dari javax.persistence atau org.springframework.kafka?">
           <h2>Ganti database atau tambah Kafka, logika bisnis ikut dibongkar.</h2>
@@ -484,7 +485,21 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Dengan hexagonal, aturan itu ada di inti tanpa framework. Tesnya cukup new PlaceOrder(fakeRepo), jalan dalam milidetik.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Berapa lama tes ini jalan?</h2>
+          <div style="margin-top: 14px"><pre class="code">@SpringBootTest   <span class="cm">// ← nyalakan seluruh aplikasi</span>
+class PlaceOrderTest {
+  @Autowired OrderService service;
+  @Test void stok_habis_ditolak() { … }
+}
+<span class="cm">// butuh database, Kafka, dan 20 detik start-up</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Padahal yang mau dites cuma satu aturan: stok habis = tolak.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="Port = stopkontak (interface) yang didefinisikan oleh inti. Adapter = colokan yang menyesuaikan teknologi tertentu ke port itu. Inti tidak pernah import teknologi; adapter yang import inti.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Inti di tengah, adapter di pinggir</h2>
@@ -492,7 +507,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Adapter masuk</h3><p style="font-size:13.5px">REST controller, Kafka listener, CLI</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Port masuk</h3><p style="font-size:13.5px">interface: PlaceOrderUseCase</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Inti bisnis</h3><p style="font-size:13.5px">Order, aturan diskon, stok<br><b>tanpa framework</b></p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Adapter keluar</h3><p style="font-size:13.5px">JPA, HTTP client, Kafka producer</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">←</div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Port keluar</h3><p style="font-size:13.5px">interface: OrderRepository</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">←</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Inti bisnis memanggil port</h3><p style="font-size:13.5px">bukan teknologi langsung</p></div></div></div>
           <div class="foot">Arah ketergantungan: adapter → inti. <b>Inti tidak kenal adapter.</b></div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Lihat import: PlaceOrder tidak tahu JPA. Saat tes, OrderRepository bisa diganti versi in-memory. Tes jalan dalam milidetik tanpa database.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Inti bicara ke port, bukan ke JPA</h2>
@@ -524,7 +540,8 @@
           </div>
           <div class="foot">Saat tes: pakai adapter <b>in-memory</b>. Tanpa database, super cepat.</div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Hexagonal ada harganya: lebih banyak kelas dan mapping. Sepadan kalau aturan bisnis rumit dan umurnya panjang.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Jebakan yang sering kejadian</h2>
@@ -536,7 +553,42 @@
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — TES INTI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Adapter asli (JPA) tetap dites, tapi di tes integrasi terpisah yang lebih sedikit.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">tes inti</div>
+          <h2>Tes inti dengan adapter palsu</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">adapter palsu (di memori)</div><pre class="code">class InMemoryOrders implements OrderRepository {
+  List&lt;Order&gt; saved = new ArrayList&lt;&gt;();
+  public void save(Order o) { saved.add(o); }
+}</pre></div>
+            <div><div class="codehead ">tes cepat tanpa Spring</div><pre class="code">@Test void stok_habis_ditolak() {
+  var repo = new InMemoryOrders();
+  var useCase = new PlaceOrder(repo, stock(0));
+  assertThrows(OutOfStock.class,
+      () -&gt; useCase.place(order(qty(1))));
+  assertTrue(repo.saved.isEmpty());
+}</pre></div>
+          </div>
+          <div class="foot">Port membuat tes bisa memakai <b>colokan palsu</b> yang murah.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Inilah janji utama hexagonal: teknologi di pinggir boleh berganti, bisnis di tengah tetap.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Tambah jalur baru tanpa sentuh inti</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Sudah ada: REST</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Bisnis minta: Kafka</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Buat KafkaListener adapter</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Panggil port yang sama</div></div><ul class="clean" style="margin-top: 18px"><li>Inti tidak berubah satu baris pun.</li><li>Sama untuk sisi keluar: ganti MySQL ke PostgreSQL = ganti adapter saja.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — STRUKTUR FOLDER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Aturan import ini bisa dijaga otomatis dengan ArchUnit atau modul Gradle terpisah.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">struktur folder</div>
+          <h2>Contoh susunan package</h2>
+          <table style="margin-top: 16px"><tr><th>Package</th><th>Isi</th><th>Boleh import</th></tr><tr><td class="mono">domain</td><td>Order, Money, aturan bisnis</td><td>Tidak ada framework</td></tr><tr><td class="mono">application</td><td>Use case + port (interface)</td><td>domain</td></tr><tr><td class="mono">adapter.in</td><td>REST controller, Kafka listener</td><td>application</td></tr><tr><td class="mono">adapter.out</td><td>JPA repository, HTTP client</td><td>application, domain</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari satu kelas service yang import JPA atau Kafka. Bisakah dipisah lewat interface?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -548,13 +600,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

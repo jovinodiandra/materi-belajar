@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Naik taksi online, bukan beli mobil sendiri.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: ada job di sistem kita yang cuma jalan sebentar sehari? Itu kandidat serverless.">
           <h2>Server menyala 24 jam untuk pekerjaan yang cuma jalan 5 menit sehari.</h2>
@@ -484,7 +485,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — CARA KERJA ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: belum tentu. Saat trafik tinggi dan stabil, server biasa sering lebih murah. Serverless menang di trafik yang naik-turun.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Hitung biaya: server atau serverless?</h2>
+          <p class="lede">Job buat thumbnail jalan 2.000 kali sehari, tiap kali 1 detik.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Server kecil menyala 24 jam: dibayar <b>86.400 detik</b> per hari.</li><li>Serverless: dibayar <b>2.000 detik</b> per hari.</li><li>Pertanyaan: kalau jadi 2 juta kali sehari, masih lebih murah?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CARA KERJA ════════ -->
         <section class="slide" data-notes="Contoh nyata: AWS Lambda, Google Cloud Functions, Azure Functions. Tim tinggal mengunggah kode, cloud yang mengatur kapan dan berapa banyak yang jalan.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Cara kerjanya: dipicu, jalan, selesai</h2>
@@ -492,7 +502,8 @@
           <ul class="clean" style="margin-top: 14px"><li>Pemicu bisa berupa: request HTTP, file diunggah, pesan masuk queue, atau jadwal.</li><li>Ramai? Cloud menjalankan banyak salinan fungsi sekaligus, otomatis.</li><li>Sepi? Tidak ada yang jalan. Tidak ada tagihan.</li></ul>
           <div class="foot">Contoh: <b>AWS Lambda</b>, Google Cloud Functions, Azure Functions.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Fungsi serverless sebaiknya kecil dan melakukan satu hal. Simpan state di luar fungsi, misalnya di database atau S3, karena fungsi bisa dimatikan kapan saja.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Contoh fungsi: resize foto saat diunggah</h2>
@@ -512,7 +523,8 @@
           </div>
           <div class="foot">Fungsi harus <b>stateless</b>: bisa dimatikan kapan saja.</div>
         </section>
-        <!-- ════════ 5 — HARGA ════════ -->
+
+        <!-- ════════ 6 — HARGA ════════ -->
         <section class="slide" data-notes="Cold start = jeda saat fungsi dinyalakan dari kondisi tidur. Java terkenal lambat di sini. Solusinya kompilasi native atau fitur seperti SnapStart di AWS.">
           <div class="lens-tag lt-green" style="align-self: flex-start">harga</div>
           <h2>Harga yang dibayar</h2>
@@ -524,7 +536,8 @@
           </div>
 
         </section>
-        <!-- ════════ 6 — KAPAN PAKAI ════════ -->
+
+        <!-- ════════ 7 — KAPAN PAKAI ════════ -->
         <section class="slide" data-notes="Aturan kasar: kalau fungsimu sibuk terus 24 jam, serverless justru lebih mahal. Serverless menang saat ada banyak waktu menganggur.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ringkasan</div>
           <h2>Kapan pakai, kapan tidak</h2>
@@ -537,7 +550,43 @@
           </table>
           <div class="foot">Sibuk terus 24 jam? Server biasa lebih murah.</div>
         </section>
-        <!-- ════════ 7 — PENUTUP ════════ -->
+
+        <!-- ════════ 8 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ribuan fungsi paralel bisa menghabiskan koneksi database. Pakai proxy seperti RDS Proxy untuk menahannya.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Buat koneksi di luar handler</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ koneksi baru tiap panggilan</div><pre class="code">public String handleRequest(Event e, Context c) {
+  var db = DriverManager.getConnection(URL);   <span class="cm">// ← tiap kali!</span>
+  db.prepareStatement(...).execute();
+  db.close();
+}</pre></div>
+            <div><div class="codehead good">✓ dipakai ulang antar panggilan</div><pre class="code">private static final DataSource DB = createPool();
+
+public String handleRequest(Event e, Context c) {
+  try (var conn = DB.getConnection()) {
+    conn.prepareStatement(...).execute();
+  }
+}</pre></div>
+          </div>
+          <div class="foot">Fungsi yang sudah "bangun" dipakai lagi. Kode di luar handler cuma jalan <b>sekali</b>.</div>
+        </section>
+
+        <!-- ════════ 9 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Contoh idempotent: tulis thumbnail ke nama file yang sama. Jalan dua kali tetap satu file.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Event dikirim dua kali. Foto diproses dobel?</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">S3 kirim event</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Fungsi gagal di tengah</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Cloud retry otomatis</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Fungsi jalan lagi</div></div><ul class="clean" style="margin-top: 18px"><li>Cloud menjamin <b>minimal sekali</b>, bukan tepat sekali.</li><li>Buat fungsi <b>idempotent</b>: dijalankan dua kali, hasilnya tetap sama.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PRAKTIK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Alarm biaya penting. Fungsi yang memicu dirinya sendiri bisa jalan jutaan kali dalam semalam.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">praktik</div>
+          <h2>Tips serverless dengan Java</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Pakai <b>SnapStart</b> atau GraalVM native untuk memangkas cold start.</li><li>Paket kecil: buang dependency yang tidak dipakai.</li><li>Satu fungsi, satu tugas. Jangan bikin satu fungsi raksasa.</li><li>Pasang timeout dan alarm biaya. Bug loop bisa bikin tagihan meledak.</li></ul>
+        </section>
+
+        <!-- ════════ 11 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari satu cron job di sistem kita yang jalan sebentar. Berapa biaya servernya per bulan?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -549,13 +598,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 11</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

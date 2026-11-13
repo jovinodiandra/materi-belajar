@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Pembeli dan warung.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: kenapa harga di aplikasi belanja tidak dihitung di HP saja? Jawabannya: bisa diakali.">
           <h2>Kalau semua data dan logika ada di HP tiap orang, data tidak pernah sama.</h2>
@@ -484,7 +485,19 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — ANALOGI ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: user bisa belanja murah sekali. Client bisa diubah lewat proxy atau aplikasi modifikasi. Server harus hitung ulang.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Siapa yang harus menghitung total belanja?</h2>
+          <div style="margin-top: 14px"><pre class="code"><span class="cm">// dikirim dari aplikasi HP:</span>
+POST /checkout
+{ "items": [{"id": 11, "qty": 2}],
+  "total": 1000 }   <span class="cm">// ← harga aslinya 250.000</span></pre></div>
+          <ul class="clean" style="margin-top: 16px"><li>Kalau server percaya angka total dari client, apa yang terjadi?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — ANALOGI ════════ -->
         <section class="slide" data-notes="Client selalu memulai. Server menunggu dan melayani. Satu warung bisa melayani banyak pembeli sekaligus. Pembeli tidak perlu tahu cara membuat teh.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Bayangin pembeli dan warung</h2>
@@ -492,7 +505,8 @@
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Client (pembeli)</h3><p style="font-size:13.5px">browser, aplikasi HP</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Request</h3><p style="font-size:13.5px">“Mbak, teh manis satu”</p></div><div style="font-size:24px;color:var(--muted);font-weight:700;align-self:center">→</div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Server (warung)</h3><p style="font-size:13.5px">siapkan & catat</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Response</h3><p style="font-size:13.5px">“Ini tehnya, Rp 5.000”</p></div></div></div>
           <div class="foot">Satu server melayani <b>banyak</b> client sekaligus.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Protokol = bahasa yang disepakati. Selama client dan server bicara HTTP, keduanya bisa ditulis dengan bahasa pemrograman apa pun.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Bentuk paling sederhana: HTTP</h2>
@@ -511,7 +525,8 @@ Product get(@PathVariable long id) {
           </div>
           <div class="foot">Selama sama-sama bicara HTTP, bahasa pemrogramannya bebas.</div>
         </section>
-        <!-- ════════ 5 — TIER ════════ -->
+
+        <!-- ════════ 6 — TIER ════════ -->
         <section class="slide" data-notes="Yang paling umum sekarang 3-tier. 2-tier berbahaya karena client memegang akses langsung ke database.">
           <div class="lens-tag lt-green" style="align-self: flex-start">variasi</div>
           <h2>Client–server bisa bertingkat</h2>
@@ -523,7 +538,8 @@ Product get(@PathVariable long id) {
           </table>
           <div class="foot">Hindari 2-tier untuk aplikasi publik: client memegang akses ke database.</div>
         </section>
-        <!-- ════════ 6 — JEBAKAN ════════ -->
+
+        <!-- ════════ 7 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Aturan paling penting: never trust the client. Harga, diskon, dan izin selalu dicek di server.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Aturan penting</h2>
@@ -535,7 +551,43 @@ Product get(@PathVariable long id) {
           </div>
 
         </section>
-        <!-- ════════ 7 — PENUTUP ════════ -->
+
+        <!-- ════════ 8 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Validasi di client untuk kenyamanan user. Validasi di server untuk keamanan.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Server menghitung sendiri</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ percaya client</div><pre class="code">@PostMapping("/checkout")
+Order checkout(@RequestBody Req r) {
+  return orders.create(r.items(),
+                       r.total());   <span class="cm">// ← angka dari client</span>
+}</pre></div>
+            <div><div class="codehead good">✓ hitung di server</div><pre class="code">@PostMapping("/checkout")
+Order checkout(@RequestBody Req r) {
+  long total = pricing.calculate(r.items());
+  return orders.create(r.items(), total);
+}
+<span class="cm">// client cuma kirim: id barang + jumlah</span></pre></div>
+          </div>
+          <div class="foot">Client boleh <b>menampilkan</b> total. Yang <b>menentukan</b> tetap server.</div>
+        </section>
+
+        <!-- ════════ 9 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Retry tanpa jeda dari ribuan client bisa memperparah masalah. Ini namanya retry storm.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Server lambat, client terus mencoba</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Server lambat</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Client timeout</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Client retry otomatis</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Server makin berat</div></div><ul class="clean" style="margin-top: 18px"><li>Client pakai <b>timeout</b> + <b>retry dengan jeda makin lama</b> (backoff).</li><li>Server pasang batas (rate limit) supaya tidak kebanjiran.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — CONTEKAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Client sebaiknya hanya retry untuk 5xx dan timeout, bukan untuk 4xx.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">contekan</div>
+          <h2>Kode status HTTP yang wajib dikenal</h2>
+          <table style="margin-top: 16px"><tr><th>Kode</th><th>Artinya</th><th>Siapa yang salah</th></tr><tr><td class="mono">200 / 201</td><td>Berhasil / berhasil dibuat</td><td>—</td></tr><tr><td class="mono">400</td><td>Input tidak valid</td><td>Client</td></tr><tr><td class="mono">401 / 403</td><td>Belum login / tidak boleh</td><td>Client</td></tr><tr><td class="mono">404</td><td>Tidak ditemukan</td><td>Client</td></tr><tr><td class="mono">500 / 503</td><td>Server error / sedang tidak sanggup</td><td>Server</td></tr></table>
+          <div class="foot">4xx = <b>client</b> perlu memperbaiki permintaan. 5xx = <b>server</b> yang bermasalah.</div>
+        </section>
+
+        <!-- ════════ 11 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cari satu validasi di aplikasi kita yang cuma dilakukan di frontend. Apakah server juga mengecek?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -547,13 +599,14 @@ Product get(@PathVariable long id) {
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 11</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

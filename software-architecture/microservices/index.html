@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Banyak warung kecil, bukan satu mal raksasa.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tekankan: masalah yang diselesaikan microservices kebanyakan masalah organisasi (banyak tim), bukan masalah teknis.">
           <h2>Satu aplikasi raksasa dipegang 50 orang. Deploy jadi antre, satu bug menjatuhkan semuanya.</h2>
@@ -484,7 +485,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — CIRI ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: ini distributed monolith. Dapat semua kerugian microservices tanpa keuntungannya. Lebih buruk dari monolith biasa.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak: ini microservices atau bukan?</h2>
+          <p class="lede">Tim memecah aplikasi jadi 8 service. Tapi…</p>
+          <ul class="clean" style="margin-top: 16px"><li>Semua service memakai <b>satu database</b> yang sama.</li><li>Deploy harus <b>bareng-bareng</b> karena saling tergantung.</li><li>Satu service mati, semua ikut error.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CIRI ════════ -->
         <section class="slide" data-notes="Kalau dua service harus selalu di-deploy bersamaan, atau berbagi database, itu bukan microservices. Itu monolith terdistribusi, yang paling buruk dari dua dunia.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Ciri-ciri microservice yang sehat</h2>
@@ -496,7 +506,8 @@
           </div>
           <div class="foot">Harus deploy bareng + berbagi DB = <b>monolith terdistribusi</b>. Hindari!</div>
         </section>
-        <!-- ════════ 4 — HARGA ════════ -->
+
+        <!-- ════════ 5 — HARGA ════════ -->
         <section class="slide" data-notes="Ini sebabnya banyak pola lain di materi ini. Hampir semuanya muncul untuk menambal masalah yang dibawa microservices.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">harga</div>
           <h2>Harganya: masalah baru yang muncul</h2>
@@ -509,14 +520,16 @@
           </table>
           <div class="foot">Hampir semua pola di materi ini lahir untuk menambal masalah microservices.</div>
         </section>
-        <!-- ════════ 5 — BENTUK ════════ -->
+
+        <!-- ════════ 6 — BENTUK ════════ -->
         <section class="slide" data-notes="Gateway = pintu masuk tunggal untuk client. Service bicara lewat HTTP untuk butuh jawaban langsung, dan lewat event untuk kabar.">
           <div class="lens-tag lt-green" style="align-self: flex-start">bentuk</div>
           <h2>Contoh bentuk sederhana</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Client</h3><p style="font-size:13.5px">web / mobile</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">API Gateway</h3><p style="font-size:13.5px">pintu masuk tunggal</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Order service</h3><p style="font-size:13.5px">DB order</p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Payment service</h3><p style="font-size:13.5px">DB payment</p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Shipping service</h3><p style="font-size:13.5px">DB shipping</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Broker (Kafka)</h3><p style="font-size:13.5px">event antar service</p></div></div></div>
           <div class="foot">Langsung butuh jawaban → HTTP. Cukup dikabari → event.</div>
         </section>
-        <!-- ════════ 6 — KAPAN PAKAI ════════ -->
+
+        <!-- ════════ 7 — KAPAN PAKAI ════════ -->
         <section class="slide" data-notes="Saran Martin Fowler: monolith first. Mulai dari modular monolith, pecah saat batas domain sudah jelas dan timnya sudah butuh.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">ringkasan</div>
           <h2>Kapan pakai, kapan jangan</h2>
@@ -529,7 +542,43 @@
           </table>
           <div class="foot">Saran umum: <b>monolith first</b>. Pecah saat memang dibutuhkan.</div>
         </section>
-        <!-- ════════ 7 — PENUTUP ════════ -->
+
+        <!-- ════════ 8 — SALAH → BENAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Circuit breaker = sekring listrik. Kalau terlalu sering gagal, sementara berhenti mencoba agar tidak ikut terbakar.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">salah → benar</div>
+          <h2>Panggilan antar service wajib punya pengaman</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ tanpa batas waktu</div><pre class="code"><span class="cm">// order-service memanggil payment-service</span>
+var res = http.send(request,
+    BodyHandlers.ofString());
+<span class="cm">// ← payment hang 60 detik,</span>
+<span class="cm">//   semua thread order ikut menunggu</span></pre></div>
+            <div><div class="codehead good">✓ timeout + circuit breaker</div><pre class="code">var request = HttpRequest.newBuilder(uri)
+    .timeout(Duration.ofSeconds(2))
+    .build();
+
+@CircuitBreaker(name = "payment",
+                fallbackMethod = "payLater")
+Result pay(Order o) { … }</pre></div>
+          </div>
+          <div class="foot">Jaringan <b>pasti</b> suatu saat gagal. Rencanakan dari awal.</div>
+        </section>
+
+        <!-- ════════ 9 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Saga = rangkaian transaksi kecil. Kalau ada yang gagal, jalankan langkah pembatalan secara mundur.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Pesan barang: saga tanpa transaksi bersama</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Order dibuat (PENDING)</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Payment berhasil</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Stok gagal dikurangi</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Kompensasi: refund + batalkan</div></div><ul class="clean" style="margin-top: 18px"><li>Tiap langkah punya <b>langkah kebalikan</b> (kompensasi).</li><li>Status order selalu jelas: PENDING → CONFIRMED atau CANCELLED.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — SEBELUM MEMECAH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kalau mayoritas jawabannya belum, tunda dulu. Microservices adalah solusi masalah organisasi, bukan masalah kode.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">sebelum memecah</div>
+          <h2>Checklist sebelum pindah ke microservices</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Sudah ada <b>CI/CD</b> otomatis? Deploy 10 service manual itu menyiksa.</li><li>Sudah ada <b>logging terpusat & tracing</b>? Kalau tidak, debugging jadi buta.</li><li>Batas domain sudah jelas? Coba dulu sebagai modular monolith.</li><li>Ada tim yang siap memegang tiap service?</li></ul>
+        </section>
+
+        <!-- ════════ 11 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: cek dua service kita. Apakah keduanya bisa di-deploy sendiri-sendiri tanpa saling menunggu?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -541,13 +590,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 11</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

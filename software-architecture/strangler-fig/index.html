@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Pohon beringin yang pelan-pelan membungkus pohon lama.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang pernah ikut proyek rewrite besar? Berapa lama dan apakah selesai? Biasanya ceritanya menyakitkan.">
           <h2>Proyek “tulis ulang semuanya” sudah berjalan 2 tahun. Belum ada yang bisa dirilis.</h2>
@@ -484,7 +485,16 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — LANGKAH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: sistem lama. Sistem baru tumbuh di sekitarnya, mengambil alih fitur satu per satu.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Dari mana nama aneh ini?</h2>
+          <p class="lede">Pohon ara pencekik (strangler fig) tumbuh merambat di pohon lain.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Pelan-pelan akarnya membungkus pohon inang.</li><li>Bertahun-tahun kemudian, pohon inang mati. Pohon ara berdiri sendiri.</li><li>Pertanyaan: apa yang jadi "pohon inang" di proyek kita?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — LANGKAH ════════ -->
         <section class="slide" data-notes="Kuncinya perantara di depan. User tidak sadar ada dua sistem. Setiap fitur yang dipindah langsung dirilis dan memberi manfaat.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">cara kerja</div>
           <h2>Tiga langkah yang diulang-ulang</h2>
@@ -492,7 +502,8 @@
           <ul class="clean" style="margin-top: 14px"><li><b>Pasang perantara</b> (proxy/gateway) di depan sistem lama. Awalnya semua diteruskan ke sistem lama.</li><li><b>Pindah satu fitur</b> ke sistem baru, misalnya halaman katalog.</li><li><b>Arahkan trafik</b> fitur itu ke sistem baru. Fitur lain tetap ke sistem lama.</li><li>Ulangi sampai sistem lama tidak punya trafik lagi, lalu matikan.</li></ul>
           <div class="foot">Tiap fitur yang dipindah langsung <b>dirilis</b>. Tidak menunggu semuanya selesai.</div>
         </section>
-        <!-- ════════ 4 — KODE ════════ -->
+
+        <!-- ════════ 5 — KODE ════════ -->
         <section class="slide" data-notes="Rollback gampang: kalau sistem baru bermasalah, ubah rute kembali ke legacy-app. Inilah yang membuat strangler fig aman.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Contoh perantara: Spring Cloud Gateway</h2>
@@ -513,7 +524,8 @@
           </div>
           <div class="foot">Ada masalah? Arahkan rute kembali ke sistem lama. <b>Rollback gampang.</b></div>
         </section>
-        <!-- ════════ 5 — JEBAKAN ════════ -->
+
+        <!-- ════════ 6 — JEBAKAN ════════ -->
         <section class="slide" data-notes="Jebakan paling sering: 80% fitur pindah, 20% terakhir yang paling rumit tidak pernah dikerjakan. Tetapkan target untuk mematikan sistem lama.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang perlu dijaga</div>
           <h2>Yang perlu dijaga</h2>
@@ -525,7 +537,42 @@
           </div>
           <div class="foot">Tetapkan target tanggal untuk <b>mematikan</b> sistem lama.</div>
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — AMAN BERALIH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Bandingkan error rate dan latency versi lama vs baru selama masa transisi.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">aman beralih</div>
+          <h2>Pindah trafik pelan-pelan dengan bobot</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">rute dengan bobot</div><pre class="code">routes:
+  - id: checkout-baru
+    uri: http://checkout-service
+    predicates: [ Path=/checkout/**, Weight=co, 10 ]
+  - id: checkout-lama
+    uri: http://legacy-app
+    predicates: [ Path=/checkout/**, Weight=co, 90 ]</pre></div>
+            <div><div class="codehead ">naikkan bertahap</div><pre class="code"><span class="cm"># minggu 1:  10% baru,  90% lama</span>
+<span class="cm"># minggu 2:  50% baru,  50% lama</span>
+<span class="cm"># minggu 3: 100% baru</span>
+<span class="cm"># ada masalah? kembalikan bobot ke 0</span></pre></div>
+          </div>
+          <div class="foot">Mundur itu <b>murah</b>: cukup ubah angka, tidak perlu deploy ulang kode.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Contoh bagus fitur pertama: halaman katalog, notifikasi email, atau laporan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Memilih fitur pertama yang dipindah</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Daftar semua fitur</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Cari yang sedikit ketergantungan</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Yang sering diubah bisnis</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Pindahkan itu dulu</div></div><ul class="clean" style="margin-top: 18px"><li>Fitur pertama sebaiknya <b>kecil tapi terasa</b>, supaya tim belajar dan bisnis melihat hasil.</li><li>Hindari memulai dari fitur inti yang paling rumit.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — SELESAI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Banyak migrasi berhenti di 80%. Sisa 20% hidup bertahun-tahun dan menguras biaya.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">selesai</div>
+          <h2>Jangan lupa: matikan sistem lama</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Pasang target tanggal untuk tiap fitur yang tersisa.</li><li>Pantau trafik ke sistem lama. Kalau sudah 0, siap dimatikan.</li><li>Hapus kode, server, dan database lama. Rayakan!</li><li>Sistem lama yang dibiarkan hidup tetap butuh biaya dan patch keamanan.</li></ul>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Tugas: kalau harus mengganti sistem lama kita, fitur mana yang paling aman dipindah duluan?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -537,13 +584,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

@@ -462,6 +462,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Kakaknya microservices.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENAPA PENTING ════════ -->
         <section class="slide" data-notes="Tanya: siapa yang pernah bekerja dengan SOAP, WSDL, atau ESB? Kalau pernah, kalian sudah menyentuh SOA.">
           <h2>Tiap divisi punya aplikasi sendiri. Data pelanggan ditulis ulang di lima tempat.</h2>
@@ -484,14 +485,24 @@
           </div>
 
         </section>
-        <!-- ════════ 3 — BENTUK ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Masalah klasik sebelum SOA: tiap aplikasi menyimpan salinan sendiri. SOA menjawab dengan satu Customer Service yang dipakai bersama.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa alamat pelanggan berbeda-beda?</h2>
+          <p class="lede">Pelanggan pindah rumah dan mengubah alamat lewat aplikasi CRM.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Billing masih kirim tagihan ke alamat lama.</li><li>Gudang mengirim paket ke alamat lama juga.</li><li>Pertanyaan: data mana yang benar?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — BENTUK ════════ -->
         <section class="slide" data-notes="ESB = jalan tol pusat yang menghubungkan semua aplikasi dan service. Dia mengurus routing, mengubah format pesan, dan keamanan. Kekuatan sekaligus kelemahan SOA ada di ESB ini.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">ide dasar</div>
           <h2>Bentuk SOA klasik</h2>
           <div style="margin-top: 14px"><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Aplikasi CRM</h3><p style="font-size:13.5px"></p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Aplikasi Billing</h3><p style="font-size:13.5px"></p></div><div class="card tint-teal" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Aplikasi Gudang</h3><p style="font-size:13.5px"></p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-amber" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">ESB (Enterprise Service Bus)</h3><p style="font-size:13.5px">jalan tol pusat: routing, ubah format, keamanan</p></div></div><div style="text-align:center;font-size:26px;color:var(--muted);font-weight:700;margin:4px 0">↓</div><div style="display:flex;gap:14px;align-items:stretch"><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Customer Service</h3><p style="font-size:13.5px">dipakai bersama</p></div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Payment Service</h3><p style="font-size:13.5px">dipakai bersama</p></div><div class="card tint-green" style="flex:1;text-align:center;padding:14px 16px"><h3 style="margin-bottom:4px">Inventory Service</h3><p style="font-size:13.5px">dipakai bersama</p></div></div></div>
           <div class="foot">ESB = jalan tol pusat. Semua lewat sini.</div>
         </section>
-        <!-- ════════ 4 — BEDA ════════ -->
+
+        <!-- ════════ 5 — BEDA ════════ -->
         <section class="slide" data-notes="Microservices lahir dari pelajaran SOA. Masalah terbesar SOA: ESB jadi terlalu pintar dan jadi bottleneck. Microservices memakai prinsip smart endpoints, dumb pipes: logika di service, pipanya sederhana.">
           <div class="lens-tag lt-green" style="align-self: flex-start">perbandingan</div>
           <h2>SOA vs Microservices</h2>
@@ -504,7 +515,8 @@
           </table>
           <div class="foot">Prinsip microservices: <b>smart endpoints, dumb pipes</b>.</div>
         </section>
-        <!-- ════════ 5 — PELAJARAN ════════ -->
+
+        <!-- ════════ 6 — PELAJARAN ════════ -->
         <section class="slide" data-notes="Jangan menganggap SOA kuno lalu diabaikan. Banyak sistem inti bank dan telko masih SOA, dan kita sering harus bicara dengannya lewat SOAP.">
           <div class="lens-tag lt-green" style="align-self: flex-start">pelajaran</div>
           <h2>Pelajaran dari SOA</h2>
@@ -516,7 +528,42 @@
           </div>
 
         </section>
-        <!-- ════════ 6 — PENUTUP ════════ -->
+
+        <!-- ════════ 7 — KONTRAK ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini warisan terpenting SOA: service dipakai lewat kontrak yang jelas, bukan lewat akses database langsung.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">kontrak</div>
+          <h2>Service = kontrak yang jelas</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">kontrak (WSDL/SOAP, gaya lama)</div><pre class="code">&lt;operation name="GetCustomer"&gt;
+  &lt;input  message="CustomerIdRequest"/&gt;
+  &lt;output message="CustomerResponse"/&gt;
+&lt;/operation&gt;</pre></div>
+            <div><div class="codehead ">kontrak (OpenAPI, gaya sekarang)</div><pre class="code">paths:
+  /customers/{id}:
+    get:
+      responses:
+        "200":
+          $ref: "#/components/schemas/Customer"
+<span class="cm"># pemakai tidak perlu tahu isi dalamnya</span></pre></div>
+          </div>
+          <div class="foot">Teknologinya berubah, idenya tetap: <b>kontrak dulu</b>, implementasi menyusul.</div>
+        </section>
+
+        <!-- ════════ 8 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="ESB awalnya terlihat praktis, tapi pelan-pelan jadi tempat semua logika yang tidak punya rumah.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>ESB jadi leher botol</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Semua aturan di ESB</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Satu tim pegang ESB</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Semua tim antre perubahan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Rilis melambat</div></div><ul class="clean" style="margin-top: 18px"><li>Pelajaran: penghubung sebaiknya <b>bodoh</b>, logikanya di service.</li><li>Microservices menyebutnya: <i>smart endpoints, dumb pipes</i>.</li></ul>
+        </section>
+
+        <!-- ════════ 9 — MASIH RELEVAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Junior di bank atau korporasi besar kemungkinan besar akan bertemu SOAP dan ESB. Jangan kaget.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">masih relevan</div>
+          <h2>Di mana SOA masih ditemui</h2>
+          <table style="margin-top: 16px"><tr><th>Tempat</th><th>Kenapa</th></tr><tr><td class="mono">Bank & asuransi</td><td>Sistem inti lama, banyak integrasi</td></tr><tr><td class="mono">Pemerintahan</td><td>Antar instansi bertukar data lewat service</td></tr><tr><td class="mono">Integrasi ERP (SAP, Oracle)</td><td>Middleware integrasi masih dipakai</td></tr><tr><td class="mono">Perusahaan besar</td><td>Migrasi bertahap ke microservices</td></tr></table>
+        </section>
+
+        <!-- ════════ 10 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Minta tiga orang membaca satu kalimat. Diskusi: sistem lama apa di perusahaan kita yang masih kita panggil lewat SOAP?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -528,13 +575,14 @@
             </div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 17</span>
+      <span id="counter">1 / 10</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

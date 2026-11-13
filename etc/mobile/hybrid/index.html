@@ -463,13 +463,23 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu resep, dimasak di dua dapur berbeda.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PERBANDINGAN ════════ -->
         <section class="slide" data-notes="Dua-duanya bagus. Pilihan biasanya tergantung skill tim yang sudah ada.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">perbandingan</div>
           <h2>React Native vs Flutter</h2>
           <table style="margin-top: 16px"><tr><th></th><th>React Native</th><th>Flutter</th></tr><tr><td class="mono">Bahasa</td><td>JavaScript / TypeScript</td><td>Dart</td></tr><tr><td class="mono">Cara gambar UI</td><td>Pakai komponen asli HP</td><td>Gambar sendiri pakai engine</td></tr><tr><td class="mono">Cocok untuk tim</td><td>Yang sudah bisa React</td><td>Yang mau tampilan konsisten</td></tr><tr><td class="mono">Dipakai oleh</td><td>Instagram, Discord</td><td>Google Pay, Alibaba</td></tr></table>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban kira-kira: hybrid atau PWA, native/game engine, native (atau hybrid dengan modul native), hybrid. Tidak ada jawaban mutlak, diskusikan alasannya.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Native, hybrid, atau web?</h2>
+          <p class="lede">Pilih pendekatan yang paling cocok:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Aplikasi katalog toko sederhana, tim 2 orang web developer.</li><li>Game 3D dengan grafis berat.</li><li>Aplikasi bank dengan fitur biometrik dan NFC.</li><li>Aplikasi internal pencatat absensi karyawan.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Tunjukkan bahwa polanya sama: state berubah, UI menyesuaikan.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Satu komponen, dua platform</h2>
@@ -492,13 +502,52 @@ Widget build(ctx) =&gt; ElevatedButton(
           </div>
           <div class="foot">Beda bahasa, tapi <b>polanya sama</b>: ubah state, tampilan ikut berubah.</div>
         </section>
-        <!-- ════════ 4 — UNTUNG RUGI ════════ -->
+
+        <!-- ════════ 5 — UNTUNG RUGI ════════ -->
         <section class="slide" data-notes="Untuk aplikasi bisnis biasa (form, list, detail), hybrid biasanya lebih dari cukup.">
           <div class="lens-tag lt-green" style="align-self: flex-start">untung rugi</div>
           <h2>Kapan pilih hybrid?</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">untung</div><h3>Satu tim, dua platform</h3><p style="color: var(--ink)">Hemat orang dan waktu.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">untung</div><h3>Rilis bareng</h3><p style="color: var(--ink)">Fitur baru muncul di Android dan iOS bersamaan.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">rugi</div><h3>Fitur khusus HP</h3><p style="color: var(--ink)">Bluetooth, kamera canggih, AR sering butuh kode native.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">rugi</div><h3>Ikut telat update</h3><p style="color: var(--ink)">Fitur OS baru harus nunggu dukungan framework.</p></div></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — JEMBATAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Expo menyediakan banyak modul native siap pakai untuk React Native.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">jembatan</div>
+          <h2>Memanggil fitur native dari kode hybrid</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">Flutter: MethodChannel</div><pre class="code">const channel = MethodChannel('toko/battery');
+
+Future&lt;int&gt; batteryLevel() async &#123;
+  return await channel.invokeMethod('getLevel');
+&#125;
+<span class="cm">// di sisi Android (Kotlin) / iOS (Swift)</span>
+<span class="cm">// kita tulis implementasi 'getLevel'</span></pre></div>
+            <div><div class="codehead ">React Native: library siap pakai</div><pre class="code">import * as Location from "expo-location";
+
+const &#123; status &#125; =
+  await Location.requestForegroundPermissionsAsync();
+if (status === "granted") &#123;
+  const pos = await Location.getCurrentPositionAsync();
+&#125;</pre></div>
+          </div>
+          <div class="foot">Fitur umum sudah ada library-nya. Fitur langka harus <b>ditulis native</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — UPDATE ════════ -->
+        <section class="slide" data-ext="1" data-notes="OTA = over the air. Kemampuan ini salah satu kelebihan React Native dibanding native murni.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">update</div>
+          <h2>Update tanpa menunggu review toko</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Perbaiki bug di kode JS</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Kirim update OTA (EAS Update)</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Aplikasi unduh saat dibuka</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">User dapat perbaikan hari itu</div></div><ul class="clean" style="margin-top: 18px"><li>Hanya untuk perubahan kode JavaScript/aset. Perubahan native tetap lewat toko.</li><li>Tetap patuhi aturan App Store soal fitur baru.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — PILIHAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Kotlin Multiplatform menarik untuk tim yang ingin UI native tapi logika bisnis ditulis sekali.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">pilihan</div>
+          <h2>Pilihan framework lintas platform</h2>
+          <table style="margin-top: 16px"><tr><th>Framework</th><th>Bahasa</th><th>Cocok untuk</th></tr><tr><td class="mono">React Native (+ Expo)</td><td>TypeScript</td><td>Tim web React</td></tr><tr><td class="mono">Flutter</td><td>Dart</td><td>UI kustom, performa konsisten</td></tr><tr><td class="mono">Kotlin Multiplatform</td><td>Kotlin</td><td>Berbagi logika, UI tetap native</td></tr><tr><td class="mono">Capacitor / Ionic</td><td>Web (HTML/JS)</td><td>Aplikasi web dibungkus jadi app</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Diskusi: kalau tim kita kuat di React, framework mana yang lebih masuk akal?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -506,13 +555,14 @@ Widget build(ctx) =&gt; ElevatedButton(
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Satu kode untuk Android dan iOS.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pilihan</div><p style="font-size: 17px; color: #e2e8f0">React Native (JS) atau Flutter (Dart).</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ batas</div><p style="font-size: 17px; color: #e2e8f0">Fitur khusus HP kadang tetap butuh native.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

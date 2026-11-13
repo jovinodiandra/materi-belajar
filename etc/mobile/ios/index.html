@@ -463,13 +463,23 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Sedikit jenis HP, banyak aturan main.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENALAN DULU ════════ -->
         <section class="slide" data-notes="Tidak bisa build aplikasi iOS di Windows/Linux. Butuh Mac, atau layanan CI berbasis Mac.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kenalan dulu</div>
           <h2>Bahan dasar aplikasi iOS</h2>
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">🧡</div><div><h3>Swift</h3><p>Bahasa utama. Pengganti Objective-C yang lama.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">🧩</div><div><h3>SwiftUI</h3><p>Cara modern bikin tampilan, deklaratif seperti Compose/React.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">💻</div><div><h3>Xcode (wajib Mac)</h3><p>Bikin dan publish aplikasi iOS harus pakai Mac.</p></div></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ketiganya alasan penolakan yang umum. Baca App Store Review Guidelines sebelum membuat fitur besar.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Tebak: kenapa fitur ini ditolak App Store?</h2>
+          <p class="lede">Aplikasi ditolak saat review dengan alasan berikut. Tebak penyebabnya:</p>
+          <ul class="clean" style="margin-top: 16px"><li>Meminta izin lokasi tanpa penjelasan kenapa butuh.</li><li>Menjual konten digital tanpa In-App Purchase.</li><li>Tombol login wajib, tapi aplikasinya bisa dipakai tanpa akun.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Polanya sama dengan Compose di Android dan React di web. Belajar satu, gampang paham yang lain.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Tampilan dengan SwiftUI</h2>
@@ -491,13 +501,56 @@ var count = 0
 }</pre></div>
           </div>
         </section>
-        <!-- ════════ 4 — TANTANGAN ════════ -->
+
+        <!-- ════════ 5 — TANTANGAN ════════ -->
         <section class="slide" data-notes="Karena ada review, hotfix di iOS tidak bisa instan. Rencanakan rilis dengan hati-hati.">
           <div class="lens-tag lt-green" style="align-self: flex-start">tantangan</div>
           <h2>Yang perlu diperhatikan di iOS</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">aturan</div><h3>App Store review</h3><p style="color: var(--ink)">Tiap rilis dicek Apple, bisa ditolak. Butuh 1–2 hari.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">aturan</div><h3>Developer account</h3><p style="color: var(--ink)">Bayar tahunan untuk bisa publish.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">teknis</div><h3>Background terbatas</h3><p style="color: var(--ink)">Aplikasi di belakang layar cepat dihentikan iOS.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">teknis</div><h3>Privasi ketat</h3><p style="color: var(--ink)">Izin pelacakan dan data harus dijelaskan dengan jelas.</p></div></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — ASYNC ════════ -->
+        <section class="slide" data-ext="1" data-notes="Macro @Observable (iOS 17+) menggantikan ObservableObject + @Published yang lebih panjang.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">async</div>
+          <h2>Memuat data dengan async/await di SwiftUI</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">ViewModel</div><pre class="code">@Observable
+final class ProductsModel &#123;
+  var items: [Product] = []
+  var error: String?
+
+  func load() async &#123;
+    do &#123; items = try await api.products() &#125;
+    catch &#123; self.error = "Gagal memuat" &#125;
+  &#125;
+&#125;</pre></div>
+            <div><div class="codehead ">View</div><pre class="code">struct ProductsView: View &#123;
+  @State private var model = ProductsModel()
+  var body: some View &#123;
+    List(model.items) &#123; Text($0.name) &#125;
+      .task &#123; await model.load() &#125;
+      .refreshable &#123; await model.load() &#125;
+  &#125;
+&#125;</pre></div>
+          </div>
+          <div class="foot"><b>.task</b> otomatis dibatalkan saat tampilan hilang dari layar.</div>
+        </section>
+
+        <!-- ════════ 7 — RILIS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Phased release memberi waktu menemukan crash sebelum semua user terkena.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">rilis</div>
+          <h2>Dari Xcode sampai App Store</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Archive di Xcode</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Upload ke App Store Connect</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">TestFlight untuk tester</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Kirim review → rilis</div></div><ul class="clean" style="margin-top: 18px"><li>Selalu uji lewat <b>TestFlight</b> dulu, dengan build yang sama yang akan dirilis.</li><li>Pakai phased release: rilis bertahap 7 hari.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Instruments punya template Leaks dan Time Profiler. Mirip profiler di Java.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Alat yang wajib dikenal</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Untuk</th></tr><tr><td class="mono">Xcode + Simulator</td><td>Menulis & menjalankan aplikasi</td></tr><tr><td class="mono">Swift Package Manager</td><td>Dependency</td></tr><tr><td class="mono">Instruments</td><td>Mencari memory leak & bagian lambat</td></tr><tr><td class="mono">TestFlight</td><td>Membagikan versi beta</td></tr><tr><td class="mono">Fastlane / Xcode Cloud</td><td>Otomatisasi build & rilis</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Diskusi: apa dampak review App Store pada cara kita merilis fitur?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -505,13 +558,14 @@ var count = 0
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ bahasa</div><p style="font-size: 17px; color: #e2e8f0">Swift + SwiftUI, butuh Mac + Xcode.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ aturan</div><p style="font-size: 17px; color: #e2e8f0">Review App Store dan privasi ketat.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pola</div><p style="font-size: 17px; color: #e2e8f0">Deklaratif: mirip Compose dan React.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

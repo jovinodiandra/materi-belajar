@@ -463,13 +463,23 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Satu aplikasi, ribuan jenis HP berbeda.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — KENALAN DULU ════════ -->
         <section class="slide" data-notes="Dulu tampilan Android pakai XML. Sekarang yang baru disarankan pakai Compose.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">kenalan dulu</div>
           <h2>Bahan dasar aplikasi Android</h2>
           <div style="margin-top: 16px"><div class="iconrow"><div class="dot" style="background:var(--teal)">🟣</div><div><h3>Kotlin</h3><p>Bahasa utama sekarang. Java masih bisa, tapi Kotlin lebih ringkas.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--amber)">🧩</div><div><h3>Jetpack Compose</h3><p>Cara modern bikin tampilan, mirip React: UI = fungsi dari state.</p></div></div><div class="iconrow"><div class="dot" style="background:var(--green)">🛠️</div><div><h3>Android Studio + Gradle</h3><p>Editor resmi dan alat build-nya.</p></div></div></div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: request selesai lalu mencoba mengubah tampilan yang sudah tidak ada. Simpan state dan request di ViewModel yang selamat dari rotasi.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Kenapa aplikasi crash saat diputar?</h2>
+          <p class="lede">Aplikasi berjalan normal. User memutar HP ke landscape saat data sedang dimuat. Aplikasi crash.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Petunjuk: saat diputar, Android membuat ulang Activity.</li><li>Apa yang terjadi pada request yang sedang berjalan?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Compose mirip React: kita ubah state, tampilan menyesuaikan sendiri.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Tampilan dengan Jetpack Compose</h2>
@@ -489,13 +499,55 @@ fun Counter() {
 }</pre></div>
           </div>
         </section>
-        <!-- ════════ 4 — TANTANGAN ════════ -->
+
+        <!-- ════════ 5 — TANTANGAN ════════ -->
         <section class="slide" data-notes="Selalu tes di HP murah juga, jangan cuma di HP flagship developer.">
           <div class="lens-tag lt-green" style="align-self: flex-start">tantangan</div>
           <h2>Yang bikin Android menantang</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">tantangan</div><h3>Banyak jenis HP</h3><p style="color: var(--ink)">Ukuran layar, versi Android, RAM berbeda-beda.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">tantangan</div><h3>Lifecycle</h3><p style="color: var(--ink)">Layar diputar = Activity dibuat ulang. State bisa hilang.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">tantangan</div><h3>HP kentang</h3><p style="color: var(--ink)">Banyak user pakai HP RAM kecil dan sinyal lemah.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">tantangan</div><h3>Izin (permission)</h3><p style="color: var(--ink)">Kamera, lokasi, notifikasi harus minta izin.</p></div></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — ARSITEKTUR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini arsitektur yang direkomendasikan Google: UI layer, data layer, dengan state mengalir satu arah.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">arsitektur</div>
+          <h2>ViewModel + StateFlow + Compose</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">ViewModel</div><pre class="code">class CartViewModel(
+  private val repo: CartRepository
+) : ViewModel() &#123;
+  val state = repo.items()
+    .map &#123; CartUi(it, it.sumOf &#123; i -&gt; i.price &#125;) &#125;
+    .stateIn(viewModelScope,
+             SharingStarted.WhileSubscribed(5000),
+             CartUi.Empty)
+&#125;</pre></div>
+            <div><div class="codehead ">Composable</div><pre class="code">@Composable
+fun CartScreen(vm: CartViewModel = hiltViewModel()) &#123;
+  val ui by vm.state.collectAsStateWithLifecycle()
+  LazyColumn &#123;
+    items(ui.items, key = &#123; it.id &#125;) &#123; ItemRow(it) &#125;
+  &#125;
+  Text("Total: $&#123;ui.total&#125;")
+&#125;</pre></div>
+          </div>
+          <div class="foot"><b>viewModelScope</b> otomatis membatalkan kerja saat layar benar-benar ditutup.</div>
+        </section>
+
+        <!-- ════════ 7 — KERJA LATAR ════════ -->
+        <section class="slide" data-ext="1" data-notes="Android sangat agresif mematikan proses di latar belakang untuk hemat baterai.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">kerja latar</div>
+          <h2>Upload foto walau aplikasi ditutup</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">User pilih foto</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Jadwalkan WorkManager</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Aplikasi ditutup / HP restart</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Upload tetap selesai</div></div><ul class="clean" style="margin-top: 18px"><li>WorkManager mengatur syarat: hanya saat ada Wi-Fi, saat baterai cukup.</li><li>Jangan pakai thread biasa untuk kerja yang harus selesai.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — ALAT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Untuk developer Java/Spring, Hilt terasa mirip dengan dependency injection di Spring.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">alat</div>
+          <h2>Alat yang wajib dikenal</h2>
+          <table style="margin-top: 16px"><tr><th>Alat</th><th>Untuk</th></tr><tr><td class="mono">Android Studio + Emulator</td><td>Menulis & menjalankan aplikasi</td></tr><tr><td class="mono">Gradle</td><td>Build dan dependency</td></tr><tr><td class="mono">Hilt</td><td>Dependency injection</td></tr><tr><td class="mono">Room</td><td>Database lokal (SQLite)</td></tr><tr><td class="mono">Retrofit / Ktor</td><td>Memanggil API</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tugas: install Android Studio dan jalankan template Compose di emulator.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -503,13 +555,14 @@ fun Counter() {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ bahasa</div><p style="font-size: 17px; color: #e2e8f0">Kotlin + Jetpack Compose.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ tantangan</div><p style="font-size: 17px; color: #e2e8f0">Banyak jenis HP dan lifecycle.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ kebiasaan</div><p style="font-size: 17px; color: #e2e8f0">Tes di HP murah dan sinyal lemah.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

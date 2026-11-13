@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Nonton bioskop: tinggal duduk, tidak perlu punya proyektor.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PETA BESARNYA ════════ -->
         <section class="slide" data-notes="Tabel ini sama di semua materi cloud service model. Tunjukkan posisi topik hari ini di tabel.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">peta besarnya</div>
@@ -470,20 +471,66 @@
           <table style="margin-top: 16px"><tr><th>Model</th><th>Kamu urus</th><th>Penyedia urus</th></tr><tr><td class="mono">On-Premise</td><td>Semuanya: gedung, server, OS, aplikasi</td><td>—</td></tr><tr><td class="mono">IaaS</td><td>OS, runtime, aplikasi, data</td><td>Server fisik, jaringan, listrik</td></tr><tr><td class="mono">PaaS</td><td>Aplikasi dan data</td><td>Server, OS, runtime, scaling</td></tr><tr><td class="mono">FaaS</td><td>Fungsi (potongan kode)</td><td>Hampir semuanya</td></tr><tr><td class="mono">BaaS</td><td>Frontend / logika app</td><td>Backend siap pakai</td></tr><tr><td class="mono">SaaS</td><td>Cuma pakai</td><td>Semuanya</td></tr></table>
           <div class="foot">Makin ke bawah: <b>makin sedikit yang diurus</b>, tapi <b>makin sedikit kontrol</b>.</div>
         </section>
-        <!-- ════════ 3 — DUA SISI ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Gedung yang sama dengan banyak tamu = multi-tenant. Kunci kamar = isolasi data antar pelanggan.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Analogi: hotel</h2>
+          <p class="lede">SaaS seperti menginap di hotel.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Kamar, sarapan, kebersihan: semua diurus hotel.</li><li>Kamu tinggal pakai dan bayar per malam.</li><li>Banyak tamu di gedung yang sama, tapi kamarnya terkunci masing-masing.</li></ul>
+        </section>
+
+        <!-- ════════ 4 — DUA SISI ════════ -->
         <section class="slide" data-notes="Kalau kita bikin produk yang dijual berlangganan ke banyak perusahaan, kita sedang membangun SaaS.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">dua sisi</div>
           <h2>Kita bisa jadi pemakai, atau pembuat</h2>
           <div class="cols" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">sebagai pemakai</div><h3>Pakai SaaS orang lain</h3><p style="color: var(--ink)">Slack, Jira, GitHub. Bayar langganan per user.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">sebagai pembuat</div><h3>Membangun SaaS</h3><p style="color: var(--ink)">Satu aplikasi melayani banyak pelanggan (multi-tenant).</p></div></div>
         </section>
-        <!-- ════════ 4 — KALAU KITA MEMBANGUN ════════ -->
+
+        <!-- ════════ 5 — KALAU KITA MEMBANGUN ════════ -->
         <section class="slide" data-notes="Tenant = satu pelanggan (biasanya satu perusahaan).">
           <div class="lens-tag lt-green" style="align-self: flex-start">kalau kita membangun</div>
           <h2>Hal penting saat membuat SaaS</h2>
           <ul class="clean" style="margin-top: 18px"><li><b>Multi-tenant</b>: data tiap pelanggan harus terpisah, jangan sampai tertukar.</li><li>Setiap query wajib difilter <b>tenant_id</b>.</li><li>Satu pelanggan besar jangan sampai bikin pelanggan lain lambat.</li><li>Fitur berlangganan: paket, kuota, tagihan.</li></ul>
           <div class="foot">Bug paling berbahaya di SaaS: <b>pelanggan A bisa lihat data pelanggan B</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — MULTI-TENANT ════════ -->
+        <section class="slide" data-ext="1" data-notes="Alternatif di Hibernate: @TenantId atau filter global. Intinya: jangan bergantung pada setiap query ditulis benar.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">multi-tenant</div>
+          <h2>Jangan sampai data tenant tertukar</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead bad">✗ filter manual (mudah lupa)</div><pre class="code">List&lt;Invoice&gt; list(String tenantId) &#123;
+  return repo.findAll();   <span class="cm">// ← lupa filter!</span>
+&#125;
+<span class="cm">// pelanggan A melihat invoice pelanggan B</span></pre></div>
+            <div><div class="codehead good">✓ filter otomatis di DB</div><pre class="code"><span class="cm">-- PostgreSQL Row Level Security</span>
+alter table invoice enable row level security;
+create policy tenant_isolation on invoice
+  using (tenant_id = current_setting('app.tenant')::uuid);
+
+<span class="cm">-- aplikasi set di awal tiap transaksi:</span>
+SET LOCAL app.tenant = '…';</pre></div>
+          </div>
+          <div class="foot">Filter tenant yang <b>otomatis</b> lebih aman daripada mengandalkan ingatan developer.</div>
+        </section>
+
+        <!-- ════════ 7 — MODEL ISOLASI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Pilihan ini sulit diubah nanti. Diskusikan sejak awal bersama tim.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">model isolasi</div>
+          <h2>Tiga cara memisahkan tenant</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">murah</div><h3>Satu DB, kolom tenant_id</h3><p style="color: var(--ink)">Paling hemat. Risiko tertukar kalau filter lupa.</p></div><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">sedang</div><h3>Satu DB, schema per tenant</h3><p style="color: var(--ink)">Lebih terpisah. Migrasi schema jadi banyak.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">mahal</div><h3>DB per tenant</h3><p style="color: var(--ink)">Paling aman. Cocok untuk pelanggan enterprise besar.</p></div></div>
+          <div class="foot">Banyak SaaS mencampur: pelanggan kecil berbagi, pelanggan besar dapat DB sendiri.</div>
+        </section>
+
+        <!-- ════════ 8 — SEBAGAI PEMAKAI ════════ -->
+        <section class="slide" data-ext="1" data-notes="Banyak perusahaan punya proses review vendor SaaS untuk keamanan dan kepatuhan data.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">sebagai pemakai</div>
+          <h2>Saat memilih SaaS untuk tim</h2>
+          <ul class="clean" style="margin-top: 18px"><li>Bisa ekspor data kita? (hindari terkunci)</li><li>Ada SSO dan audit log?</li><li>Data disimpan di negara mana?</li><li>Apa yang terjadi kalau vendor tutup?</li></ul>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Penutup: ingat tabel spektrum tadi. Tiap model adalah tukar-tambah antara kontrol dan kemudahan.">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -491,13 +538,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Aplikasi jadi, tinggal pakai.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pemakai</div><p style="font-size: 17px; color: #e2e8f0">Tidak urus server, bayar langganan.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ pembuat</div><p style="font-size: 17px; color: #e2e8f0">Pisahkan data tiap tenant dengan ketat.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

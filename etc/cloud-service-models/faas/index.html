@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Naik taksi: bayar per perjalanan, bukan beli mobil.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PETA BESARNYA ════════ -->
         <section class="slide" data-notes="Tabel ini sama di semua materi cloud service model. Tunjukkan posisi topik hari ini di tabel.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">peta besarnya</div>
@@ -470,7 +471,16 @@
           <table style="margin-top: 16px"><tr><th>Model</th><th>Kamu urus</th><th>Penyedia urus</th></tr><tr><td class="mono">On-Premise</td><td>Semuanya: gedung, server, OS, aplikasi</td><td>—</td></tr><tr><td class="mono">IaaS</td><td>OS, runtime, aplikasi, data</td><td>Server fisik, jaringan, listrik</td></tr><tr><td class="mono">PaaS</td><td>Aplikasi dan data</td><td>Server, OS, runtime, scaling</td></tr><tr><td class="mono">FaaS</td><td>Fungsi (potongan kode)</td><td>Hampir semuanya</td></tr><tr><td class="mono">BaaS</td><td>Frontend / logika app</td><td>Backend siap pakai</td></tr><tr><td class="mono">SaaS</td><td>Cuma pakai</td><td>Semuanya</td></tr></table>
           <div class="foot">Makin ke bawah: <b>makin sedikit yang diurus</b>, tapi <b>makin sedikit kontrol</b>.</div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: mobil sendiri. Sama dengan FaaS: murah untuk pemakaian sesekali, mahal untuk beban tinggi dan terus-menerus.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Analogi: taksi, bukan mobil pribadi</h2>
+          <p class="lede">FaaS seperti naik taksi.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Bayar hanya saat dipakai. Tidak bayar parkir dan cicilan.</li><li>Tapi kadang harus menunggu taksi datang (cold start).</li><li>Pertanyaan: kalau tiap hari menyetir 10 jam, lebih murah taksi atau mobil sendiri?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Pemicunya bisa macam-macam: HTTP request, file di-upload ke S3, pesan masuk antrean, jadwal cron.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Satu fungsi, satu tugas</h2>
@@ -488,13 +498,50 @@ export const handler = async (event) =&gt; {
           </div>
           <div class="foot">Tidak ada request = <b>tidak ada biaya</b>.</div>
         </section>
-        <!-- ════════ 4 — UNTUNG RUGI ════════ -->
+
+        <!-- ════════ 5 — UNTUNG RUGI ════════ -->
         <section class="slide" data-notes="Cold start = waktu menyalakan fungsi dari nol. Java biasanya lebih lama dari Node/Go.">
           <div class="lens-tag lt-green" style="align-self: flex-start">untung rugi</div>
           <h2>Kapan cocok, kapan tidak</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">cocok</div><h3>Tugas pendek & jarang</h3><p style="color: var(--ink)">Resize gambar, webhook, cron harian.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">cocok</div><h3>Traffic naik turun</h3><p style="color: var(--ink)">Otomatis scale dari 0 sampai ribuan.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">hati-hati</div><h3>Cold start</h3><p style="color: var(--ink)">Panggilan pertama lambat karena fungsi baru dinyalakan.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">hati-hati</div><h3>Batas waktu</h3><p style="color: var(--ink)">Biasanya maksimal beberapa menit per eksekusi.</p></div></div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — PEMICU ════════ -->
+        <section class="slide" data-ext="1" data-notes="Fungsi yang dipicu antrean bisa di-retry otomatis. Pastikan idempotent.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">pemicu</div>
+          <h2>Fungsi bisa dipicu dari banyak hal</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">contoh pemicu</div><pre class="code">HTTP         → POST /webhooks/payment
+File         → foto diunggah ke bucket
+Antrean      → pesan masuk ke SQS / PubSub
+Jadwal       → tiap jam 02.00
+Database     → baris baru di tabel</pre></div>
+            <div><div class="codehead ">satu fungsi (Node.js)</div><pre class="code">export const handler = async (event) =&gt; &#123;
+  for (const r of event.Records) &#123;
+    const msg = JSON.parse(r.body);
+    await sendEmail(msg.to, msg.template);
+  &#125;
+  return &#123; ok: true &#125;;
+&#125;;</pre></div>
+          </div>
+          <div class="foot">Pola utama FaaS: <b>ada kejadian → fungsi jalan → selesai</b>.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Recursive invocation adalah kesalahan klasik FaaS. AWS sekarang punya deteksi loop untuk beberapa kasus.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Tagihan meledak semalam</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Fungsi menulis file ke bucket</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Bucket memicu fungsi yang sama</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Fungsi menulis file lagi</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Loop jutaan kali</div></div><ul class="clean" style="margin-top: 18px"><li>Jangan biarkan output fungsi memicu dirinya sendiri.</li><li>Pasang <b>batas konkurensi</b> dan <b>alarm biaya</b>.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — BATASAN ════════ -->
+        <section class="slide" data-ext="1" data-notes="Angka berbeda tiap penyedia. Selalu cek dokumentasi terbaru sebelum mendesain.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">batasan</div>
+          <h2>Batasan yang perlu diingat</h2>
+          <table style="margin-top: 16px"><tr><th>Batasan</th><th>Contoh (AWS Lambda)</th></tr><tr><td class="mono">Waktu jalan maksimal</td><td>15 menit</td></tr><tr><td class="mono">Memori</td><td>128 MB – 10 GB</td></tr><tr><td class="mono">Ukuran paket</td><td>250 MB (atau image 10 GB)</td></tr><tr><td class="mono">Disk sementara</td><td>/tmp, hilang setelah selesai</td></tr><tr><td class="mono">Tidak ada state</td><td>Simpan di DB / storage</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tanya: tugas apa di sistem kita yang cocok dipindah ke FaaS?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -502,13 +549,14 @@ export const handler = async (event) =&gt; {
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Tulis fungsi, jalan saat ada pemicu.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ biaya</div><p style="font-size: 17px; color: #e2e8f0">Bayar hanya saat dipakai.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ hati-hati</div><p style="font-size: 17px; color: #e2e8f0">Cold start dan batas waktu eksekusi.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

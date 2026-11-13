@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Sewa rumah kosong: bangunannya ada, perabot isi sendiri.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PETA BESARNYA ════════ -->
         <section class="slide" data-notes="Tabel ini sama di semua materi cloud service model. Tunjukkan posisi topik hari ini di tabel.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">peta besarnya</div>
@@ -470,20 +471,69 @@
           <table style="margin-top: 16px"><tr><th>Model</th><th>Kamu urus</th><th>Penyedia urus</th></tr><tr><td class="mono">On-Premise</td><td>Semuanya: gedung, server, OS, aplikasi</td><td>—</td></tr><tr><td class="mono">IaaS</td><td>OS, runtime, aplikasi, data</td><td>Server fisik, jaringan, listrik</td></tr><tr><td class="mono">PaaS</td><td>Aplikasi dan data</td><td>Server, OS, runtime, scaling</td></tr><tr><td class="mono">FaaS</td><td>Fungsi (potongan kode)</td><td>Hampir semuanya</td></tr><tr><td class="mono">BaaS</td><td>Frontend / logika app</td><td>Backend siap pakai</td></tr><tr><td class="mono">SaaS</td><td>Cuma pakai</td><td>Semuanya</td></tr></table>
           <div class="foot">Makin ke bawah: <b>makin sedikit yang diurus</b>, tapi <b>makin sedikit kontrol</b>.</div>
         </section>
-        <!-- ════════ 3 — CONTOH ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: OS, runtime (Java, Node), aplikasi, database yang dipasang sendiri, firewall di dalam VM, dan backup.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Analogi: sewa rumah kosong</h2>
+          <p class="lede">IaaS seperti menyewa rumah kosong.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Gedung, listrik, dan air sudah disediakan pemilik.</li><li>Perabot, cat, dan kebersihan: urusan penyewa.</li><li>Pertanyaan: di IaaS, apa yang termasuk 'perabot'?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — CONTOH ════════ -->
         <section class="slide" data-notes="Bandingkan dengan on-premise: tidak perlu beli hardware, tapi OS masih tanggung jawab kita.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">contoh</div>
           <h2>Yang kita dapat dari IaaS</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">contoh</div><h3>Virtual machine</h3><p style="color: var(--ink)">EC2, Compute Engine, Azure VM.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">contoh</div><h3>Storage</h3><p style="color: var(--ink)">Disk (EBS), object storage (S3).</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">contoh</div><h3>Jaringan</h3><p style="color: var(--ink)">VPC, load balancer, IP publik.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">kelebihan</div><h3>Bayar sesuai pakai</h3><p style="color: var(--ink)">Butuh server baru? Hitungan menit, bukan minggu.</p></div></div>
         </section>
-        <!-- ════════ 4 — HATI-HATI ════════ -->
+
+        <!-- ════════ 5 — HATI-HATI ════════ -->
         <section class="slide" data-notes="Ini disebut shared responsibility model: penyedia aman di bawah, kita aman di atas.">
           <div class="lens-tag lt-green" style="align-self: flex-start">hati-hati</div>
           <h2>Yang masih jadi tugas kita</h2>
           <ul class="clean" style="margin-top: 18px"><li>Install dan update OS, pasang patch keamanan.</li><li>Atur firewall / security group dengan benar.</li><li>Pasang monitoring, backup, dan auto scaling sendiri.</li><li>Matikan server yang tidak dipakai, biar tagihan tidak bengkak.</li></ul>
           <div class="foot">IaaS fleksibel, tapi <b>tanggung jawab keamanan OS tetap di kita</b>.</div>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH ════════ -->
+        <section class="slide" data-ext="1" data-notes="Golden image (AMI yang sudah berisi semua kebutuhan) mempercepat dan menyeragamkan server.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh</div>
+          <h2>Menyalakan server dengan satu perintah</h2>
+          <div class="cols c2" style="margin-top: 14px">
+            <div><div class="codehead ">AWS CLI</div><pre class="code">aws ec2 run-instances \
+  --image-id ami-0abcd1234 \
+  --instance-type t3.small \
+  --key-name kunci-saya \
+  --security-group-ids sg-0123 \
+  --tag-specifications \
+    'ResourceType=instance,Tags=[&#123;Key=team,Value=order&#125;]'</pre></div>
+            <div><div class="codehead ">setelah itu tetap tugas kita</div><pre class="code">ssh ke server
+sudo apt update &amp;&amp; sudo apt upgrade
+install Java / Docker
+pasang aplikasi + systemd
+atur log, monitoring, backup
+
+→ lebih baik ditulis sebagai kode
+  (Terraform + Ansible / image siap pakai)</pre></div>
+          </div>
+          <div class="foot">Server menyala dalam <b>menit</b>, tapi menyiapkan isinya tetap pekerjaan kita.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Ini perbedaan besar dengan PaaS, di mana patch OS diurus penyedia.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Lupa patch OS</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">VM dibuat 2 tahun lalu</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Tidak pernah di-update</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Celah keamanan diumumkan</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Server dibobol</div></div><ul class="clean" style="margin-top: 18px"><li>Di IaaS, <b>patch OS adalah tugasmu</b>. Penyedia tidak akan melakukannya.</li><li>Otomatiskan: unattended-upgrades, AWS Systems Manager Patch Manager.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — JENIS SERVER ════════ -->
+        <section class="slide" data-ext="1" data-notes="Mulai kecil, ukur pemakaian, lalu sesuaikan ukurannya (rightsizing).">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">jenis server</div>
+          <h2>Memilih jenis VM</h2>
+          <table style="margin-top: 16px"><tr><th>Keluarga</th><th>Cocok untuk</th></tr><tr><td class="mono">General purpose (t3, m7)</td><td>Web server, aplikasi umum</td></tr><tr><td class="mono">Compute optimized (c7)</td><td>Hitungan berat CPU</td></tr><tr><td class="mono">Memory optimized (r7)</td><td>Database, cache besar</td></tr><tr><td class="mono">GPU (g5, p5)</td><td>Machine learning, render video</td></tr><tr><td class="mono">Burstable (t3)</td><td>Beban kecil yang sesekali naik</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Tanya: service mana di tempat kita yang jalan di VM langsung?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -491,13 +541,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Sewa server virtual, storage, dan jaringan.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ untung</div><p style="font-size: 17px; color: #e2e8f0">Cepat, fleksibel, bayar sesuai pakai.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ tugas</div><p style="font-size: 17px; color: #e2e8f0">OS, keamanan, dan monitoring tetap kita.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>

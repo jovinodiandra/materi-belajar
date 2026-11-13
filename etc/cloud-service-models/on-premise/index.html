@@ -463,6 +463,7 @@
             <p style="margin-top: 42px; font-size: 16px; color: #94a3b8"><span style="color: var(--teal); font-family: var(--mono); font-weight: 700">$</span> Punya rumah sendiri: bebas renovasi, tapi atap bocor ya benerin sendiri.</p>
           </div>
         </section>
+
         <!-- ════════ 2 — PETA BESARNYA ════════ -->
         <section class="slide" data-notes="Tabel ini sama di semua materi cloud service model. Tunjukkan posisi topik hari ini di tabel.">
           <div class="lens-tag lt-teal" style="align-self: flex-start">peta besarnya</div>
@@ -470,19 +471,52 @@
           <table style="margin-top: 16px"><tr><th>Model</th><th>Kamu urus</th><th>Penyedia urus</th></tr><tr><td class="mono">On-Premise</td><td>Semuanya: gedung, server, OS, aplikasi</td><td>—</td></tr><tr><td class="mono">IaaS</td><td>OS, runtime, aplikasi, data</td><td>Server fisik, jaringan, listrik</td></tr><tr><td class="mono">PaaS</td><td>Aplikasi dan data</td><td>Server, OS, runtime, scaling</td></tr><tr><td class="mono">FaaS</td><td>Fungsi (potongan kode)</td><td>Hampir semuanya</td></tr><tr><td class="mono">BaaS</td><td>Frontend / logika app</td><td>Backend siap pakai</td></tr><tr><td class="mono">SaaS</td><td>Cuma pakai</td><td>Semuanya</td></tr></table>
           <div class="foot">Makin ke bawah: <b>makin sedikit yang diurus</b>, tapi <b>makin sedikit kontrol</b>.</div>
         </section>
-        <!-- ════════ 3 — UNTUNG RUGI ════════ -->
+
+        <!-- ════════ 3 — WARM-UP ════════ -->
+        <section class="slide" data-ext="1" data-notes="Jawaban: kalau tinggal lama, butuh kontrol penuh, dan sanggup merawat. Sama dengan server on-premise.">
+          <div class="lens-tag lt-green" style="align-self: flex-start">warm-up</div>
+          <h2>Analogi: rumah sendiri</h2>
+          <p class="lede">On-premise itu seperti punya rumah sendiri, bukan kos atau hotel.</p>
+          <ul class="clean" style="margin-top: 16px"><li>Bebas mengecat dan merenovasi sesukanya.</li><li>Tapi atap bocor, listrik, keamanan: urus sendiri.</li><li>Pertanyaan: kapan punya rumah sendiri lebih masuk akal daripada menyewa?</li></ul>
+        </section>
+
+        <!-- ════════ 4 — UNTUNG RUGI ════════ -->
         <section class="slide" data-notes="Contoh: bank, pemerintahan, rumah sakit sering masih on-premise karena aturan data.">
           <div class="lens-tag lt-amber" style="align-self: flex-start">untung rugi</div>
           <h2>Kapan on-premise masuk akal?</h2>
           <div class="cols" style="grid-template-columns: repeat(4, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">untung</div><h3>Kontrol penuh</h3><p style="color: var(--ink)">Data tidak keluar gedung. Penting untuk regulasi ketat.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">untung</div><h3>Murah untuk beban stabil</h3><p style="color: var(--ink)">Kalau server dipakai penuh bertahun-tahun.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">rugi</div><h3>Modal awal besar</h3><p style="color: var(--ink)">Beli server, rak, pendingin, listrik cadangan.</p></div><div class="card tint-red"><div class="lens-tag lt-red" style="margin-bottom: 12px">rugi</div><h3>Lambat bertambah</h3><p style="color: var(--ink)">Butuh server baru? Pesan, kirim, pasang: bisa berminggu-minggu.</p></div></div>
         </section>
-        <!-- ════════ 4 — YANG HARUS DIURUS ════════ -->
+
+        <!-- ════════ 5 — YANG HARUS DIURUS ════════ -->
         <section class="slide" data-notes="Biaya on-premise bukan cuma harga server, tapi juga orang dan waktu untuk merawatnya.">
           <div class="lens-tag lt-green" style="align-self: flex-start">yang harus diurus</div>
           <h2>Tugas yang biasanya "tidak kelihatan"</h2>
           <ul class="clean" style="margin-top: 18px"><li>Ganti hardware rusak, beli cadangan.</li><li>Update OS dan patch keamanan sendiri.</li><li>Backup dan rencana kalau gedung kebanjiran (disaster recovery).</li><li>Tim yang siaga 24 jam kalau server mati tengah malam.</li></ul>
         </section>
-        <!-- ════════ 5 — PENUTUP ════════ -->
+
+        <!-- ════════ 6 — CONTOH NYATA ════════ -->
+        <section class="slide" data-ext="1" data-notes="Contoh: sistem inti bank on-premise, aplikasi mobile banking dan analitik di cloud.">
+          <div class="lens-tag lt-red" style="align-self: flex-start">contoh nyata</div>
+          <h2>Siapa yang masih memakai on-premise?</h2>
+          <div class="cols" style="grid-template-columns: repeat(3, 1fr); margin-top: 20px; gap: 20px"><div class="card tint-teal"><div class="lens-tag lt-teal" style="margin-bottom: 12px">regulasi</div><h3>Bank & pemerintahan</h3><p style="color: var(--ink)">Aturan mewajibkan data di dalam negeri atau di gedung sendiri.</p></div><div class="card tint-amber"><div class="lens-tag lt-amber" style="margin-bottom: 12px">skala besar</div><h3>Perusahaan raksasa</h3><p style="color: var(--ink)">Beban sangat besar dan stabil, beli sendiri lebih murah.</p></div><div class="card tint-green"><div class="lens-tag lt-green" style="margin-bottom: 12px">khusus</div><h3>Pabrik & rumah sakit</h3><p style="color: var(--ink)">Mesin dan alat harus jalan walau internet putus.</p></div></div>
+          <div class="foot">Banyak perusahaan memakai <b>hybrid</b>: sebagian di gedung sendiri, sebagian di cloud.</div>
+        </section>
+
+        <!-- ════════ 7 — STUDI KASUS ════════ -->
+        <section class="slide" data-ext="1" data-notes="Biaya on-premise yang sering terlupa: orang yang siaga, suku cadang, dan waktu pemulihan.">
+          <div class="lens-tag lt-ink" style="align-self: flex-start">studi kasus</div>
+          <h2>Server rusak jam 2 pagi</h2>
+          <div class="cycle"><div class="step" style="background:var(--teal);flex:1">Disk server database rusak</div><div class="arrow">→</div><div class="step" style="background:var(--amber);flex:1">Teknisi datang ke data center</div><div class="arrow">→</div><div class="step" style="background:var(--green);flex:1">Ganti disk, rebuild RAID</div><div class="arrow">→</div><div class="step" style="background:var(--red);flex:1">Pulihkan dari backup</div></div><ul class="clean" style="margin-top: 18px"><li>Di cloud: VM baru dalam menit. Di on-premise: tergantung stok cadangan dan orang yang siaga.</li></ul>
+        </section>
+
+        <!-- ════════ 8 — HITUNG BIAYA ════════ -->
+        <section class="slide" data-ext="1" data-notes="TCO = Total Cost of Ownership. Bandingkan TCO, bukan hanya harga server dengan harga cloud per bulan.">
+          <div class="lens-tag lt-teal" style="align-self: flex-start">hitung biaya</div>
+          <h2>Biaya yang harus dihitung (TCO)</h2>
+          <table style="margin-top: 16px"><tr><th>Biaya</th><th>Contoh</th></tr><tr><td class="mono">Beli di depan</td><td>Server, rak, switch, storage</td></tr><tr><td class="mono">Gedung</td><td>Listrik, pendingin, ruang, keamanan fisik</td></tr><tr><td class="mono">Orang</td><td>Admin sistem, jaringan, siaga 24 jam</td></tr><tr><td class="mono">Ganti berkala</td><td>Hardware diganti tiap 3–5 tahun</td></tr><tr><td class="mono">Lisensi</td><td>OS, virtualisasi, database</td></tr></table>
+        </section>
+
+        <!-- ════════ 9 — PENUTUP ════════ -->
         <section class="slide dark" data-notes="Diskusi: apakah ada bagian sistem kita yang masih on-premise? Kenapa?">
           <div class="bigbrace" style="font-size: 460px">{ }</div>
           <div style="position: relative; max-width: 880px">
@@ -490,13 +524,14 @@
             <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ apa</div><p style="font-size: 17px; color: #e2e8f0">Server dan pusat data milik sendiri.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ untung</div><p style="font-size: 17px; color: #e2e8f0">Kontrol penuh, cocok untuk aturan ketat.</p></div><div style="display: flex; gap: 22px; align-items: baseline"><div style="flex: 0 0 190px; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--teal)">❯ rugi</div><p style="font-size: 17px; color: #e2e8f0">Modal besar, lambat menambah kapasitas.</p></div></div>
           </div>
         </section>
+
       </div>
     </div>
 
     <div id="bar"></div>
     <div id="help">← → navigasi · N catatan · F fullscreen</div>
     <div id="hud">
-      <span id="counter">1 / 5</span>
+      <span id="counter">1 / 9</span>
       <button id="prev" aria-label="Slide sebelumnya">‹</button>
       <button id="next" aria-label="Slide berikutnya">›</button>
     </div>
